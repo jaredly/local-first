@@ -1,0 +1,13 @@
+{
+    "private": true,
+    "type": "module",
+    "workspaces": [
+        "hybrid-logical-clock",
+        "nested-object-crdt"
+    ],
+    "devDependencies": {
+        "jest": "^24.9.0",
+        "parcel": "^1.12.4",
+        "prettier": "^1.19.1"
+    }
+}
