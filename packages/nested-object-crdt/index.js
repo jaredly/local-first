@@ -51,6 +51,9 @@ const deltas = {
 const applyDelta = (crdt: CRDT, delta: Delta): CRDT => {
     switch (delta.type) {
         case 'set':
+            if (delta.path.length === 0) {
+                return merge(crdt, delta.value);
+            }
             return set(crdt, delta.path, delta.value);
     }
     throw new Error('unknown delta type' + JSON.stringify(delta));
@@ -190,6 +193,14 @@ const createDeepMap = (value: {}, hlcStamp: string): MapCRDT => {
     return { type: 'map', map, hlcStamp };
 };
 
+const createValue = (value: any, hlcStamp: string): CRDT => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+        return createDeepMap(value, hlcStamp);
+    } else {
+        return create(value, hlcStamp);
+    }
+};
+
 const createMap = (value, hlcStamp): MapCRDT => {
     const map = {};
     Object.keys(value).forEach(k => {
@@ -200,6 +211,7 @@ const createMap = (value, hlcStamp): MapCRDT => {
 const create = (value: any, hlcStamp: string): PlainCRDT => {
     return { type: 'plain', value, hlcStamp };
 };
+const createEmpty = (): CRDT => create(null, MIN_STAMP);
 const mergeMaps = (one: MapCRDT, two: MapCRDT) => {
     [one, two] = one.hlcStamp > two.hlcStamp ? [one, two] : [two, one];
     let minStamp = one.hlcStamp;
@@ -276,6 +288,7 @@ const mergePlainAndMap = (map: MapCRDT, plain: PlainCRDT): CRDT => {
     }
     return { ...plain, mapValues };
 };
+
 const mergePlain = (one: PlainCRDT, two: PlainCRDT): PlainCRDT => {
     const [neww, old] = one.hlcStamp > two.hlcStamp ? [one, two] : [two, one];
     let mapValues = neww.mapValues;
@@ -286,6 +299,7 @@ const mergePlain = (one: PlainCRDT, two: PlainCRDT): PlainCRDT => {
     }
     return { ...neww, mapValues };
 };
+
 const merge = (one: CRDT, two: CRDT): CRDT => {
     if (one.type === 'map' && two.type === 'map') {
         return mergeMaps(one, two);
@@ -312,4 +326,6 @@ module.exports = {
     deltas,
     showDelta,
     applyDelta,
+    createEmpty,
+    createValue,
 };

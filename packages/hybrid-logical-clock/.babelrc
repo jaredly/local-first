@@ -1,0 +1,1 @@
+{"presets": ["@babel/preset-flow", "@babel/preset-env"]}

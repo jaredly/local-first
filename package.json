@@ -2,8 +2,8 @@
     "private": true,
     "type": "module",
     "workspaces": [
-        "hybrid-logical-clock",
-        "nested-object-crdt"
+        "packages/*",
+        "examples/*/*"
     ],
     "devDependencies": {
         "jest": "^24.9.0",

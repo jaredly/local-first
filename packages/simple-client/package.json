@@ -1,18 +1,16 @@
 {
-    "name": "@local-first/nested-object-crdt",
-"main": "lib/index.js",
+    "name": "@local-first/simple-client",
     "version": "1.0.0",
     "scripts": {
         "test": "node -r @babel/register tests/test-full-fuzz.js"
     },
     "devDependencies": {
-        "@babel/cli": "^7.8.3",
-        "@babel/core": "^7.8.3",
         "@babel/preset-env": "^7.8.3",
         "@babel/preset-flow": "^7.8.3",
         "@babel/register": "^7.8.3",
         "flow-bin": "^0.116.1",
         "jest": "^24.9.0",
+        "parcel": "^1.12.4",
         "prettier": "^1.19.1"
     }
 }
