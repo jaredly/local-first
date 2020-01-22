@@ -1,9 +1,10 @@
 {
     "name": "@local-first/nested-object-crdt",
-"main": "lib/index.js",
+    "main": "lib/index.js",
     "version": "1.0.0",
     "scripts": {
-        "test": "node -r @babel/register tests/test-full-fuzz.js"
+        "test": "node -r @babel/register tests/test-full-fuzz.js",
+        "prepublish": "babel index.js -d lib && cp index.js lib/index.js.flow"
     },
     "devDependencies": {
         "@babel/cli": "^7.8.3",
