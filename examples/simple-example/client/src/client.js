@@ -2,11 +2,9 @@
 
 import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
-import * as crdt from '@local-first/nested-object-crdt';
-import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 import type { ClientMessage, ServerMessage } from '../../server/index';
 
-type CRDTImpl<Delta, Data> = {
+export type CRDTImpl<Delta, Data> = {
     createEmpty: () => Data,
     applyDelta: (Data, Delta) => Data,
     create: (v: any, stamp: string) => Data,
@@ -235,3 +233,5 @@ const make = <Delta, Data>(
         },
     };
 };
+
+export default make;

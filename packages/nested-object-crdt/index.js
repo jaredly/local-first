@@ -29,7 +29,7 @@ export type Delta = {
     type: 'set',
     path: Array<string>,
     value: CRDT,
-    hlcStamp: string,
+    // hlcStamp: string,
 };
 
 const showDelta = (delta: Delta) => {
@@ -65,8 +65,12 @@ const latestStamp = (data: CRDT): string => {
 };
 
 const deltas = {
-    stamp: (delta: Delta): string => delta.hlcStamp,
-    set: (path: Array<string>, value: CRDT) => ({ type: 'set', path, value }),
+    stamp: (delta: Delta): string => latestStamp(delta.value),
+    set: (path: Array<string>, value: CRDT): Delta => ({
+        type: 'set',
+        path,
+        value,
+    }),
     remove: (hlcStamp: string) => ({
         type: 'set',
         path: [],
