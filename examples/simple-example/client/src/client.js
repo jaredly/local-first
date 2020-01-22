@@ -9,14 +9,26 @@ import type { ClientMessage, ServerMessage } from '../../server/index';
 type CRDTImpl<Delta, Data> = {
     createEmpty: () => Data,
     applyDelta: (Data, Delta) => Data,
+    create: (v: any, stamp: string) => Data,
+    createValue: (v: any, stamp: string) => Data,
+    createDeepMap: (v: any, stamp: string) => Data,
+    merge: (a: Data, b: Data) => Data,
+    latestStamp: (a: Data) => string,
+    value: (v: Data) => any,
+    deltas: {
+        remove: (stamp: string) => Delta,
+        stamp: (delta: Delta) => string,
+        set: (path: Array<string>, value: Data) => Delta,
+        removeAt: (path: Array<string>, stamp: string) => Delta,
+    },
 };
 
 type CollectionState<Delta, Data> = {
     hlc: HLC,
     data: { [key: string]: Data },
     deltas: Array<{ node: string, delta: Delta }>,
-    listeners: Array<(value: ?T, id: string) => void>,
-    itemListeners: { [key: string]: Array<(value: ?T, id: string) => void> },
+    listeners: Array<(Array<{ value: ?any, id: string }>) => void>,
+    itemListeners: { [key: string]: Array<(value: ?any) => void> },
 };
 
 const newCollection = <Delta, Data>(
@@ -25,6 +37,8 @@ const newCollection = <Delta, Data>(
     hlc: hlc.init(sessionId, Date.now()),
     data: {},
     deltas: [],
+    listeners: [],
+    itemListeners: {},
 });
 
 export type Collection<T> = {
@@ -52,14 +66,18 @@ export type Backend = {
 const make = <Delta, Data>(
     crdt: CRDTImpl<Delta, Data>,
     sessionId: string,
-): Backend => {
+    send: (Array<ClientMessage<Delta, Data>>) => void,
+): ({
+    collections: { [key: string]: CollectionState<Delta, Data> },
+    onMessage: (msg: ServerMessage<Delta, Data>) => void,
+}) => {
     const collections: {
         [collectionId: string]: CollectionState<Delta, Data>,
     } = {};
 
     const applyDeltas = (
         col: CollectionState<Delta, Data>,
-        deltas: Array<Delta>,
+        deltas: Array<{ node: string, delta: Delta, ... }>,
     ) => {
         const changed = {};
         deltas.forEach(delta => {
@@ -92,6 +110,59 @@ const make = <Delta, Data>(
 
     return {
         collections,
+        onMessage: (msg: ServerMessage<Delta, Data>) => {
+            if (msg.type === 'sync') {
+                if (!collections[msg.collection]) {
+                    collections[msg.collection] = newCollection(sessionId);
+                }
+                const col = collections[msg.collection];
+                applyDeltas(col, msg.deltas);
+                let maxStamp = null;
+                msg.deltas.forEach(delta => {
+                    const stamp = crdt.deltas.stamp(delta.delta);
+                    if (!maxStamp || stamp > maxStamp) {
+                        maxStamp = stamp;
+                    }
+                });
+                if (maxStamp) {
+                    col.hlc = hlc.recv(
+                        col.hlc,
+                        hlc.unpack(maxStamp),
+                        Date.now(),
+                    );
+                }
+            } else if (msg.type === 'full') {
+                if (!collections[msg.collection]) {
+                    collections[msg.collection] = newCollection(sessionId);
+                    // TODO find the latest hlc in here and update out hlc to match
+                    collections[msg.collection].data = msg.data;
+                } else {
+                    const data = collections[msg.collection].data;
+                    Object.keys(msg.data).forEach(id => {
+                        if (data[id]) {
+                            data[id] = crdt.merge(data[id], msg.data[id]);
+                        } else {
+                            data[id] = msg.data[id];
+                        }
+                    });
+                }
+                const col = collections[msg.collection];
+                let maxStamp = null;
+                Object.keys(msg.data).forEach(id => {
+                    const stamp = crdt.latestStamp(msg.data[id]);
+                    if (!maxStamp || stamp > maxStamp) {
+                        maxStamp = stamp;
+                    }
+                });
+                if (maxStamp) {
+                    col.hlc = hlc.recv(
+                        col.hlc,
+                        hlc.unpack(maxStamp),
+                        Date.now(),
+                    );
+                }
+            }
+        },
         getCollection: function<T>(key): Collection<T> {
             if (!collections[key]) {
                 collections[key] = newCollection(sessionId);
@@ -104,9 +175,9 @@ const make = <Delta, Data>(
             return {
                 save: (id: string, value: T) => {
                     const map = crdt.createDeepMap(value, ts());
-                    const delta = crdt.deltas.set(id, [], map);
+                    const delta = crdt.deltas.set([], map);
                     col.deltas.push(delta);
-                    applyDeltas(col, [delta]);
+                    applyDeltas(col, [{ node: id, delta }]);
                     return Promise.resolve();
                 },
                 setAttribute: (
@@ -116,12 +187,11 @@ const make = <Delta, Data>(
                     value: any,
                 ) => {
                     const delta = crdt.deltas.set(
-                        id,
                         [key],
                         crdt.createValue(value, ts()),
                     );
                     col.deltas.push(delta);
-                    applyDeltas(col.data, [delta]);
+                    applyDeltas(col, [{ node: id, delta }]);
                     return Promise.resolve();
                 },
                 load: (id: string) => {
@@ -138,11 +208,8 @@ const make = <Delta, Data>(
                     return Promise.resolve(res);
                 },
                 delete: (id: string) => {
-                    const delta = crdt.deltas.set(
-                        id,
-                        [],
-                        crdt.create(null, ts()),
-                    );
+                    const delta = crdt.deltas.remove(ts());
+                    applyDeltas(col, [{ node: id, delta }]);
                     return Promise.resolve();
                 },
                 onChanges: (fn: (Array<{ value: ?T, id: string }>) => void) => {

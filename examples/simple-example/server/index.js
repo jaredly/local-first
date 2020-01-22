@@ -21,7 +21,7 @@ export type ServerMessage<Delta, Data> =
           type: 'sync',
           collection: string,
           lastSeenDelta: number,
-          deltas: Array<{ node: string, delta: Delta, sessionId: string }>,
+          deltas: Array<{ node: string, delta: Delta }>,
       }
     | {
           type: 'full',
@@ -104,7 +104,8 @@ const make = <Delta, Data>(
                             .filter(
                                 delta =>
                                     delta.sessionId !== connection.sessionId,
-                            ),
+                            )
+                            .map(({ node, delta }) => ({ node, delta })),
                         lastSeenDelta:
                             collections[message.collection].deltas.length,
                     });

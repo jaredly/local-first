@@ -39,8 +39,39 @@ const showDelta = (delta: Delta) => {
     }
 };
 
+const latestStamp = (data: CRDT): string => {
+    if (data.type === 'map') {
+        let max = data.hlcStamp;
+        Object.keys(data.map).forEach(id => {
+            const stamp = latestStamp(data.map[id]);
+            if (!max || stamp > max) {
+                max = stamp;
+            }
+        });
+        return max;
+    } else {
+        let max = data.hlcStamp;
+        if (data.mapValues) {
+            const map = data.mapValues;
+            Object.keys(map).forEach(id => {
+                const stamp = latestStamp(map[id]);
+                if (!max || stamp > max) {
+                    max = stamp;
+                }
+            });
+        }
+        return max;
+    }
+};
+
 const deltas = {
+    stamp: (delta: Delta): string => delta.hlcStamp,
     set: (path: Array<string>, value: CRDT) => ({ type: 'set', path, value }),
+    remove: (hlcStamp: string) => ({
+        type: 'set',
+        path: [],
+        value: create(null, hlcStamp),
+    }),
     removeAt: (path: Array<string>, hlcStamp: string) => ({
         type: 'set',
         path,
@@ -328,4 +359,5 @@ module.exports = {
     applyDelta,
     createEmpty,
     createValue,
+    latestStamp,
 };
