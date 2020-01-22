@@ -9,5 +9,9 @@
         "jest": "^24.9.0",
         "prettier": "^1.19.1"
     },
+    "scripts": {
+        "test": "node -r @babel/register tests/test-full-fuzz.js",
+        "prepublish": "babel index.js -d lib && cp index.js lib/index.js.flow"
+    },
     "main": "lib/index.js"
 }
