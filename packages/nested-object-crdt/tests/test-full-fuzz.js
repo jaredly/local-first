@@ -10,8 +10,8 @@ import {
     show,
 } from '../index.js';
 
-import { generateDeltas } from '../test-utils/generate-deltas';
-import { check } from '../test-utils/permute';
+import { generateDeltas } from './utils/generate-deltas';
+import { check } from './utils/permute';
 
 const testPermutations = (base, deltas) => {
     return check(

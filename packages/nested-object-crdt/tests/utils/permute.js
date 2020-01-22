@@ -1,6 +1,7 @@
 // we're looking for
 // commutativity
 // associativity
+// idempotency
 
 // maybe generate all the permutations, and then dedup on prefix?
 
