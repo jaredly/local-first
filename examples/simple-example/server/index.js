@@ -59,6 +59,9 @@ app.ws('/sync', function(ws, req) {
             }
         });
     });
+    ws.on('close', () => {
+        delete clients[req.query.sessionId];
+    });
 });
 
 app.listen(9900);
