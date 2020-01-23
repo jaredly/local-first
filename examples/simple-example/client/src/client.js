@@ -2,7 +2,7 @@
 
 import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
-import type { ClientMessage, ServerMessage } from '../../server/index';
+import type { ClientMessage, ServerMessage } from '../../server/server';
 
 export type CRDTImpl<Delta, Data> = {
     createEmpty: () => Data,
@@ -24,6 +24,7 @@ export type CRDTImpl<Delta, Data> = {
 type CollectionState<Delta, Data> = {
     hlc: HLC,
     data: { [key: string]: Data },
+    lastSeen: number,
     deltas: Array<{ node: string, delta: Delta }>,
     listeners: Array<(Array<{ value: ?any, id: string }>) => void>,
     itemListeners: { [key: string]: Array<(value: ?any) => void> },
@@ -35,6 +36,7 @@ const newCollection = <Delta, Data>(
     hlc: hlc.init(sessionId, Date.now()),
     data: {},
     deltas: [],
+    lastSeen: 0,
     listeners: [],
     itemListeners: {},
 });
@@ -61,17 +63,71 @@ export type Backend = {
     logout: () => void,
 };
 
+const debounce = function<T>(fn: () => void): () => void {
+    let waiting = false;
+    return items => {
+        if (!waiting) {
+            waiting = true;
+            setTimeout(() => {
+                console.log('ok');
+                fn();
+                waiting = false;
+            }, 0);
+        } else {
+            console.log('bouncing');
+        }
+    };
+};
+
+// const debounceConcat = function<T>(fn: (Array<T>) => void): (Array<T>) => void {
+//     let pending = null;
+//     return items => {
+//         if (pending) {
+//             pending.push(...items);
+//         } else {
+//             pending = items.slice();
+//             setTimeout(() => {
+//                 if (pending) {
+//                     fn(pending);
+//                 }
+//                 pending = null;
+//             }, 0);
+//         }
+//     };
+// };
+
 const make = <Delta, Data>(
     crdt: CRDTImpl<Delta, Data>,
     sessionId: string,
-    send: (Array<ClientMessage<Delta, Data>>) => void,
+    send: (Array<ClientMessage<Delta, Data>>) => boolean,
 ): ({
     collections: { [key: string]: CollectionState<Delta, Data> },
     onMessage: (msg: ServerMessage<Delta, Data>) => void,
+    getCollection: <T>(string) => Collection<T>,
 }) => {
     const collections: {
         [collectionId: string]: CollectionState<Delta, Data>,
     } = {};
+
+    const enqueueSend = debounce(() => {
+        const messages = [];
+        Object.keys(collections).forEach(col => {
+            if (collections[col].deltas.length) {
+                console.log('deltas', collections[col].deltas);
+                messages.push({
+                    type: 'sync',
+                    collection: col,
+                    lastSeenDelta: collections[col].lastSeen,
+                    deltas: collections[col].deltas,
+                });
+            }
+        });
+        if (send(messages)) {
+            Object.keys(collections).forEach(col => {
+                collections[col].deltas = [];
+            });
+        }
+    });
 
     const applyDeltas = (
         col: CollectionState<Delta, Data>,
@@ -164,6 +220,14 @@ const make = <Delta, Data>(
         getCollection: function<T>(key): Collection<T> {
             if (!collections[key]) {
                 collections[key] = newCollection(sessionId);
+                send([
+                    {
+                        type: 'sync',
+                        collection: key,
+                        lastSeenDelta: 0,
+                        deltas: [],
+                    },
+                ]);
             }
             const col = collections[key];
             const ts = () => {
@@ -174,7 +238,8 @@ const make = <Delta, Data>(
                 save: (id: string, value: T) => {
                     const map = crdt.createDeepMap(value, ts());
                     const delta = crdt.deltas.set([], map);
-                    col.deltas.push(delta);
+                    col.deltas.push({ node: id, delta });
+                    enqueueSend();
                     applyDeltas(col, [{ node: id, delta }]);
                     return Promise.resolve();
                 },
@@ -188,7 +253,8 @@ const make = <Delta, Data>(
                         [key],
                         crdt.createValue(value, ts()),
                     );
-                    col.deltas.push(delta);
+                    col.deltas.push({ node: id, delta });
+                    enqueueSend();
                     applyDeltas(col, [{ node: id, delta }]);
                     return Promise.resolve();
                 },
@@ -212,20 +278,21 @@ const make = <Delta, Data>(
                 },
                 onChanges: (fn: (Array<{ value: ?T, id: string }>) => void) => {
                     col.listeners.push(fn);
-                    return () =>
-                        (col.listeners = col.listeners.filter(f => f !== fn));
+                    return () => {
+                        col.listeners = col.listeners.filter(f => f !== fn);
+                    };
                 },
                 onItemChange: (id: string, fn: (value: ?T) => void) => {
-                    if (!col.listeners[id]) {
-                        col.listeners[id] = [];
+                    if (!col.itemListeners[id]) {
+                        col.itemListeners[id] = [];
                     }
-                    col.listeners[id].push(fn);
+                    col.itemListeners[id].push(fn);
                     return () => {
-                        col.listeners[id] = col.listeners[id].filter(
+                        col.itemListeners[id] = col.itemListeners[id].filter(
                             f => f !== fn,
                         );
-                        if (!col.listeners[id].length) {
-                            delete col.listeners[id];
+                        if (!col.itemListeners[id].length) {
+                            delete col.itemListeners[id];
                         }
                     };
                 },
