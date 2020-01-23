@@ -100,7 +100,7 @@ export const syncMessages = function<Delta, Data>(
     return Object.keys(collections)
         .map(id => {
             const col = collections[id];
-            if (col.lastSeenDelta || col.deltas.length) {
+            if (col.lastSeenDelta === -1 || col.deltas.length) {
                 col.pendingDeltas = col.deltas;
                 col.deltas = [];
                 return {

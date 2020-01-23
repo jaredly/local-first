@@ -37,7 +37,7 @@ const poller = (time, fn) => {
         fn()
             .catch(() => {})
             .then(() => {
-                tid = setTimeout(poll, time);
+                // tid = setTimeout(poll, time);
             });
     };
     document.addEventListener(

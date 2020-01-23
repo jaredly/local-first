@@ -49,12 +49,33 @@ const useCollection = (client, name) => {
     return [col, data];
 };
 
+const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
 const App = () => {
     const [col, data] = useCollection(client, 'tasks');
     return (
         <div>
             Hello
             {JSON.stringify(data)}
+            {Object.keys(data)
+                .sort((a, b) => cmp(data[a].title, data[b].title))
+                .map(id => (
+                    <div key={id}>
+                        <input
+                            type="checkbox"
+                            onChange={evt => {
+                                col.setAttribute(
+                                    id,
+                                    data[id],
+                                    'completed',
+                                    evt.target.checked,
+                                );
+                            }}
+                            checked={data[id].completed}
+                        />
+                        {data[id].title}
+                    </div>
+                ))}
             <button
                 onClick={() => {
                     const id = genId();
