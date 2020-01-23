@@ -3,65 +3,75 @@ import React from 'react';
 import { render } from 'react-dom';
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-import makeClient from './client';
+import makeClient, {
+    getCollection,
+    onMessage,
+    syncMessages,
+    syncFailed,
+    syncSucceeded,
+    debounce,
+} from './client';
+import backOff from './back-off';
 
 const genId = () =>
     Math.random()
         .toString(36)
         .slice(2);
 
-let sessionId = genId();
-
-// let sessionId = localStorage.getItem('sessionId');
-// if (!sessionId) {
-//     sessionId = Math.random()
-//         .toString(36)
-//         .slice(2);
-//     localStorage.setItem('sessionId', sessionId);
-// }
-
-// let messageQueue = [];
-let connected = false;
-let socket = new WebSocket('ws://localhost:9900/sync?sessionId=' + sessionId);
-
-socket.addEventListener('open', function() {
-    console.log('connected');
-    // if (messageQueue) {
-    //     messageQueue.forEach(message => socket.send(JSON.stringify(message)));
-    // }
-    // messageQueue = null;
-    connected = true;
-});
-
-// Listen for messages
-socket.addEventListener('message', function({ data }: { data: any }) {
-    client.onMessage(JSON.parse(data));
-});
-
-const send = message => {
-    if (!connected) {
-        console.log('tried to send, but not connected', message);
-        return false;
+const sync = async client => {
+    const messages = syncMessages(client.collections);
+    console.log('messages', messages);
+    const res = await fetch(
+        `http://localhost:9900/sync?sessionId=${client.sessionId}`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(messages),
+        },
+    );
+    if (res.status !== 200) {
+        throw new Error(`Unexpected status ${res.status}`);
     }
-    console.log('sending', message);
-    message.forEach(message => {
-        socket.send(JSON.stringify(message));
-    });
-    return true;
+    syncSucceeded(client.collections);
+    const data = await res.json();
+    data.forEach(message => onMessage(client, message));
 };
-const client = makeClient(crdt, sessionId, send);
+
+const client = makeClient<Delta, Data>(
+    crdt,
+    genId(),
+    debounce(() =>
+        backOff(() =>
+            sync(client).then(
+                () => true,
+                err => {
+                    syncFailed(client.collections);
+                    return false;
+                },
+            ),
+        ),
+    ),
+    ['tasks'],
+);
+window.client = client;
 
 const useCollection = (client, name) => {
-    const col = React.useMemo(() => client.getCollection(name), []);
+    const col = React.useMemo(() => getCollection(client, name), []);
     const [data, setData] = React.useState({});
     React.useEffect(() => {
-        col.loadAll().then(data => setData(data));
-        col.onChanges(changes => {
-            const n = { ...data };
-            changes.forEach(({ value, id }) => {
-                n[id] = value;
+        col.loadAll().then(data => {
+            console.log('loaded all', data);
+            console.log(Object.keys(client.collections[name].data));
+            setData(a => ({ ...a, ...data }));
+            col.onChanges(changes => {
+                setData(data => {
+                    const n = { ...data };
+                    changes.forEach(({ value, id }) => {
+                        n[id] = value;
+                    });
+                    return n;
+                });
             });
-            setData(n);
         });
     }, []);
     return [col, data];
@@ -69,18 +79,6 @@ const useCollection = (client, name) => {
 
 const App = () => {
     const [col, data] = useCollection(client, 'tasks');
-    // const col = React.useMemo(() => client.getCollection('tasks'));
-    // const [data, setData] = React.useState({});
-    // React.useEffect(() => {
-    //     col.loadAll().then(data => setData(data));
-    //     col.onChanges(changes => {
-    //         const n = { ...data };
-    //         changes.forEach(({ value, id }) => {
-    //             n[id] = value;
-    //         });
-    //         setData(n);
-    //     });
-    // });
     return (
         <div>
             Hello
