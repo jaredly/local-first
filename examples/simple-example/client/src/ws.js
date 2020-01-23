@@ -11,12 +11,18 @@ import makeClient, {
 import backOff from './back-off';
 import type { CRDTImpl } from './client';
 
-const reconnectingSocket = (url, onOpen, onMessage: string => void) => {
+const reconnectingSocket = (
+    url,
+    onOpen,
+    onMessage: string => void,
+    listeners: Array<(boolean) => void>,
+) => {
     const state: { socket: ?WebSocket } = {
         socket: null,
     };
     const reconnect = () => {
         state.socket = null;
+        listeners.forEach(f => f(false));
         backOff(
             () =>
                 new Promise((res, rej) => {
@@ -26,6 +32,7 @@ const reconnectingSocket = (url, onOpen, onMessage: string => void) => {
                         state.socket = socket;
                         opened = true;
                         res(true);
+                        listeners.forEach(f => f(true));
                         onOpen();
                     });
                     socket.addEventListener('close', () => {
@@ -40,6 +47,8 @@ const reconnectingSocket = (url, onOpen, onMessage: string => void) => {
                         ({ data }: { data: any }) => onMessage(data),
                     );
                 }),
+            500,
+            1.0,
         );
     };
     reconnect();
@@ -50,14 +59,19 @@ export default function<Delta, Data>(
     url: string,
     sessionId: string,
     crdt: CRDTImpl<Delta, Data>,
-): ClientState<Delta, Data> {
+): {
+    client: ClientState<Delta, Data>,
+    onConnection: ((boolean) => void) => void,
+} {
+    const listeners = [];
     const state = reconnectingSocket(
-        `ws://localhost:9900/sync?sessionId=${sessionId}`,
+        `${url}?sessionId=${sessionId}`,
         () => sync(),
         msg => {
             const messages = JSON.parse(msg);
             messages.forEach(message => onMessage(client, message));
         },
+        listeners,
     );
 
     const sync = () => {
@@ -72,5 +86,10 @@ export default function<Delta, Data>(
 
     const client = makeClient(crdt, sessionId, debounce(sync));
     sync();
-    return client;
+    return {
+        client,
+        onConnection: fn => {
+            listeners.push(fn);
+        },
+    };
 }

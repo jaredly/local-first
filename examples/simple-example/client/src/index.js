@@ -11,9 +11,15 @@ const genId = () =>
     Math.random()
         .toString(36)
         .slice(2);
-const client: ClientState<Delta, Data> = (window.client = makeClient(
+const {
+    client,
+    onConnection,
+}: {
+    onConnection: *,
+    client: ClientState<Delta, Data>,
+} = (window.client = makeClient(
     // 'http://localhost:9900/sync',
-    'ws://localhost:9900/sync',
+    'ws://localhost:9104/sync',
     genId(),
     crdt,
 ));
@@ -22,6 +28,7 @@ type Tasks = {
     [key: string]: {
         completed: boolean,
         title: string,
+        createdDate: number,
         tags: { [key: string]: boolean },
     },
 };
@@ -56,41 +63,106 @@ const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
 const App = () => {
     const [col, data] = useCollection(client, 'tasks');
+    const [connected, setConnected] = React.useState(false);
+    React.useEffect(() => {
+        onConnection(connected => setConnected(connected));
+    }, []);
     return (
-        <div>
-            Hello
-            {JSON.stringify(data)}
-            {Object.keys(data)
-                .sort((a, b) => cmp(data[a].title, data[b].title))
-                .map(id => (
-                    <div key={id}>
-                        <input
-                            type="checkbox"
-                            onChange={evt => {
-                                col.setAttribute(
-                                    id,
-                                    data[id],
-                                    'completed',
-                                    evt.target.checked,
-                                );
-                            }}
-                            checked={data[id].completed}
-                        />
-                        {data[id].title}
-                    </div>
-                ))}
+        <div style={{ margin: '32px 64px' }}>
+            <div>Hello! We are {connected ? 'Online' : 'Offline'}</div>
             <button
                 onClick={() => {
                     const id = genId();
                     col.save(id, {
                         title: 'Item ' + (Object.keys(data).length + 1),
                         completed: false,
+                        createdDate: Date.now(),
                         tags: {},
                     });
                 }}
             >
                 Add a thing
             </button>
+            {/* {JSON.stringify(data)} */}
+            {Object.keys(data)
+                // .sort((a, b) => cmp(data[a].title, data[b].title))
+                .sort((a, b) => data[a].createdDate - data[b].createdDate)
+                .map(id => (
+                    <Item
+                        key={id}
+                        item={data[id]}
+                        onChange={(attr, value) => {
+                            col.setAttribute(id, data[id], attr, value);
+                        }}
+                    />
+                ))}
+        </div>
+    );
+};
+
+const Item = ({ item, onChange }) => {
+    const [text, setText] = React.useState(null);
+    return (
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                cursor: 'pointer',
+            }}
+        >
+            <input
+                type="checkbox"
+                style={{ cursor: 'pointer' }}
+                onChange={evt => {
+                    onChange('completed', !item.completed);
+                }}
+                checked={item.completed}
+            />
+            {text == null ? (
+                <div
+                    style={{
+                        flex: 1,
+                        padding: '4px 8px',
+                        cursor: 'text',
+                    }}
+                    onClick={evt => evt.stopPropagation()}
+                    onMouseDown={evt => {
+                        evt.preventDefault();
+                        setText(item.title);
+                    }}
+                >
+                    {item.title}
+                </div>
+            ) : (
+                <input
+                    type="text"
+                    value={text}
+                    style={{
+                        fontFamily: 'inherit',
+                        padding: '4px 8px',
+                        fontSize: 'inherit',
+                        margin: 0,
+                        border: 'none',
+                    }}
+                    autoFocus
+                    onClick={evt => {
+                        evt.target.selectionStart = 0;
+                        evt.target.selectionEnd = evt.target.value.length;
+                    }}
+                    onChange={evt => setText(evt.target.value)}
+                    onBlur={() => {
+                        setText(null);
+                        onChange('title', text);
+                    }}
+                    onKeyDown={evt => {
+                        if (evt.key === 'Enter') {
+                            setText(null);
+                            onChange('title', text);
+                        }
+                    }}
+                />
+            )}
         </div>
     );
 };

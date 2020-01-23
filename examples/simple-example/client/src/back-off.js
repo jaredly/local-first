@@ -3,8 +3,8 @@
 const backOff = (
     fn: () => Promise<boolean>,
     wait: number = 200,
-    initialWait: number = wait,
     rate: number = 1.5,
+    initialWait: number = wait,
 ) => {
     fn()
         .catch(err => false)
@@ -18,7 +18,7 @@ const backOff = (
                         listener,
                         false,
                     );
-                    backOff(fn, wait * rate, initialWait, rate);
+                    backOff(fn, wait * rate, rate, initialWait);
                 }, wait);
 
                 const listener = () => {
@@ -29,7 +29,7 @@ const backOff = (
                             false,
                         );
                         clearTimeout(tid);
-                        backOff(fn, initialWait, initialWait, rate);
+                        backOff(fn, initialWait, rate, initialWait);
                     }
                 };
 

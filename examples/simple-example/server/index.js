@@ -33,6 +33,7 @@ const clients = {};
 
 app.ws('/sync', function(ws, req) {
     if (!req.query.sessionId) {
+        console.log('no sessionid');
         throw new Error('No sessionId');
     }
     clients[req.query.sessionId] = {
@@ -49,7 +50,7 @@ app.ws('/sync', function(ws, req) {
         );
         const response = getMessages(server, req.query.sessionId);
 
-        console.log('ok');
+        console.log('ok', data);
         ws.send(JSON.stringify(response));
 
         Object.keys(clients).forEach(id => {
