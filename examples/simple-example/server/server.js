@@ -66,6 +66,11 @@ type ServerState<Delta, Data> = {
     collections: {
         [collectionId: string]: Collection<Delta, Data>,
     },
+    clients: {
+        [sessionId: string]: {
+            [collectionId: string]: number,
+        },
+    },
 };
 
 const applyDeltas = function<Delta, Data>(
@@ -81,12 +86,54 @@ const applyDeltas = function<Delta, Data>(
     });
 };
 
+export const getMessages = function<Delta, Data>(
+    state: ServerState<Delta, Data>,
+    sessionId: string,
+): Array<ServerMessage<Delta, Data>> {
+    if (!state.clients[sessionId]) {
+        return [];
+    }
+    return Object.keys(state.clients[sessionId])
+        .map((cid: string): ?ServerMessage<Delta, Data> => {
+            const col = state.collections[cid];
+            const lastSeen = state.clients[sessionId][cid];
+            if (lastSeen === -1) {
+                return {
+                    type: 'full',
+                    collection: cid,
+                    data: col.data,
+                    lastSeenDelta: col.deltas.length,
+                };
+            } else if (col.deltas.length > lastSeen) {
+                const news = col.deltas
+                    .slice(lastSeen)
+                    .filter(delta => delta.sessionId !== sessionId);
+                if (news.length) {
+                    return {
+                        type: 'sync',
+                        collection: cid,
+                        deltas: news.map(({ node, delta }) => ({
+                            node,
+                            delta,
+                        })),
+                        lastSeenDelta: col.deltas.length,
+                    };
+                }
+            }
+        })
+        .filter(Boolean);
+};
+
 export const onMessage = function<Delta, Data>(
     state: ServerState<Delta, Data>,
     sessionId: string,
     message: ClientMessage<Delta, Data>,
 ): ?ServerMessage<Delta, Data> {
     if (message.type === 'sync') {
+        if (!state.clients[sessionId]) {
+            state.clients[sessionId] = {};
+        }
+        state.clients[sessionId][message.collection] = message.lastSeenDelta;
         // collection: user/{id}/priv/colname
         // collection: user/{id}/pub/colname
         // TODO validate access to message.collection
@@ -104,26 +151,6 @@ export const onMessage = function<Delta, Data>(
             state.collections[message.collection].data,
             message.deltas,
         );
-        if (message.lastSeenDelta === -1) {
-            return {
-                type: 'full',
-                collection: message.collection,
-                data: state.collections[message.collection].data,
-                lastSeenDelta:
-                    state.collections[message.collection].deltas.length,
-            };
-        } else {
-            return {
-                type: 'sync',
-                collection: message.collection,
-                deltas: state.collections[message.collection].deltas
-                    .slice(message.lastSeenDelta)
-                    .filter(delta => delta.sessionId !== sessionId)
-                    .map(({ node, delta }) => ({ node, delta })),
-                lastSeenDelta:
-                    state.collections[message.collection].deltas.length,
-            };
-        }
     }
 };
 
@@ -134,7 +161,7 @@ const make = <Delta, Data>(
         [collectionId: string]: Collection<Delta, Data>,
     } = {};
 
-    return { collections, crdt };
+    return { collections, crdt, clients: {} };
 };
 
 export default make;

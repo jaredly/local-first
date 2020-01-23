@@ -5,7 +5,7 @@ import express from 'express';
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 import ws from 'express-ws';
-import make, { onMessage } from './server';
+import make, { onMessage, getMessages } from './server';
 import type { ClientMessage, ServerMessage } from './server';
 const app = express();
 ws(app);
@@ -19,9 +19,10 @@ app.post('/sync', (req, res) => {
     if (!req.query.sessionId) {
         throw new Error('No sessionId');
     }
-    const response = req.body
-        .map(message => onMessage(server, req.query.sessionId, message))
-        .filter(Boolean);
+    req.body.forEach(message =>
+        onMessage(server, req.query.sessionId, message),
+    );
+    const response = getMessages(server, req.query.sessionId);
 
     console.log(response);
     console.log(server.collections.tasks);
