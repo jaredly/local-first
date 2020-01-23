@@ -3,100 +3,29 @@ import React from 'react';
 import { render } from 'react-dom';
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-import makeClient, {
-    getCollection,
-    onMessage,
-    syncMessages,
-    syncFailed,
-    syncSucceeded,
-    debounce,
-} from './client';
-import backOff from './back-off';
+import makeClient from './poll';
+import { getCollection, type ClientState } from './client';
 
 const genId = () =>
     Math.random()
         .toString(36)
         .slice(2);
+const client: ClientState<Delta, Data> = (window.client = makeClient(
+    genId(),
+    crdt,
+));
 
-const sync = async client => {
-    const messages = syncMessages(client.collections);
-    console.log('messages', messages);
-    const res = await fetch(
-        `http://localhost:9900/sync?sessionId=${client.sessionId}`,
-        {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(messages),
-        },
-    );
-    if (res.status !== 200) {
-        throw new Error(`Unexpected status ${res.status}`);
-    }
-    syncSucceeded(client.collections);
-    const data = await res.json();
-    data.forEach(message => onMessage(client, message));
+type Tasks = {
+    [key: string]: {
+        completed: boolean,
+        title: string,
+        tags: { [key: string]: boolean },
+    },
 };
-
-const poller = (time, fn) => {
-    let tid = null;
-    const poll = () => {
-        clearTimeout(tid);
-        fn()
-            .catch(() => {})
-            .then(() => {
-                tid = setTimeout(poll, time);
-            });
-    };
-    document.addEventListener(
-        'visibilitychange',
-        () => {
-            if (document.hidden) {
-                clearTimeout(tid);
-            } else {
-                poll();
-            }
-        },
-        false,
-    );
-    window.addEventListener(
-        'focus',
-        () => {
-            poll();
-        },
-        false,
-    );
-    return poll;
-};
-
-const poll = poller(
-    3 * 1000,
-    () =>
-        new Promise(res => {
-            backOff(() =>
-                sync(client).then(
-                    () => {
-                        res();
-                        return true;
-                    },
-                    err => {
-                        syncFailed(client.collections);
-                        return false;
-                    },
-                ),
-            );
-        }),
-);
-
-const client = makeClient<Delta, Data>(crdt, genId(), debounce(poll), [
-    'tasks',
-]);
-window.client = client;
-
-poll();
 
 const useCollection = (client, name) => {
     const col = React.useMemo(() => getCollection(client, name), []);
-    const [data, setData] = React.useState({});
+    const [data, setData] = React.useState(({}: Tasks));
     React.useEffect(() => {
         col.loadAll().then(data => {
             console.log('loaded all', data);
@@ -106,7 +35,11 @@ const useCollection = (client, name) => {
                 setData(data => {
                     const n = { ...data };
                     changes.forEach(({ value, id }) => {
-                        n[id] = value;
+                        if (value) {
+                            n[id] = value;
+                        } else {
+                            delete n[id];
+                        }
                     });
                     return n;
                 });
