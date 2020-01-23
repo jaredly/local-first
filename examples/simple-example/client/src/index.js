@@ -37,23 +37,62 @@ const sync = async client => {
     data.forEach(message => onMessage(client, message));
 };
 
-const client = makeClient<Delta, Data>(
-    crdt,
-    genId(),
-    debounce(() =>
-        backOff(() =>
-            sync(client).then(
-                () => true,
-                err => {
-                    syncFailed(client.collections);
-                    return false;
-                },
-            ),
-        ),
-    ),
-    ['tasks'],
+const poller = (time, fn) => {
+    let tid = null;
+    const poll = () => {
+        clearTimeout(tid);
+        fn()
+            .catch(() => {})
+            .then(() => {
+                tid = setTimeout(poll, time);
+            });
+    };
+    document.addEventListener(
+        'visibilitychange',
+        () => {
+            if (document.hidden) {
+                clearTimeout(tid);
+            } else {
+                poll();
+            }
+        },
+        false,
+    );
+    window.addEventListener(
+        'focus',
+        () => {
+            poll();
+        },
+        false,
+    );
+    return poll;
+};
+
+const poll = poller(
+    3 * 1000,
+    () =>
+        new Promise(res => {
+            backOff(() =>
+                sync(client).then(
+                    () => {
+                        res();
+                        return true;
+                    },
+                    err => {
+                        syncFailed(client.collections);
+                        return false;
+                    },
+                ),
+            );
+        }),
 );
+
+const client = makeClient<Delta, Data>(crdt, genId(), debounce(poll), [
+    'tasks',
+]);
 window.client = client;
+
+poll();
 
 const useCollection = (client, name) => {
     const col = React.useMemo(() => getCollection(client, name), []);
