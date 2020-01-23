@@ -11,17 +11,17 @@ import makeClient, {
 import backOff from './back-off';
 import type { CRDTImpl } from './client';
 
-const sync = async function<Delta, Data>(client: ClientState<Delta, Data>) {
+const sync = async function<Delta, Data>(
+    url: string,
+    client: ClientState<Delta, Data>,
+) {
     const messages = syncMessages(client.collections);
     console.log('messages', messages);
-    const res = await fetch(
-        `http://localhost:9900/sync?sessionId=${client.sessionId}`,
-        {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(messages),
-        },
-    );
+    const res = await fetch(`${url}?sessionId=${client.sessionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(messages),
+    });
     if (res.status !== 200) {
         throw new Error(`Unexpected status ${res.status}`);
     }
@@ -62,6 +62,7 @@ const poller = (time, fn) => {
 };
 
 export default function<Delta, Data>(
+    url: string,
     sessionId: string,
     crdt: CRDTImpl<Delta, Data>,
 ): ClientState<Delta, Data> {
@@ -70,7 +71,7 @@ export default function<Delta, Data>(
         () =>
             new Promise(res => {
                 backOff(() =>
-                    sync(client).then(
+                    sync(url, client).then(
                         () => {
                             res();
                             return true;

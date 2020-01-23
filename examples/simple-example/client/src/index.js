@@ -3,7 +3,8 @@ import React from 'react';
 import { render } from 'react-dom';
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-import makeClient from './poll';
+// import makeClient from './poll';
+import makeClient from './ws';
 import { getCollection, type ClientState } from './client';
 
 const genId = () =>
@@ -11,6 +12,8 @@ const genId = () =>
         .toString(36)
         .slice(2);
 const client: ClientState<Delta, Data> = (window.client = makeClient(
+    // 'http://localhost:9900/sync',
+    'ws://localhost:9900/sync',
     genId(),
     crdt,
 ));

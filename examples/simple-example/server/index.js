@@ -29,30 +29,36 @@ app.post('/sync', (req, res) => {
     res.json(response);
 });
 
+const clients = {};
+
 app.ws('/sync', function(ws, req) {
     if (!req.query.sessionId) {
         throw new Error('No sessionId');
     }
+    clients[req.query.sessionId] = {
+        send: messages => ws.send(JSON.stringify(messages)),
+    };
+    // server.clients[req.query.sessionId] = {
+    //     collections: {},
+    //     send: messages => ws.send(JSON.stringify(messages)),
+    // };
     ws.on('message', data => {
-        const message = JSON.parse(data);
-        const response = req.body
-            .map(message => onMessage(server, req.query.sessionId, message))
-            .filter(Boolean);
+        const messages = JSON.parse(data);
+        messages.forEach(message =>
+            onMessage(server, req.query.sessionId, message),
+        );
+        const response = getMessages(server, req.query.sessionId);
 
         console.log('ok');
         ws.send(JSON.stringify(response));
+
+        Object.keys(clients).forEach(id => {
+            if (id !== req.query.sessionId) {
+                const response = getMessages(server, id);
+                clients[id].send(messages);
+            }
+        });
     });
-    // server.onConnect({
-    //     on: (fn: (ClientMessage<Delta, Data>) => void) =>
-    //         ws.on('message', data => {
-    //             fn(JSON.parse(data));
-    //         }),
-    //     sessionId: req.query.sessionId,
-    //     send: (msg: ServerMessage<Delta, Data>) => ws.send(JSON.stringify(msg)),
-    // });
-    // ws.on('message', function(msg) {
-    //     ws.send(msg);
-    // });
 });
 
 app.listen(9900);
