@@ -1,0 +1,57 @@
+Arguments: 
+  /Users/jared/.fnm/node-versions/v8.16.2/installation/bin/node /Users/jared/.fnm/current/bin/yarn
+
+PATH: 
+  /Users/jared/.fnm/current/bin:/Users/jared/.fnm:/Users/jared/.local/bin:/Users/jared/khan/mobile/.github/actions/.bin:/Users/jared/Library/Android/sdk/emulator/:/Users/jared/Library/Android/sdk/tools/bin/:/Users/jared/Library/Android/sdk/platform-tools/:/Users/jared/khan/devtools/google-cloud-sdk/bin:/Users/jared/.nix-profile/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/jared/.fnm/current/bin:/Users/jared/.fnm:/Users/jared/.local/bin:/Users/jared/khan/mobile/.github/actions/.bin:/Users/jared/Library/Android/sdk/emulator/:/Users/jared/Library/Android/sdk/tools/bin/:/Users/jared/Library/Android/sdk/platform-tools/:/Users/jared/khan/devtools/google-cloud-sdk/bin:/Users/jared/.nix-profile/bin
+
+Yarn version: 
+  1.21.0
+
+Node version: 
+  8.16.2
+
+Platform: 
+  darwin x64
+
+Trace: 
+  Error: https://registry.yarnpkg.com/@local-first%2fhybrid-logical-clock: Not found
+      at Request.params.callback [as _callback] (/Users/jared/.fnm/node-versions/v8.16.2/installation/lib/node_modules/yarn/lib/cli.js:66938:18)
+      at Request.self.callback (/Users/jared/.fnm/node-versions/v8.16.2/installation/lib/node_modules/yarn/lib/cli.js:140622:22)
+      at emitTwo (events.js:126:13)
+      at Request.emit (events.js:214:7)
+      at Request.<anonymous> (/Users/jared/.fnm/node-versions/v8.16.2/installation/lib/node_modules/yarn/lib/cli.js:141594:10)
+      at emitOne (events.js:116:13)
+      at Request.emit (events.js:211:7)
+      at IncomingMessage.<anonymous> (/Users/jared/.fnm/node-versions/v8.16.2/installation/lib/node_modules/yarn/lib/cli.js:141516:12)
+      at Object.onceWrapper (events.js:313:30)
+      at emitNone (events.js:111:20)
+
+npm manifest: 
+  {
+      "name": "simple-example-client",
+      "version": "1.0.0",
+      "dependencies": {
+          "@local-first/hybrid-logical-clock": "^1.0",
+          "@local-first/nested-object-crdt": "^1.0",
+          "parcel": "^1.12.4",
+          "react": "^16.12.0",
+          "react-dom": "^16.12.0",
+          "body-parser": "^1.19.0",
+          "cors": "^2.8.5",
+          "express": "^4.17.1",
+          "express-ws": "^4.0.0"
+      },
+      "browserslist": [
+          "last 1 Chrome versions"
+      ],
+      "devDependencies": {
+          "@babel/register": "^7.8.3",
+          "flow-bin": "^0.116.1"
+      }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

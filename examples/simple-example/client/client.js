@@ -2,7 +2,7 @@
 
 import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
-import type { ClientMessage, ServerMessage } from '../../server/server.js';
+import type { ClientMessage, ServerMessage } from '../server/server.js';
 import {
     type Schema,
     validate,
