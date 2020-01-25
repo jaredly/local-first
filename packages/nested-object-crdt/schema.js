@@ -8,6 +8,7 @@ export type Type =
     | 'int'
     | 'float'
     | 'object'
+    | 'boolean'
     | 'array'
     | 'any'
     | [Schema]
@@ -27,7 +28,7 @@ class ValidationError extends Error {
     value: any;
     path: Array<string>;
     constructor(message, value, path) {
-        super(message);
+        super(`${message} ${JSON.stringify(value)} ${path.join(' - ')}`);
         this.value = value;
         this.path = path;
     }
@@ -52,7 +53,7 @@ const expectArray = (v, path) => {
     }
 };
 
-export const validateInner = (
+export const validateSet = (
     t: Type,
     setPath: Array<string>,
     value: any,
@@ -70,18 +71,13 @@ export const validateInner = (
         );
     }
     if (Array.isArray(t)) {
-        return validateInner(
-            t[0],
-            setPath.slice(1),
-            value,
-            path.concat([attr]),
-        );
+        return validateSet(t[0], setPath.slice(1), value, path.concat([attr]));
     }
     switch (t.type) {
         case 'optional':
-            return validateInner(t.value, setPath, value, path);
+            return validateSet(t.value, setPath, value, path);
         case 'map':
-            return validateInner(
+            return validateSet(
                 t.value,
                 setPath.slice(1),
                 value,
@@ -95,7 +91,7 @@ export const validateInner = (
                     path.concat([attr]),
                 );
             }
-            return validateInner(
+            return validateSet(
                 t.attributes[attr],
                 setPath.slice(1),
                 value,
@@ -112,6 +108,8 @@ export const validate = (value: any, t: Type, path: Array<string> = []) => {
             case 'id':
             case 'string':
                 return expectType(value, 'string', path);
+            case 'boolean':
+                return expectType(value, 'boolean', path);
             case 'int':
                 return expectType(value, 'number', path);
             case 'float':
@@ -154,7 +152,7 @@ export const validate = (value: any, t: Type, path: Array<string> = []) => {
                     validate(value[k], t.attributes[k], path.concat([k])),
                 );
             default:
-                throw new Error('Invalid schema');
+                throw new Error(`Invalid schema: ${JSON.stringify(t)}`);
         }
     }
 };

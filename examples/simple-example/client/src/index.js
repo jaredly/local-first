@@ -33,28 +33,41 @@ type Tasks = {
     },
 };
 
+const ItemSchema = {
+    type: 'object',
+    attributes: {
+        completed: 'boolean',
+        title: 'string',
+        createdDate: 'int',
+        tags: { type: 'map', value: 'boolean' },
+    },
+};
+
 const useCollection = (client, name) => {
-    const col = React.useMemo(() => getCollection(client, name), []);
-    const [data, setData] = React.useState(({}: Tasks));
+    const col = React.useMemo(
+        () => getCollection(client, name, ItemSchema),
+        [],
+    );
+    const [data, setData] = React.useState((col.loadAll(): Tasks));
     React.useEffect(() => {
-        col.loadAll().then(data => {
-            console.log('loaded all', data);
-            console.log(Object.keys(client.collections[name].data));
-            setData(a => ({ ...a, ...data }));
-            col.onChanges(changes => {
-                setData(data => {
-                    const n = { ...data };
-                    changes.forEach(({ value, id }) => {
-                        if (value) {
-                            n[id] = value;
-                        } else {
-                            delete n[id];
-                        }
-                    });
-                    return n;
+        // col.loadAll().then(data => {
+        // console.log('loaded all', data);
+        // console.log(Object.keys(client.collections[name].data));
+        // setData(a => ({ ...a, ...data }));
+        col.onChanges(changes => {
+            setData(data => {
+                const n = { ...data };
+                changes.forEach(({ value, id }) => {
+                    if (value) {
+                        n[id] = value;
+                    } else {
+                        delete n[id];
+                    }
                 });
+                return n;
             });
         });
+        // });
     }, []);
     return [col, data];
 };

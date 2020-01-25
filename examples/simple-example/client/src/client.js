@@ -3,6 +3,11 @@
 import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import type { ClientMessage, ServerMessage } from '../../server/server.js';
+import {
+    type Schema,
+    validate,
+    validateSet,
+} from '@local-first/nested-object-crdt/schema.js';
 
 export type CRDTImpl<Delta, Data> = {
     createEmpty: () => Data,
@@ -44,16 +49,11 @@ const newCollection = <Delta, Data>(
 });
 
 export type Collection<T> = {
-    save: (id: string, value: T) => Promise<void>,
-    setAttribute: (
-        id: string,
-        full: T,
-        key: string,
-        value: any,
-    ) => Promise<void>,
-    load: (id: string) => Promise<?T>,
-    loadAll: () => Promise<{ [key: string]: T }>,
-    delete: (id: string) => Promise<void>,
+    save: (id: string, value: T) => void,
+    setAttribute: (id: string, full: T, key: string, value: any) => void,
+    load: (id: string) => ?T,
+    loadAll: () => { [key: string]: T },
+    delete: (id: string) => void,
     onChanges: ((Array<{ value: ?T, id: string }>) => void) => () => void,
     onItemChange: (id: string, (value: ?T) => void) => () => void,
 };
@@ -241,6 +241,7 @@ export const onMessage = function<Delta, Data>(
 export const getCollection = function<Delta, Data, T>(
     state: ClientState<Delta, Data>,
     key: string,
+    schema: Schema,
 ): Collection<T> {
     if (!state.collections[key]) {
         state.collections[key] = newCollection(state.sessionId);
@@ -253,14 +254,15 @@ export const getCollection = function<Delta, Data, T>(
     };
     return {
         save: (id: string, value: T) => {
+            validate(value, schema);
             const map = state.crdt.createDeepMap(value, ts());
             const delta = state.crdt.deltas.set([], map);
             col.deltas.push({ node: id, delta });
             state.setDirty();
             applyDeltas(state.crdt, col, [{ node: id, delta }]);
-            return Promise.resolve();
         },
         setAttribute: (id: string, full: T, key: string, value: any) => {
+            validateSet(schema, [key], value);
             const delta = state.crdt.deltas.set(
                 [key],
                 state.crdt.createValue(value, ts()),
@@ -268,10 +270,9 @@ export const getCollection = function<Delta, Data, T>(
             col.deltas.push({ node: id, delta });
             state.setDirty();
             applyDeltas(state.crdt, col, [{ node: id, delta }]);
-            return Promise.resolve();
         },
         load: (id: string) => {
-            return Promise.resolve(state.crdt.value(col.data[id]));
+            return state.crdt.value(col.data[id]);
         },
         loadAll: () => {
             const res = {};
@@ -281,12 +282,12 @@ export const getCollection = function<Delta, Data, T>(
                     res[id] = v;
                 }
             });
-            return Promise.resolve(res);
+            return res;
         },
         delete: (id: string) => {
             const delta = state.crdt.deltas.remove(ts());
             applyDeltas(state.crdt, col, [{ node: id, delta }]);
-            return Promise.resolve();
+            return;
         },
         onChanges: (fn: (Array<{ value: ?T, id: string }>) => void) => {
             col.listeners.push(fn);
