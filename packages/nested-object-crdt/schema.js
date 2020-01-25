@@ -1,6 +1,8 @@
 // @flow
 
 import type { Delta } from './index';
+import { type MapCRDT, create } from './index';
+import * as array from './sorted-array';
 
 export type Type =
     | 'id'
@@ -21,6 +23,51 @@ export type Schema = {
     type: 'object',
     attributes: {
         [key: string]: Type,
+    },
+};
+
+export const deltas = {
+    arrayInsert: (
+        items: Array<MapCRDT>,
+        path: Array<string>,
+        idx: number,
+        value: MapCRDT,
+    ): Delta => {
+        idx = idx < 0 ? idx + items.length : idx;
+        const before = items[idx].map.$sort.value;
+        const after = items[idx + 1].map.$sort.value;
+        const newSort = array.between(before, after);
+        if (
+            value.map.id.type !== 'value' ||
+            typeof value.map.id.value !== 'string'
+        ) {
+            throw new Error('Need an id for an array item');
+        }
+        return {
+            type: 'set',
+            path: path.concat([value.map.id.value]),
+            value: {
+                ...value,
+                map: { ...value.map, $sort: create(newSort, value.hlcStamp) },
+            },
+        };
+    },
+    arrayReorder: (
+        items: Array<MapCRDT>,
+        path: Array<string>,
+        id: string,
+        idx: number,
+        ts: string,
+    ): Delta => {
+        idx = idx < 0 ? idx + items.length : idx;
+        const before = items[idx].map.$sort.value;
+        const after = items[idx + 1].map.$sort.value;
+        const newSort = array.between(before, after);
+        return {
+            type: 'set',
+            value: create(newSort, ts),
+            path: path.concat([id, '$sort']),
+        };
     },
 };
 
@@ -98,7 +145,7 @@ export const validateSet = (
                 path.concat([attr]),
             );
         default:
-            throw new Error(`Invalid type schema`);
+            throw new Error(`Invalid type schema ${JSON.stringify(t)}`);
     }
 };
 
@@ -121,7 +168,7 @@ export const validate = (value: any, t: Type, path: Array<string> = []) => {
             case 'any':
                 return true;
             default:
-                throw new Error('Invalid schema');
+                throw new Error('Invalid schema: ' + t);
         }
     } else if (Array.isArray(t) && t.length === 1) {
         expectArray(value, path);
