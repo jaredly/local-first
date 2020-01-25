@@ -6,6 +6,7 @@ import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 // import makeClient from './poll';
 import makeClient from './ws';
 import { getCollection, type ClientState } from './client';
+import { ItemSchema } from '../shared/schema.js';
 
 const genId = () =>
     Math.random()
@@ -30,16 +31,6 @@ type Tasks = {
         title: string,
         createdDate: number,
         tags: { [key: string]: boolean },
-    },
-};
-
-const ItemSchema = {
-    type: 'object',
-    attributes: {
-        completed: 'boolean',
-        title: 'string',
-        createdDate: 'int',
-        tags: { type: 'map', value: 'boolean' },
     },
 };
 

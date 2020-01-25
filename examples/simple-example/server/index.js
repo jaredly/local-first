@@ -4,16 +4,20 @@
 import express from 'express';
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
+import type { Schema } from '@local-first/nested-object-crdt/lib/schema.js';
 import ws from 'express-ws';
 import make, { onMessage, getMessages } from './server';
 import type { ClientMessage, ServerMessage } from './server';
+import { ItemSchema } from '../shared/schema.js';
 const app = express();
 ws(app);
 
 app.use(require('cors')());
 app.use(require('body-parser').json());
 
-const server = make<Delta, Data>(crdt);
+const server = make<Delta, Data>(crdt, (collectionId: string): Schema => {
+    return ItemSchema;
+});
 
 app.post('/sync', (req, res) => {
     if (!req.query.sessionId) {
@@ -24,8 +28,8 @@ app.post('/sync', (req, res) => {
     );
     const response = getMessages(server, req.query.sessionId);
 
-    console.log(response);
-    console.log(server.collections.tasks);
+    // console.log(response);
+    // console.log(server.collections.tasks);
     res.json(response);
 });
 
@@ -50,7 +54,7 @@ app.ws('/sync', function(ws, req) {
         );
         const response = getMessages(server, req.query.sessionId);
 
-        console.log('ok', data);
+        // console.log('ok', data);
         ws.send(JSON.stringify(response));
 
         Object.keys(clients).forEach(id => {

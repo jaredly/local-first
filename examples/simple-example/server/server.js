@@ -1,5 +1,10 @@
 // @flow
 import * as hlc from '@local-first/hybrid-logical-clock';
+import {
+    type Schema,
+    validate,
+    validateSet,
+} from '@local-first/nested-object-crdt/lib/schema.js';
 
 export type ClientMessage<Delta, Data> = {
     type: 'sync',
@@ -63,6 +68,7 @@ client -> server "hello world" here's the collections and their last seen thing
 
 type ServerState<Delta, Data> = {
     crdt: CRDTImpl<Delta, Data>,
+    getSchema: string => Schema,
     collections: {
         [collectionId: string]: Collection<Delta, Data>,
     },
@@ -77,6 +83,7 @@ type ServerState<Delta, Data> = {
 };
 
 const applyDeltas = function<Delta, Data>(
+    schema: Schema,
     crdt: CRDTImpl<Delta, Data>,
     nodes: { [key: string]: Data },
     deltas: Array<{ node: string, delta: Delta }>,
@@ -136,6 +143,7 @@ export const onMessage = function<Delta, Data>(
         if (!state.clients[sessionId]) {
             state.clients[sessionId] = { collections: {} };
         }
+        const schema = state.getSchema(message.collection);
         state.clients[sessionId].collections[message.collection] =
             message.lastSeenDelta;
         // collection: user/{id}/priv/colname
@@ -151,6 +159,7 @@ export const onMessage = function<Delta, Data>(
             });
         });
         applyDeltas(
+            schema,
             state.crdt,
             state.collections[message.collection].data,
             message.deltas,
@@ -160,12 +169,13 @@ export const onMessage = function<Delta, Data>(
 
 const make = <Delta, Data>(
     crdt: CRDTImpl<Delta, Data>,
+    getSchema: string => Schema,
 ): ServerState<Delta, Data> => {
     const collections: {
         [collectionId: string]: Collection<Delta, Data>,
     } = {};
 
-    return { collections, crdt, clients: {} };
+    return { collections, crdt, getSchema, clients: {} };
 };
 
 export default make;
