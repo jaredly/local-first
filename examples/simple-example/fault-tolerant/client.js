@@ -134,11 +134,12 @@ export const syncMessages = function<Delta, Data>(
         >> => {
             const col = collections[id];
             const deltas = await persistence.deltas(id);
-            if (deltas.length) {
+            const serverCursor = await persistence.getServerCursor(id);
+            if (deltas.length || !serverCursor) {
                 return {
                     type: 'sync',
                     collection: id,
-                    serverCursor: await persistence.getServerCursor(id),
+                    serverCursor,
                     deltas: deltas.map(({ node, delta }) => ({ node, delta })),
                 };
             }

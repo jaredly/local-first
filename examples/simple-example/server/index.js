@@ -47,6 +47,7 @@ const fs = require('fs');
 
 function queryAll(db, sql, params = []) {
     let stmt = db.prepare(sql);
+    console.log('query all', sql, params);
     return stmt.all(...params);
 }
 
@@ -117,15 +118,17 @@ const setupPersistence = (baseDir: string) => {
                 const rows = lastSeen
                     ? queryAll(
                           db,
-                          `SELECT * from ${escapedTableName(collection)}`,
-                      )
-                    : queryAll(
-                          db,
                           `SELECT * from ${escapedTableName(
                               collection,
                           )} where id > ?`,
                           [lastSeen],
+                      )
+                    : queryAll(
+                          db,
+                          `SELECT * from ${escapedTableName(collection)}`,
                       );
+                console.log('db', escapedTableName(collection));
+                console.log('getting deltas', rows, lastSeen, sessionId);
                 const deltas = rows.map(({ node, sessionId, delta }) => ({
                     node,
                     sessionId,
@@ -140,6 +143,7 @@ const setupPersistence = (baseDir: string) => {
                 );
                 return { deltas, cursor: cursor ? cursor.maxId : null };
             });
+            console.log('transacting');
             return transaction(lastSeen, sessionId);
         },
     };

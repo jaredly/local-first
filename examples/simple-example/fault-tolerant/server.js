@@ -119,6 +119,7 @@ export const getMessages = function<Delta, Data>(
                 lastSeen,
                 sessionId,
             );
+            console.log('getting all since', lastSeen, cursor, deltas);
             if (deltas.length) {
                 return {
                     type: 'sync',
