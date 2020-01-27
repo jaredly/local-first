@@ -11,8 +11,8 @@ import make, {
     getMessages,
     hasCollection,
     loadCollection,
-} from './server';
-import type { ClientMessage, ServerMessage } from './server';
+} from '../simple/server';
+import type { ClientMessage, ServerMessage } from '../simple/server';
 import { ItemSchema } from '../shared/schema.js';
 const app = express();
 ws(app);
@@ -97,6 +97,7 @@ const setupPersistence = (baseDir: string) => {
                         })),
                     ),
             );
+            return Promise.resolve();
         },
     };
 };

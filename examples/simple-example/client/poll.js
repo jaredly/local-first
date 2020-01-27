@@ -7,9 +7,9 @@ import makeClient, {
     syncSucceeded,
     debounce,
     type ClientState,
-} from './client';
-import backOff from './back-off';
-import type { CRDTImpl } from './client';
+    type CRDTImpl,
+} from '../simple/client';
+import backOff from '../shared/back-off';
 
 const sync = async function<Delta, Data>(
     url: string,

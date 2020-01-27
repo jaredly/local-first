@@ -5,7 +5,7 @@ import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 // import makeClient from './poll';
 import makeClient from './ws';
-import { getCollection, type ClientState } from './client';
+import { getCollection, type ClientState } from '../simple/client';
 import { ItemSchema } from '../shared/schema.js';
 
 const genId = () =>

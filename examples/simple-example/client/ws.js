@@ -9,9 +9,9 @@ import makeClient, {
     dump,
     inflate,
     type ClientState,
-} from './client';
-import backOff from './back-off';
-import type { CRDTImpl } from './client';
+} from '../simple/client';
+import backOff from '../shared/back-off';
+import type { CRDTImpl } from '../simple/client';
 
 const reconnectingSocket = (
     url,
