@@ -2,12 +2,14 @@
 
 import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
-import type { ClientMessage, ServerMessage } from './server.js';
+import type { ClientMessage, ServerMessage, CursorType } from './server.js';
 import {
     type Schema,
     validate,
     validateSet,
 } from '@local-first/nested-object-crdt/schema.js';
+
+export type { CursorType } from './server.js';
 
 export type CRDTImpl<Delta, Data> = {
     createEmpty: () => Data,
@@ -31,26 +33,37 @@ export type CRDTImpl<Delta, Data> = {
 
 // Yes, first pass, keep almost nothing in memory.
 
-type Persistence<Delta, Data> = {
-    deltasSince(
+export type Persistence<Delta, Data> = {
+    deltas(
         collection: string,
-        lastSeen: ?string,
-    ): Promise<Array<{ node: string, delta: Delta }>>,
+    ): Promise<Array<{ node: string, delta: Delta, stamp: string }>>,
     addDeltas(
         collection: string,
-        deltas: Array<{ node: string, delta: Delta }>,
+        deltas: Array<{ node: string, delta: Delta, stamp: string }>,
     ): Promise<void>,
+    // setServerCursor(
+    //     collection: string,
+    //     serverCursor: CursorType,
+    // ): Promise<void>,
+    getServerCursor(collection: string): Promise<?CursorType>,
+
     deleteDeltas(collection: string, upTo: string): Promise<void>,
-    get(collection: string, id: string): Promise<?any>,
-    getAll(collection: string): Promise<{ [key: string]: any }>,
+    get<T>(collection: string, id: string): Promise<?T>,
+    changeMany<T>(
+        collection: string,
+        ids: Array<string>,
+        process: ({ [key: string]: T }) => void,
+        serverCursor: ?CursorType,
+        // hlc: HLC,
+    ): Promise<{ [key: string]: T }>,
+    // getMany<T>(collection: string, ids: Array<string>): Promise<Array<T>>,
+    getAll<T>(collection: string): Promise<{ [key: string]: T }>,
 };
 
+// TODO store the HLC somewhere
 type CollectionState<Delta, Data> = {
     hlc: HLC,
-    // data: { [key: string]: Data },
-    serverCursor: ?string,
-    // deltas: Array<{ node: string, delta: Delta }>,
-    // pendingDeltas: Array<{ node: string, delta: Delta }>,
+    // serverCursor: ?string,
     listeners: Array<(Array<{ value: ?any, id: string }>) => void>,
     itemListeners: { [key: string]: Array<(value: ?any) => void> },
 };
@@ -58,8 +71,8 @@ type CollectionState<Delta, Data> = {
 export type Collection<T> = {
     save: (id: string, value: T) => void,
     setAttribute: (id: string, full: T, key: string, value: any) => void,
-    load: (id: string) => ?T,
-    loadAll: () => { [key: string]: T },
+    load: (id: string) => Promise<?T>,
+    loadAll: () => Promise<{ [key: string]: T }>,
     delete: (id: string) => void,
     onChanges: ((Array<{ value: ?T, id: string }>) => void) => () => void,
     onItemChange: (id: string, (value: ?T) => void) => () => void,
@@ -77,6 +90,7 @@ type Collections<Delta, Data> = {
 };
 
 export type ClientState<Delta, Data> = {
+    persistence: Persistence<Delta, Data>,
     collections: Collections<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,
     sessionId: string,
@@ -87,7 +101,7 @@ const newCollection = <Delta, Data>(
     sessionId: string,
 ): CollectionState<Delta, Data> => ({
     hlc: hlc.init(sessionId, Date.now()),
-    serverCursor: null,
+    // serverCursor: null,
     listeners: [],
     itemListeners: {},
 });
@@ -100,7 +114,6 @@ export const debounce = function<T>(fn: () => void): () => void {
         if (!waiting) {
             waiting = true;
             setTimeout(() => {
-                // console.log('ok');
                 fn();
                 waiting = false;
             }, 0);
@@ -120,13 +133,13 @@ export const syncMessages = function<Delta, Data>(
             Data,
         >> => {
             const col = collections[id];
-            const deltas = await persistence.deltasSince(id, null);
+            const deltas = await persistence.deltas(id);
             if (deltas.length) {
                 return {
                     type: 'sync',
                     collection: id,
-                    serverCursor: col.serverCursor,
-                    deltas,
+                    serverCursor: await persistence.getServerCursor(id),
+                    deltas: deltas.map(({ node, delta }) => ({ node, delta })),
                 };
             }
         }),
@@ -146,36 +159,48 @@ export const syncMessages = function<Delta, Data>(
 // };
 
 export const syncSucceeded = function<Delta, Data>(
-    collections: Collections<Delta, Data>,
+    persistence: Persistence<Delta, Data>,
+    collection: string,
+    deltaKey: string,
 ) {
-    Object.keys(collections).forEach(id => {
-        const col = collections[id];
-        if (col.pendingDeltas.length) {
-            col.pendingDeltas = [];
-        }
-    });
+    return persistence.deleteDeltas(collection, deltaKey);
 };
 
-const applyDeltas = <Delta, Data>(
+// This isn't quite as optimistic as it could be -- I could call the listeners
+// before saving the data back into the database...
+const applyDeltas = async function<Delta, Data>(
+    persistence: Persistence<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,
+    colid: string,
     col: CollectionState<Delta, Data>,
     deltas: Array<{ node: string, delta: Delta, ... }>,
-) => {
+    serverCursor: ?CursorType,
+) {
     const changed = {};
     deltas.forEach(delta => {
-        if (!col.data[delta.node]) {
-            col.data[delta.node] = crdt.createEmpty();
-        }
         changed[delta.node] = true;
-        col.data[delta.node] = crdt.applyDelta(
-            col.data[delta.node],
-            delta.delta,
-        );
     });
+    const data = await persistence.changeMany(
+        colid,
+        Object.keys(changed),
+        data => {
+            deltas.forEach(delta => {
+                if (!data[delta.node]) {
+                    data[delta.node] = crdt.createEmpty();
+                }
+                data[delta.node] = crdt.applyDelta(
+                    data[delta.node],
+                    delta.delta,
+                );
+            });
+        },
+        serverCursor,
+    );
+
     if (col.listeners.length) {
         const changes = Object.keys(changed).map(id => ({
             id,
-            value: crdt.value(col.data[id]),
+            value: crdt.value(data[id]),
         }));
         col.listeners.forEach(listener => {
             listener(changes);
@@ -183,12 +208,12 @@ const applyDeltas = <Delta, Data>(
     }
     Object.keys(changed).forEach(id => {
         if (col.itemListeners[id]) {
-            col.itemListeners[id].forEach(fn => fn(crdt.value(col.data[id])));
+            col.itemListeners[id].forEach(fn => fn(crdt.value(data[id])));
         }
     });
 };
 
-export const onMessage = function<Delta, Data>(
+export const onMessage = async function<Delta, Data>(
     state: ClientState<Delta, Data>,
     msg: ServerMessage<Delta, Data>,
 ) {
@@ -197,8 +222,14 @@ export const onMessage = function<Delta, Data>(
             state.collections[msg.collection] = newCollection(state.sessionId);
         }
         const col = state.collections[msg.collection];
-        applyDeltas(state.crdt, col, msg.deltas);
-        col.lastSeenDelta = msg.lastSeenDelta;
+        await applyDeltas(
+            state.persistence,
+            state.crdt,
+            msg.collection,
+            col,
+            msg.deltas,
+            msg.serverCursor,
+        );
         let maxStamp = null;
         msg.deltas.forEach(delta => {
             const stamp = state.crdt.deltas.stamp(delta.delta);
@@ -209,51 +240,53 @@ export const onMessage = function<Delta, Data>(
         if (maxStamp) {
             col.hlc = hlc.recv(col.hlc, hlc.unpack(maxStamp), Date.now());
         }
-    } else if (msg.type === 'full') {
-        if (!state.collections[msg.collection]) {
-            state.collections[msg.collection] = newCollection(state.sessionId);
-            // TODO find the latest hlc in here and update out hlc to match
-            state.collections[msg.collection].data = msg.data;
-        } else {
-            const data = state.collections[msg.collection].data;
-            Object.keys(msg.data).forEach(id => {
-                if (data[id]) {
-                    data[id] = state.crdt.merge(data[id], msg.data[id]);
-                } else {
-                    data[id] = msg.data[id];
-                }
-            });
-        }
-        const col = state.collections[msg.collection];
+        // } else if (msg.type === 'full') {
+        //     if (!state.collections[msg.collection]) {
+        //         state.collections[msg.collection] = newCollection(state.sessionId);
+        //         // TODO find the latest hlc in here and update out hlc to match
+        //         state.collections[msg.collection].data = msg.data;
+        //     } else {
+        //         const data = state.collections[msg.collection].data;
+        //         Object.keys(msg.data).forEach(id => {
+        //             if (data[id]) {
+        //                 data[id] = state.crdt.merge(data[id], msg.data[id]);
+        //             } else {
+        //                 data[id] = msg.data[id];
+        //             }
+        //         });
+        //     }
+        //     const col = state.collections[msg.collection];
 
-        if (col.listeners.length) {
-            const changes = Object.keys(msg.data).map(id => ({
-                id,
-                value: state.crdt.value(col.data[id]),
-            }));
-            col.listeners.forEach(listener => {
-                listener(changes);
-            });
-        }
-        Object.keys(msg.data).forEach(id => {
-            if (col.itemListeners[id]) {
-                col.itemListeners[id].forEach(fn =>
-                    fn(state.crdt.value(col.data[id])),
-                );
-            }
-        });
+        //     if (col.listeners.length) {
+        //         const changes = Object.keys(msg.data).map(id => ({
+        //             id,
+        //             value: state.crdt.value(col.data[id]),
+        //         }));
+        //         col.listeners.forEach(listener => {
+        //             listener(changes);
+        //         });
+        //     }
+        //     Object.keys(msg.data).forEach(id => {
+        //         if (col.itemListeners[id]) {
+        //             col.itemListeners[id].forEach(fn =>
+        //                 fn(state.crdt.value(col.data[id])),
+        //             );
+        //         }
+        //     });
 
-        col.lastSeenDelta = msg.lastSeenDelta;
-        let maxStamp = null;
-        Object.keys(msg.data).forEach(id => {
-            const stamp = state.crdt.latestStamp(msg.data[id]);
-            if (!maxStamp || stamp > maxStamp) {
-                maxStamp = stamp;
-            }
-        });
-        if (maxStamp) {
-            col.hlc = hlc.recv(col.hlc, hlc.unpack(maxStamp), Date.now());
-        }
+        //     col.lastSeenDelta = msg.lastSeenDelta;
+        //     let maxStamp = null;
+        //     Object.keys(msg.data).forEach(id => {
+        //         const stamp = state.crdt.latestStamp(msg.data[id]);
+        //         if (!maxStamp || stamp > maxStamp) {
+        //             maxStamp = stamp;
+        //         }
+        //     });
+        //     if (maxStamp) {
+        //         col.hlc = hlc.recv(col.hlc, hlc.unpack(maxStamp), Date.now());
+        //     }
+    } else if (msg.type === 'ack') {
+        return state.persistence.deleteDeltas(msg.collection, msg.deltaStamp);
     }
 };
 
@@ -276,9 +309,19 @@ export const getCollection = function<Delta, Data, T>(
             validate(value, schema);
             const map = state.crdt.createDeepMap(value, ts());
             const delta = state.crdt.deltas.set([], map);
-            col.deltas.push({ node: id, delta });
+            state.persistence.addDeltas(key, [
+                { node: id, delta, stamp: state.crdt.deltas.stamp(delta) },
+            ]);
+            // col.deltas.push({ node: id, delta });
             state.setDirty();
-            applyDeltas(state.crdt, col, [{ node: id, delta }]);
+            applyDeltas(
+                state.persistence,
+                state.crdt,
+                key,
+                col,
+                [{ node: id, delta }],
+                null,
+            );
         },
         setAttribute: (id: string, full: T, key: string, value: any) => {
             validateSet(schema, [key], value);
@@ -286,17 +329,31 @@ export const getCollection = function<Delta, Data, T>(
                 [key],
                 state.crdt.createValue(value, ts()),
             );
-            col.deltas.push({ node: id, delta });
+            // col.deltas.push({ node: id, delta });
+            state.persistence.addDeltas(key, [
+                { node: id, delta, stamp: state.crdt.deltas.stamp(delta) },
+            ]);
             state.setDirty();
-            applyDeltas(state.crdt, col, [{ node: id, delta }]);
+            applyDeltas(
+                state.persistence,
+                state.crdt,
+                key,
+                col,
+                [{ node: id, delta }],
+                null,
+            );
         },
-        load: (id: string) => {
-            return state.crdt.value(col.data[id]);
+        load: async (id: string): Promise<?T> => {
+            const data: ?Data = await state.persistence.get(key, id);
+            return data ? state.crdt.value(data) : null;
         },
-        loadAll: () => {
+        loadAll: async () => {
+            // console.log(state);
+            const raw = await state.persistence.getAll(key);
+            // console.log('raw', raw);
             const res = {};
-            Object.keys(col.data).forEach(id => {
-                const v = state.crdt.value(col.data[id]);
+            Object.keys(raw).forEach(id => {
+                const v = state.crdt.value(raw[id]);
                 if (v != null) {
                     res[id] = v;
                 }
@@ -305,7 +362,9 @@ export const getCollection = function<Delta, Data, T>(
         },
         delete: (id: string) => {
             const delta = state.crdt.deltas.remove(ts());
-            applyDeltas(state.crdt, col, [{ node: id, delta }]);
+            applyDeltas(state.persistence, state.crdt, key, col, [
+                { node: id, delta },
+            ]);
             return;
         },
         onChanges: (fn: (Array<{ value: ?T, id: string }>) => void) => {
@@ -332,6 +391,7 @@ export const getCollection = function<Delta, Data, T>(
 };
 
 const make = <Delta, Data>(
+    persistence: Persistence<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,
     sessionId: string,
     setDirty: () => void,
@@ -350,6 +410,7 @@ const make = <Delta, Data>(
     }
 
     return {
+        persistence,
         collections,
         crdt,
         sessionId,

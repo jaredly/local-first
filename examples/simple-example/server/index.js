@@ -6,13 +6,12 @@ import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 import type { Schema } from '@local-first/nested-object-crdt/lib/schema.js';
 import ws from 'express-ws';
-import make, {
-    onMessage,
-    getMessages,
-    hasCollection,
-    loadCollection,
-} from '../simple/server';
-import type { ClientMessage, ServerMessage } from '../simple/server';
+import make, { onMessage, getMessages } from '../fault-tolerant/server';
+import type {
+    ClientMessage,
+    ServerMessage,
+    CursorType,
+} from '../fault-tolerant/server';
 import { ItemSchema } from '../shared/schema.js';
 const app = express();
 ws(app);
@@ -43,61 +42,105 @@ const toObj = (array, key, value) => {
     return obj;
 };
 
+const sqlite3 = require('better-sqlite3');
+const fs = require('fs');
+
+function queryAll(db, sql, params = []) {
+    let stmt = db.prepare(sql);
+    return stmt.all(...params);
+}
+
+function queryGet(db, sql, params = []) {
+    let stmt = db.prepare(sql);
+    return stmt.get(...params);
+}
+
+function queryRun(db, sql, params = []) {
+    let stmt = db.prepare(sql);
+    return stmt.run(...params);
+}
+
 const setupPersistence = (baseDir: string) => {
+    const db = sqlite3(baseDir + '/data.db');
     const dbs = {};
-    const getDb = col =>
-        dbs[col] ?? (dbs[col] = levelup(leveldown(baseDir + '/' + col)));
+    const tableName = col => col + ':messages';
+    const escapedTableName = col => JSON.stringify(tableName(col));
+    const setupDb = col => {
+        if (dbs[col]) {
+            return;
+        }
+        if (
+            queryAll(db, 'select name from sqlite_master where name = ?', [
+                col + ':messages',
+            ]).length === 0
+        ) {
+            queryRun(
+                db,
+                `CREATE TABLE ${escapedTableName(
+                    col,
+                )} (id INTEGER PRIMARY KEY AUTOINCREMENT, node TEXT, delta TEXT, sessionId TEXT)`,
+                [],
+            );
+        }
+        dbs[col] = true;
+        return;
+    };
     return {
-        load: async (collection: string) => {
-            const db = getDb(collection);
-            const deltas = (
-                await loadAll(
-                    db.createReadStream({
-                        gt: 'message:',
-                        lt: 'message:~',
-                    }),
-                    true,
-                )
-            ).map(message => JSON.parse(message.value));
-            const nodes = toObj(
-                await loadAll(
-                    db.createReadStream({
-                        gt: 'node:',
-                        lt: 'node:~',
-                    }),
-                    true,
-                ),
-                k => k.key.slice('node:'.length),
-                k => JSON.parse(k.value),
-            );
-            return { data: nodes, deltas };
-        },
-        update: (
+        addDeltas(
             collection: string,
-            startingIndex: number,
-            deltas: any,
-            items: any,
-        ) => {
-            const db = getDb(collection);
-            db.batch(
-                deltas
-                    .map((delta, i) => ({
-                        type: 'put',
-                        key: `message:${(startingIndex + i)
-                            .toString(36)
-                            // 11 base 36 is enough to contain MAX_SAFE_INTEGER
-                            .padStart(11, '0')}`,
-                        value: JSON.stringify(delta),
-                    }))
-                    .concat(
-                        items.map(({ key, data }) => ({
-                            type: 'put',
-                            key: `node:${key}`,
-                            value: JSON.stringify(data),
-                        })),
-                    ),
+            deltas: Array<{ node: string, delta: Delta, sessionId: string }>,
+        ) {
+            setupDb(collection);
+            const insert = db.prepare(
+                `INSERT INTO ${escapedTableName(
+                    collection,
+                )} (node, delta, sessionId) VALUES (@node, @delta, @sessionId)`,
             );
-            return Promise.resolve();
+
+            db.transaction(deltas => {
+                deltas.forEach(({ node, delta, sessionId }) => {
+                    insert.run({
+                        node,
+                        sessionId,
+                        delta: JSON.stringify(delta),
+                    });
+                });
+            })(deltas);
+        },
+        deltasSince(
+            collection: string,
+            lastSeen: ?CursorType,
+            sessionId: string,
+        ) {
+            setupDb(collection);
+            const transaction = db.transaction((lastSeen, sessionId) => {
+                const rows = lastSeen
+                    ? queryAll(
+                          db,
+                          `SELECT * from ${escapedTableName(collection)}`,
+                      )
+                    : queryAll(
+                          db,
+                          `SELECT * from ${escapedTableName(
+                              collection,
+                          )} where id > ?`,
+                          [lastSeen],
+                      );
+                const deltas = rows.map(({ node, sessionId, delta }) => ({
+                    node,
+                    sessionId,
+                    delta: JSON.parse(delta),
+                }));
+                const cursor = queryGet(
+                    db,
+                    `SELECT max(id) as maxId from ${escapedTableName(
+                        collection,
+                    )}`,
+                    [],
+                );
+                return { deltas, cursor: cursor ? cursor.maxId : null };
+            });
+            return transaction(lastSeen, sessionId);
         },
     };
 };
@@ -110,36 +153,20 @@ const server = make<Delta, Data>(
     },
 );
 
-const loadCollections = messages => {
-    const collectionsToLoad = {};
-    messages.forEach(message => {
-        if (!hasCollection(server, message.collection)) {
-            collectionsToLoad[message.collection] = true;
-        }
-    });
-    const promises = Object.keys(collectionsToLoad).map(id =>
-        loadCollection(server, id),
-    );
-
-    return promises;
-};
-
-app.post('/sync', async (req, res) => {
+app.post('/sync', (req, res) => {
     if (!req.query.sessionId) {
         throw new Error('No sessionId');
     }
-    const promises = loadCollections(req.body);
-    if (promises.length) {
-        await Promise.all(promises);
-    }
-    req.body.forEach(message =>
-        onMessage(server, req.query.sessionId, message),
-    );
-    const response = getMessages(server, req.query.sessionId);
+    let maxStamp = null;
+    console.log(`sync:messages`, req.body);
+    const acks = req.body
+        .map(message => onMessage(server, req.query.sessionId, message))
+        .filter(Boolean);
+    console.log('ack', acks);
+    const messages = getMessages(server, req.query.sessionId);
+    console.log('messags', messages);
 
-    // console.log(response);
-    // console.log(server.collections.tasks);
-    res.json(response);
+    res.json(acks.concat(messages));
 });
 
 const clients = {};
@@ -152,22 +179,13 @@ app.ws('/sync', function(ws, req) {
     clients[req.query.sessionId] = {
         send: messages => ws.send(JSON.stringify(messages)),
     };
-    // server.clients[req.query.sessionId] = {
-    //     collections: {},
-    //     send: messages => ws.send(JSON.stringify(messages)),
-    // };
-    ws.on('message', async data => {
+    ws.on('message', data => {
         const messages = JSON.parse(data);
-        const promises = loadCollections(messages);
-        if (promises.length) {
-            await Promise.all(promises);
-        }
         messages.forEach(message =>
             onMessage(server, req.query.sessionId, message),
         );
         const response = getMessages(server, req.query.sessionId);
 
-        // console.log('ok', data);
         ws.send(JSON.stringify(response));
 
         Object.keys(clients).forEach(id => {

@@ -3,21 +3,20 @@ import makeClient, {
     getCollection,
     onMessage,
     syncMessages,
+    syncFailed,
     syncSucceeded,
     debounce,
-    type Persistence,
     type ClientState,
     type CRDTImpl,
-} from '../fault-tolerant/client';
+} from '../simple/client';
 import backOff from '../shared/back-off';
 
 const sync = async function<Delta, Data>(
     url: string,
     client: ClientState<Delta, Data>,
 ) {
-    const messages = await syncMessages(client.persistence, client.collections);
-    console.log('sync:messages', messages);
-    // console.log('messages', messages);
+    const messages = syncMessages(client.collections);
+    console.log('messages', messages);
     const res = await fetch(`${url}?sessionId=${client.sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -26,9 +25,9 @@ const sync = async function<Delta, Data>(
     if (res.status !== 200) {
         throw new Error(`Unexpected status ${res.status}`);
     }
+    syncSucceeded(client.collections);
     const data = await res.json();
-    console.log('sync:data', data);
-    await Promise.all(data.map(message => onMessage(client, message)));
+    data.forEach(message => onMessage(client, message));
 };
 
 const poller = (time, fn) => {
@@ -63,15 +62,10 @@ const poller = (time, fn) => {
 };
 
 export default function<Delta, Data>(
-    persistence: Persistence<Delta, Data>,
     url: string,
     sessionId: string,
     crdt: CRDTImpl<Delta, Data>,
-): {
-    client: ClientState<Delta, Data>,
-    onConnection: ((boolean) => void) => void,
-} {
-    const listeners = [];
+): ClientState<Delta, Data> {
     const poll = poller(
         3 * 1000,
         () =>
@@ -79,33 +73,21 @@ export default function<Delta, Data>(
                 backOff(() =>
                     sync(url, client).then(
                         () => {
-                            listeners.forEach(f => f(true));
                             res();
                             return true;
                         },
                         err => {
-                            console.error('Failed to sync');
-                            console.error(err);
-                            listeners.forEach(f => f(false));
+                            syncFailed(client.collections);
                             return false;
                         },
                     ),
                 );
             }),
     );
-    const client = makeClient<Delta, Data>(
-        persistence,
-        crdt,
-        sessionId,
-        debounce(poll),
-        ['tasks'],
-    );
+    const client = makeClient<Delta, Data>(crdt, sessionId, debounce(poll), [
+        'tasks',
+    ]);
 
     poll();
-    return {
-        onConnection: fn => {
-            listeners.push(fn);
-        },
-        client,
-    };
+    return client;
 }

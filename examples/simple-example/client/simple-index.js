@@ -3,108 +3,10 @@ import React from 'react';
 import { render } from 'react-dom';
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-import makeClient from './poll';
-// import makeClient from './ws';
-import {
-    getCollection,
-    type ClientState,
-    type CursorType,
-} from '../fault-tolerant/client';
+// import makeClient from './poll';
+import makeClient from './ws';
+import { getCollection, type ClientState } from '../simple/client';
 import { ItemSchema } from '../shared/schema.js';
-
-const makePersistence = () => {
-    const { openDB } = require('idb');
-    const dbs = {};
-    const getDb = async collection => {
-        if (dbs[collection]) {
-            return dbs[collection];
-        }
-
-        const db = (dbs[collection] = await openDB('collection', 1, {
-            upgrade(db, oldVersion, newVersion, transation) {
-                db.createObjectStore('deltas', {
-                    keyPath: 'stamp',
-                });
-                db.createObjectStore('nodes', { keyPath: 'id' });
-                db.createObjectStore('meta');
-            },
-
-            // TODO handle blocked, blocking, etc.
-        }));
-        return db;
-    };
-
-    return {
-        async deltas(collection: string) {
-            const db = await getDb(collection);
-            const all = await db.getAll('deltas');
-            return all;
-        },
-        async addDeltas(
-            collection: string,
-            deltas: Array<{ node: string, delta: Delta, stamp: string }>,
-        ) {
-            const db = await getDb(collection);
-            const tx = db.transaction('deltas', 'readwrite');
-            deltas.forEach(obj => tx.store.put(obj));
-            await tx.done;
-        },
-        async getServerCursor(collection: string) {
-            const db = await getDb(collection);
-            return await db.get('meta', 'cursor');
-        },
-        async deleteDeltas(collection: string, upTo: string) {
-            console.log('delete up to', upTo);
-            const db = await getDb(collection);
-            let cursor = await db
-                .transaction('deltas', 'readwrite')
-                .store.openCursor(IDBKeyRange.upperBound(upTo));
-
-            while (cursor) {
-                console.log('deleting', cursor.key, cursor.delete);
-                console.log('del', cursor.delete());
-                cursor = await cursor.continue();
-            }
-        },
-        async get(collection: string, id: string) {
-            const db = await getDb(collection);
-            return await db.get('nodes', id);
-        },
-        async getAll(collection: string) {
-            const db = await getDb(collection);
-            const items = await db.getAll('nodes');
-            const res = {};
-            console.log('items', items);
-            items.forEach(item => (res[item.id] = item.value));
-            console.log('all', res);
-            return res;
-        },
-        async changeMany<T>(
-            collection: string,
-            ids: Array<string>,
-            process: ({ [key: string]: T }) => void,
-            serverCursor: ?CursorType,
-        ) {
-            const db = await getDb(collection);
-            const tx = db.transaction(['meta', 'nodes'], 'readwrite');
-            const nodes = tx.objectStore('nodes');
-            const gotten = await Promise.all(ids.map(id => nodes.get(id)));
-            console.log('gotten', gotten);
-            const map = {};
-            gotten.forEach(res => (res ? (map[res.id] = res.value) : null));
-            console.log('pre-process', JSON.stringify(map));
-            process(map);
-            console.log('processed', ids, map);
-            ids.forEach(id =>
-                map[id] ? nodes.put({ id, value: map[id] }) : null,
-            );
-            if (serverCursor) {
-                tx.objectStore('meta').put(serverCursor, 'cursor');
-            }
-            return map;
-        },
-    };
-};
 
 const genId = () =>
     Math.random()
@@ -117,9 +19,8 @@ const {
     onConnection: *,
     client: ClientState<Delta, Data>,
 } = (window.client = makeClient(
-    makePersistence(),
-    'http://localhost:9900/sync',
-    // 'ws://localhost:9104/sync',
+    // 'http://localhost:9900/sync',
+    'ws://localhost:9104/sync',
     genId(),
     crdt,
 ));
@@ -138,26 +39,26 @@ const useCollection = (client, name) => {
         () => getCollection(client, name, ItemSchema),
         [],
     );
-    const [data, setData] = React.useState(({}: Tasks));
+    const [data, setData] = React.useState((col.loadAll(): Tasks));
     React.useEffect(() => {
-        col.loadAll().then(data => {
-            console.log('loaded all', data);
-            setData(a => ({ ...a, ...data }));
-            col.onChanges(changes => {
-                console.log('changes', changes);
-                setData(data => {
-                    const n = { ...data };
-                    changes.forEach(({ value, id }) => {
-                        if (value) {
-                            n[id] = value;
-                        } else {
-                            delete n[id];
-                        }
-                    });
-                    return n;
+        // col.loadAll().then(data => {
+        // console.log('loaded all', data);
+        // console.log(Object.keys(client.collections[name].data));
+        // setData(a => ({ ...a, ...data }));
+        col.onChanges(changes => {
+            setData(data => {
+                const n = { ...data };
+                changes.forEach(({ value, id }) => {
+                    if (value) {
+                        n[id] = value;
+                    } else {
+                        delete n[id];
+                    }
                 });
+                return n;
             });
         });
+        // });
     }, []);
     return [col, data];
 };
@@ -186,7 +87,9 @@ const App = () => {
             >
                 Add a thing
             </button>
+            {/* {JSON.stringify(data)} */}
             {Object.keys(data)
+                // .sort((a, b) => cmp(data[a].title, data[b].title))
                 .sort((a, b) => data[a].createdDate - data[b].createdDate)
                 .map(id => (
                     <Item
