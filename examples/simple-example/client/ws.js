@@ -6,6 +6,8 @@ import makeClient, {
     syncFailed,
     syncSucceeded,
     debounce,
+    dump,
+    inflate,
     type ClientState,
 } from './client';
 import backOff from './back-off';
@@ -55,6 +57,8 @@ const reconnectingSocket = (
     return state;
 };
 
+const storageKey = `simple-example:data`;
+
 export default function<Delta, Data>(
     url: string,
     sessionId: string,
@@ -75,6 +79,10 @@ export default function<Delta, Data>(
     );
 
     const sync = () => {
+        localStorage.setItem(
+            storageKey,
+            JSON.stringify(dump(client.collections)),
+        );
         if (state.socket) {
             const socket = state.socket;
             const messages = syncMessages(client.collections);
@@ -85,6 +93,11 @@ export default function<Delta, Data>(
     };
 
     const client = makeClient(crdt, sessionId, debounce(sync));
+    const storedRaw = localStorage.getItem(storageKey);
+    if (storedRaw) {
+        const data = JSON.parse(storedRaw);
+        inflate(sessionId, client.collections, data);
+    }
     sync();
     return {
         client,

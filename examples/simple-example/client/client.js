@@ -26,6 +26,34 @@ export type CRDTImpl<Delta, Data> = {
     },
 };
 
+export const dump = <Delta, Data>(collections: Collections<Delta, Data>) => {
+    const data = {};
+    Object.keys(collections).forEach(k => {
+        const col = collections[k];
+        data[k] = {
+            data: col.data,
+            hlc: col.hlc,
+            lastSeenDelta: col.lastSeenDelta,
+            deltas: col.deltas,
+            pendingDeltas: col.pendingDeltas,
+        };
+    });
+    return data;
+};
+
+export const inflate = <Delta, Data>(
+    sessionId: string,
+    collections: Collections<Delta, Data>,
+    dump: any,
+) => {
+    Object.keys(dump).forEach(k => {
+        if (!collections[k]) {
+            collections[k] = newCollection(sessionId);
+        }
+        Object.assign(collections[k], dump[k]);
+    });
+};
+
 type CollectionState<Delta, Data> = {
     hlc: HLC,
     data: { [key: string]: Data },
@@ -84,7 +112,7 @@ export const debounce = function<T>(fn: () => void): () => void {
         if (!waiting) {
             waiting = true;
             setTimeout(() => {
-                console.log('ok');
+                // console.log('ok');
                 fn();
                 waiting = false;
             }, 0);
