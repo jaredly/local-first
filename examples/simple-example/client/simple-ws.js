@@ -3,13 +3,15 @@ import makeClient, {
     getCollection,
     onMessage,
     syncMessages,
+    syncFailed,
     syncSucceeded,
     debounce,
-    type Persistence,
+    dump,
+    inflate,
     type ClientState,
-    type CRDTImpl,
-} from '../fault-tolerant/client';
+} from '../simple/client';
 import backOff from '../shared/back-off';
+import type { CRDTImpl } from '../simple/client';
 
 const reconnectingSocket = (
     url,
@@ -58,7 +60,6 @@ const reconnectingSocket = (
 const storageKey = `simple-example:data`;
 
 export default function<Delta, Data>(
-    persistence: Persistence<Delta, Data>,
     url: string,
     sessionId: string,
     crdt: CRDTImpl<Delta, Data>,
@@ -78,24 +79,25 @@ export default function<Delta, Data>(
     );
 
     const sync = () => {
+        localStorage.setItem(
+            storageKey,
+            JSON.stringify(dump(client.collections)),
+        );
         if (state.socket) {
             const socket = state.socket;
-            syncMessages(client.persistence, client.collections).then(
-                messages => {
-                    if (messages.length) {
-                        socket.send(JSON.stringify(messages));
-                    }
-                },
-            );
+            const messages = syncMessages(client.collections);
+            if (messages.length) {
+                socket.send(JSON.stringify(messages));
+            }
         }
     };
 
-    const client = makeClient(persistence, crdt, sessionId, debounce(sync));
-    // const storedRaw = localStorage.getItem(storageKey);
-    // if (storedRaw) {
-    //     const data = JSON.parse(storedRaw);
-    //     inflate(sessionId, client.collections, data);
-    // }
+    const client = makeClient(crdt, sessionId, debounce(sync));
+    const storedRaw = localStorage.getItem(storageKey);
+    if (storedRaw) {
+        const data = JSON.parse(storedRaw);
+        inflate(sessionId, client.collections, data);
+    }
     sync();
     return {
         client,

@@ -185,12 +185,15 @@ app.ws('/sync', function(ws, req) {
     };
     ws.on('message', data => {
         const messages = JSON.parse(data);
-        messages.forEach(message =>
-            onMessage(server, req.query.sessionId, message),
-        );
+        const acks = req.body
+            .map(message => onMessage(server, req.query.sessionId, message))
+            .filter(Boolean);
+        // messages.forEach(message =>
+        //     onMessage(server, req.query.sessionId, message),
+        // );
         const response = getMessages(server, req.query.sessionId);
 
-        ws.send(JSON.stringify(response));
+        ws.send(JSON.stringify(acks.concat(response)));
 
         Object.keys(clients).forEach(id => {
             if (id !== req.query.sessionId) {
