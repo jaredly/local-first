@@ -8,6 +8,9 @@
         "cors": "^2.8.5",
         "express": "^4.17.1",
         "express-ws": "^4.0.0",
+        "idb": "^5.0.0",
+        "leveldown": "^5.4.1",
+        "levelup": "^4.3.2",
         "parcel": "^1.12.4",
         "react": "^16.12.0",
         "react-dom": "^16.12.0"

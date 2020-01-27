@@ -13,6 +13,25 @@ export type ClientMessage<Delta, Data> = {
     deltas: Array<{ node: string, delta: Delta }>,
 };
 
+/*
+
+Ok how to persist?
+lets do the http client first
+Current flow is:
+
+-> sync/
+   (with some new messages maybe)
+   save that to disk
+
+Easy mode:
+- everything's still in memory, so responses can be fast
+- but we just dump to disk, and then load at the start.
+
+Hard mode:
+- what if we want only a bit of data in memory? idk
+
+ */
+
 export type ServerMessage<Delta, Data> =
     | {
           type: 'sync',
@@ -33,6 +52,25 @@ export type ServerMessage<Delta, Data> =
 type CRDTImpl<Delta, Data> = {
     createEmpty: () => Data,
     applyDelta: (Data, Delta) => Data,
+};
+
+export type Persistence<Delta, Data> = {
+    load(collection: string): Promise<Collection<Delta, Data>>,
+    update(
+        collection: string,
+        startingIndex: number,
+        deltas: Array<{ node: string, delta: Delta, sessionId: string }>,
+        items: Array<{ key: string, data: Data }>,
+    ): Promise<void>,
+    // addDeltas(
+    //     collection: string,
+    //     startingIndex: number,
+    //     deltas: Array<{ node: string, delta: Delta, sessionId: string }>,
+    // ): void,
+    // setItems(
+    //     collection: string,
+    //     items: Array<{ key: string, data: Data }>,
+    // ): void,
 };
 
 type Collection<Delta, Data> = {
@@ -67,6 +105,7 @@ client -> server "hello world" here's the collections and their last seen thing
  */
 
 type ServerState<Delta, Data> = {
+    persistence: Persistence<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,
     getSchema: string => Schema,
     collections: {
@@ -88,12 +127,15 @@ const applyDeltas = function<Delta, Data>(
     nodes: { [key: string]: Data },
     deltas: Array<{ node: string, delta: Delta }>,
 ) {
+    const changed = {};
     deltas.forEach(delta => {
         if (!nodes[delta.node]) {
             nodes[delta.node] = crdt.createEmpty();
         }
+        changed[delta.node] = true;
         nodes[delta.node] = crdt.applyDelta(nodes[delta.node], delta.delta);
     });
+    return Object.keys(changed);
 };
 
 export const getMessages = function<Delta, Data>(
@@ -134,6 +176,23 @@ export const getMessages = function<Delta, Data>(
         .filter(Boolean);
 };
 
+export const hasCollection = function<Delta, Data>(
+    state: ServerState<Delta, Data>,
+    col: string,
+) {
+    return !!state.collections[col];
+};
+
+export const loadCollection = async function<Delta, Data>(
+    state: ServerState<Delta, Data>,
+    collection: string,
+): Promise<void> {
+    if (state.collections[collection]) {
+        return;
+    }
+    state.collections[collection] = await state.persistence.load(collection);
+};
+
 export const onMessage = function<Delta, Data>(
     state: ServerState<Delta, Data>,
     sessionId: string,
@@ -150,32 +209,51 @@ export const onMessage = function<Delta, Data>(
         // collection: user/{id}/pub/colname
         // TODO validate access to message.collection
         if (!state.collections[message.collection]) {
-            state.collections[message.collection] = { data: {}, deltas: [] };
+            throw new Error(
+                `Server configuration error - need to load ${message.collection} before handling messages about it`,
+            );
+            // state.collections[message.collection] = { data: {}, deltas: [] };
         }
-        message.deltas.forEach(item => {
-            state.collections[message.collection].deltas.push({
-                ...item,
-                sessionId: sessionId,
-            });
-        });
-        applyDeltas(
+        const startingIndex =
+            state.collections[message.collection].deltas.length;
+        const deltas = message.deltas.map(item => ({ ...item, sessionId }));
+        state.collections[message.collection].deltas.push(...deltas);
+
+        // message.deltas.forEach(item => {
+        //     state.collections[message.collection].deltas.push({
+        //         ...item,
+        //         sessionId: sessionId,
+        //     });
+        // });
+
+        const changed = applyDeltas(
             schema,
             state.crdt,
             state.collections[message.collection].data,
             message.deltas,
+        );
+        state.persistence.update(
+            message.collection,
+            startingIndex,
+            deltas,
+            changed.map(key => ({
+                key,
+                data: state.collections[message.collection].data[key],
+            })),
         );
     }
 };
 
 const make = <Delta, Data>(
     crdt: CRDTImpl<Delta, Data>,
+    persistence: Persistence<Delta, Data>,
     getSchema: string => Schema,
 ): ServerState<Delta, Data> => {
     const collections: {
         [collectionId: string]: Collection<Delta, Data>,
     } = {};
 
-    return { collections, crdt, getSchema, clients: {} };
+    return { collections, crdt, persistence, getSchema, clients: {} };
 };
 
 export default make;
