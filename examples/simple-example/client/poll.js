@@ -18,7 +18,7 @@ const sync = async function<Delta, Data>(
     const messages = await syncMessages(client.persistence, client.collections);
     console.log('sync:messages', messages);
     // console.log('messages', messages);
-    const res = await fetch(`${url}?sessionId=${client.sessionId}`, {
+    const res = await fetch(`${url}?sessionId=${client.hlc.node}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(messages),
@@ -65,7 +65,6 @@ const poller = (time, fn) => {
 export default function<Delta, Data>(
     persistence: Persistence<Delta, Data>,
     url: string,
-    sessionId: string,
     crdt: CRDTImpl<Delta, Data>,
 ): {
     client: ClientState<Delta, Data>,
@@ -93,13 +92,9 @@ export default function<Delta, Data>(
                 );
             }),
     );
-    const client = makeClient<Delta, Data>(
-        persistence,
-        crdt,
-        sessionId,
-        debounce(poll),
-        ['tasks'],
-    );
+    const client = makeClient<Delta, Data>(persistence, crdt, debounce(poll), [
+        'tasks',
+    ]);
 
     poll();
     return {

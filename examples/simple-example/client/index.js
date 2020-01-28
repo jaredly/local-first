@@ -1,6 +1,8 @@
 // @flow
 import React from 'react';
 import { render } from 'react-dom';
+import * as hlc from '@local-first/hybrid-logical-clock';
+import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 // import makeClient from './poll';
@@ -11,6 +13,11 @@ import {
     type CursorType,
 } from '../fault-tolerant/client';
 import { ItemSchema } from '../shared/schema.js';
+
+const genId = () =>
+    Math.random()
+        .toString(36)
+        .slice(2);
 
 const makePersistence = () => {
     const { openDB } = require('idb');
@@ -35,6 +42,19 @@ const makePersistence = () => {
     };
 
     return {
+        saveHLC(clock: HLC) {
+            localStorage.setItem('hlc', hlc.pack(clock));
+        },
+        getHLC() {
+            const packed = localStorage.getItem('hlc');
+            if (packed) {
+                return hlc.unpack(packed);
+            } else {
+                const clock = hlc.init(genId(), Date.now());
+                localStorage.setItem('hlc', hlc.pack(clock));
+                return clock;
+            }
+        },
         async deltas(collection: string) {
             const db = await getDb(collection);
             const all = await db.getAll('deltas');
@@ -105,11 +125,7 @@ const makePersistence = () => {
         },
     };
 };
-
-const genId = () =>
-    Math.random()
-        .toString(36)
-        .slice(2);
+const sessionId = genId();
 const {
     client,
     onConnection,
@@ -120,7 +136,6 @@ const {
     makePersistence(),
     // 'http://localhost:9900/sync',
     'ws://localhost:9104/sync',
-    genId(),
     crdt,
 ));
 

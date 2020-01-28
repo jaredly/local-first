@@ -58,7 +58,6 @@ const reconnectingSocket = (
 export default function<Delta, Data>(
     persistence: Persistence<Delta, Data>,
     url: string,
-    sessionId: string,
     crdt: CRDTImpl<Delta, Data>,
 ): {
     client: ClientState<Delta, Data>,
@@ -66,7 +65,7 @@ export default function<Delta, Data>(
 } {
     const listeners = [];
     const state = reconnectingSocket(
-        `${url}?sessionId=${sessionId}`,
+        `${url}?sessionId=${persistence.getHLC().node}`,
         () => sync(),
         msg => {
             const messages = JSON.parse(msg);
@@ -97,7 +96,7 @@ export default function<Delta, Data>(
         }
     };
 
-    const client = makeClient(persistence, crdt, sessionId, debounce(sync));
+    const client = makeClient(persistence, crdt, debounce(sync));
     sync();
     return {
         client,

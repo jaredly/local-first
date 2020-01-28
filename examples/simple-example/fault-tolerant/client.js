@@ -34,6 +34,8 @@ export type CRDTImpl<Delta, Data> = {
 // Yes, first pass, keep almost nothing in memory.
 
 export type Persistence<Delta, Data> = {
+    saveHLC(hlc: HLC): void,
+    getHLC(): HLC,
     deltas(
         collection: string,
     ): Promise<Array<{ node: string, delta: Delta, stamp: string }>>,
@@ -60,10 +62,7 @@ export type Persistence<Delta, Data> = {
     getAll<T>(collection: string): Promise<{ [key: string]: T }>,
 };
 
-// TODO store the HLC somewhere
 type CollectionState<Delta, Data> = {
-    hlc: HLC,
-    // serverCursor: ?string,
     listeners: Array<(Array<{ value: ?any, id: string }>) => void>,
     itemListeners: { [key: string]: Array<(value: ?any) => void> },
 };
@@ -95,18 +94,14 @@ type Collections<Delta, Data> = {
 };
 
 export type ClientState<Delta, Data> = {
+    hlc: HLC,
     persistence: Persistence<Delta, Data>,
     collections: Collections<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,
-    sessionId: string,
     setDirty: () => void,
 };
 
-const newCollection = <Delta, Data>(
-    sessionId: string,
-): CollectionState<Delta, Data> => ({
-    hlc: hlc.init(sessionId, Date.now()),
-    // serverCursor: null,
+const newCollection = <Delta, Data>(): CollectionState<Delta, Data> => ({
     listeners: [],
     itemListeners: {},
 });
@@ -225,7 +220,7 @@ export const onMessage = async function<Delta, Data>(
 ) {
     if (msg.type === 'sync') {
         if (!state.collections[msg.collection]) {
-            state.collections[msg.collection] = newCollection(state.sessionId);
+            state.collections[msg.collection] = newCollection();
         }
         const col = state.collections[msg.collection];
         await applyDeltas(
@@ -244,7 +239,8 @@ export const onMessage = async function<Delta, Data>(
             }
         });
         if (maxStamp) {
-            col.hlc = hlc.recv(col.hlc, hlc.unpack(maxStamp), Date.now());
+            state.hlc = hlc.recv(state.hlc, hlc.unpack(maxStamp), Date.now());
+            state.persistence.saveHLC(state.hlc);
         }
         // } else if (msg.type === 'full') {
         //     if (!state.collections[msg.collection]) {
@@ -302,13 +298,14 @@ export const getCollection = function<Delta, Data, T>(
     schema: Schema,
 ): Collection<T> {
     if (!state.collections[key]) {
-        state.collections[key] = newCollection(state.sessionId);
+        state.collections[key] = newCollection();
         state.setDirty();
     }
     const col = state.collections[key];
     const ts = () => {
-        col.hlc = hlc.inc(col.hlc, Date.now());
-        return hlc.pack(col.hlc);
+        state.hlc = hlc.inc(state.hlc, Date.now());
+        state.persistence.saveHLC(state.hlc);
+        return hlc.pack(state.hlc);
     };
     return {
         save: async (id: string, value: T) => {
@@ -398,7 +395,6 @@ export const getCollection = function<Delta, Data, T>(
 const make = <Delta, Data>(
     persistence: Persistence<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,
-    sessionId: string,
     setDirty: () => void,
     initialCollections: Array<string> = [],
 ): ClientState<Delta, Data> => {
@@ -406,19 +402,17 @@ const make = <Delta, Data>(
         [collectionId: string]: CollectionState<Delta, Data>,
     } = {};
 
-    initialCollections.forEach(
-        name => (collections[name] = newCollection(sessionId)),
-    );
+    initialCollections.forEach(name => (collections[name] = newCollection()));
 
     if (initialCollections.length) {
         setTimeout(() => setDirty(), 0);
     }
 
     return {
+        hlc: persistence.getHLC(),
         persistence,
         collections,
         crdt,
-        sessionId,
         setDirty,
     };
 };
