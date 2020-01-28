@@ -76,15 +76,24 @@ export default function<Delta, Data>(
     );
 
     const sync = () => {
+        console.log('getting a sync');
         if (state.socket) {
             const socket = state.socket;
             syncMessages(client.persistence, client.collections).then(
                 messages => {
                     if (messages.length) {
                         socket.send(JSON.stringify(messages));
+                    } else {
+                        console.log('nothing to sync here');
                     }
                 },
+                err => {
+                    console.error('Failed to sync messages folks');
+                    console.error(err);
+                },
             );
+        } else {
+            console.log('but no socket');
         }
     };
 

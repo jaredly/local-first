@@ -69,8 +69,13 @@ type CollectionState<Delta, Data> = {
 };
 
 export type Collection<T> = {
-    save: (id: string, value: T) => void,
-    setAttribute: (id: string, full: T, key: string, value: any) => void,
+    save: (id: string, value: T) => Promise<void>,
+    setAttribute: (
+        id: string,
+        full: T,
+        key: string,
+        value: any,
+    ) => Promise<void>,
     load: (id: string) => Promise<?T>,
     loadAll: () => Promise<{ [key: string]: T }>,
     delete: (id: string) => void,
@@ -306,16 +311,15 @@ export const getCollection = function<Delta, Data, T>(
         return hlc.pack(col.hlc);
     };
     return {
-        save: (id: string, value: T) => {
+        save: async (id: string, value: T) => {
             validate(value, schema);
             const map = state.crdt.createDeepMap(value, ts());
             const delta = state.crdt.deltas.set([], map);
-            state.persistence.addDeltas(key, [
+            await state.persistence.addDeltas(key, [
                 { node: id, delta, stamp: state.crdt.deltas.stamp(delta) },
             ]);
-            // col.deltas.push({ node: id, delta });
             state.setDirty();
-            applyDeltas(
+            await applyDeltas(
                 state.persistence,
                 state.crdt,
                 key,
@@ -324,18 +328,18 @@ export const getCollection = function<Delta, Data, T>(
                 null,
             );
         },
-        setAttribute: (id: string, full: T, key: string, value: any) => {
+        setAttribute: async (id: string, full: T, key: string, value: any) => {
             validateSet(schema, [key], value);
             const delta = state.crdt.deltas.set(
                 [key],
                 state.crdt.createValue(value, ts()),
             );
             // col.deltas.push({ node: id, delta });
-            state.persistence.addDeltas(key, [
+            await state.persistence.addDeltas(key, [
                 { node: id, delta, stamp: state.crdt.deltas.stamp(delta) },
             ]);
             state.setDirty();
-            applyDeltas(
+            await applyDeltas(
                 state.persistence,
                 state.crdt,
                 key,
