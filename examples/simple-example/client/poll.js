@@ -4,10 +4,10 @@ import makeClient, {
     onMessage,
     syncMessages,
     debounce,
-    type Persistence,
     type ClientState,
     type CRDTImpl,
 } from '../fault-tolerant/client';
+import type { Persistence } from '../fault-tolerant/clientTypes.js';
 import backOff from '../shared/back-off';
 
 const sync = async function<Delta, Data>(

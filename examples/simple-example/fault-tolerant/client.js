@@ -8,6 +8,7 @@ import {
     validate,
     validateSet,
 } from '@local-first/nested-object-crdt/schema.js';
+import type { Persistence } from './clientTypes.js';
 
 export type { CursorType } from './server.js';
 
@@ -32,35 +33,6 @@ export type CRDTImpl<Delta, Data> = {
 // And maybe we use localstorage if we have an active connection, and then idb? But if I'm storing the data itself in idb, might as well be consistent.
 
 // Yes, first pass, keep almost nothing in memory.
-
-export type Persistence<Delta, Data> = {
-    saveHLC(hlc: HLC): void,
-    getHLC(): HLC,
-    deltas(
-        collection: string,
-    ): Promise<Array<{ node: string, delta: Delta, stamp: string }>>,
-    addDeltas(
-        collection: string,
-        deltas: Array<{ node: string, delta: Delta, stamp: string }>,
-    ): Promise<void>,
-    // setServerCursor(
-    //     collection: string,
-    //     serverCursor: CursorType,
-    // ): Promise<void>,
-    getServerCursor(collection: string): Promise<?CursorType>,
-
-    deleteDeltas(collection: string, upTo: string): Promise<void>,
-    get<T>(collection: string, id: string): Promise<?T>,
-    changeMany<T>(
-        collection: string,
-        ids: Array<string>,
-        process: ({ [key: string]: T }) => void,
-        serverCursor: ?CursorType,
-        // hlc: HLC,
-    ): Promise<{ [key: string]: T }>,
-    // getMany<T>(collection: string, ids: Array<string>): Promise<Array<T>>,
-    getAll<T>(collection: string): Promise<{ [key: string]: T }>,
-};
 
 type CollectionState<Delta, Data> = {
     cache: { [key: string]: Data },
@@ -333,6 +305,14 @@ export const onMessage = async function<Delta, Data>(
     }
 };
 
+export const getStamp = function<Delta, Data>(
+    state: ClientState<Delta, Data>,
+): string {
+    state.hlc = hlc.inc(state.hlc, Date.now());
+    state.persistence.saveHLC(state.hlc);
+    return hlc.pack(state.hlc);
+};
+
 export const getCollection = function<Delta, Data, T>(
     state: ClientState<Delta, Data>,
     key: string,
@@ -343,15 +323,10 @@ export const getCollection = function<Delta, Data, T>(
         state.setDirty();
     }
     const col = state.collections[key];
-    const ts = () => {
-        state.hlc = hlc.inc(state.hlc, Date.now());
-        state.persistence.saveHLC(state.hlc);
-        return hlc.pack(state.hlc);
-    };
     return {
         save: async (id: string, value: T) => {
             validate(value, schema);
-            const map = state.crdt.createDeepMap(value, ts());
+            const map = state.crdt.createDeepMap(value, getStamp(state));
             const delta = state.crdt.deltas.set([], map);
             await applyDeltas(state, key, col, [{ node: id, delta }], {
                 type: 'local',
@@ -362,7 +337,7 @@ export const getCollection = function<Delta, Data, T>(
             validateSet(schema, [key], value);
             const delta = state.crdt.deltas.set(
                 [key],
-                state.crdt.createValue(value, ts()),
+                state.crdt.createValue(value, getStamp(state)),
             );
             await applyDeltas(state, key, col, [{ node: id, delta }], {
                 type: 'local',
@@ -389,7 +364,7 @@ export const getCollection = function<Delta, Data, T>(
             return res;
         },
         delete: (id: string) => {
-            const delta = state.crdt.deltas.remove(ts());
+            const delta = state.crdt.deltas.remove(getStamp(state));
             applyDeltas(state, key, col, [{ node: id, delta }], {
                 type: 'local',
                 cache: col.cache,
