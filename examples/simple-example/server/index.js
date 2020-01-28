@@ -185,7 +185,7 @@ app.ws('/sync', function(ws, req) {
     };
     ws.on('message', data => {
         const messages = JSON.parse(data);
-        const acks = req.body
+        const acks = messages
             .map(message => onMessage(server, req.query.sessionId, message))
             .filter(Boolean);
         // messages.forEach(message =>

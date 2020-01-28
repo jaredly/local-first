@@ -48,14 +48,12 @@ const reconnectingSocket = (
                     );
                 }),
             500,
-            1.0,
+            1.5,
         );
     };
     reconnect();
     return state;
 };
-
-const storageKey = `simple-example:data`;
 
 export default function<Delta, Data>(
     persistence: Persistence<Delta, Data>,
@@ -91,11 +89,6 @@ export default function<Delta, Data>(
     };
 
     const client = makeClient(persistence, crdt, sessionId, debounce(sync));
-    // const storedRaw = localStorage.getItem(storageKey);
-    // if (storedRaw) {
-    //     const data = JSON.parse(storedRaw);
-    //     inflate(sessionId, client.collections, data);
-    // }
     sync();
     return {
         client,
