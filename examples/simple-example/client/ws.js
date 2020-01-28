@@ -3,7 +3,6 @@ import makeClient, {
     getCollection,
     onMessage,
     syncMessages,
-    syncSucceeded,
     debounce,
     type Persistence,
     type ClientState,

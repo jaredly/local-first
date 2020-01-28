@@ -1,9 +1,7 @@
 // @flow
-/*::
 import { type Schema } from '@local-first/nested-object-crdt/lib/schema.js';
-*/
 
-const ItemSchema /*:Schema*/ = {
+const ItemSchema: Schema = {
     type: 'object',
     attributes: {
         completed: 'boolean',

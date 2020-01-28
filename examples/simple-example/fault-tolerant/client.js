@@ -63,6 +63,7 @@ export type Persistence<Delta, Data> = {
 };
 
 type CollectionState<Delta, Data> = {
+    cache: { [key: string]: Data },
     listeners: Array<(Array<{ value: ?any, id: string }>) => void>,
     itemListeners: { [key: string]: Array<(value: ?any) => void> },
 };
@@ -102,6 +103,7 @@ export type ClientState<Delta, Data> = {
 };
 
 const newCollection = <Delta, Data>(): CollectionState<Delta, Data> => ({
+    cache: {},
     listeners: [],
     itemListeners: {},
 });
@@ -147,69 +149,112 @@ export const syncMessages = function<Delta, Data>(
     ).then(a => a.filter(Boolean));
 };
 
-// export const syncFailed = function<Delta, Data>(
-//     collections: Collections<Delta, Data>,
-// ) {
-//     Object.keys(collections).forEach(id => {
-//         const col = collections[id];
-//         if (col.pendingDeltas.length) {
-//             col.deltas = col.pendingDeltas.concat(col.deltas);
-//             col.pendingDeltas = [];
-//         }
-//     });
-// };
-
-export const syncSucceeded = function<Delta, Data>(
-    persistence: Persistence<Delta, Data>,
-    collection: string,
-    deltaKey: string,
+const optimisticUpdates = function<Delta, Data>(
+    crdt: CRDTImpl<Delta, Data>,
+    colid: string,
+    col: CollectionState<Delta, Data>,
+    deltas: Array<{ node: string, delta: Delta, ... }>,
+    cache: { [key: string]: Data },
 ) {
-    return persistence.deleteDeltas(collection, deltaKey);
+    // Optimistic updates yall!
+    const changed = {};
+    deltas.forEach(delta => {
+        changed[delta.node] = true;
+        if (cache[delta.node]) {
+            cache[delta.node] = crdt.applyDelta(cache[delta.node], delta.delta);
+        }
+    });
+    if (col.listeners.length) {
+        const changes = Object.keys(changed)
+            .map(id =>
+                cache[id]
+                    ? {
+                          id,
+                          value: crdt.value(cache[id]),
+                      }
+                    : null,
+            )
+            .filter(Boolean);
+        col.listeners.forEach(listener => {
+            listener(changes);
+        });
+    }
+    Object.keys(changed).forEach(id => {
+        if (cache[id] && col.itemListeners[id]) {
+            col.itemListeners[id].forEach(fn => fn(crdt.value(cache[id])));
+        }
+    });
 };
 
 // This isn't quite as optimistic as it could be -- I could call the listeners
 // before saving the data back into the database...
 const applyDeltas = async function<Delta, Data>(
-    persistence: Persistence<Delta, Data>,
-    crdt: CRDTImpl<Delta, Data>,
+    client: ClientState<Delta, Data>,
     colid: string,
     col: CollectionState<Delta, Data>,
     deltas: Array<{ node: string, delta: Delta, ... }>,
-    serverCursor: ?CursorType,
+    // TODO these last three could be sent in tandem.
+    // like {type: 'server', cursor: CursorType} | {type: 'local', cache: Cache}
+    source:
+        | { type: 'server', cursor: ?CursorType }
+        | { type: 'local', cache: { [key: string]: Data } },
+    // serverCursor: ?CursorType,
+    // cache: ?{ [key: string]: Data },
+    // local: boolean,
 ) {
     const changed = {};
     deltas.forEach(delta => {
         changed[delta.node] = true;
     });
-    const data = await persistence.changeMany(
+
+    if (source.type === 'local') {
+        optimisticUpdates(client.crdt, colid, col, deltas, source.cache);
+
+        // TODO ideally adding the deltas and applying the deltas would happen in the same transaction....
+        await client.persistence.addDeltas(
+            colid,
+            deltas.map(delta => ({
+                ...delta,
+                stamp: client.crdt.deltas.stamp(delta.delta),
+            })),
+        );
+        client.setDirty();
+    }
+
+    const data = await client.persistence.changeMany(
         colid,
         Object.keys(changed),
         data => {
             deltas.forEach(delta => {
                 if (!data[delta.node]) {
-                    data[delta.node] = crdt.createEmpty();
+                    data[delta.node] = client.crdt.createEmpty();
                 }
-                data[delta.node] = crdt.applyDelta(
+                data[delta.node] = client.crdt.applyDelta(
                     data[delta.node],
                     delta.delta,
                 );
             });
         },
-        serverCursor,
+        source.type === 'server' ? source.cursor : null,
     );
 
     if (col.listeners.length) {
         const changes = Object.keys(changed).map(id => ({
             id,
-            value: crdt.value(data[id]),
+            value: client.crdt.value(data[id]),
         }));
         col.listeners.forEach(listener => {
             listener(changes);
         });
     }
     Object.keys(changed).forEach(id => {
+        if (source.type === 'local') {
+            source.cache[id] = data[id];
+        }
         if (col.itemListeners[id]) {
-            col.itemListeners[id].forEach(fn => fn(crdt.value(data[id])));
+            col.itemListeners[id].forEach(fn =>
+                fn(client.crdt.value(data[id])),
+            );
         }
     });
 };
@@ -223,14 +268,10 @@ export const onMessage = async function<Delta, Data>(
             state.collections[msg.collection] = newCollection();
         }
         const col = state.collections[msg.collection];
-        await applyDeltas(
-            state.persistence,
-            state.crdt,
-            msg.collection,
-            col,
-            msg.deltas,
-            msg.serverCursor,
-        );
+        await applyDeltas(state, msg.collection, col, msg.deltas, {
+            type: 'server',
+            cursor: msg.serverCursor,
+        });
         let maxStamp = null;
         msg.deltas.forEach(delta => {
             const stamp = state.crdt.deltas.stamp(delta.delta);
@@ -312,18 +353,10 @@ export const getCollection = function<Delta, Data, T>(
             validate(value, schema);
             const map = state.crdt.createDeepMap(value, ts());
             const delta = state.crdt.deltas.set([], map);
-            await state.persistence.addDeltas(key, [
-                { node: id, delta, stamp: state.crdt.deltas.stamp(delta) },
-            ]);
-            state.setDirty();
-            await applyDeltas(
-                state.persistence,
-                state.crdt,
-                key,
-                col,
-                [{ node: id, delta }],
-                null,
-            );
+            await applyDeltas(state, key, col, [{ node: id, delta }], {
+                type: 'local',
+                cache: col.cache,
+            });
         },
         setAttribute: async (id: string, full: T, key: string, value: any) => {
             validateSet(schema, [key], value);
@@ -331,30 +364,23 @@ export const getCollection = function<Delta, Data, T>(
                 [key],
                 state.crdt.createValue(value, ts()),
             );
-            // col.deltas.push({ node: id, delta });
-            await state.persistence.addDeltas(key, [
-                { node: id, delta, stamp: state.crdt.deltas.stamp(delta) },
-            ]);
-            state.setDirty();
-            await applyDeltas(
-                state.persistence,
-                state.crdt,
-                key,
-                col,
-                [{ node: id, delta }],
-                null,
-            );
+            await applyDeltas(state, key, col, [{ node: id, delta }], {
+                type: 'local',
+                cache: col.cache,
+            });
         },
         load: async (id: string): Promise<?T> => {
             const data: ?Data = await state.persistence.get(key, id);
+            if (data) {
+                col.cache[id] = data;
+            }
             return data ? state.crdt.value(data) : null;
         },
         loadAll: async () => {
-            // console.log(state);
             const raw = await state.persistence.getAll(key);
-            // console.log('raw', raw);
             const res = {};
             Object.keys(raw).forEach(id => {
+                col.cache[id] = raw[id];
                 const v = state.crdt.value(raw[id]);
                 if (v != null) {
                     res[id] = v;
@@ -364,9 +390,10 @@ export const getCollection = function<Delta, Data, T>(
         },
         delete: (id: string) => {
             const delta = state.crdt.deltas.remove(ts());
-            applyDeltas(state.persistence, state.crdt, key, col, [
-                { node: id, delta },
-            ]);
+            applyDeltas(state, key, col, [{ node: id, delta }], {
+                type: 'local',
+                cache: col.cache,
+            });
             return;
         },
         onChanges: (fn: (Array<{ value: ?T, id: string }>) => void) => {
