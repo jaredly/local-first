@@ -5,8 +5,8 @@ import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-import { makeNetwork } from './poll';
-// import { makeNetwork } from './ws';
+// import { makeNetwork } from './poll';
+import { makeNetwork } from './ws';
 import makeClient, {
     getCollection,
     getStamp,
@@ -22,8 +22,8 @@ const setup = () => {
     const persistence = makePersistence();
     const client = makeClient(persistence, crdt, () => {}, ['tasks']);
     const network = makeNetwork(
-        'http://localhost:9900/sync',
-        // 'ws://localhost:9104/sync',
+        // 'http://localhost:9900/sync',
+        'ws://localhost:9104/sync',
         persistence.getHLC().node,
         reconnected =>
             syncMessages(client.persistence, client.collections, reconnected),
@@ -90,7 +90,10 @@ const App = () => {
     }, []);
     return (
         <div style={{ margin: '32px 64px' }}>
-            <div>Hello! We are {connected ? 'Online' : 'Offline'}</div>
+            <div>
+                Hello! We are {connected ? 'Online' : 'Offline'}{' '}
+                {client.hlc.node}
+            </div>
             <button
                 onClick={() => {
                     const id = getStamp(client);

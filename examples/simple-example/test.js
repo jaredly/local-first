@@ -14,8 +14,12 @@ const serverPort = 9224;
 
 const setupPage = async (browser, target, name, clearOut = true) => {
     const pageA = await browser.newPage();
-    pageA.on('console', msg => {
-        console.log(name, msg.text());
+    pageA.name = name;
+    pageA.on('console', async msg => {
+        console.log(
+            name,
+            await Promise.all(msg.args().map(h => h.jsonValue())),
+        );
     });
     await pageA.goto(target);
     await pageA.evaluate(async (port, clearOut) => {
@@ -49,7 +53,7 @@ const setupPage = async (browser, target, name, clearOut = true) => {
 const getData = page => page.evaluate(() => window.collection.loadAll());
 const getCachedData = page => page.evaluate(() => window.data);
 const addItem = (page, id, item) => {
-    console.log(chalk.bold.magenta('++'), 'adding item', id);
+    console.log(chalk.bold.magenta('++'), 'adding item', id, page.name);
     return page.evaluate(
         (id, item) => window.collection.save(id, item),
         id,
@@ -151,6 +155,13 @@ const full = async () => {
         tags: {},
     };
 
+    const itemD = {
+        title: 'Item D',
+        completed: true,
+        createdDate: Date.now(),
+        tags: {},
+    };
+
     const browser = await puppeteer.launch();
 
     const pageA = await setupPage(
@@ -216,6 +227,24 @@ const full = async () => {
         await getCachedData(pageC),
         { a: itemA, b: itemB, c: itemC },
         'C 4 cached',
+    );
+
+    await addItem(pageC, 'd', itemD);
+    await wait();
+    expect(
+        await getCachedData(pageA),
+        { a: itemA, b: itemB, c: itemC, d: itemD },
+        'A 5 cached',
+    );
+    expect(
+        await getCachedData(pageB),
+        { a: itemA, b: itemB, c: itemC, d: itemD },
+        'B 5 cached',
+    );
+    expect(
+        await getCachedData(pageC),
+        { a: itemA, b: itemB, c: itemC, d: itemD },
+        'C 5 cached',
     );
 
     console.log(chalk.bold.green('All clear!'));

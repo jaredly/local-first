@@ -196,6 +196,7 @@ const applyDeltas = async function<Delta, Data>(
     }
 
     const changedIds = Object.keys(changed);
+    console.log('Applying deltas', changedIds, deltas.length);
 
     const data = await client.persistence.changeMany(
         colid,
@@ -224,7 +225,8 @@ const applyDeltas = async function<Delta, Data>(
         });
     }
     changedIds.forEach(id => {
-        if (source.type === 'local') {
+        // Only update the cache if the node has already been cached
+        if (source.type === 'local' && source.cache[id]) {
             source.cache[id] = data[id];
         }
         if (col.itemListeners[id]) {
@@ -233,7 +235,8 @@ const applyDeltas = async function<Delta, Data>(
             );
         }
     });
-    if (client.listeners.length) {
+    if (client.listeners.length && changedIds.length) {
+        console.log('Broadcasting to client-level listeners', changedIds);
         client.listeners.forEach(fn => fn({ col: colid, nodes: changedIds }));
     }
 };
@@ -325,20 +328,30 @@ export const receiveCrossTabChanges = async function<Delta, Data>(
     changes: { col: string, nodes: Array<string> },
 ) {
     if (!client.collections[changes.col]) {
-        client.collections[changes.col] = newCollection();
+        return;
     }
     const col = client.collections[changes.col];
     const res = {};
     await Promise.all(
-        changes.nodes.map(id =>
-            client.persistence.get(changes.col, id).then(data => {
-                if (data) {
-                    // console.log(JSON.stringify(data));
-                    res[id] = client.crdt.value(data);
-                    col.cache[id] = data;
-                }
-            }),
-        ),
+        changes.nodes
+            .filter(
+                id =>
+                    col.listeners.length ||
+                    !!col.cache[id] ||
+                    col.itemListeners[id],
+            )
+            .map(id =>
+                client.persistence.get(changes.col, id).then(data => {
+                    if (data) {
+                        res[id] = client.crdt.value(data);
+                        if (col.cache[id]) {
+                            col.cache[id] = data;
+                        }
+                    } else {
+                        console.log('Cross Tab value missing', id);
+                    }
+                }),
+            ),
     );
 
     if (col.listeners.length) {

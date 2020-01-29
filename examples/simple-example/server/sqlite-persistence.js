@@ -6,7 +6,7 @@ const sqlite3 = require('better-sqlite3');
 
 function queryAll(db, sql, params = []) {
     let stmt = db.prepare(sql);
-    console.log('query all', sql, params);
+    // console.log('query all', sql, params);
     return stmt.all(...params);
 }
 
@@ -86,8 +86,8 @@ const setupPersistence = (baseDir: string) => {
                           db,
                           `SELECT * from ${escapedTableName(collection)}`,
                       );
-                console.log('db', escapedTableName(collection));
-                console.log('getting deltas', rows, lastSeen, sessionId);
+                // console.log('db', escapedTableName(collection));
+                // console.log('getting deltas', rows, lastSeen, sessionId);
                 const deltas = rows.map(({ node, sessionId, delta }) => ({
                     node,
                     sessionId,
@@ -102,7 +102,7 @@ const setupPersistence = (baseDir: string) => {
                 );
                 return { deltas, cursor: cursor ? cursor.maxId : null };
             });
-            console.log('transacting');
+            // console.log('transacting');
             return transaction(lastSeen, sessionId);
         },
     };

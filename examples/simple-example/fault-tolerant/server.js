@@ -111,6 +111,7 @@ export const getMessages = function<Delta, Data>(
     if (!state.clients[sessionId]) {
         return [];
     }
+    console.log(`Getting messages for ${sessionId}`);
     return Object.keys(state.clients[sessionId].collections)
         .map((cid: string): ?ServerMessage<Delta, Data> => {
             const lastSeen = state.clients[sessionId].collections[cid];
@@ -119,7 +120,14 @@ export const getMessages = function<Delta, Data>(
                 lastSeen,
                 sessionId,
             );
-            console.log('getting all since', lastSeen, cursor, deltas);
+            // console.log('getting all since', lastSeen, cursor, deltas);
+            console.log(
+                deltas.length,
+                'new messages since',
+                lastSeen,
+                'new cursor',
+                cursor,
+            );
             if (deltas.length) {
                 return {
                     type: 'sync',
@@ -148,25 +156,27 @@ export const onMessage = function<Delta, Data>(
         // TODO should I only set this if its present?
         state.clients[sessionId].collections[message.collection] =
             message.serverCursor;
-        const deltas = message.deltas.map(item => ({ ...item, sessionId }));
-        state.persistence.addDeltas(message.collection, deltas);
-        let maxStamp = null;
-        message.deltas.forEach(delta => {
-            const stamp = state.crdt.deltas.stamp(delta.delta);
-            if (!maxStamp || stamp > maxStamp) {
-                maxStamp = stamp;
+        if (message.deltas.length) {
+            const deltas = message.deltas.map(item => ({ ...item, sessionId }));
+            state.persistence.addDeltas(message.collection, deltas);
+            let maxStamp = null;
+            message.deltas.forEach(delta => {
+                const stamp = state.crdt.deltas.stamp(delta.delta);
+                if (!maxStamp || stamp > maxStamp) {
+                    maxStamp = stamp;
+                }
+            });
+            console.log('max', maxStamp, message.deltas);
+            if (maxStamp) {
+                console.log('acking');
+                return {
+                    type: 'ack',
+                    deltaStamp: maxStamp,
+                    collection: message.collection,
+                };
             }
-        });
-        console.log('max', maxStamp, message.deltas);
-        if (maxStamp) {
-            console.log('acking');
-            return {
-                type: 'ack',
-                deltaStamp: maxStamp,
-                collection: message.collection,
-            };
+            console.log('not acking');
         }
-        console.log('not acking');
     }
 };
 

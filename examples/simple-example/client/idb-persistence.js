@@ -103,12 +103,12 @@ const makePersistence = <Delta, Data>(): Persistence<Delta, Data> => {
             const tx = db.transaction(['meta', 'nodes'], 'readwrite');
             const nodes = tx.objectStore('nodes');
             const gotten = await Promise.all(ids.map(id => nodes.get(id)));
-            console.log('gotten', gotten);
+            console.log('loaded up', ids, gotten);
             const map = {};
             gotten.forEach(res => (res ? (map[res.id] = res.value) : null));
             // console.log('pre-process', JSON.stringify(map));
             process(map);
-            console.log('processed', ids, map);
+            console.log('idb changeMany processed', ids, map);
             ids.forEach(id =>
                 map[id] ? nodes.put({ id, value: map[id] }) : null,
             );

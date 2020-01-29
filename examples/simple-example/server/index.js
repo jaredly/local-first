@@ -104,7 +104,7 @@ export const onWebsocket = <Delta, Data>(
         send: messages => ws.send(JSON.stringify(messages)),
     };
     ws.on('message', data => {
-        console.log(data);
+        // console.log(data);
         const messages = JSON.parse(data);
         const acks = messages
             .map(message => onMessage(server, sessionId, message))
