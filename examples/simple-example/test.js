@@ -32,7 +32,7 @@ const setupPage = async (browser, target, name, clearOut = true) => {
             'tasks',
             window.ItemSchema,
         );
-        window.data = {};
+        window.data = await window.collection.loadAll();
         window.collection.onChanges(changes => {
             changes.forEach(({ value, id }) => {
                 if (value) {
@@ -64,7 +64,7 @@ const expect = (a, b, message) => {
         console.log(chalk.green('expected +'), JSON.stringify(b));
         throw new Error('Not equal: ' + message);
     } else {
-        console.log(chalk.green('✅ Checks out'));
+        console.log(chalk.green('✅ Checks out'), message);
     }
 };
 
@@ -72,19 +72,23 @@ const expect = (a, b, message) => {
 const bundler = new Bundler([__dirname + '/test.html'], {});
 bundler.serve(parcelPort);
 
-const dataDir = __dirname + '/.test-data';
-const dbPath = dataDir + '/data.db';
-if (fs.existsSync(dbPath)) {
-    fs.unlinkSync(dbPath);
-}
-// Start serevr
-const server = makeServer(dataDir);
-let app = runServer(serverPort, server);
-console.log('listening on ' + serverPort);
+const setupServer = () => {
+    const dataDir = __dirname + '/.test-data';
+    const dbPath = dataDir + '/data.db';
+    if (fs.existsSync(dbPath)) {
+        fs.unlinkSync(dbPath);
+    }
+    // Start serevr
+    const server = makeServer(dataDir);
+    const app = runServer(serverPort, server);
+    console.log('listening on ' + serverPort);
+    return { app, server };
+};
 
 const wait = (time = 100) => new Promise(res => setTimeout(res, time));
 
 const contention = async () => {
+    let { app, server } = setupServer();
     const browser = await puppeteer.launch();
 
     const pageA = await setupPage(
@@ -121,10 +125,11 @@ const contention = async () => {
     expect(await getCachedData(pageC), { a: itemA }, 'C 1');
 
     await wait(1000);
-    process.exit(1);
+    app.http.close();
 };
 
-const runFull = async () => {
+const full = async () => {
+    let { app, server } = setupServer();
     const itemA = {
         title: 'Item A',
         completed: false,
@@ -166,12 +171,12 @@ const runFull = async () => {
     );
 
     // NOTE uncommenting this triggers the issue
-    // const pageC = await setupPage(
-    //     browser,
-    //     `http://localhost:${parcelPort}/`,
-    //     chalk.magenta('Page C'),
-    //     false,
-    // );
+    const pageC = await setupPage(
+        browser,
+        `http://localhost:${parcelPort}/`,
+        chalk.magenta('Page C'),
+        false,
+    );
 
     await wait();
     expect(await getData(pageB), { a: itemA }, 'B 0');
@@ -184,7 +189,6 @@ const runFull = async () => {
     console.log('Disconnect');
     app.http.close();
     app.wsInst.getWss().clients.forEach(client => {
-        console.log('closing', Object.keys(client));
         client.close();
     });
 
@@ -208,19 +212,29 @@ const runFull = async () => {
         { a: itemA, b: itemB, c: itemC },
         'B 4 cached',
     );
-    // expect(
-    //     await getData(pageC),
-    //     { a: itemA, b: itemB, c: itemC },
-    //     'C 4 cached',
-    // );
+    expect(
+        await getCachedData(pageC),
+        { a: itemA, b: itemB, c: itemC },
+        'C 4 cached',
+    );
 
     console.log(chalk.bold.green('All clear!'));
 
     await browser.close();
-    process.exit(1);
+    app.http.close();
 };
 
-contention().catch(err => {
-    console.error(err);
-    process.exit(1);
-});
+const run = async () => {
+    await full();
+    await contention();
+};
+
+run()
+    .catch(err => {
+        console.error(err);
+        process.exit(1);
+    })
+    .then(() => {
+        console.log('Good!');
+        process.exit(0);
+    });
