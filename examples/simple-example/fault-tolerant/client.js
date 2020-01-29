@@ -100,6 +100,7 @@ export const debounce = function<T>(fn: () => void): () => void {
 export const syncMessages = function<Delta, Data>(
     persistence: Persistence<Delta, Data>,
     collections: Collections<Delta, Data>,
+    reconnected: boolean,
 ): Promise<Array<ClientMessage<Delta, Data>>> {
     return Promise.all(
         Object.keys(collections).map(async (id: string): Promise<?ClientMessage<
@@ -109,7 +110,7 @@ export const syncMessages = function<Delta, Data>(
             const col = collections[id];
             const deltas = await persistence.deltas(id);
             const serverCursor = await persistence.getServerCursor(id);
-            if (deltas.length || !serverCursor) {
+            if (deltas.length || !serverCursor || reconnected) {
                 return {
                     type: 'sync',
                     collection: id,
@@ -406,17 +407,18 @@ const make = <Delta, Data>(
 
     initialCollections.forEach(name => (collections[name] = newCollection()));
 
-    if (initialCollections.length) {
-        setTimeout(() => setDirty(), 0);
-    }
-
-    return {
+    const state = {
         hlc: persistence.getHLC(),
         persistence,
         collections,
         crdt,
         setDirty,
     };
+
+    if (initialCollections.length) {
+        setTimeout(() => state.setDirty(), 0);
+    }
+    return state;
 };
 
 export default make;

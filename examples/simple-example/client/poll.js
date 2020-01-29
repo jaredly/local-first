@@ -18,10 +18,12 @@ import poller from './poller';
 const sync = async function<Delta, Data>(
     url: string,
     sessionId: string,
-    getMessages: () => Promise<Array<ClientMessage<Delta, Data>>>,
+    getMessages: (
+        reconnected: boolean,
+    ) => Promise<Array<ClientMessage<Delta, Data>>>,
     onMessages: (Array<ServerMessage<Delta, Data>>) => Promise<mixed>,
 ) {
-    const messages = await getMessages();
+    const messages = await getMessages(true);
     console.log('sync:messages', messages);
     // console.log('messages', messages);
     const res = await fetch(`${url}?sessionId=${sessionId}`, {
@@ -40,7 +42,9 @@ const sync = async function<Delta, Data>(
 export function makeNetwork<Delta, Data>(
     url: string,
     sessionId: string,
-    getMessages: () => Promise<Array<ClientMessage<Delta, Data>>>,
+    getMessages: (
+        reconnected: boolean,
+    ) => Promise<Array<ClientMessage<Delta, Data>>>,
     onMessages: (Array<ServerMessage<Delta, Data>>) => Promise<mixed>,
 ): {
     sync: () => void,

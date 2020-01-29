@@ -36,12 +36,45 @@ const toObj = (array, key, value) => {
     return obj;
 };
 
-export const makeServer = () =>
-    make<Delta, Data>(crdt, setupPersistence(__dirname + '/.data'), (
+export const makeServer = (dataPath: string) =>
+    make<Delta, Data>(crdt, setupPersistence(dataPath), (
         collectionId /*: string*/,
     ) /*: Schema*/ => {
         return ItemSchema;
     });
+
+export const runServer = <Delta, Data>(
+    port: number,
+    server: ServerState<Delta, Data>,
+) => {
+    const express = require('express');
+    const ws = require('express-ws');
+
+    const app = express();
+    const wsInst = ws(app);
+    app.use(require('cors')());
+    app.use(require('body-parser').json());
+
+    app.post('/sync', (req, res) => {
+        if (!req.query.sessionId) {
+            throw new Error('No sessionId');
+        }
+        res.json(post(server, req.query.sessionId, req.body));
+    });
+
+    const clients = {};
+
+    app.ws('/sync', function(ws, req) {
+        if (!req.query.sessionId) {
+            console.log('no sessionid');
+            throw new Error('No sessionId');
+        }
+        onWebsocket(server, clients, req.query.sessionId, ws);
+    });
+
+    const http = app.listen(port);
+    return { http, app, wsInst };
+};
 
 export const post = <Delta, Data>(
     server: ServerState<Delta, Data>,
@@ -71,6 +104,7 @@ export const onWebsocket = <Delta, Data>(
         send: messages => ws.send(JSON.stringify(messages)),
     };
     ws.on('message', data => {
+        console.log(data);
         const messages = JSON.parse(data);
         const acks = messages
             .map(message => onMessage(server, sessionId, message))

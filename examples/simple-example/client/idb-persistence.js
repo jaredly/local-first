@@ -103,7 +103,7 @@ const makePersistence = <Delta, Data>(): Persistence<Delta, Data> => {
             console.log('gotten', gotten);
             const map = {};
             gotten.forEach(res => (res ? (map[res.id] = res.value) : null));
-            console.log('pre-process', JSON.stringify(map));
+            // console.log('pre-process', JSON.stringify(map));
             process(map);
             console.log('processed', ids, map);
             ids.forEach(id =>

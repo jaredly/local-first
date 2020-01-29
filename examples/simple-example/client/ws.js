@@ -72,7 +72,9 @@ const reconnectingSocket = (
 export function makeNetwork<Delta, Data>(
     url: string,
     sessionId: string,
-    getMessages: () => Promise<Array<ClientMessage<Delta, Data>>>,
+    getMessages: (
+        reconnected: boolean,
+    ) => Promise<Array<ClientMessage<Delta, Data>>>,
     onMessages: (Array<ServerMessage<Delta, Data>>) => Promise<mixed>,
 ): {
     sync: () => void,
@@ -81,7 +83,7 @@ export function makeNetwork<Delta, Data>(
     const listeners = [];
     const state = reconnectingSocket(
         `${url}?sessionId=${sessionId}`,
-        () => sync(),
+        () => sync(true),
         msg => {
             const messages = JSON.parse(msg);
             onMessages(messages);
@@ -89,10 +91,10 @@ export function makeNetwork<Delta, Data>(
         listeners,
     );
 
-    const sync = () => {
+    const sync = (reconnected: boolean = false) => {
         if (state.socket) {
             const socket = state.socket;
-            getMessages().then(
+            getMessages(reconnected).then(
                 messages => {
                     if (messages.length) {
                         socket.send(JSON.stringify(messages));
@@ -110,7 +112,7 @@ export function makeNetwork<Delta, Data>(
         }
     };
 
-    sync();
+    // sync();
     return {
         sync,
         onConnection: fn => {
