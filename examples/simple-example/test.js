@@ -19,6 +19,7 @@ const setupPage = async (browser, target, name) => {
     });
     await pageA.goto(target);
     await pageA.evaluate(async port => {
+        // Clear out current databases
         const r = await window.indexedDB.databases();
         for (var i = 0; i < r.length; i++) {
             window.indexedDB.deleteDatabase(r[i].name);
@@ -68,7 +69,7 @@ const server = makeServer(dataDir);
 let app = runServer(serverPort, server);
 console.log('listening on ' + serverPort);
 
-const wait = (time = 200) => new Promise(res => setTimeout(res, time));
+const wait = (time = 100) => new Promise(res => setTimeout(res, time));
 
 const run = async () => {
     const itemA = {
@@ -92,7 +93,6 @@ const run = async () => {
         tags: {},
     };
 
-    // Do a browser
     const browser = await puppeteer.launch();
 
     const pageA = await setupPage(
@@ -104,6 +104,7 @@ const run = async () => {
     await addItem(pageA, 'a', itemA);
     expect(await getData(pageA), { a: itemA }, 'A 1');
 
+    // Different origin, so they won't share indexeddbs
     const pageB = await setupPage(
         browser,
         `http://127.0.0.1:${parcelPort}/`,
