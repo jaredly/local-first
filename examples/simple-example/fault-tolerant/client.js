@@ -71,6 +71,7 @@ export type ClientState<Delta, Data> = {
     persistence: Persistence<Delta, Data>,
     collections: Collections<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,
+    listeners: Array<({ col: string, nodes: Array<string> }) => void>,
     setDirty: () => void,
 };
 
@@ -194,9 +195,11 @@ const applyDeltas = async function<Delta, Data>(
         client.setDirty();
     }
 
+    const changedIds = Object.keys(changed);
+
     const data = await client.persistence.changeMany(
         colid,
-        Object.keys(changed),
+        changedIds,
         data => {
             deltas.forEach(delta => {
                 if (!data[delta.node]) {
@@ -212,7 +215,7 @@ const applyDeltas = async function<Delta, Data>(
     );
 
     if (col.listeners.length) {
-        const changes = Object.keys(changed).map(id => ({
+        const changes = changedIds.map(id => ({
             id,
             value: client.crdt.value(data[id]),
         }));
@@ -220,7 +223,7 @@ const applyDeltas = async function<Delta, Data>(
             listener(changes);
         });
     }
-    Object.keys(changed).forEach(id => {
+    changedIds.forEach(id => {
         if (source.type === 'local') {
             source.cache[id] = data[id];
         }
@@ -230,6 +233,9 @@ const applyDeltas = async function<Delta, Data>(
             );
         }
     });
+    if (client.listeners.length) {
+        client.listeners.forEach(fn => fn({ col: colid, nodes: changedIds }));
+    }
 };
 
 export const onMessage = async function<Delta, Data>(
@@ -312,6 +318,43 @@ export const getStamp = function<Delta, Data>(
     state.hlc = hlc.inc(state.hlc, Date.now());
     state.persistence.saveHLC(state.hlc);
     return hlc.pack(state.hlc);
+};
+
+export const receiveCrossTabChanges = async function<Delta, Data>(
+    client: ClientState<Delta, Data>,
+    changes: { col: string, nodes: Array<string> },
+) {
+    if (!client.collections[changes.col]) {
+        client.collections[changes.col] = newCollection();
+    }
+    const col = client.collections[changes.col];
+    const res = {};
+    await Promise.all(
+        changes.nodes.map(id =>
+            client.persistence.get(changes.col, id).then(data => {
+                if (data) {
+                    // console.log(JSON.stringify(data));
+                    res[id] = client.crdt.value(data);
+                    col.cache[id] = data;
+                }
+            }),
+        ),
+    );
+
+    if (col.listeners.length) {
+        const changedNodes = changes.nodes.map(id => ({
+            id,
+            value: res[id],
+        }));
+        col.listeners.forEach(listener => {
+            listener(changedNodes);
+        });
+    }
+    changes.nodes.forEach(id => {
+        if (col.itemListeners[id]) {
+            col.itemListeners[id].forEach(fn => fn(res[id]));
+        }
+    });
 };
 
 export const getCollection = function<Delta, Data, T>(
@@ -411,6 +454,7 @@ const make = <Delta, Data>(
         hlc: persistence.getHLC(),
         persistence,
         collections,
+        listeners: [],
         crdt,
         setDirty,
     };

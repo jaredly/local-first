@@ -79,7 +79,10 @@ const makePersistence = <Delta, Data>(): Persistence<Delta, Data> => {
         },
         async get(collection: string, id: string) {
             const db = await getDb(collection);
-            return await db.get('nodes', id);
+            const data = await db.get('nodes', id);
+            if (data) {
+                return data.value;
+            }
         },
         async getAll(collection: string) {
             const db = await getDb(collection);

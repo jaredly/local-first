@@ -9,7 +9,7 @@ import makeClient, * as clientLib from '../fault-tolerant/client';
 import { ItemSchema } from '../shared/schema.js';
 import makePersistence from './idb-persistence';
 
-// const { BroadcastChannel } = require('broadcast-channel');
+const { BroadcastChannel } = require('broadcast-channel');
 
 window.clientLib = clientLib;
 window.ItemSchema = ItemSchema;
@@ -20,8 +20,19 @@ const setup = (makeNetwork, url) => {
     const persistence = makePersistence();
     const client = makeClient(persistence, crdt, () => {}, ['tasks']);
 
-    // const channel = new BroadcastChannel('foobar');
-    // channel.onmessage = msg => console.dir(msg);
+    const channel = new BroadcastChannel('local-first', {
+        webWorkerSupport: false,
+    });
+    channel.onmessage = msg => {
+        console.log('got a message');
+        clientLib
+            .receiveCrossTabChanges(client, msg)
+            .catch(err => console.log('failed', err.message, err.stack));
+        console.log('Processed message', JSON.stringify(msg));
+    };
+    client.listeners.push(colChanges => {
+        channel.postMessage(colChanges);
+    });
     // Ok so rough plan:
     // - add a `listeners` field to the client state
     // - messages received from the server, as well as deltas generated locally, get sent to listeners

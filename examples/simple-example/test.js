@@ -116,7 +116,7 @@ const contention = async () => {
     expect(await getData(pageA), {}, 'A 0');
     await addItem(pageA, 'a', itemA);
     await wait();
-    expect(await getData(pageA), { a: itemA }, 'A 1');
+    expect(await getCachedData(pageA), { a: itemA }, 'A 1');
     expect(await getCachedData(pageB), { a: itemA }, 'B 1');
     expect(await getCachedData(pageC), { a: itemA }, 'C 1');
 
