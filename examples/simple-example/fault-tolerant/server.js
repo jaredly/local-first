@@ -91,7 +91,7 @@ type Connection<Delta, Data> = {
     on: (listener: (msg: ClientMessage<Delta, Data>) => void) => void,
 };
 
-type ServerState<Delta, Data> = {
+export type ServerState<Delta, Data> = {
     persistence: Persistence<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,
     getSchema: string => Schema,

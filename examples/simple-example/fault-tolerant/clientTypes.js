@@ -1,7 +1,14 @@
 // @flow
-import makeClient, { type ClientState, type CRDTImpl } from './client';
+import { type ClientState, type CRDTImpl } from './client';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import type { CursorType } from './server.js';
+
+export type makeClient = <Delta, Data>(
+    persistence: Persistence<Delta, Data>,
+    crdt: CRDTImpl<Delta, Data>,
+    setDirty: () => void,
+    initialCollections: ?Array<string>,
+) => ClientState<Delta, Data>;
 
 export type makeNetwork = <Delta, Data>(
     persistence: Persistence<Delta, Data>,
@@ -34,5 +41,3 @@ export type Persistence<Delta, Data> = {
     ): Promise<{ [key: string]: T }>,
     getAll<T>(collection: string): Promise<{ [key: string]: T }>,
 };
-
-// export type

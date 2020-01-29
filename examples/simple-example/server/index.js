@@ -1,6 +1,5 @@
 #!/usr/bin/env node -r @babel/register
 // @flow
-
 import express from 'express';
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
@@ -11,14 +10,11 @@ import type {
     ClientMessage,
     ServerMessage,
     CursorType,
+    ServerState,
 } from '../fault-tolerant/server';
 import { ItemSchema } from '../shared/schema.js';
-const app = express();
-ws(app);
 
-app.use(require('cors')());
-app.use(require('body-parser').json());
-
+import setupPersistence from './sqlite-persistence';
 import levelup from 'levelup';
 import leveldown from 'leveldown';
 
@@ -42,113 +38,6 @@ const toObj = (array, key, value) => {
     return obj;
 };
 
-const sqlite3 = require('better-sqlite3');
-const fs = require('fs');
-
-function queryAll(db, sql, params = []) {
-    let stmt = db.prepare(sql);
-    console.log('query all', sql, params);
-    return stmt.all(...params);
-}
-
-function queryGet(db, sql, params = []) {
-    let stmt = db.prepare(sql);
-    return stmt.get(...params);
-}
-
-function queryRun(db, sql, params = []) {
-    let stmt = db.prepare(sql);
-    return stmt.run(...params);
-}
-
-const setupPersistence = (baseDir: string) => {
-    const db = sqlite3(baseDir + '/data.db');
-    const dbs = {};
-    const tableName = col => col + ':messages';
-    const escapedTableName = col => JSON.stringify(tableName(col));
-    const setupDb = col => {
-        if (dbs[col]) {
-            return;
-        }
-        if (
-            queryAll(db, 'select name from sqlite_master where name = ?', [
-                col + ':messages',
-            ]).length === 0
-        ) {
-            queryRun(
-                db,
-                `CREATE TABLE ${escapedTableName(
-                    col,
-                )} (id INTEGER PRIMARY KEY AUTOINCREMENT, node TEXT, delta TEXT, sessionId TEXT)`,
-                [],
-            );
-        }
-        dbs[col] = true;
-        return;
-    };
-    return {
-        addDeltas(
-            collection: string,
-            deltas: Array<{ node: string, delta: Delta, sessionId: string }>,
-        ) {
-            setupDb(collection);
-            const insert = db.prepare(
-                `INSERT INTO ${escapedTableName(
-                    collection,
-                )} (node, delta, sessionId) VALUES (@node, @delta, @sessionId)`,
-            );
-
-            db.transaction(deltas => {
-                deltas.forEach(({ node, delta, sessionId }) => {
-                    insert.run({
-                        node,
-                        sessionId,
-                        delta: JSON.stringify(delta),
-                    });
-                });
-            })(deltas);
-        },
-        deltasSince(
-            collection: string,
-            lastSeen: ?CursorType,
-            sessionId: string,
-        ) {
-            setupDb(collection);
-            const transaction = db.transaction((lastSeen, sessionId) => {
-                const rows = lastSeen
-                    ? queryAll(
-                          db,
-                          `SELECT * from ${escapedTableName(
-                              collection,
-                          )} where id > ?`,
-                          [lastSeen],
-                      )
-                    : queryAll(
-                          db,
-                          `SELECT * from ${escapedTableName(collection)}`,
-                      );
-                console.log('db', escapedTableName(collection));
-                console.log('getting deltas', rows, lastSeen, sessionId);
-                const deltas = rows.map(({ node, sessionId, delta }) => ({
-                    node,
-                    sessionId,
-                    delta: JSON.parse(delta),
-                }));
-                const cursor = queryGet(
-                    db,
-                    `SELECT max(id) as maxId from ${escapedTableName(
-                        collection,
-                    )}`,
-                    [],
-                );
-                return { deltas, cursor: cursor ? cursor.maxId : null };
-            });
-            console.log('transacting');
-            return transaction(lastSeen, sessionId);
-        },
-    };
-};
-
 const server = make<Delta, Data>(
     crdt,
     setupPersistence(__dirname + '/.data'),
@@ -157,54 +46,112 @@ const server = make<Delta, Data>(
     },
 );
 
+export const post = <Delta, Data>(
+    server: ServerState<Delta, Data>,
+    sessionId: string,
+    messages: Array<ClientMessage<Delta, Data>>,
+): Array<ServerMessage<Delta, Data>> => {
+    let maxStamp = null;
+    console.log(`sync:messages`, messages);
+    const acks = messages
+        .map(message => onMessage(server, sessionId, message))
+        .filter(Boolean);
+    console.log('ack', acks);
+    const responses = getMessages(server, sessionId);
+    console.log('messags', responses);
+    return acks.concat(responses);
+};
+
+const app = express();
+ws(app);
+app.use(require('cors')());
+app.use(require('body-parser').json());
+
 app.post('/sync', (req, res) => {
     if (!req.query.sessionId) {
         throw new Error('No sessionId');
     }
-    let maxStamp = null;
-    console.log(`sync:messages`, req.body);
-    const acks = req.body
-        .map(message => onMessage(server, req.query.sessionId, message))
-        .filter(Boolean);
-    console.log('ack', acks);
-    const messages = getMessages(server, req.query.sessionId);
-    console.log('messags', messages);
+    res.json(post(server, req.query.sessionId, req.body));
+    // let maxStamp = null;
+    // console.log(`sync:messages`, req.body);
+    // const acks = req.body
+    //     .map(message => onMessage(server, req.query.sessionId, message))
+    //     .filter(Boolean);
+    // console.log('ack', acks);
+    // const messages = getMessages(server, req.query.sessionId);
+    // console.log('messags', messages);
 
-    res.json(acks.concat(messages));
+    // res.json(acks.concat(messages));
 });
 
 const clients = {};
 
-app.ws('/sync', function(ws, req) {
-    if (!req.query.sessionId) {
-        console.log('no sessionid');
-        throw new Error('No sessionId');
-    }
-    clients[req.query.sessionId] = {
+const onWebsocket = <Delta, Data>(
+    server: ServerState<Delta, Data>,
+    clients: {
+        [key: string]: { send: (Array<ServerMessage<Delta, Data>>) => void },
+    },
+    sessionId: string,
+    ws: { send: string => void, on: (string, (string) => void) => void },
+) => {
+    clients[sessionId] = {
         send: messages => ws.send(JSON.stringify(messages)),
     };
     ws.on('message', data => {
         const messages = JSON.parse(data);
         const acks = messages
-            .map(message => onMessage(server, req.query.sessionId, message))
+            .map(message => onMessage(server, sessionId, message))
             .filter(Boolean);
         // messages.forEach(message =>
-        //     onMessage(server, req.query.sessionId, message),
+        //     onMessage(server, sessionId, message),
         // );
-        const response = getMessages(server, req.query.sessionId);
+        const response = getMessages(server, sessionId);
 
         ws.send(JSON.stringify(acks.concat(response)));
 
         Object.keys(clients).forEach(id => {
-            if (id !== req.query.sessionId) {
+            if (id !== sessionId) {
                 const response = getMessages(server, id);
                 clients[id].send(messages);
             }
         });
     });
     ws.on('close', () => {
-        delete clients[req.query.sessionId];
+        delete clients[sessionId];
     });
+};
+
+app.ws('/sync', function(ws, req) {
+    if (!req.query.sessionId) {
+        console.log('no sessionid');
+        throw new Error('No sessionId');
+    }
+    onWebsocket(server, clients, req.query.sessionId, ws);
+    // clients[req.query.sessionId] = {
+    //     send: messages => ws.send(JSON.stringify(messages)),
+    // };
+    // ws.on('message', data => {
+    //     const messages = JSON.parse(data);
+    //     const acks = messages
+    //         .map(message => onMessage(server, req.query.sessionId, message))
+    //         .filter(Boolean);
+    //     // messages.forEach(message =>
+    //     //     onMessage(server, req.query.sessionId, message),
+    //     // );
+    //     const response = getMessages(server, req.query.sessionId);
+
+    //     ws.send(JSON.stringify(acks.concat(response)));
+
+    //     Object.keys(clients).forEach(id => {
+    //         if (id !== req.query.sessionId) {
+    //             const response = getMessages(server, id);
+    //             clients[id].send(messages);
+    //         }
+    //     });
+    // });
+    // ws.on('close', () => {
+    //     delete clients[req.query.sessionId];
+    // });
 });
 
 app.listen(9900);

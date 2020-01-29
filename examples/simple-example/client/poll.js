@@ -7,17 +7,24 @@ import makeClient, {
     type ClientState,
     type CRDTImpl,
 } from '../fault-tolerant/client';
+import {
+    type ClientMessage,
+    type ServerMessage,
+} from '../fault-tolerant/server';
 import type { Persistence } from '../fault-tolerant/clientTypes.js';
 import backOff from '../shared/back-off';
+import poller from './poller';
 
 const sync = async function<Delta, Data>(
     url: string,
-    client: ClientState<Delta, Data>,
+    sessionId: string,
+    getMessages: () => Promise<Array<ClientMessage<Delta, Data>>>,
+    onMessages: (Array<ServerMessage<Delta, Data>>) => Promise<mixed>,
 ) {
-    const messages = await syncMessages(client.persistence, client.collections);
+    const messages = await getMessages();
     console.log('sync:messages', messages);
     // console.log('messages', messages);
-    const res = await fetch(`${url}?sessionId=${client.hlc.node}`, {
+    const res = await fetch(`${url}?sessionId=${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(messages),
@@ -27,46 +34,16 @@ const sync = async function<Delta, Data>(
     }
     const data = await res.json();
     console.log('sync:data', data);
-    await Promise.all(data.map(message => onMessage(client, message)));
+    await onMessages(data);
 };
 
-const poller = (time, fn) => {
-    let tid = null;
-    const poll = () => {
-        clearTimeout(tid);
-        fn()
-            .catch(() => {})
-            .then(() => {
-                // tid = setTimeout(poll, time);
-            });
-    };
-    document.addEventListener(
-        'visibilitychange',
-        () => {
-            if (document.hidden) {
-                clearTimeout(tid);
-            } else {
-                poll();
-            }
-        },
-        false,
-    );
-    window.addEventListener(
-        'focus',
-        () => {
-            poll();
-        },
-        false,
-    );
-    return poll;
-};
-
-export default function<Delta, Data>(
-    persistence: Persistence<Delta, Data>,
+export function makeNetwork<Delta, Data>(
     url: string,
-    crdt: CRDTImpl<Delta, Data>,
+    sessionId: string,
+    getMessages: () => Promise<Array<ClientMessage<Delta, Data>>>,
+    onMessages: (Array<ServerMessage<Delta, Data>>) => Promise<mixed>,
 ): {
-    client: ClientState<Delta, Data>,
+    sync: () => void,
     onConnection: ((boolean) => void) => void,
 } {
     const listeners = [];
@@ -75,7 +52,7 @@ export default function<Delta, Data>(
         () =>
             new Promise(res => {
                 backOff(() =>
-                    sync(url, client).then(
+                    sync(url, sessionId, getMessages, onMessages).then(
                         () => {
                             listeners.forEach(f => f(true));
                             res();
@@ -91,15 +68,12 @@ export default function<Delta, Data>(
                 );
             }),
     );
-    const client = makeClient<Delta, Data>(persistence, crdt, debounce(poll), [
-        'tasks',
-    ]);
 
     poll();
     return {
         onConnection: fn => {
             listeners.push(fn);
         },
-        client,
+        sync: debounce(poll),
     };
 }

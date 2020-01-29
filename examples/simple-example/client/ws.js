@@ -7,6 +7,10 @@ import makeClient, {
     type ClientState,
     type CRDTImpl,
 } from '../fault-tolerant/client';
+import {
+    type ClientMessage,
+    type ServerMessage,
+} from '../fault-tolerant/server';
 import type { Persistence } from '../fault-tolerant/clientTypes.js';
 import backOff from '../shared/back-off';
 
@@ -54,30 +58,41 @@ const reconnectingSocket = (
     return state;
 };
 
-export default function<Delta, Data>(
-    persistence: Persistence<Delta, Data>,
+// const doThings = (persistence, url, crdt) => {
+//     const client = makeClient(persistence, crdt, () => {});
+//     const network = makeNetwork(
+//         url,
+//         persistence.getHLC().node,
+//         () => syncMessages(client.persistence, client.collections),
+//         messages => messages.forEach(message => onMessage(client, message)),
+//     );
+//     client.setDirty = network.sync;
+// };
+
+export function makeNetwork<Delta, Data>(
     url: string,
-    crdt: CRDTImpl<Delta, Data>,
+    sessionId: string,
+    getMessages: () => Promise<Array<ClientMessage<Delta, Data>>>,
+    onMessages: (Array<ServerMessage<Delta, Data>>) => Promise<mixed>,
 ): {
-    client: ClientState<Delta, Data>,
+    sync: () => void,
     onConnection: ((boolean) => void) => void,
 } {
     const listeners = [];
     const state = reconnectingSocket(
-        `${url}?sessionId=${persistence.getHLC().node}`,
+        `${url}?sessionId=${sessionId}`,
         () => sync(),
         msg => {
             const messages = JSON.parse(msg);
-            messages.forEach(message => onMessage(client, message));
+            onMessages(messages);
         },
         listeners,
     );
 
     const sync = () => {
-        console.log('getting a sync');
         if (state.socket) {
             const socket = state.socket;
-            syncMessages(client.persistence, client.collections).then(
+            getMessages().then(
                 messages => {
                     if (messages.length) {
                         socket.send(JSON.stringify(messages));
@@ -95,10 +110,9 @@ export default function<Delta, Data>(
         }
     };
 
-    const client = makeClient(persistence, crdt, debounce(sync));
     sync();
     return {
-        client,
+        sync,
         onConnection: fn => {
             listeners.push(fn);
         },

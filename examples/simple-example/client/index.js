@@ -5,16 +5,33 @@ import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-// import makeClient from './poll';
-import makeClient from './ws';
-import {
+// import { makeNetwork } from './poll';
+import { makeNetwork } from './ws';
+import makeClient, {
     getCollection,
     getStamp,
+    syncMessages,
+    onMessage,
     type ClientState,
     type CursorType,
 } from '../fault-tolerant/client';
 import { ItemSchema } from '../shared/schema.js';
 import makePersistence from './idb-persistence';
+
+const setup = () => {
+    const persistence = makePersistence();
+    const client = makeClient(persistence, crdt, () => {}, ['tasks']);
+    const network = makeNetwork(
+        // 'http://localhost:9900/sync',
+        'ws://localhost:9104/sync',
+        persistence.getHLC().node,
+        () => syncMessages(client.persistence, client.collections),
+        messages =>
+            Promise.all(messages.map(message => onMessage(client, message))),
+    );
+    client.setDirty = network.sync;
+    return { client, onConnection: network.onConnection };
+};
 
 const {
     client,
@@ -22,12 +39,7 @@ const {
 }: {
     onConnection: *,
     client: ClientState<Delta, Data>,
-} = (window.client = makeClient(
-    makePersistence(),
-    // 'http://localhost:9900/sync',
-    'ws://localhost:9104/sync',
-    crdt,
-));
+} = (window.client = setup());
 
 type Tasks = {
     [key: string]: {
