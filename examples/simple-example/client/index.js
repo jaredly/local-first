@@ -25,7 +25,8 @@ const setup = () => {
         'http://localhost:9900/sync',
         // 'ws://localhost:9104/sync',
         persistence.getHLC().node,
-        () => syncMessages(client.persistence, client.collections),
+        reconnected =>
+            syncMessages(client.persistence, client.collections, reconnected),
         messages =>
             Promise.all(messages.map(message => onMessage(client, message))),
     );

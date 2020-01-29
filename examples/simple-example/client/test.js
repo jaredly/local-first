@@ -9,6 +9,8 @@ import makeClient, * as clientLib from '../fault-tolerant/client';
 import { ItemSchema } from '../shared/schema.js';
 import makePersistence from './idb-persistence';
 
+// const { BroadcastChannel } = require('broadcast-channel');
+
 window.clientLib = clientLib;
 window.ItemSchema = ItemSchema;
 window.setupPolling = port => setup(makePoll, `http://localhost:${port}/sync`);
@@ -17,6 +19,19 @@ window.setupWebSockets = port => setup(makeWS, `ws://localhost:${port}/sync`);
 const setup = (makeNetwork, url) => {
     const persistence = makePersistence();
     const client = makeClient(persistence, crdt, () => {}, ['tasks']);
+
+    // const channel = new BroadcastChannel('foobar');
+    // channel.onmessage = msg => console.dir(msg);
+    // Ok so rough plan:
+    // - add a `listeners` field to the client state
+    // - messages received from the server, as well as deltas generated locally, get sent to listeners
+    // - and that should do the trick?
+    // - I think...
+    // - so you start a broadcast channel, and onmessage you do like "client on local message" or something, no persistance???
+    // - no wait I don't even need that.
+    // - I can do a general "on change" where it just broadcasts: colname + nodeid, and the other people can fetch from indexeddb.
+    // - yeah that sounds fine. listeners is (Array<{colid, nodeid}>) => void or something like that.
+
     const network = makeNetwork(
         url,
         persistence.getHLC().node,

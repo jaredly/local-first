@@ -12,17 +12,19 @@ const fs = require('fs');
 const parcelPort = 9223;
 const serverPort = 9224;
 
-const setupPage = async (browser, target, name) => {
+const setupPage = async (browser, target, name, clearOut = true) => {
     const pageA = await browser.newPage();
     pageA.on('console', msg => {
         console.log(name, msg.text());
     });
     await pageA.goto(target);
-    await pageA.evaluate(async port => {
+    await pageA.evaluate(async (port, clearOut) => {
         // Clear out current databases
-        const r = await window.indexedDB.databases();
-        for (var i = 0; i < r.length; i++) {
-            window.indexedDB.deleteDatabase(r[i].name);
+        if (clearOut) {
+            const r = await window.indexedDB.databases();
+            for (var i = 0; i < r.length; i++) {
+                window.indexedDB.deleteDatabase(r[i].name);
+            }
         }
         window.setupWebSockets(port);
         window.collection = window.clientLib.getCollection(
@@ -30,11 +32,22 @@ const setupPage = async (browser, target, name) => {
             'tasks',
             window.ItemSchema,
         );
+        window.data = {};
+        window.collection.onChanges(changes => {
+            changes.forEach(({ value, id }) => {
+                if (value) {
+                    window.data[id] = value;
+                } else {
+                    delete window.data[id];
+                }
+            });
+        });
     }, serverPort);
     return pageA;
 };
 
 const getData = page => page.evaluate(() => window.collection.loadAll());
+const getCachedData = page => page.evaluate(() => window.data);
 const addItem = (page, id, item) => {
     console.log(chalk.bold.magenta('++'), 'adding item', id);
     return page.evaluate(
@@ -71,7 +84,47 @@ console.log('listening on ' + serverPort);
 
 const wait = (time = 100) => new Promise(res => setTimeout(res, time));
 
-const run = async () => {
+const contention = async () => {
+    const browser = await puppeteer.launch();
+
+    const pageA = await setupPage(
+        browser,
+        `http://localhost:${parcelPort}/`,
+        chalk.red('Page A'),
+    );
+
+    const pageB = await setupPage(
+        browser,
+        `http://localhost:${parcelPort}/`,
+        chalk.green('Page B'),
+        false,
+    );
+
+    const pageC = await setupPage(
+        browser,
+        `http://localhost:${parcelPort}/`,
+        chalk.magenta('Page C'),
+        false,
+    );
+
+    const itemA = {
+        title: 'Item A',
+        completed: false,
+        createdDate: Date.now(),
+        tags: {},
+    };
+    expect(await getData(pageA), {}, 'A 0');
+    await addItem(pageA, 'a', itemA);
+    await wait();
+    expect(await getData(pageA), { a: itemA }, 'A 1');
+    expect(await getCachedData(pageB), { a: itemA }, 'B 1');
+    expect(await getCachedData(pageC), { a: itemA }, 'C 1');
+
+    await wait(1000);
+    process.exit(1);
+};
+
+const runFull = async () => {
     const itemA = {
         title: 'Item A',
         completed: false,
@@ -100,6 +153,7 @@ const run = async () => {
         `http://localhost:${parcelPort}/`,
         chalk.red('Page A'),
     );
+
     expect(await getData(pageA), {}, 'A 0');
     await addItem(pageA, 'a', itemA);
     expect(await getData(pageA), { a: itemA }, 'A 1');
@@ -110,6 +164,15 @@ const run = async () => {
         `http://127.0.0.1:${parcelPort}/`,
         chalk.green('Page B'),
     );
+
+    // NOTE uncommenting this triggers the issue
+    // const pageC = await setupPage(
+    //     browser,
+    //     `http://localhost:${parcelPort}/`,
+    //     chalk.magenta('Page C'),
+    //     false,
+    // );
+
     await wait();
     expect(await getData(pageB), { a: itemA }, 'B 0');
     await addItem(pageB, 'b', itemB);
@@ -134,7 +197,22 @@ const run = async () => {
     await wait(500);
 
     expect(await getData(pageA), { a: itemA, b: itemB, c: itemC }, 'A 4');
+    expect(
+        await getCachedData(pageA),
+        { a: itemA, b: itemB, c: itemC },
+        'A 4 cached',
+    );
     expect(await getData(pageB), { a: itemA, b: itemB, c: itemC }, 'B 4');
+    expect(
+        await getCachedData(pageB),
+        { a: itemA, b: itemB, c: itemC },
+        'B 4 cached',
+    );
+    // expect(
+    //     await getData(pageC),
+    //     { a: itemA, b: itemB, c: itemC },
+    //     'C 4 cached',
+    // );
 
     console.log(chalk.bold.green('All clear!'));
 
@@ -142,7 +220,7 @@ const run = async () => {
     process.exit(1);
 };
 
-run().catch(err => {
+contention().catch(err => {
     console.error(err);
     process.exit(1);
 });
