@@ -76,6 +76,11 @@ export type Persistence<Delta, Data> = {
         sessionId: string,
         deltas: Array<{ node: string, delta: Delta }>,
     ): void,
+    compact(
+        collection: string,
+        date: number,
+        merge: (Delta, Delta) => Delta,
+    ): void,
     // TODO maybe store nodes too though
     // This would be quite interesting really.
 };

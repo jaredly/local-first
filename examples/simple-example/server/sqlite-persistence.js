@@ -40,7 +40,7 @@ const setupPersistence = (baseDir: string) => {
                     col,
                     // sessionId will be *null* is this is an amalgamated changeset and includes changes
                     // from multiple sessions.
-                )} (id INTEGER PRIMARY KEY AUTOINCREMENT, changes TEXT NOT NULL, sessionId TEXT)`,
+                )} (id INTEGER PRIMARY KEY AUTOINCREMENT, changes TEXT NOT NULL, date INTEGER NOT NULL, sessionId TEXT)`,
                 [],
             );
         }
@@ -48,6 +48,74 @@ const setupPersistence = (baseDir: string) => {
         return;
     };
     return {
+        compact(
+            collection: string,
+            date: number,
+            merge: (Delta, Delta) => Delta,
+        ) {
+            setupDb(collection);
+            const tx = db.transaction((collection, date) => {
+                const rows = queryAll(
+                    db,
+                    `SELECT id, sessionId, changes from ${escapedTableName(
+                        collection,
+                    )} where date < ?`,
+                    [date],
+                );
+                if (rows.length <= 1) {
+                    return;
+                }
+                const byNode = {};
+                let session = rows[0].sessionId;
+                let maxId = rows[0].id;
+                rows.forEach(({ id, sessionId, changes }) => {
+                    if (id > maxId) {
+                        maxId = id;
+                    }
+                    if (sessionId != session) {
+                        session = null;
+                    }
+                    const deltas = JSON.parse(changes);
+                    deltas.forEach(({ node, delta }) => {
+                        if (!byNode[node]) {
+                            byNode[node] = delta;
+                        } else {
+                            byNode[node] = merge(byNode[node], delta);
+                        }
+                    });
+                });
+                // delete the rows we got
+                queryRun(
+                    db,
+                    `DELETE FROM ${escapedTableName(
+                        collection,
+                    )} where date < ?`,
+                    [date],
+                );
+                queryRun(
+                    db,
+                    `INSERT INTO ${escapedTableName(
+                        collection,
+                    )} (id, changes, date, sessionId) VALUES (@id, @changes, @date, @sessionId)`,
+                    [
+                        {
+                            id: maxId,
+                            changes: JSON.stringify(
+                                Object.keys(byNode).map(node => ({
+                                    node,
+                                    delta: byNode[node],
+                                })),
+                            ),
+                            date,
+                            sessionId: session,
+                        },
+                    ],
+                );
+            });
+            tx(collection, date);
+            // Vacuum just for fun, for benchmarks and stuff ya know.
+            // queryRun(db, 'VACUUM into "smaller.db"');
+        },
         addDeltas(
             collection: string,
             sessionId: string,
@@ -57,10 +125,11 @@ const setupPersistence = (baseDir: string) => {
             const insert = db.prepare(
                 `INSERT INTO ${escapedTableName(
                     collection,
-                )} (changes, sessionId) VALUES (@changes, @sessionId)`,
+                )} (changes, date, sessionId) VALUES (@changes, @date, @sessionId)`,
             );
             insert.run({
                 sessionId,
+                date: Date.now(),
                 changes: JSON.stringify(deltas),
             });
         },

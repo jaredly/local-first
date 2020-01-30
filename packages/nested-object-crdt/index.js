@@ -83,6 +83,18 @@ const deltas = {
     }),
 };
 
+const mergeDeltas = (one: Delta, two: Delta): Delta => {
+    if (one.path.length === 0) {
+        return { ...one, value: applyDelta(one.value, two) };
+    } else {
+        return {
+            type: 'set',
+            path: [],
+            value: applyDelta(applyDelta(createEmpty(), one), two),
+        };
+    }
+};
+
 const applyDelta = (crdt: CRDT, delta: Delta): CRDT => {
     switch (delta.type) {
         case 'set':
@@ -361,6 +373,7 @@ module.exports = {
     deltas,
     showDelta,
     applyDelta,
+    mergeDeltas,
     createEmpty,
     createValue,
     latestStamp,

@@ -64,8 +64,8 @@ const makePersistence = <Delta, Data>(): Persistence<Delta, Data> => {
                 .store.openCursor(IDBKeyRange.upperBound(upTo));
 
             while (cursor) {
-                console.log('deleting', cursor.key, cursor.delete);
-                console.log('del', cursor.delete());
+                console.log('deleting', cursor.key);
+                cursor.delete();
                 cursor = await cursor.continue();
             }
         },

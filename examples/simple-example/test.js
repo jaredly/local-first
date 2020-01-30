@@ -5,6 +5,7 @@ const puppeteer = require('puppeteer');
 const Bundler = require('parcel');
 const { runServer, makeServer } = require('./server/index.js');
 const serverLib = require('./fault-tolerant/server');
+const clientLib = require('@local-first/nested-object-crdt');
 const chalk = require('chalk');
 const deepEqual = require('fast-deep-equal');
 const fs = require('fs');
@@ -58,6 +59,14 @@ const addItem = (page, id, item) => {
         (id, item) => window.collection.save(id, item),
         id,
         item,
+    );
+};
+const setAttribute = (page, id, key, value) => {
+    return page.evaluate(
+        (id, key, value) => window.collection.setAttribute(id, {}, key, value),
+        id,
+        key,
+        value,
     );
 };
 
@@ -253,9 +262,89 @@ const full = async () => {
     app.http.close();
 };
 
+const genId = () =>
+    Math.random()
+        .toString(36)
+        .slice(2);
+
+const createItem = () => {
+    return {
+        title: genId(),
+        completed: false,
+        createdDate: Date.now(),
+        tags: {},
+    };
+};
+
+const compaction = async () => {
+    let { app, server } = setupServer();
+
+    const browser = await puppeteer.launch();
+
+    const pageA = await setupPage(
+        browser,
+        `http://localhost:${parcelPort}/`,
+        chalk.red('Page A'),
+    );
+
+    // Different origin, so they won't share indexeddbs
+    let pageB = await setupPage(
+        browser,
+        `http://127.0.0.1:${parcelPort}/`,
+        chalk.green('Page B'),
+    );
+
+    const data = {};
+
+    const id1 = genId();
+    data[id1] = createItem();
+
+    expect(await getData(pageA), {}, 'A 0');
+    await addItem(pageA, id1, data[id1]);
+    expect(await getData(pageA), data, 'A 1');
+
+    const id2 = genId();
+    data[id2] = createItem();
+
+    await pageB.close();
+
+    await addItem(pageA, id2, data[id2]);
+    await wait(50);
+
+    for (let i = 0; i < 500; i++) {
+        const title = 'Title ' + genId();
+        data[id2].title = title;
+        await setAttribute(pageA, id2, 'title', title);
+        await wait(50);
+    }
+
+    expect(await getData(pageA), data, 'A 2');
+    server.persistence.compact('tasks', Date.now(), clientLib.mergeDeltas);
+
+    // Different origin, so they won't share indexeddbs
+    pageB = await setupPage(
+        browser,
+        `http://127.0.0.1:${parcelPort}/`,
+        chalk.green('Page B'),
+        false,
+    );
+
+    await wait(500);
+    expect(await getData(pageB), data, 'B 2');
+
+    // app.http.close();
+    // app.wsInst.getWss().clients.forEach(client => {
+    //     client.close();
+    // });
+    // app = runServer(serverPort, server);
+    // console.log('please reconnect');
+    // await wait(1000);
+};
+
 const run = async () => {
-    await full();
+    // await full();
     // await contention();
+    await compaction();
 };
 
 run()
