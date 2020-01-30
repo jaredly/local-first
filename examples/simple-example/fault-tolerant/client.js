@@ -13,12 +13,6 @@ export type { Persistence, PeerChange } from './clientTypes.js';
 
 export type { CursorType } from './server.js';
 
-/*
-Cross-tab use case to support
-- The network thing knows about leader election.
-
-*/
-
 export type CRDTImpl<Delta, Data> = {
     createEmpty: () => Data,
     applyDelta: (Data, Delta) => Data,
@@ -35,11 +29,6 @@ export type CRDTImpl<Delta, Data> = {
         removeAt: (path: Array<string>, stamp: string) => Delta,
     },
 };
-
-// OK here we use idb.
-// And maybe we use localstorage if we have an active connection, and then idb? But if I'm storing the data itself in idb, might as well be consistent.
-
-// Yes, first pass, keep almost nothing in memory.
 
 type CollectionState<Delta, Data> = {
     cache: { [key: string]: Data },
@@ -167,8 +156,6 @@ const optimisticUpdates = function<Delta, Data>(
     });
 };
 
-// This isn't quite as optimistic as it could be -- I could call the listeners
-// before saving the data back into the database...
 const applyDeltas = async function<Delta, Data>(
     client: ClientState<Delta, Data>,
     colid: string,
