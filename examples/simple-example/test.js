@@ -255,7 +255,7 @@ const full = async () => {
 
 const run = async () => {
     await full();
-    await contention();
+    // await contention();
 };
 
 run()

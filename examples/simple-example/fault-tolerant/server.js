@@ -68,12 +68,13 @@ export type Persistence<Delta, Data> = {
         lastSeen: ?CursorType,
         sessionId: string,
     ): {
-        deltas: Array<{ node: string, delta: Delta, sessionId: string }>,
+        deltas: Array<{ node: string, delta: Delta }>,
         cursor: ?CursorType,
     },
     addDeltas(
         collection: string,
-        deltas: Array<{ node: string, delta: Delta, sessionId: string }>,
+        sessionId: string,
+        deltas: Array<{ node: string, delta: Delta }>,
     ): void,
     // TODO maybe store nodes too though
     // This would be quite interesting really.
@@ -126,10 +127,7 @@ export const getMessages = function<Delta, Data>(
                 return {
                     type: 'sync',
                     collection: cid,
-                    deltas: deltas.map(({ node, delta }) => ({
-                        node,
-                        delta,
-                    })),
+                    deltas,
                     serverCursor: cursor,
                 };
             }
@@ -151,8 +149,12 @@ export const onMessage = function<Delta, Data>(
         state.clients[sessionId].collections[message.collection] =
             message.serverCursor;
         if (message.deltas.length) {
-            const deltas = message.deltas.map(item => ({ ...item, sessionId }));
-            state.persistence.addDeltas(message.collection, deltas);
+            // const deltas = message.deltas.map(item => ({ ...item, sessionId }));
+            state.persistence.addDeltas(
+                message.collection,
+                sessionId,
+                message.deltas,
+            );
             let maxStamp = null;
             message.deltas.forEach(delta => {
                 const stamp = state.crdt.deltas.stamp(delta.delta);

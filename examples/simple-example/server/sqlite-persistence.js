@@ -38,7 +38,9 @@ const setupPersistence = (baseDir: string) => {
                 db,
                 `CREATE TABLE ${escapedTableName(
                     col,
-                )} (id INTEGER PRIMARY KEY AUTOINCREMENT, node TEXT, delta TEXT, sessionId TEXT)`,
+                    // sessionId will be *null* is this is an amalgamated changeset and includes changes
+                    // from multiple sessions.
+                )} (id INTEGER PRIMARY KEY AUTOINCREMENT, changes TEXT NOT NULL, sessionId TEXT)`,
                 [],
             );
         }
@@ -48,24 +50,19 @@ const setupPersistence = (baseDir: string) => {
     return {
         addDeltas(
             collection: string,
-            deltas: Array<{ node: string, delta: Delta, sessionId: string }>,
+            sessionId: string,
+            deltas: Array<{ node: string, delta: Delta }>,
         ) {
             setupDb(collection);
             const insert = db.prepare(
                 `INSERT INTO ${escapedTableName(
                     collection,
-                )} (node, delta, sessionId) VALUES (@node, @delta, @sessionId)`,
+                )} (changes, sessionId) VALUES (@changes, @sessionId)`,
             );
-
-            db.transaction(deltas => {
-                deltas.forEach(({ node, delta, sessionId }) => {
-                    insert.run({
-                        node,
-                        sessionId,
-                        delta: JSON.stringify(delta),
-                    });
-                });
-            })(deltas);
+            insert.run({
+                sessionId,
+                changes: JSON.stringify(deltas),
+            });
         },
         deltasSince(
             collection: string,
@@ -77,22 +74,23 @@ const setupPersistence = (baseDir: string) => {
                 const rows = lastSeen
                     ? queryAll(
                           db,
-                          `SELECT * from ${escapedTableName(
+                          `SELECT changes from ${escapedTableName(
                               collection,
-                          )} where id > ?`,
-                          [lastSeen],
+                          )} where id > ? and sessionId != ?`,
+                          [lastSeen, sessionId],
                       )
                     : queryAll(
                           db,
-                          `SELECT * from ${escapedTableName(collection)}`,
+                          `SELECT changes from ${escapedTableName(
+                              collection,
+                          )} where sessionId != ?`,
+                          [sessionId],
                       );
                 // console.log('db', escapedTableName(collection));
                 // console.log('getting deltas', rows, lastSeen, sessionId);
-                const deltas = rows.map(({ node, sessionId, delta }) => ({
-                    node,
-                    sessionId,
-                    delta: JSON.parse(delta),
-                }));
+                const deltas = [].concat(
+                    ...rows.map(({ changes }) => JSON.parse(changes)),
+                );
                 const cursor = queryGet(
                     db,
                     `SELECT max(id) as maxId from ${escapedTableName(
