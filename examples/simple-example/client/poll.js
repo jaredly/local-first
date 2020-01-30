@@ -6,6 +6,7 @@ import makeClient, {
     debounce,
     type ClientState,
     type CRDTImpl,
+    type PeerChange,
 } from '../fault-tolerant/client';
 import {
     type ClientMessage,
@@ -15,7 +16,7 @@ import type { Persistence } from '../fault-tolerant/clientTypes.js';
 import backOff from '../shared/back-off';
 import poller from './poller';
 
-const sync = async function<Delta, Data>(
+const syncFetch = async function<Delta, Data>(
     url: string,
     sessionId: string,
     getMessages: (
@@ -46,38 +47,66 @@ export function makeNetwork<Delta, Data>(
         reconnected: boolean,
     ) => Promise<Array<ClientMessage<Delta, Data>>>,
     onMessages: (Array<ServerMessage<Delta, Data>>) => Promise<mixed>,
+    onCrossTabChanges: PeerChange => Promise<void>,
 ): {
     sync: () => void,
     onConnection: ((boolean) => void) => void,
+    sendCrossTabChanges: PeerChange => void,
 } {
     const listeners = [];
-    const poll = poller(
-        3 * 1000,
-        () =>
-            new Promise(res => {
-                backOff(() =>
-                    sync(url, sessionId, getMessages, onMessages).then(
-                        () => {
-                            listeners.forEach(f => f(true));
-                            res();
-                            return true;
-                        },
-                        err => {
-                            console.error('Failed to sync');
-                            console.error(err);
-                            listeners.forEach(f => f(false));
-                            return false;
-                        },
-                    ),
-                );
-            }),
-    );
 
-    poll();
+    const {
+        BroadcastChannel,
+        createLeaderElection,
+    } = require('broadcast-channel');
+    const channel = new BroadcastChannel('local-first', {
+        webWorkerSupport: false,
+    });
+
+    channel.onmessage = msg => {
+        console.log('got a message');
+        onCrossTabChanges(msg).catch(err =>
+            console.log('failed', err.message, err.stack),
+        );
+        console.log('Processed message', JSON.stringify(msg));
+    };
+
+    const elector = createLeaderElection(channel);
+    let sync = () => {};
+    elector.awaitLeadership().then(() => {
+        console.log('Im the leader');
+        const poll = poller(
+            3 * 1000,
+            () =>
+                new Promise(res => {
+                    backOff(() =>
+                        syncFetch(url, sessionId, getMessages, onMessages).then(
+                            () => {
+                                listeners.forEach(f => f(true));
+                                res();
+                                return true;
+                            },
+                            err => {
+                                console.error('Failed to sync');
+                                console.error(err);
+                                listeners.forEach(f => f(false));
+                                return false;
+                            },
+                        ),
+                    );
+                }),
+        );
+        poll();
+        sync = debounce(poll);
+    });
+
     return {
         onConnection: fn => {
             listeners.push(fn);
         },
-        sync: debounce(poll),
+        sync: () => sync(),
+        sendCrossTabChanges: peerChange => {
+            channel.postMessage(peerChange);
+        },
     };
 }

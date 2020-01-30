@@ -12,6 +12,7 @@ import makeClient, {
     getStamp,
     syncMessages,
     onMessage,
+    receiveCrossTabChanges,
     type ClientState,
     type CursorType,
 } from '../fault-tolerant/client';
@@ -29,7 +30,9 @@ const setup = () => {
             syncMessages(client.persistence, client.collections, reconnected),
         messages =>
             Promise.all(messages.map(message => onMessage(client, message))),
+        peerChange => receiveCrossTabChanges(client, peerChange),
     );
+    client.listeners.push(network.sendCrossTabChanges);
     client.setDirty = network.sync;
     return { client, onConnection: network.onConnection };
 };

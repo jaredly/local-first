@@ -58,7 +58,9 @@ const setup = (makeNetwork, url) => {
                 messages.map(message => clientLib.onMessage(client, message)),
             );
         },
+        peerChange => clientLib.receiveCrossTabChanges(client, peerChange),
     );
+    client.listeners.push(network.sendCrossTabChanges);
     console.log('setting up');
     client.setDirty = network.sync;
     window.client = client;

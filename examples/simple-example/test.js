@@ -189,7 +189,7 @@ const full = async () => {
         false,
     );
 
-    await wait();
+    await wait(500);
     expect(await getData(pageB), { a: itemA }, 'B 0');
     await addItem(pageB, 'b', itemB);
     await wait();
@@ -209,7 +209,7 @@ const full = async () => {
 
     app = runServer(serverPort, server);
     console.log('please reconnect');
-    await wait(500);
+    await wait(1000);
 
     expect(await getData(pageA), { a: itemA, b: itemB, c: itemC }, 'A 4');
     expect(

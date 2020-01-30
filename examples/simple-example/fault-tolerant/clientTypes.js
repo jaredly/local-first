@@ -3,6 +3,8 @@ import { type ClientState, type CRDTImpl } from './client';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import type { CursorType } from './server.js';
 
+export type PeerChange = { col: string, nodes: Array<string> };
+
 export type makeClient = <Delta, Data>(
     persistence: Persistence<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,

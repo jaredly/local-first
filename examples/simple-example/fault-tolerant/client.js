@@ -9,8 +9,15 @@ import {
     validateSet,
 } from '@local-first/nested-object-crdt/schema.js';
 import type { Persistence } from './clientTypes.js';
+export type { Persistence, PeerChange } from './clientTypes.js';
 
 export type { CursorType } from './server.js';
+
+/*
+Cross-tab use case to support
+- The network thing knows about leader election.
+
+*/
 
 export type CRDTImpl<Delta, Data> = {
     createEmpty: () => Data,

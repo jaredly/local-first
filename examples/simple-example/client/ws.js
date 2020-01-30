@@ -4,8 +4,10 @@ import makeClient, {
     onMessage,
     syncMessages,
     debounce,
+    receiveCrossTabChanges,
     type ClientState,
     type CRDTImpl,
+    type PeerChange,
 } from '../fault-tolerant/client';
 import {
     type ClientMessage,
@@ -58,17 +60,6 @@ const reconnectingSocket = (
     return state;
 };
 
-// const doThings = (persistence, url, crdt) => {
-//     const client = makeClient(persistence, crdt, () => {});
-//     const network = makeNetwork(
-//         url,
-//         persistence.getHLC().node,
-//         () => syncMessages(client.persistence, client.collections),
-//         messages => messages.forEach(message => onMessage(client, message)),
-//     );
-//     client.setDirty = network.sync;
-// };
-
 export function makeNetwork<Delta, Data>(
     url: string,
     sessionId: string,
@@ -76,47 +67,87 @@ export function makeNetwork<Delta, Data>(
         reconnected: boolean,
     ) => Promise<Array<ClientMessage<Delta, Data>>>,
     onMessages: (Array<ServerMessage<Delta, Data>>) => Promise<mixed>,
+    onCrossTabChanges: PeerChange => Promise<void>,
 ): {
     sync: () => void,
     onConnection: ((boolean) => void) => void,
+    sendCrossTabChanges: PeerChange => void,
 } {
     const listeners = [];
-    const state = reconnectingSocket(
-        `${url}?sessionId=${sessionId}`,
-        () => sync(true),
-        msg => {
-            const messages = JSON.parse(msg);
-            onMessages(messages);
-        },
-        listeners,
-    );
 
-    const sync = (reconnected: boolean = false) => {
-        if (state.socket) {
-            const socket = state.socket;
-            getMessages(reconnected).then(
-                messages => {
-                    if (messages.length) {
-                        socket.send(JSON.stringify(messages));
-                    } else {
-                        console.log('nothing to sync here');
-                    }
-                },
-                err => {
-                    console.error('Failed to sync messages folks');
-                    console.error(err);
-                },
+    const {
+        BroadcastChannel,
+        createLeaderElection,
+    } = require('broadcast-channel');
+    const channel = new BroadcastChannel('local-first', {
+        webWorkerSupport: false,
+    });
+
+    channel.onmessage = msg => {
+        if (msg.type === 'sync' && sync != followerSync) {
+            console.log('got peer sync');
+            sync();
+        } else if (msg.type === 'change') {
+            console.log('got a message');
+            onCrossTabChanges(msg.change).catch(err =>
+                console.log('failed', err.message, err.stack),
             );
-        } else {
-            console.log('but no socket');
+            console.log('Processed message', JSON.stringify(msg.change));
         }
     };
 
+    // client.listeners.push(colChanges => {
+    //     channel.postMessage(colChanges);
+    // });
+
+    const elector = createLeaderElection(channel);
+    const followerSync = _ignored => {
+        channel.postMessage({ type: 'sync' });
+    };
+    let sync = followerSync;
+    elector.awaitLeadership().then(() => {
+        console.log('Im the leader');
+        const state = reconnectingSocket(
+            `${url}?sessionId=${sessionId}`,
+            () => sync(true),
+            msg => {
+                const messages = JSON.parse(msg);
+                onMessages(messages);
+            },
+            listeners,
+        );
+
+        sync = (reconnected: boolean = false) => {
+            if (state.socket) {
+                const socket = state.socket;
+                getMessages(reconnected).then(
+                    messages => {
+                        if (messages.length) {
+                            socket.send(JSON.stringify(messages));
+                        } else {
+                            console.log('nothing to sync here');
+                        }
+                    },
+                    err => {
+                        console.error('Failed to sync messages folks');
+                        console.error(err);
+                    },
+                );
+            } else {
+                console.log('but no socket');
+            }
+        };
+    });
+
     // sync();
     return {
-        sync,
+        sync: () => sync(false),
         onConnection: fn => {
             listeners.push(fn);
+        },
+        sendCrossTabChanges: peerChange => {
+            console.log('sending cross tab');
+            channel.postMessage({ type: 'change', change: peerChange });
         },
     };
 }
