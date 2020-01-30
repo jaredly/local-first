@@ -1,14 +1,5 @@
 // @flow
-import makeClient, {
-    getCollection,
-    onMessage,
-    syncMessages,
-    debounce,
-    receiveCrossTabChanges,
-    type ClientState,
-    type CRDTImpl,
-    type PeerChange,
-} from '../fault-tolerant/client';
+import { type PeerChange } from '../fault-tolerant/client';
 import {
     type ClientMessage,
     type ServerMessage,

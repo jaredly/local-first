@@ -80,9 +80,9 @@ const makePersistence = <Delta, Data>(): Persistence<Delta, Data> => {
             const db = await getDb(collection);
             const items = await db.getAll('nodes');
             const res = {};
-            console.log('items', items);
+            // console.log('items', items);
             items.forEach(item => (res[item.id] = item.value));
-            console.log('all', res);
+            // console.log('all', res);
             return res;
         },
         async update<T>(

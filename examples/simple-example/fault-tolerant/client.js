@@ -2,7 +2,6 @@
 
 import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
-import type { ClientMessage, ServerMessage, CursorType } from './server.js';
 import {
     type Schema,
     validate,
@@ -30,7 +29,7 @@ export type CRDTImpl<Delta, Data> = {
     },
 };
 
-type CollectionState<Delta, Data> = {
+export type CollectionState<Delta, Data> = {
     cache: { [key: string]: Data },
     listeners: Array<(Array<{ value: ?any, id: string }>) => void>,
     itemListeners: { [key: string]: Array<(value: ?any) => void> },
@@ -51,14 +50,7 @@ export type Collection<T> = {
     onItemChange: (id: string, (value: ?T) => void) => () => void,
 };
 
-export type Backend = {
-    getCollection: <T>(id: string) => Collection<T>,
-    isConnected: () => boolean,
-    getUsername: () => string,
-    logout: () => void,
-};
-
-type Collections<Delta, Data> = {
+export type Collections<Delta, Data> = {
     [collectionId: string]: CollectionState<Delta, Data>,
 };
 
@@ -69,9 +61,10 @@ export type ClientState<Delta, Data> = {
     crdt: CRDTImpl<Delta, Data>,
     listeners: Array<({ col: string, nodes: Array<string> }) => void>,
     setDirty: () => void,
+    mode: 'delta' | 'full',
 };
 
-const newCollection = <Delta, Data>(): CollectionState<Delta, Data> => ({
+export const newCollection = <Delta, Data>(): CollectionState<Delta, Data> => ({
     cache: {},
     listeners: [],
     itemListeners: {},
@@ -79,47 +72,7 @@ const newCollection = <Delta, Data>(): CollectionState<Delta, Data> => ({
 
 // The functions
 
-export const debounce = function<T>(fn: () => void): () => void {
-    let waiting = false;
-    return items => {
-        if (!waiting) {
-            waiting = true;
-            setTimeout(() => {
-                fn();
-                waiting = false;
-            }, 0);
-        } else {
-            console.log('bouncing');
-        }
-    };
-};
-
-export const syncMessages = function<Delta, Data>(
-    persistence: Persistence<Delta, Data>,
-    collections: Collections<Delta, Data>,
-    reconnected: boolean,
-): Promise<Array<ClientMessage<Delta, Data>>> {
-    return Promise.all(
-        Object.keys(collections).map(async (id: string): Promise<?ClientMessage<
-            Delta,
-            Data,
-        >> => {
-            const col = collections[id];
-            const deltas = await persistence.deltas(id);
-            const serverCursor = await persistence.getServerCursor(id);
-            if (deltas.length || !serverCursor || reconnected) {
-                return {
-                    type: 'sync',
-                    collection: id,
-                    serverCursor,
-                    deltas: deltas.map(({ node, delta }) => ({ node, delta })),
-                };
-            }
-        }),
-    ).then(a => a.filter(Boolean));
-};
-
-const optimisticUpdates = function<Delta, Data>(
+export const optimisticUpdates = function<Delta, Data>(
     crdt: CRDTImpl<Delta, Data>,
     colid: string,
     col: CollectionState<Delta, Data>,
@@ -154,100 +107,6 @@ const optimisticUpdates = function<Delta, Data>(
             col.itemListeners[id].forEach(fn => fn(crdt.value(cache[id])));
         }
     });
-};
-
-const applyDeltas = async function<Delta, Data>(
-    client: ClientState<Delta, Data>,
-    colid: string,
-    col: CollectionState<Delta, Data>,
-    deltas: Array<{ node: string, delta: Delta, ... }>,
-    source:
-        | { type: 'server', cursor: ?CursorType }
-        | { type: 'local', cache: { [key: string]: Data } },
-) {
-    const changed = {};
-    deltas.forEach(delta => {
-        changed[delta.node] = true;
-    });
-
-    const deltasWithStamps = deltas.map(delta => ({
-        ...delta,
-        stamp: client.crdt.deltas.stamp(delta.delta),
-    }));
-
-    if (source.type === 'local') {
-        optimisticUpdates(client.crdt, colid, col, deltas, source.cache);
-    }
-
-    const changedIds = Object.keys(changed);
-    console.log('Applying deltas', changedIds, deltas.length);
-
-    const data = await client.persistence.update(
-        colid,
-        deltasWithStamps,
-        (data, delta) =>
-            client.crdt.applyDelta(data ?? client.crdt.createEmpty(), delta),
-        source.type === 'server' ? source.cursor : null,
-        source.type === 'local',
-    );
-
-    if (source.type === 'local') {
-        client.setDirty();
-    }
-
-    if (col.listeners.length) {
-        const changes = changedIds.map(id => ({
-            id,
-            value: client.crdt.value(data[id]),
-        }));
-        col.listeners.forEach(listener => {
-            listener(changes);
-        });
-    }
-    changedIds.forEach(id => {
-        // Only update the cache if the node has already been cached
-        if (source.type === 'local' && source.cache[id]) {
-            source.cache[id] = data[id];
-        }
-        if (col.itemListeners[id]) {
-            col.itemListeners[id].forEach(fn =>
-                fn(client.crdt.value(data[id])),
-            );
-        }
-    });
-    if (client.listeners.length && changedIds.length) {
-        console.log('Broadcasting to client-level listeners', changedIds);
-        client.listeners.forEach(fn => fn({ col: colid, nodes: changedIds }));
-    }
-};
-
-export const onMessage = async function<Delta, Data>(
-    state: ClientState<Delta, Data>,
-    msg: ServerMessage<Delta, Data>,
-) {
-    if (msg.type === 'sync') {
-        if (!state.collections[msg.collection]) {
-            state.collections[msg.collection] = newCollection();
-        }
-        const col = state.collections[msg.collection];
-        await applyDeltas(state, msg.collection, col, msg.deltas, {
-            type: 'server',
-            cursor: msg.serverCursor,
-        });
-        let maxStamp = null;
-        msg.deltas.forEach(delta => {
-            const stamp = state.crdt.deltas.stamp(delta.delta);
-            if (!maxStamp || stamp > maxStamp) {
-                maxStamp = stamp;
-            }
-        });
-        if (maxStamp) {
-            state.hlc = hlc.recv(state.hlc, hlc.unpack(maxStamp), Date.now());
-            state.persistence.saveHLC(state.hlc);
-        }
-    } else if (msg.type === 'ack') {
-        return state.persistence.deleteDeltas(msg.collection, msg.deltaStamp);
-    }
 };
 
 export const getStamp = function<Delta, Data>(
@@ -303,6 +162,71 @@ export const receiveCrossTabChanges = async function<Delta, Data>(
             col.itemListeners[id].forEach(fn => fn(res[id]));
         }
     });
+};
+
+export const applyDeltas = async function<Delta, Data>(
+    client: ClientState<Delta, Data>,
+    colid: string,
+    col: CollectionState<Delta, Data>,
+    deltas: Array<{ node: string, delta: Delta, ... }>,
+    source:
+        | { type: 'server', cursor: ?number }
+        | { type: 'local', cache: { [key: string]: Data } },
+) {
+    const changed = {};
+    deltas.forEach(delta => {
+        changed[delta.node] = true;
+    });
+
+    const deltasWithStamps = deltas.map(delta => ({
+        ...delta,
+        stamp: client.crdt.deltas.stamp(delta.delta),
+    }));
+
+    if (source.type === 'local') {
+        optimisticUpdates(client.crdt, colid, col, deltas, source.cache);
+    }
+
+    const changedIds = Object.keys(changed);
+    console.log('Applying deltas', changedIds, deltas.length);
+
+    const data = await client.persistence.update(
+        colid,
+        deltasWithStamps,
+        (data, delta) =>
+            client.crdt.applyDelta(data ?? client.crdt.createEmpty(), delta),
+        source.type === 'server' ? source.cursor : null,
+        source.type === 'local' && client.mode === 'delta',
+    );
+
+    if (source.type === 'local') {
+        client.setDirty();
+    }
+
+    if (col.listeners.length) {
+        const changes = changedIds.map(id => ({
+            id,
+            value: client.crdt.value(data[id]),
+        }));
+        col.listeners.forEach(listener => {
+            listener(changes);
+        });
+    }
+    changedIds.forEach(id => {
+        // Only update the cache if the node has already been cached
+        if (source.type === 'local' && source.cache[id]) {
+            source.cache[id] = data[id];
+        }
+        if (col.itemListeners[id]) {
+            col.itemListeners[id].forEach(fn =>
+                fn(client.crdt.value(data[id])),
+            );
+        }
+    });
+    if (client.listeners.length && changedIds.length) {
+        console.log('Broadcasting to client-level listeners', changedIds);
+        client.listeners.forEach(fn => fn({ col: colid, nodes: changedIds }));
+    }
 };
 
 export const getCollection = function<Delta, Data, T>(
@@ -391,6 +315,7 @@ const make = <Delta, Data>(
     crdt: CRDTImpl<Delta, Data>,
     setDirty: () => void,
     initialCollections: Array<string> = [],
+    mode: 'delta' | 'full' = 'delta',
 ): ClientState<Delta, Data> => {
     const collections: {
         [collectionId: string]: CollectionState<Delta, Data>,
@@ -405,6 +330,7 @@ const make = <Delta, Data>(
         listeners: [],
         crdt,
         setDirty,
+        mode,
     };
 
     if (initialCollections.length) {

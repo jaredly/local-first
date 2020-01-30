@@ -6,6 +6,7 @@ import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 import { makeNetwork as makePoll } from './poll';
 import { makeNetwork as makeWS } from './ws';
 import makeClient, * as clientLib from '../fault-tolerant/client';
+import * as deltaLib from '../fault-tolerant/delta-client';
 import { ItemSchema } from '../shared/schema.js';
 import makePersistence from './idb-persistence';
 
@@ -46,16 +47,11 @@ const setup = (makeNetwork, url) => {
     const network = makeNetwork(
         url,
         persistence.getHLC().node,
-        (reconnected: boolean) =>
-            clientLib.syncMessages(
-                client.persistence,
-                client.collections,
-                reconnected,
-            ),
+        (reconnected: boolean) => deltaLib.syncMessages(client, reconnected),
         messages => {
             console.log('Received messages', messages);
             return Promise.all(
-                messages.map(message => clientLib.onMessage(client, message)),
+                messages.map(message => deltaLib.onMessage(client, message)),
             );
         },
         peerChange => clientLib.receiveCrossTabChanges(client, peerChange),

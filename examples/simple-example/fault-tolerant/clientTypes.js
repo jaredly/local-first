@@ -21,28 +21,44 @@ export type makeNetwork = <Delta, Data>(
     onConnection: ((boolean) => void) => void,
 };
 
+export type CorePersistence<Data> = {
+    saveHLC(hlc: HLC): void,
+    getHLC(): HLC,
+
+    deleteDeltas(collection: string, upTo: string): Promise<void>,
+    get(collection: string, id: string): Promise<?Data>,
+    update<Delta>(
+        collection: string,
+        deltas: Array<{ node: string, delta: Delta, stamp: string }>,
+        apply: (data: ?Data, delta: Delta) => Data,
+    ): Promise<{ [key: string]: Data }>,
+    getAll(collection: string): Promise<{ [key: string]: Data }>,
+};
+
+export type FullPersistence<Data> = {
+    ...CorePersistence<Data>,
+    getFull(
+        Array<string>,
+    ): Promise<{ [colid: string]: { [node: string]: Data } }>,
+    updateFull({ [colid: string]: { [node: string]: Data } }): Promise<void>,
+};
+
 export type Persistence<Delta, Data> = {
     saveHLC(hlc: HLC): void,
     getHLC(): HLC,
     deltas(
         collection: string,
     ): Promise<Array<{ node: string, delta: Delta, stamp: string }>>,
-    // addDeltas(
-    //     collection: string,
-    //     deltas: Array<{ node: string, delta: Delta, stamp: string }>,
-    // ): Promise<void>,
     getServerCursor(collection: string): Promise<?CursorType>,
 
     deleteDeltas(collection: string, upTo: string): Promise<void>,
-    get<T>(collection: string, id: string): Promise<?T>,
-    update<T>(
+    get(collection: string, id: string): Promise<?Data>,
+    update(
         collection: string,
         deltas: Array<{ node: string, delta: Delta, stamp: string }>,
         apply: (data: ?Data, delta: Delta) => Data,
-        // ids: Array<string>,
-        // process: ({ [key: string]: T }) => void,
         serverCursor: ?CursorType,
         storeDeltas: boolean,
-    ): Promise<{ [key: string]: T }>,
-    getAll<T>(collection: string): Promise<{ [key: string]: T }>,
+    ): Promise<{ [key: string]: Data }>,
+    getAll(collection: string): Promise<{ [key: string]: Data }>,
 };
