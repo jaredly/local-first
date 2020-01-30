@@ -62,15 +62,6 @@ export type Persistence<Delta, Data> = {
         deltas: Array<{ node: string, delta: Delta, sessionId: string }>,
         items: Array<{ key: string, data: Data }>,
     ): Promise<void>,
-    // addDeltas(
-    //     collection: string,
-    //     startingIndex: number,
-    //     deltas: Array<{ node: string, delta: Delta, sessionId: string }>,
-    // ): void,
-    // setItems(
-    //     collection: string,
-    //     items: Array<{ key: string, data: Data }>,
-    // ): void,
 };
 
 type Collection<Delta, Data> = {

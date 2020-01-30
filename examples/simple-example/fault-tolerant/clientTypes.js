@@ -27,19 +27,22 @@ export type Persistence<Delta, Data> = {
     deltas(
         collection: string,
     ): Promise<Array<{ node: string, delta: Delta, stamp: string }>>,
-    addDeltas(
-        collection: string,
-        deltas: Array<{ node: string, delta: Delta, stamp: string }>,
-    ): Promise<void>,
+    // addDeltas(
+    //     collection: string,
+    //     deltas: Array<{ node: string, delta: Delta, stamp: string }>,
+    // ): Promise<void>,
     getServerCursor(collection: string): Promise<?CursorType>,
 
     deleteDeltas(collection: string, upTo: string): Promise<void>,
     get<T>(collection: string, id: string): Promise<?T>,
-    changeMany<T>(
+    update<T>(
         collection: string,
-        ids: Array<string>,
-        process: ({ [key: string]: T }) => void,
+        deltas: Array<{ node: string, delta: Delta, stamp: string }>,
+        apply: (data: ?Data, delta: Delta) => Data,
+        // ids: Array<string>,
+        // process: ({ [key: string]: T }) => void,
         serverCursor: ?CursorType,
+        storeDeltas: boolean,
     ): Promise<{ [key: string]: T }>,
     getAll<T>(collection: string): Promise<{ [key: string]: T }>,
 };

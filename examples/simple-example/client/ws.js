@@ -85,20 +85,20 @@ export function makeNetwork<Delta, Data>(
 
     channel.onmessage = msg => {
         if (msg.type === 'sync' && sync != followerSync) {
-            console.log('got peer sync');
+            // console.log('got peer sync');
             sync();
         } else if (msg.type === 'change') {
-            console.log('got a message');
+            // console.log('got a message');
             onCrossTabChanges(msg.change).catch(err =>
-                console.log('failed', err.message, err.stack),
+                console.error(
+                    'failed to process cross tab changes',
+                    err.message,
+                    err.stack,
+                ),
             );
-            console.log('Processed message', JSON.stringify(msg.change));
+            // console.log('Processed message', JSON.stringify(msg.change));
         }
     };
-
-    // client.listeners.push(colChanges => {
-    //     channel.postMessage(colChanges);
-    // });
 
     const elector = createLeaderElection(channel);
     const followerSync = _ignored => {

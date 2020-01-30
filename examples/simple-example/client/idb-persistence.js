@@ -51,15 +51,6 @@ const makePersistence = <Delta, Data>(): Persistence<Delta, Data> => {
             const all = await db.getAll('deltas');
             return all;
         },
-        async addDeltas(
-            collection: string,
-            deltas: Array<{ node: string, delta: Delta, stamp: string }>,
-        ) {
-            const db = await getDb(collection);
-            const tx = db.transaction('deltas', 'readwrite');
-            deltas.forEach(obj => tx.store.put(obj));
-            await tx.done;
-        },
         async getServerCursor(collection: string) {
             const db = await getDb(collection);
             return await db.get('meta', 'cursor');
@@ -69,6 +60,7 @@ const makePersistence = <Delta, Data>(): Persistence<Delta, Data> => {
             const db = await getDb(collection);
             let cursor = await db
                 .transaction('deltas', 'readwrite')
+                // $FlowFixMe why doesn't flow like this
                 .store.openCursor(IDBKeyRange.upperBound(upTo));
 
             while (cursor) {
@@ -93,21 +85,37 @@ const makePersistence = <Delta, Data>(): Persistence<Delta, Data> => {
             console.log('all', res);
             return res;
         },
-        async changeMany<T>(
+        async update<T>(
             collection: string,
-            ids: Array<string>,
-            process: ({ [key: string]: T }) => void,
+            deltas: Array<{ node: string, delta: Delta, stamp: string }>,
+            apply: (?Data, Delta) => Data,
             serverCursor: ?CursorType,
+            storeDeltas: boolean,
         ) {
             const db = await getDb(collection);
-            const tx = db.transaction(['meta', 'nodes'], 'readwrite');
+            const tx = db.transaction(
+                storeDeltas ? ['meta', 'nodes', 'deltas'] : ['meta', 'nodes'],
+                'readwrite',
+            );
+            if (storeDeltas) {
+                const deltaStore = tx.objectStore('deltas');
+                deltas.forEach(obj => deltaStore.put(obj));
+            }
             const nodes = tx.objectStore('nodes');
+            const idMap = {};
+            deltas.forEach(d => (idMap[d.node] = true));
+            const ids = Object.keys(idMap);
             const gotten = await Promise.all(ids.map(id => nodes.get(id)));
             console.log('loaded up', ids, gotten);
             const map = {};
-            gotten.forEach(res => (res ? (map[res.id] = res.value) : null));
-            // console.log('pre-process', JSON.stringify(map));
-            process(map);
+            gotten.forEach(res => {
+                if (res) {
+                    map[res.id] = res.value;
+                }
+            });
+            deltas.forEach(({ node, delta }) => {
+                map[node] = apply(map[node], delta);
+            });
             console.log('idb changeMany processed', ids, map);
             ids.forEach(id =>
                 map[id] ? nodes.put({ id, value: map[id] }) : null,
@@ -115,6 +123,7 @@ const makePersistence = <Delta, Data>(): Persistence<Delta, Data> => {
             if (serverCursor) {
                 tx.objectStore('meta').put(serverCursor, 'cursor');
             }
+            await tx.done;
             return map;
         },
     };

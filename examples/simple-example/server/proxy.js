@@ -41,6 +41,7 @@ wss.on('connection', (ws, req) => {
 
     connection.onclose = () => {
         console.log('server closed');
+        ws.close();
     };
 
     ws.on('close', () => {
@@ -56,12 +57,5 @@ wss.on('connection', (ws, req) => {
         } else {
             connection.send(message);
         }
-        // console.log(`Received message => ${message}`);
     });
-    // ws.send('Hello! Message From Server!!');
 });
-
-// // client.js
-
-// const WebSocket = require('ws')
-// const url = 'ws://localhost:8080'

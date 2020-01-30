@@ -174,53 +174,39 @@ const applyDeltas = async function<Delta, Data>(
     colid: string,
     col: CollectionState<Delta, Data>,
     deltas: Array<{ node: string, delta: Delta, ... }>,
-    // TODO these last three could be sent in tandem.
-    // like {type: 'server', cursor: CursorType} | {type: 'local', cache: Cache}
     source:
         | { type: 'server', cursor: ?CursorType }
         | { type: 'local', cache: { [key: string]: Data } },
-    // serverCursor: ?CursorType,
-    // cache: ?{ [key: string]: Data },
-    // local: boolean,
 ) {
     const changed = {};
     deltas.forEach(delta => {
         changed[delta.node] = true;
     });
 
+    const deltasWithStamps = deltas.map(delta => ({
+        ...delta,
+        stamp: client.crdt.deltas.stamp(delta.delta),
+    }));
+
     if (source.type === 'local') {
         optimisticUpdates(client.crdt, colid, col, deltas, source.cache);
-
-        // TODO ideally adding the deltas and applying the deltas would happen in the same transaction....
-        await client.persistence.addDeltas(
-            colid,
-            deltas.map(delta => ({
-                ...delta,
-                stamp: client.crdt.deltas.stamp(delta.delta),
-            })),
-        );
-        client.setDirty();
     }
 
     const changedIds = Object.keys(changed);
     console.log('Applying deltas', changedIds, deltas.length);
 
-    const data = await client.persistence.changeMany(
+    const data = await client.persistence.update(
         colid,
-        changedIds,
-        data => {
-            deltas.forEach(delta => {
-                if (!data[delta.node]) {
-                    data[delta.node] = client.crdt.createEmpty();
-                }
-                data[delta.node] = client.crdt.applyDelta(
-                    data[delta.node],
-                    delta.delta,
-                );
-            });
-        },
+        deltasWithStamps,
+        (data, delta) =>
+            client.crdt.applyDelta(data ?? client.crdt.createEmpty(), delta),
         source.type === 'server' ? source.cursor : null,
+        source.type === 'local',
     );
+
+    if (source.type === 'local') {
+        client.setDirty();
+    }
 
     if (col.listeners.length) {
         const changes = changedIds.map(id => ({
@@ -272,51 +258,6 @@ export const onMessage = async function<Delta, Data>(
             state.hlc = hlc.recv(state.hlc, hlc.unpack(maxStamp), Date.now());
             state.persistence.saveHLC(state.hlc);
         }
-        // } else if (msg.type === 'full') {
-        //     if (!state.collections[msg.collection]) {
-        //         state.collections[msg.collection] = newCollection(state.sessionId);
-        //         // TODO find the latest hlc in here and update out hlc to match
-        //         state.collections[msg.collection].data = msg.data;
-        //     } else {
-        //         const data = state.collections[msg.collection].data;
-        //         Object.keys(msg.data).forEach(id => {
-        //             if (data[id]) {
-        //                 data[id] = state.crdt.merge(data[id], msg.data[id]);
-        //             } else {
-        //                 data[id] = msg.data[id];
-        //             }
-        //         });
-        //     }
-        //     const col = state.collections[msg.collection];
-
-        //     if (col.listeners.length) {
-        //         const changes = Object.keys(msg.data).map(id => ({
-        //             id,
-        //             value: state.crdt.value(col.data[id]),
-        //         }));
-        //         col.listeners.forEach(listener => {
-        //             listener(changes);
-        //         });
-        //     }
-        //     Object.keys(msg.data).forEach(id => {
-        //         if (col.itemListeners[id]) {
-        //             col.itemListeners[id].forEach(fn =>
-        //                 fn(state.crdt.value(col.data[id])),
-        //             );
-        //         }
-        //     });
-
-        //     col.lastSeenDelta = msg.lastSeenDelta;
-        //     let maxStamp = null;
-        //     Object.keys(msg.data).forEach(id => {
-        //         const stamp = state.crdt.latestStamp(msg.data[id]);
-        //         if (!maxStamp || stamp > maxStamp) {
-        //             maxStamp = stamp;
-        //         }
-        //     });
-        //     if (maxStamp) {
-        //         col.hlc = hlc.recv(col.hlc, hlc.unpack(maxStamp), Date.now());
-        //     }
     } else if (msg.type === 'ack') {
         return state.persistence.deleteDeltas(msg.collection, msg.deltaStamp);
     }

@@ -128,7 +128,7 @@ const contention = async () => {
     expect(await getCachedData(pageB), { a: itemA }, 'B 1');
     expect(await getCachedData(pageC), { a: itemA }, 'C 1');
 
-    await wait(1000);
+    // await wait(1000);
     app.http.close();
 };
 

@@ -48,12 +48,6 @@ export type ServerMessage<Delta, Data> =
       }
     // Indicating that deltas from a client have been received.
     | { type: 'ack', collection: string, deltaStamp: string };
-// | {
-//       type: 'full',
-//       collection: string,
-//       data: { [key: string]: Data },
-//       serverCursor: string,
-//   };
 
 // This doesn't have any special permissions things
 // We'll do collection-level permissions.
