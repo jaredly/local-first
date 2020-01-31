@@ -7,7 +7,7 @@ import {
     validate,
     validateSet,
 } from '@local-first/nested-object-crdt/schema.js';
-import type { Persistence } from './clientTypes.js';
+import type { Persistence, FullPersistence } from './clientTypes.js';
 export type { Persistence, PeerChange } from './clientTypes.js';
 
 export type { CursorType } from './server.js';
@@ -39,8 +39,7 @@ export type Collection<T> = {
     save: (id: string, value: T) => Promise<void>,
     setAttribute: (
         id: string,
-        full: T,
-        key: string,
+        path: Array<string>,
         value: any,
     ) => Promise<void>,
     load: (id: string) => Promise<?T>,
@@ -61,7 +60,15 @@ export type ClientState<Delta, Data> = {
     crdt: CRDTImpl<Delta, Data>,
     listeners: Array<({ col: string, nodes: Array<string> }) => void>,
     setDirty: () => void,
-    mode: 'delta' | 'full',
+};
+
+export type FullClientState<Delta, Data> = {
+    hlc: HLC,
+    persistence: FullPersistence<Data>,
+    collections: Collections<Delta, Data>,
+    crdt: CRDTImpl<Delta, Data>,
+    listeners: Array<({ col: string, nodes: Array<string> }) => void>,
+    setDirty: () => void,
 };
 
 export const newCollection = <Delta, Data>(): CollectionState<Delta, Data> => ({
@@ -196,7 +203,7 @@ export const applyDeltas = async function<Delta, Data>(
         (data, delta) =>
             client.crdt.applyDelta(data ?? client.crdt.createEmpty(), delta),
         source.type === 'server' ? source.cursor : null,
-        source.type === 'local' && client.mode === 'delta',
+        source.type === 'local',
     );
 
     if (source.type === 'local') {
@@ -235,8 +242,7 @@ export const getCollection = function<Delta, Data, T>(
     schema: Schema,
 ): Collection<T> {
     if (!state.collections[key]) {
-        state.collections[key] = newCollection();
-        state.setDirty();
+        throw new Error(`Unknown collection: ${key}`);
     }
     const col = state.collections[key];
     return {
@@ -314,14 +320,15 @@ const make = <Delta, Data>(
     persistence: Persistence<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,
     setDirty: () => void,
-    initialCollections: Array<string> = [],
     mode: 'delta' | 'full' = 'delta',
 ): ClientState<Delta, Data> => {
     const collections: {
         [collectionId: string]: CollectionState<Delta, Data>,
     } = {};
 
-    initialCollections.forEach(name => (collections[name] = newCollection()));
+    persistence.collections.forEach(
+        name => (collections[name] = newCollection()),
+    );
 
     const state = {
         hlc: persistence.getHLC(),
@@ -333,9 +340,7 @@ const make = <Delta, Data>(
         mode,
     };
 
-    if (initialCollections.length) {
-        setTimeout(() => state.setDirty(), 0);
-    }
+    setTimeout(() => state.setDirty(), 0);
     return state;
 };
 

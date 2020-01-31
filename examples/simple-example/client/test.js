@@ -18,7 +18,7 @@ window.setupPolling = port => setup(makePoll, `http://localhost:${port}/sync`);
 window.setupWebSockets = port => setup(makeWS, `ws://localhost:${port}/sync`);
 
 const setup = (makeNetwork, url) => {
-    const persistence = makePersistence();
+    const persistence = makePersistence('test', ['tasks']);
     const client = makeClient(persistence, crdt, () => {}, ['tasks']);
 
     const channel = new BroadcastChannel('local-first', {

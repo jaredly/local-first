@@ -19,8 +19,8 @@ import { ItemSchema } from '../shared/schema.js';
 import makePersistence from './idb-persistence';
 
 const setup = () => {
-    const persistence = makePersistence();
-    const client = makeClient(persistence, crdt, () => {}, ['tasks']);
+    const persistence = makePersistence('local-first', ['tasks']);
+    const client = makeClient(persistence, crdt, () => {});
     const network = makeNetwork(
         // 'http://localhost:9900/sync',
         'ws://localhost:9104/sync',

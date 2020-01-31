@@ -24,11 +24,6 @@ export const syncMessages = function<Delta, Data>(
     client: ClientState<Delta, Data>,
     reconnected: boolean,
 ): Promise<Array<ClientMessage<Delta, Data>>> {
-    if (client.mode !== 'delta') {
-        throw new Error(
-            'Invalid configuration! Client is in "full" mode, it is not tracking deltas.',
-        );
-    }
     return Promise.all(
         Object.keys(client.collections).map(
             async (id: string): Promise<?ClientMessage<Delta, Data>> => {
