@@ -14,7 +14,7 @@ export type Collection<T> = {
     ) => Promise<void>,
     load: (id: string) => Promise<?T>,
     loadAll: () => Promise<{ [key: string]: T }>,
-    delete: (id: string) => void,
+    delete: (id: string) => Promise<void>,
     onChanges: ((Array<{ value: ?T, id: string }>) => void) => () => void,
     onItemChange: (id: string, (value: ?T) => void) => () => void,
 };
