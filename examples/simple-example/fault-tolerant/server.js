@@ -43,7 +43,7 @@ export type ServerMessage<Delta, Data> =
     | {
           type: 'sync',
           collection: string,
-          serverCursor: ?CursorType,
+          serverCursor: CursorType,
           deltas: Array<{ node: string, delta: Delta }>,
       }
     // Indicating that deltas from a client have been received.
@@ -67,9 +67,9 @@ export type Persistence<Delta, Data> = {
         collection: string,
         lastSeen: ?CursorType,
         sessionId: string,
-    ): {
+    ): ?{
         deltas: Array<{ node: string, delta: Delta }>,
-        cursor: ?CursorType,
+        cursor: CursorType,
     },
     addDeltas(
         collection: string,
@@ -115,11 +115,16 @@ export const getMessages = function<Delta, Data>(
     return Object.keys(state.clients[sessionId].collections)
         .map((cid: string): ?ServerMessage<Delta, Data> => {
             const lastSeen = state.clients[sessionId].collections[cid];
-            const { cursor, deltas } = state.persistence.deltasSince(
+            const result = state.persistence.deltasSince(
                 cid,
                 lastSeen,
                 sessionId,
             );
+            if (!result) {
+                console.log('no new messages since', lastSeen);
+                return;
+            }
+            const { cursor, deltas } = result;
             // console.log('getting all since', lastSeen, cursor, deltas);
             console.log(
                 deltas.length,
@@ -129,6 +134,9 @@ export const getMessages = function<Delta, Data>(
                 cursor,
             );
             if (deltas.length) {
+                if (!cursor) {
+                    throw new Error(`Got deltas, but no cursor`);
+                }
                 return {
                     type: 'sync',
                     collection: cid,

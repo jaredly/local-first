@@ -1,7 +1,13 @@
 // @flow
 
 import type { Client, Collection } from '../types';
-import type { Persistence, Network, ClockPersist } from './types';
+import type {
+    Persistence,
+    Network,
+    ClockPersist,
+    DeltaPersistence,
+    FullPersistence,
+} from './types';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as hlc from '@local-first/hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';
@@ -39,8 +45,20 @@ type CRDTImpl<Delta, Data> = {
         set(Array<string>, Data): Delta,
         delete(string): Delta,
         apply(?Data, Delta): Data,
+        stamp(Delta): string,
     },
     createValue<T>(T, string): Data,
+};
+
+const send = <Data, T>(
+    state: CollectionState<Data, T>,
+    id: string,
+    value: ?T,
+) => {
+    state.listeners.forEach(fn => fn([{ id, value }]));
+    if (state.itemListeners[id]) {
+        state.itemListeners[id].forEach(fn => fn(value));
+    }
 };
 
 // This is the full version, non-patch I think?
@@ -51,25 +69,21 @@ const getCollection = function<Delta, Data, T>(
     persistence: Persistence,
     state: CollectionState<Data, T>,
     getStamp: () => string,
+    setDirty: () => void,
 ): Collection<T> {
-    const send = (id, value: ?T) => {
-        state.listeners.forEach(fn => fn([{ id, value }]));
-        if (state.itemListeners[id]) {
-            state.itemListeners[id].forEach(fn => fn(value));
-        }
-    };
     return {
         async save(id: string, node: T) {
             // so the fact that I'm not doing a merge here bothers me a little bit.
             // yup ok that's illegal, buttt not for the purpose of caching actually.
             state.cache[id] = crdt.createValue(node, getStamp());
-            send(id, node);
+            send(state, id, node);
             await persistence.applyDelta(
                 colid,
                 id,
                 crdt.delta.set([], state.cache[id]),
                 crdt.delta.apply,
             );
+            setDirty();
         },
         async setAttribute(id: string, path: Array<string>, value: any) {
             const delta = crdt.delta.set(
@@ -80,7 +94,7 @@ const getCollection = function<Delta, Data, T>(
             if (state.cache[id]) {
                 state.cache[id] = crdt.delta.apply(state.cache[id], delta);
                 plain = crdt.value(state.cache[id]);
-                send(id, plain);
+                send(state, id, plain);
             }
             const full = await persistence.applyDelta(
                 colid,
@@ -91,8 +105,9 @@ const getCollection = function<Delta, Data, T>(
             state.cache[id] = full;
             const newPlain = crdt.value(full);
             if (!deepEqual(plain, newPlain)) {
-                send(id, newPlain);
+                send(state, id, newPlain);
             }
+            setDirty();
         },
         async load(id: string) {
             const v = await persistence.load(colid, id);
@@ -113,13 +128,14 @@ const getCollection = function<Delta, Data, T>(
         },
         async delete(id: string) {
             delete state.cache[id];
-            send(id, null);
+            send(state, id, null);
             await persistence.applyDelta(
                 colid,
                 id,
                 crdt.delta.delete(getStamp()),
                 crdt.delta.apply,
             );
+            setDirty();
         },
         onChanges(fn: (Array<{ id: string, value: ?T }>) => void) {
             state.listeners.push(fn);
@@ -176,11 +192,248 @@ const syncFetch = async function<Delta, Data>(
     await onMessages(data);
 };
 
+import { type PeerChange } from '../client';
+import { debounce } from '../debounce';
+import poller from '../../client/poller';
+import backOff from '../../shared/back-off';
+
+const onCrossTabChanges = async function<Delta, Data, T>(
+    crdt: CRDTImpl<Delta, Data>,
+    persistence: Persistence,
+    state: CollectionState<Data, T>,
+    colid: string,
+    nodes: Array<string>,
+) {
+    const values = {};
+    await Promise.all(
+        nodes.map(async id => {
+            const v = await persistence.load(colid, id);
+            if (v) {
+                state.cache[id] = v;
+                values[id] = crdt.value(v);
+            } else {
+                delete state.cache[id];
+            }
+        }),
+    );
+    state.listeners.forEach(fn =>
+        fn(nodes.map(id => ({ id, value: values[id] }))),
+    );
+    nodes.forEach(id => {
+        if (state.itemListeners[id]) {
+            state.itemListeners[id].forEach(fn => fn(values[id]));
+        }
+    });
+};
+
+type SyncStatus = { status: 'connected' } | { status: 'disconnected' };
+
+const createPollingNetwork = <Delta, Data>(
+    url: string,
+): NetworkCreator<Delta, Data, SyncStatus> => (
+    sessionId,
+    getMessages,
+    handleMessages,
+    handleCrossTabChanges,
+): Network<SyncStatus> => {
+    const connectionListeners = [];
+    let currentSyncStatus = { status: 'disconnected' };
+
+    const {
+        BroadcastChannel,
+        createLeaderElection,
+    } = require('broadcast-channel');
+    const channel = new BroadcastChannel('local-first', {
+        webWorkerSupport: false,
+    });
+
+    channel.onmessage = (msg: PeerChange) => {
+        console.log('got a message');
+        handleCrossTabChanges(msg).catch(err =>
+            console.log('failed', err.message, err.stack),
+        );
+        console.log('Processed message', msg);
+    };
+
+    const elector = createLeaderElection(channel);
+    let sync = () => {};
+    elector.awaitLeadership().then(() => {
+        console.log('Im the leader');
+        const poll = poller(
+            3 * 1000,
+            () =>
+                new Promise(res => {
+                    backOff(() =>
+                        syncFetch(url, sessionId, getMessages, messages =>
+                            handleMessages(messages, peerChange =>
+                                channel.postMessage(peerChange),
+                            ),
+                        ).then(
+                            () => {
+                                currentSyncStatus = { status: 'connected' };
+                                connectionListeners.forEach(f =>
+                                    f(currentSyncStatus),
+                                );
+                                res();
+                                return true;
+                            },
+                            err => {
+                                console.error('Failed to sync');
+                                console.error(err);
+                                currentSyncStatus = { status: 'disconnected' };
+                                connectionListeners.forEach(f =>
+                                    f(currentSyncStatus),
+                                );
+                                return false;
+                            },
+                        ),
+                    );
+                }),
+        );
+        poll();
+        sync = debounce(poll);
+    });
+
+    return {
+        setDirty: () => sync(),
+        onSyncStatus: fn => {
+            connectionListeners.push(fn);
+        },
+        getSyncStatus() {
+            return currentSyncStatus;
+        },
+        sendCrossTabChanges(peerChange) {
+            channel.postMessage(peerChange);
+        },
+    };
+};
+
+const getMessages = function<Delta, Data>(
+    persistence: DeltaPersistence,
+    reconnected: boolean,
+): Promise<Array<ClientMessage<Delta, Data>>> {
+    return Promise.all(
+        persistence.collections.map(async (id: string): Promise<?ClientMessage<
+            Delta,
+            Data,
+        >> => {
+            const deltas = await persistence.deltas(id);
+            const serverCursor = await persistence.getServerCursor(id);
+            if (deltas.length || !serverCursor || reconnected) {
+                return {
+                    type: 'sync',
+                    collection: id,
+                    serverCursor,
+                    deltas: deltas.map(({ node, delta }) => ({
+                        node,
+                        delta,
+                    })),
+                };
+            }
+        }),
+    ).then(a => a.filter(Boolean));
+};
+
+export const handleMessages = async function<Delta, Data>(
+    crdt: CRDTImpl<Delta, Data>,
+    persistence: DeltaPersistence,
+    messages: Array<ServerMessage<Delta, Data>>,
+    state: { [colid: string]: CollectionState<Data, any> },
+    recvClock: HLC => void,
+    sendCrossTabChanges: PeerChange => mixed,
+) {
+    await Promise.all(
+        messages.map(async msg => {
+            if (msg.type === 'sync') {
+                const col = state[msg.collection];
+                // await applyDeltas(state, msg.collection, col, msg.deltas, {
+                //     type: 'server',
+                //     cursor: msg.serverCursor,
+                // });
+
+                const changed = {};
+                msg.deltas.forEach(delta => {
+                    changed[delta.node] = true;
+                });
+
+                const deltasWithStamps = msg.deltas.map(delta => ({
+                    ...delta,
+                    stamp: crdt.delta.stamp(delta.delta),
+                }));
+
+                const changedIds = Object.keys(changed);
+                const data = await persistence.applyDeltas(
+                    msg.collection,
+                    deltasWithStamps,
+                    msg.serverCursor,
+                    (data, delta) => crdt.delta.apply(data, delta),
+                );
+
+                if (col.listeners.length) {
+                    const changes = changedIds.map(id => ({
+                        id,
+                        value: crdt.value(data[id]),
+                    }));
+                    col.listeners.forEach(listener => {
+                        listener(changes);
+                    });
+                }
+                changedIds.forEach(id => {
+                    // Only update the cache if the node has already been cached
+                    if (state[msg.collection].cache[id]) {
+                        state[msg.collection].cache[id] = data[id];
+                    }
+                    if (col.itemListeners[id]) {
+                        col.itemListeners[id].forEach(fn =>
+                            fn(crdt.value(data[id])),
+                        );
+                    }
+                });
+
+                if (changedIds.length) {
+                    console.log(
+                        'Broadcasting to client-level listeners',
+                        changedIds,
+                    );
+                    sendCrossTabChanges({
+                        col: msg.collection,
+                        nodes: changedIds,
+                    });
+                }
+
+                let maxStamp = null;
+                msg.deltas.forEach(delta => {
+                    const stamp = crdt.delta.stamp(delta.delta);
+                    if (!maxStamp || stamp > maxStamp) {
+                        maxStamp = stamp;
+                    }
+                });
+                if (maxStamp) {
+                    recvClock(hlc.unpack(maxStamp));
+                }
+            } else if (msg.type === 'ack') {
+                return persistence.deleteDeltas(msg.collection, msg.deltaStamp);
+            }
+        }),
+    );
+};
+
+type NetworkCreator<Delta, Data, SyncStatus> = (
+    sessionId: string,
+    getMessages: (fresh: boolean) => Promise<Array<ClientMessage<Delta, Data>>>,
+    handleMessages: (
+        Array<ServerMessage<Delta, Data>>,
+        (PeerChange) => mixed,
+    ) => Promise<void>,
+    handleCrossTabChanges: (PeerChange) => Promise<void>,
+) => Network<SyncStatus>;
+
 function createClient<Delta, Data, SyncStatus>(
     // Yeah persistence contains the crdt I think...
     crdt: CRDTImpl<Delta, Data>,
     clockPersist: ClockPersist,
-    persistence: Persistence,
+    persistence: DeltaPersistence,
+    createNetwork: NetworkCreator<Delta, Data, SyncStatus>,
 ): Client<SyncStatus> {
     let clock = clockPersist.get(() => hlc.init(genId(), Date.now()));
     const state = {};
@@ -197,6 +450,34 @@ function createClient<Delta, Data, SyncStatus>(
         clockPersist.set(clock);
     };
 
+    const recvClock = (newClock: HLC) => {
+        clock = hlc.recv(clock, newClock, Date.now());
+        clockPersist.set(clock);
+    };
+
+    const network = createNetwork(
+        clock.node,
+        fresh => getMessages(persistence, fresh),
+        (messages, sendCrossTabChanges) =>
+            handleMessages(
+                crdt,
+                persistence,
+                messages,
+                state,
+                recvClock,
+                sendCrossTabChanges,
+            ),
+        (msg: PeerChange) => {
+            return onCrossTabChanges(
+                crdt,
+                persistence,
+                state[msg.colid],
+                msg.colid,
+                msg.nodes,
+            );
+        },
+    );
+
     // hook up network with persistence?
     // like ""
     return {
@@ -207,6 +488,7 @@ function createClient<Delta, Data, SyncStatus>(
                 persistence,
                 state.collections[colid],
                 getStamp,
+                network.setDirty,
             );
         },
         onSyncStatus(fn) {
