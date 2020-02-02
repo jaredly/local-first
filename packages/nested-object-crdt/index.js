@@ -82,7 +82,7 @@ const deltas = {
         value: create(null, hlcStamp),
     }),
     apply: (data: ?CRDT, delta: Delta) => {
-        return applyDelta(data ?? createEmpty(), delta);
+        return applyDelta(data ? data : createEmpty(), delta);
     },
 };
 

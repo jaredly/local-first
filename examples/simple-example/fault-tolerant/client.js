@@ -201,7 +201,10 @@ export const applyDeltas = async function<Delta, Data>(
         colid,
         deltasWithStamps,
         (data, delta) =>
-            client.crdt.applyDelta(data ?? client.crdt.createEmpty(), delta),
+            client.crdt.applyDelta(
+                data ? data : client.crdt.createEmpty(),
+                delta,
+            ),
         source.type === 'server' ? source.cursor : null,
         source.type === 'local',
     );

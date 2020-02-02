@@ -129,16 +129,12 @@ const applyDeltas = async function<Delta, Data>(
     apply: (?Data, Delta) => Data,
     storeDeltas: boolean,
 ) {
-    const tx = (await db).transaction(
-        storeDeltas
-            ? [
-                  collection + ':meta',
-                  collection + ':nodes',
-                  collection + ':deltas',
-              ]
-            : [collection + ':meta', collection + ':nodes'],
-        'readwrite',
-    );
+    console.log('Apply to collection', collection);
+    const stores = storeDeltas
+        ? [collection + ':meta', collection + ':nodes', collection + ':deltas']
+        : [collection + ':meta', collection + ':nodes'];
+    console.log('Opening for stores', stores);
+    const tx = (await db).transaction(stores, 'readwrite');
     if (storeDeltas) {
         const deltaStore = tx.objectStore(collection + ':deltas');
         deltas.forEach(obj => deltaStore.put(obj));
@@ -171,6 +167,7 @@ const makePersistence = (
     name: string,
     collections: Array<string>,
 ): DeltaPersistence => {
+    console.log('Persistence with name', name);
     const db = openDB(name, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
             collections.forEach(name => {
@@ -196,7 +193,7 @@ const makePersistence = (
         async deleteDeltas(collection: string, upTo: string) {
             console.log('delete up to', upTo);
             let cursor = await (await db)
-                .transaction(name + ':deltas', 'readwrite')
+                .transaction(collection + ':deltas', 'readwrite')
                 // $FlowFixMe why doesn't flow like this
                 .store.openCursor(IDBKeyRange.upperBound(upTo));
             while (cursor) {
@@ -211,6 +208,9 @@ const makePersistence = (
             stamp: string,
             apply: (?Data, Delta) => Data,
         ): Promise<Data> {
+            if (!collections.includes(colid)) {
+                throw new Error('Unknown collection ' + colid);
+            }
             const map = await applyDeltas(
                 db,
                 colid,
@@ -238,6 +238,9 @@ const makePersistence = (
             serverCursor: ?CursorType,
             apply: (?Data, Delta) => Data,
         ) {
+            if (!collections.includes(collection)) {
+                throw new Error('Unknown collection ' + collection);
+            }
             return applyDeltas(
                 db,
                 collection,

@@ -156,7 +156,7 @@ function createClient<Delta, Data, SyncStatus>(
     createNetwork: NetworkCreator<Delta, Data, SyncStatus>,
 ): Client<SyncStatus> {
     let clock = clockPersist.get(() => hlc.init(genId(), Date.now()));
-    const state = {};
+    const state: { [key: string]: CollectionState<Data, any> } = {};
     persistence.collections.forEach(id => (state[id] = newCollection()));
 
     const getStamp = () => {
@@ -206,7 +206,7 @@ function createClient<Delta, Data, SyncStatus>(
                 colid,
                 crdt,
                 persistence,
-                state.collections[colid],
+                state[colid],
                 getStamp,
                 network.setDirty,
             );
