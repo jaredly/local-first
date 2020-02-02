@@ -167,7 +167,10 @@ const setupPersistence = (baseDir: string) => {
                     )}`,
                     [],
                 );
-                return { deltas, cursor: cursor ? cursor.maxId : null };
+                if (!cursor) {
+                    return null;
+                }
+                return { deltas, cursor: cursor.maxId };
             });
             // console.log('transacting');
             return transaction(lastSeen, sessionId);

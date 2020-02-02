@@ -158,6 +158,7 @@ export const onMessage = function<Delta, Data>(
             state.clients[sessionId] = { collections: {} };
         }
         const schema = state.getSchema(message.collection);
+        console.log('Setting server cursor', message);
         // TODO should I only set this if its present?
         state.clients[sessionId].collections[message.collection] =
             message.serverCursor;

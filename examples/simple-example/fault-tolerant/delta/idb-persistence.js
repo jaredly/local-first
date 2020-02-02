@@ -133,7 +133,7 @@ const applyDeltas = async function<Delta, Data>(
     const stores = storeDeltas
         ? [collection + ':meta', collection + ':nodes', collection + ':deltas']
         : [collection + ':meta', collection + ':nodes'];
-    console.log('Opening for stores', stores);
+    // console.log('Opening for stores', stores);
     const tx = (await db).transaction(stores, 'readwrite');
     if (storeDeltas) {
         const deltaStore = tx.objectStore(collection + ':deltas');
@@ -144,7 +144,7 @@ const applyDeltas = async function<Delta, Data>(
     deltas.forEach(d => (idMap[d.node] = true));
     const ids = Object.keys(idMap);
     const gotten = await Promise.all(ids.map(id => nodes.get(id)));
-    console.log('loaded up', ids, gotten);
+    // console.log('loaded up', ids, gotten);
     const map = {};
     gotten.forEach(res => {
         if (res) {
@@ -154,7 +154,7 @@ const applyDeltas = async function<Delta, Data>(
     deltas.forEach(({ node, delta }) => {
         map[node] = apply(map[node], delta);
     });
-    console.log('idb changeMany processed', ids, map);
+    // console.log('idb changeMany processed', ids, map, serverCursor);
     ids.forEach(id => (map[id] ? nodes.put({ id, value: map[id] }) : null));
     if (serverCursor) {
         tx.objectStore(collection + ':meta').put(serverCursor, 'cursor');
@@ -167,7 +167,7 @@ const makePersistence = (
     name: string,
     collections: Array<string>,
 ): DeltaPersistence => {
-    console.log('Persistence with name', name);
+    // console.log('Persistence with name', name);
     const db = openDB(name, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
             collections.forEach(name => {
@@ -191,7 +191,7 @@ const makePersistence = (
             return await (await db).get(collection + ':meta', 'cursor');
         },
         async deleteDeltas(collection: string, upTo: string) {
-            console.log('delete up to', upTo);
+            // console.log('delete up to', upTo);
             let cursor = await (await db)
                 .transaction(collection + ':deltas', 'readwrite')
                 // $FlowFixMe why doesn't flow like this
@@ -208,6 +208,8 @@ const makePersistence = (
             stamp: string,
             apply: (?Data, Delta) => Data,
         ): Promise<Data> {
+            // console.log('Applying a single delta, local mutation');
+            // console.log(new Error().stack);
             if (!collections.includes(colid)) {
                 throw new Error('Unknown collection ' + colid);
             }
@@ -238,6 +240,7 @@ const makePersistence = (
             serverCursor: ?CursorType,
             apply: (?Data, Delta) => Data,
         ) {
+            // console.log('got deltas from the server I guess');
             if (!collections.includes(collection)) {
                 throw new Error('Unknown collection ' + collection);
             }

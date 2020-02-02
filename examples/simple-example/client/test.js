@@ -5,61 +5,46 @@ import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 import { makeNetwork as makePoll } from './poll';
 import { makeNetwork as makeWS } from './ws';
-import makeClient, * as clientLib from '../fault-tolerant/client';
+// import makeClient, * as clientLib from '../fault-tolerant/client';
 import * as deltaLib from '../fault-tolerant/delta-client';
 import { ItemSchema } from '../shared/schema.js';
 import makePersistence from './idb-persistence';
 
-const { BroadcastChannel } = require('broadcast-channel');
+import createClient from '../fault-tolerant/delta/create-client';
+import makeDeltaPersistence from '../fault-tolerant/delta/idb-persistence';
+import createPollingNetwork from '../fault-tolerant/delta/polling-network';
+import createWebSocketNetwork from '../fault-tolerant/delta/websocket-network';
 
-window.clientLib = clientLib;
+const clockPersist = (key: string) => ({
+    get(init) {
+        const raw = localStorage.getItem(key);
+        if (!raw) {
+            const res = init();
+            localStorage.setItem(key, hlc.pack(res));
+            return res;
+        }
+        return hlc.unpack(raw);
+    },
+    set(clock: HLC) {
+        localStorage.setItem(key, hlc.pack(clock));
+    },
+});
+
+// window.clientLib = clientLib;
 window.ItemSchema = ItemSchema;
-window.setupPolling = port => setup(makePoll, `http://localhost:${port}/sync`);
-window.setupWebSockets = port => setup(makeWS, `ws://localhost:${port}/sync`);
+window.setupPolling = port =>
+    setup(createPollingNetwork(`http://localhost:${port}/sync`));
+window.setupWebSockets = port =>
+    setup(createWebSocketNetwork(`ws://localhost:${port}/sync`));
 
-const setup = (makeNetwork, url) => {
-    const persistence = makePersistence('test', ['tasks']);
-    const client = makeClient(persistence, crdt, () => {});
-
-    const channel = new BroadcastChannel('local-first', {
-        webWorkerSupport: false,
-    });
-    channel.onmessage = msg => {
-        console.log('got a message');
-        clientLib
-            .receiveCrossTabChanges(client, msg)
-            .catch(err => console.log('failed', err.message, err.stack));
-        console.log('Processed message', JSON.stringify(msg));
-    };
-    client.listeners.push(colChanges => {
-        channel.postMessage(colChanges);
-    });
-    // Ok so rough plan:
-    // - add a `listeners` field to the client state
-    // - messages received from the server, as well as deltas generated locally, get sent to listeners
-    // - and that should do the trick?
-    // - I think...
-    // - so you start a broadcast channel, and onmessage you do like "client on local message" or something, no persistance???
-    // - no wait I don't even need that.
-    // - I can do a general "on change" where it just broadcasts: colname + nodeid, and the other people can fetch from indexeddb.
-    // - yeah that sounds fine. listeners is (Array<{colid, nodeid}>) => void or something like that.
-
-    const network = makeNetwork(
-        url,
-        persistence.getHLC().node,
-        (reconnected: boolean) => deltaLib.syncMessages(client, reconnected),
-        messages => {
-            console.log('Received messages', messages);
-            return Promise.all(
-                messages.map(message => deltaLib.onMessage(client, message)),
-            );
-        },
-        peerChange => clientLib.receiveCrossTabChanges(client, peerChange),
+const setup = makeNetwork => {
+    const client = createClient(
+        crdt,
+        clockPersist('test'),
+        makeDeltaPersistence('test', ['tasks']),
+        makeNetwork,
     );
-    client.listeners.push(network.sendCrossTabChanges);
     console.log('setting up');
-    client.setDirty = network.sync;
     window.client = client;
-    window.network = network;
     console.log('Ok set up');
 };

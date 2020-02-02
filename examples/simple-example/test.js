@@ -32,11 +32,7 @@ const setupPage = async (browser, target, name, clearOut = true) => {
             }
         }
         window.setupWebSockets(port);
-        window.collection = window.clientLib.getCollection(
-            window.client,
-            'tasks',
-            window.ItemSchema,
-        );
+        window.collection = window.client.getCollection('tasks');
         window.data = await window.collection.loadAll();
         window.collection.onChanges(changes => {
             changes.forEach(({ value, id }) => {
@@ -63,7 +59,7 @@ const addItem = (page, id, item) => {
 };
 const setAttribute = (page, id, key, value) => {
     return page.evaluate(
-        (id, key, value) => window.collection.setAttribute(id, {}, key, value),
+        (id, key, value) => window.collection.setAttribute(id, [key], value),
         id,
         key,
         value,

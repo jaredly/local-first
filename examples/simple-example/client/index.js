@@ -21,6 +21,7 @@ import makePersistence from './idb-persistence';
 import createClient from '../fault-tolerant/delta/create-client';
 import makeDeltaPersistence from '../fault-tolerant/delta/idb-persistence';
 import createPollingNetwork from '../fault-tolerant/delta/polling-network';
+import createWebSocketNetwork from '../fault-tolerant/delta/websocket-network';
 
 const clockPersist = (key: string) => ({
     get(init) {
@@ -42,7 +43,8 @@ const setup = () => {
         crdt,
         clockPersist('local-first'),
         makeDeltaPersistence('local-first', ['tasks']),
-        createPollingNetwork('http://localhost:9900/sync'),
+        // createPollingNetwork('http://localhost:9900/sync'),
+        createWebSocketNetwork('ws://localhost:9900/sync'),
     );
     return client;
 };

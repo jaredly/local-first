@@ -159,7 +159,7 @@ const removeAt = (map: CRDT, key: Array<string>, hlcStamp: string): CRDT => {
 const set = (crdt: CRDT, key: Array<string>, value: CRDT): CRDT => {
     if (crdt.type === 'map') {
         const k = key[0];
-        const v = crdt.map[k];
+        let v = crdt.map[k];
         if (key.length === 1) {
             const nv = merge(v, value);
             return {
@@ -170,6 +170,7 @@ const set = (crdt: CRDT, key: Array<string>, value: CRDT): CRDT => {
             };
         }
         if (!v) {
+            // v = createEmpty();
             // maybe here I make a `null` plain & set the attrs accordingly?
             throw new Error('setting a key that doesnt yet exist');
         }

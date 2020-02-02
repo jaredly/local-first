@@ -3,11 +3,12 @@
 const poller = (time: number, fn: () => Promise<void>) => {
     let tid = null;
     const poll = () => {
+        // console.log('poll');
         clearTimeout(tid);
         fn()
             .catch(() => {})
             .then(() => {
-                // tid = setTimeout(poll, time);
+                tid = setTimeout(poll, time);
             });
     };
     document.addEventListener(

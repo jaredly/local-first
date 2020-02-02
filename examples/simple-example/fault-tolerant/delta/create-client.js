@@ -48,24 +48,28 @@ const getMessages = function<Delta, Data>(
     reconnected: boolean,
 ): Promise<Array<ClientMessage<Delta, Data>>> {
     return Promise.all(
-        persistence.collections.map(async (id: string): Promise<?ClientMessage<
-            Delta,
-            Data,
-        >> => {
-            const deltas = await persistence.deltas(id);
-            const serverCursor = await persistence.getServerCursor(id);
-            if (deltas.length || !serverCursor || reconnected) {
-                return {
-                    type: 'sync',
-                    collection: id,
-                    serverCursor,
-                    deltas: deltas.map(({ node, delta }) => ({
-                        node,
-                        delta,
-                    })),
-                };
-            }
-        }),
+        persistence.collections.map(
+            async (
+                collection: string,
+            ): Promise<?ClientMessage<Delta, Data>> => {
+                const deltas = await persistence.deltas(collection);
+                const serverCursor = await persistence.getServerCursor(
+                    collection,
+                );
+                if (deltas.length || !serverCursor || reconnected) {
+                    console.log('messages yeah', serverCursor);
+                    return {
+                        type: 'sync',
+                        collection,
+                        serverCursor,
+                        deltas: deltas.map(({ node, delta }) => ({
+                            node,
+                            delta,
+                        })),
+                    };
+                }
+            },
+        ),
     ).then(a => a.filter(Boolean));
 };
 
@@ -93,6 +97,7 @@ const handleMessages = async function<Delta, Data>(
                 }));
 
                 const changedIds = Object.keys(changed);
+                console.log('applying deltas', msg.serverCursor);
                 const data = await persistence.applyDeltas(
                     msg.collection,
                     deltasWithStamps,
