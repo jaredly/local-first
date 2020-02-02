@@ -9,7 +9,7 @@ import type {
     Persistence,
     CorePersistence,
     FullPersistence,
-} from '../fault-tolerant/clientTypes';
+} from '../fault-tolerant/types';
 
 const genId = (): string =>
     Math.random()

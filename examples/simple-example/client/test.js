@@ -19,7 +19,7 @@ window.setupWebSockets = port => setup(makeWS, `ws://localhost:${port}/sync`);
 
 const setup = (makeNetwork, url) => {
     const persistence = makePersistence('test', ['tasks']);
-    const client = makeClient(persistence, crdt, () => {}, ['tasks']);
+    const client = makeClient(persistence, crdt, () => {});
 
     const channel = new BroadcastChannel('local-first', {
         webWorkerSupport: false,

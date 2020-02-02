@@ -38,7 +38,7 @@ import { makeFullPersistence } from '../client/idb-persistence';
 
 const setup = (name, colids, crdt) => {
     const persistence = makeFullPersistence(name, colids);
-    const client = makeClient(persistence, crdt, () => {}, 'full');
+    // const client = makeClient(persistence, crdt, () => {}, 'full');
     const url = `http://localhost:7898`;
     const listeners = [];
     // const network = makeNetwork(
@@ -66,11 +66,11 @@ const setup = (name, colids, crdt) => {
         }
     };
     // client.listeners.push(network.sendCrossTabChanges);
-    client.setDirty = () => {
-        fullSync(client);
-    };
+    // client.setDirty = () => {
+    //     fullSync(client);
+    // };
     return {
-        client,
+        // client,
         onConnection: listener => {
             listeners.push(listener);
         },

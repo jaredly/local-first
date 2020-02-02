@@ -18,30 +18,43 @@ import { syncMessages, onMessage } from '../fault-tolerant/delta-client';
 import { ItemSchema } from '../shared/schema.js';
 import makePersistence from './idb-persistence';
 
+import createClient from '../fault-tolerant/delta/create-client';
+import makeDeltaPersistence from '../fault-tolerant/delta/idb-persistence';
+import createPollingNetwork from '../fault-tolerant/delta/polling-network';
+
+const clockPersist = (key: string) => ({
+    get(init) {
+        const raw = localStorage.getItem(key);
+        if (!raw) {
+            const res = init();
+            localStorage.setItem(key, hlc.pack(res));
+            return res;
+        }
+        return hlc.unpack(raw);
+    },
+    set(clock: HLC) {
+        localStorage.setItem(key, hlc.pack(clock));
+    },
+});
+
 const setup = () => {
-    const persistence = makePersistence('local-first', ['tasks']);
-    const client = makeClient(persistence, crdt, () => {});
-    const network = makeNetwork(
-        // 'http://localhost:9900/sync',
-        'ws://localhost:9104/sync',
-        persistence.getHLC().node,
-        reconnected => syncMessages(client, reconnected),
-        messages =>
-            Promise.all(messages.map(message => onMessage(client, message))),
-        peerChange => receiveCrossTabChanges(client, peerChange),
+    const client = createClient(
+        crdt,
+        clockPersist('local-first'),
+        makeDeltaPersistence('local-first', ['tasks']),
+        createPollingNetwork('http://localhost:9900/sync'),
     );
-    client.listeners.push(network.sendCrossTabChanges);
-    client.setDirty = network.sync;
-    return { client, onConnection: network.onConnection };
+    return client;
 };
 
-const {
-    client,
-    onConnection,
-}: {
-    onConnection: *,
-    client: ClientState<Delta, Data>,
-} = (window.client = setup());
+const client = setup();
+// const {
+//     client,
+//     onConnection,
+// }: {
+//     onConnection: *,
+//     client: ClientState<Delta, Data>,
+// } = (window.client = setup());
 
 type Tasks = {
     [key: string]: {
@@ -53,10 +66,7 @@ type Tasks = {
 };
 
 const useCollection = (client, name) => {
-    const col = React.useMemo(
-        () => getCollection(client, name, ItemSchema),
-        [],
-    );
+    const col = React.useMemo(() => client.getCollection(name), []);
     const [data, setData] = React.useState(({}: Tasks));
     React.useEffect(() => {
         col.loadAll().then(data => {
@@ -87,17 +97,17 @@ const App = () => {
     const [col, data] = useCollection(client, 'tasks');
     const [connected, setConnected] = React.useState(false);
     React.useEffect(() => {
-        onConnection(connected => setConnected(connected));
+        client.onSyncStatus(status => setConnected(status));
     }, []);
     return (
         <div style={{ margin: '32px 64px' }}>
             <div>
                 Hello! We are {connected ? 'Online' : 'Offline'}{' '}
-                {client.hlc.node}
+                {client.sessionId}
             </div>
             <button
                 onClick={() => {
-                    const id = getStamp(client);
+                    const id = client.getStamp();
                     col.save(id, {
                         title: 'Item ' + (Object.keys(data).length + 1),
                         completed: false,
@@ -115,7 +125,7 @@ const App = () => {
                         key={id}
                         item={data[id]}
                         onChange={(attr, value) => {
-                            col.setAttribute(id, data[id], attr, value);
+                            col.setAttribute(id, [attr], value);
                         }}
                     />
                 ))}

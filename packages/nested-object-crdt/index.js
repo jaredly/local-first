@@ -81,6 +81,9 @@ const deltas = {
         path,
         value: create(null, hlcStamp),
     }),
+    apply: (data: ?CRDT, delta: Delta) => {
+        return applyDelta(data ?? createEmpty(), delta);
+    },
 };
 
 const mergeDeltas = (one: Delta, two: Delta): Delta => {
@@ -127,9 +130,9 @@ const show = (crdt: CRDT) => {
     }
 };
 
-const value = (crdt: CRDT) => {
+const value = function<T>(crdt: CRDT): T {
     if (crdt.type === 'plain') {
-        return crdt.value;
+        return (crdt.value: any);
     } else {
         const map = {};
         Object.keys(crdt.map)
@@ -137,7 +140,7 @@ const value = (crdt: CRDT) => {
             .forEach(k => {
                 map[k] = value(crdt.map[k]);
             });
-        return map;
+        return (map: any);
     }
 };
 
@@ -149,16 +152,16 @@ const removeAt = (map: CRDT, key: Array<string>, hlcStamp: string): CRDT => {
     return set(map, key, create(null, hlcStamp));
 };
 
-const maybeMerge = (v: CRDT, o: ?CRDT): CRDT => {
-    return o ? merge(v, o) : v;
-};
+// const maybeMerge = (v: CRDT, o: ?CRDT): CRDT => {
+//     return o ? merge(v, o) : v;
+// };
 
 const set = (crdt: CRDT, key: Array<string>, value: CRDT): CRDT => {
     if (crdt.type === 'map') {
         const k = key[0];
         const v = crdt.map[k];
         if (key.length === 1) {
-            const nv = maybeMerge(value, v);
+            const nv = merge(v, value);
             return {
                 ...crdt,
                 map: { ...crdt.map, [k]: nv },
@@ -181,9 +184,10 @@ const set = (crdt: CRDT, key: Array<string>, value: CRDT): CRDT => {
             if (value.hlcStamp > crdt.hlcStamp) {
                 const mapValues = { ...crdt.mapValues };
                 if (key.length === 1) {
-                    mapValues[key[0]] = maybeMerge(value, mapValues[key[0]]);
+                    mapValues[key[0]] = merge(mapValues[key[0]], value);
                 } else {
-                    mapValues[key[0]] = maybeMerge(
+                    mapValues[key[0]] = merge(
+                        mapValues[key[0]],
                         set(
                             {
                                 type: 'map',
@@ -193,7 +197,6 @@ const set = (crdt: CRDT, key: Array<string>, value: CRDT): CRDT => {
                             key.slice(1),
                             value,
                         ),
-                        mapValues[key[0]],
                     );
                 }
                 return { ...crdt, mapValues };
@@ -203,12 +206,13 @@ const set = (crdt: CRDT, key: Array<string>, value: CRDT): CRDT => {
             if (map) {
                 const mapValues = { ...crdt.mapValues };
                 if (key.length === 1) {
-                    mapValues[key[0]] = maybeMerge(
-                        { ...value, map },
-                        mapValues[key[0]],
-                    );
+                    mapValues[key[0]] = merge(mapValues[key[0]], {
+                        ...value,
+                        map,
+                    });
                 } else {
-                    mapValues[key[0]] = maybeMerge(
+                    mapValues[key[0]] = merge(
+                        mapValues[key[0]],
                         set(
                             {
                                 type: 'map',
@@ -218,7 +222,6 @@ const set = (crdt: CRDT, key: Array<string>, value: CRDT): CRDT => {
                             key.slice(1),
                             { ...value, map },
                         ),
-                        mapValues[key[0]],
                     );
                 }
                 return { ...crdt, mapValues };
@@ -240,7 +243,7 @@ const createDeepMap = (value: {}, hlcStamp: string): MapCRDT => {
     return { type: 'map', map, hlcStamp };
 };
 
-const createValue = (value: any, hlcStamp: string): CRDT => {
+const createValue = function<T>(value: T, hlcStamp: string): CRDT {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
         return createDeepMap(value, hlcStamp);
     } else {
@@ -264,7 +267,7 @@ const mergeMaps = (one: MapCRDT, two: MapCRDT) => {
     let minStamp = one.hlcStamp;
     const map = { ...one.map };
     Object.keys(two.map).forEach(k => {
-        map[k] = maybeMerge(two.map[k], map[k]);
+        map[k] = merge(map[k], two.map[k]);
         if (map[k].hlcStamp < minStamp) {
             minStamp = map[k].hlcStamp;
         }
@@ -282,7 +285,7 @@ const mergePlainMaps = (
 ) => {
     const res = { ...one };
     Object.keys(two).forEach(k => {
-        res[k] = maybeMerge(two[k], one[k]);
+        res[k] = merge(one[k], two[k]);
     });
     return res;
 };
@@ -347,7 +350,10 @@ const mergePlain = (one: PlainCRDT, two: PlainCRDT): PlainCRDT => {
     return { ...neww, mapValues };
 };
 
-const merge = (one: CRDT, two: CRDT): CRDT => {
+const merge = (one: ?CRDT, two: CRDT): CRDT => {
+    if (!one) {
+        return two;
+    }
     if (one.type === 'map' && two.type === 'map') {
         return mergeMaps(one, two);
     }

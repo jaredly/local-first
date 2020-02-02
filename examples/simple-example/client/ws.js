@@ -4,7 +4,7 @@ import {
     type ClientMessage,
     type ServerMessage,
 } from '../fault-tolerant/server';
-import type { Persistence } from '../fault-tolerant/clientTypes.js';
+import type { Persistence } from '../fault-tolerant/types.js';
 import backOff from '../shared/back-off';
 
 const reconnectingSocket = (

@@ -1,6 +1,7 @@
 // @flow
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import { type PeerChange } from '../client';
+import { type ClientMessage, type ServerMessage } from '../server';
 
 export type Network<SyncStatus> = {
     onSyncStatus(fn: (SyncStatus) => void): void,
@@ -16,12 +17,13 @@ export type Network<SyncStatus> = {
 // Ok, so this is the min required for the `getCollection` thing to work, I believe.
 export type Persistence = {
     collections: Array<string>,
-    save<T>(colid: string, id: string, node: T): Promise<void>,
+    // save<T>(colid: string, id: string, node: T): Promise<void>,
     // this saves local
     applyDelta<Delta, Data>(
         colid: string,
         id: string,
         delta: Delta,
+        stamp: string,
         apply: (?Data, Delta) => Data,
     ): Promise<Data>,
     load<T>(colid: string, id: string): Promise<?T>,
@@ -58,3 +60,13 @@ export type ClockPersist = {
     get(init: () => HLC): HLC,
     set(HLC): void,
 };
+
+export type NetworkCreator<Delta, Data, SyncStatus> = (
+    sessionId: string,
+    getMessages: (fresh: boolean) => Promise<Array<ClientMessage<Delta, Data>>>,
+    handleMessages: (
+        Array<ServerMessage<Delta, Data>>,
+        (PeerChange) => mixed,
+    ) => Promise<void>,
+    handleCrossTabChanges: (PeerChange) => Promise<void>,
+) => Network<SyncStatus>;

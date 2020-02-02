@@ -39,6 +39,8 @@ export type SyncStatus =
       };
 
 export type Client<SyncStatus> = {
+    sessionId: string,
+    getStamp(): string,
     getCollection<T>(id: string): Collection<T>,
     onSyncStatus(fn: (SyncStatus) => void): void,
     getSyncStatus(): SyncStatus,

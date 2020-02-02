@@ -7,8 +7,8 @@ import {
     validate,
     validateSet,
 } from '@local-first/nested-object-crdt/schema.js';
-import type { Persistence, FullPersistence } from './clientTypes.js';
-export type { Persistence, PeerChange } from './clientTypes.js';
+import type { Persistence, FullPersistence } from './types.js';
+export type { Persistence, PeerChange } from './types.js';
 
 export type { CursorType } from './server.js';
 
@@ -255,7 +255,7 @@ export const getCollection = function<Delta, Data, T>(
                 cache: col.cache,
             });
         },
-        setAttribute: async (id: string, full: T, key: string, value: any) => {
+        async setAttribute<T>(id: string, full: T, key: string, value: any) {
             validateSet(schema, [key], value);
             const delta = state.crdt.deltas.set(
                 [key],
