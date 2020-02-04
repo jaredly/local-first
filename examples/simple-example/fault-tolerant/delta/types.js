@@ -33,10 +33,13 @@ export type Persistence = {
 
 export type FullPersistence = {
     ...Persistence,
-    getFull<Data>(): { [colid: string]: { [key: string]: Data } },
-    mergeFull<Data>(full: {
-        [colid: string]: { [key: string]: Data },
-    }): Promise<{ [colid: string]: { [key: string]: Data } }>,
+    getFull<Data>(): Promise<{ [colid: string]: { [key: string]: Data } }>,
+    mergeFull<Data>(
+        full: {
+            [colid: string]: { [key: string]: Data },
+        },
+        merge: (Data, Data) => Data,
+    ): Promise<{ [colid: string]: { [key: string]: Data } }>,
 };
 
 export type DeltaPersistence = {
@@ -60,6 +63,19 @@ export type ClockPersist = {
     get(init: () => HLC): HLC,
     set(HLC): void,
 };
+
+export type Blob<Data> = {
+    [colid: string]: {
+        [id: string]: Data,
+    },
+};
+
+export type BlobNetworkCreator<Data, SyncStatus> = (
+    sessionId: string,
+    getFull: () => Promise<Blob<Data>>,
+    putFull: (Blob<Data>) => Promise<void>,
+    handleCrossTabChanges: (PeerChange) => Promise<void>,
+) => Network<SyncStatus>;
 
 export type NetworkCreator<Delta, Data, SyncStatus> = (
     sessionId: string,

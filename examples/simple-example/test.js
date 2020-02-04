@@ -307,7 +307,7 @@ const compaction = async () => {
     await addItem(pageA, id2, data[id2]);
     await wait(50);
 
-    for (let i = 0; i < 500; i++) {
+    for (let i = 0; i < 100; i++) {
         const title = 'Title ' + genId();
         data[id2].title = title;
         await setAttribute(pageA, id2, 'title', title);

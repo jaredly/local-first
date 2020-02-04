@@ -18,10 +18,14 @@ import { syncMessages, onMessage } from '../fault-tolerant/delta-client';
 import { ItemSchema } from '../shared/schema.js';
 import makePersistence from './idb-persistence';
 
-import createClient from '../fault-tolerant/delta/create-client';
+import createDeltaClient from '../fault-tolerant/delta/create-client';
 import makeDeltaPersistence from '../fault-tolerant/delta/idb-persistence';
 import createPollingNetwork from '../fault-tolerant/delta/polling-network';
 import createWebSocketNetwork from '../fault-tolerant/delta/websocket-network';
+
+import createBlobClient from '../fault-tolerant/blob/create-client';
+import makeBlobPersistence from '../fault-tolerant/blob/idb-persistence';
+import createBasicBlobNetwork from '../fault-tolerant/blob/basic-network';
 
 const clockPersist = (key: string) => ({
     get(init) {
@@ -39,13 +43,24 @@ const clockPersist = (key: string) => ({
 });
 
 const setup = () => {
-    const client = createClient(
+    const client = createBlobClient(
         crdt,
         clockPersist('local-first'),
-        makeDeltaPersistence('local-first', ['tasks']),
+        makeBlobPersistence('local-first', ['tasks']),
+        // etag: ?string => Promise<?Blob<Data>>
+        // Blob<data> => Promise<string>
+        createBasicBlobNetwork('http://localhost:9900/blob'),
         // createPollingNetwork('http://localhost:9900/sync'),
-        createWebSocketNetwork('ws://localhost:9900/sync'),
+        // createWebSocketNetwork('ws://localhost:9900/sync'),
     );
+
+    // const client = createDeltaClient(
+    //     crdt,
+    //     clockPersist('local-first'),
+    //     makeDeltaPersistence('local-first', ['tasks']),
+    //     // createPollingNetwork('http://localhost:9900/sync'),
+    //     createWebSocketNetwork('ws://localhost:9900/sync'),
+    // );
     return client;
 };
 

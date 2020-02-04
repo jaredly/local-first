@@ -22,21 +22,6 @@ import {
     type CollectionState,
 } from './shared';
 
-// const setDeep = (obj: any, path, value) => {
-//     if (!obj) {
-//         return false;
-//     }
-//     let cur = obj;
-//     for (let i = 0; i < path.length - 1; i++) {
-//         cur = cur[path[i]];
-//         if (!cur) {
-//             return false;
-//         }
-//     }
-//     cur[path[path.length - 1]] = value;
-//     return true;
-// };
-
 const genId = () =>
     Math.random()
         .toString(36)
