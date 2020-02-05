@@ -59,11 +59,11 @@ function createClient<Delta, Data, SyncStatus>(
         // which doesn't seem terrible.
         () => persistence.getFull(),
         async (full, etag, sendCrossTabChanges) => {
-            const { merged, changedIds } = await persistence.mergeFull(
-                full,
-                etag,
-                crdt.merge,
-            );
+            const result = await persistence.mergeFull(full, etag, crdt.merge);
+            if (!result) {
+                return null;
+            }
+            const { merged, changedIds } = result;
             Object.keys(changedIds).forEach(colid => {
                 const col = state[colid];
                 const data = merged.blob[colid];
@@ -72,13 +72,17 @@ function createClient<Delta, Data, SyncStatus>(
                         id,
                         value: crdt.value(data[id]),
                     }));
+                    changedIds[colid].forEach(id => {
+                        state[colid].cache[id] = data[id];
+                    });
                     col.listeners.forEach(listener => {
                         listener(changes);
                     });
                 }
                 changedIds[colid].forEach(id => {
                     // Only update the cache if the node has already been cached
-                    if (state[colid].cache[id]) {
+                    // Umm is this necessary though?
+                    if (state[colid].cache[id] || col.itemListeners[id]) {
                         state[colid].cache[id] = data[id];
                     }
                     if (col.itemListeners[id]) {
@@ -125,6 +129,7 @@ function createClient<Delta, Data, SyncStatus>(
                 state[colid],
                 getStamp,
                 network.setDirty,
+                network.sendCrossTabChanges,
             );
         },
         onSyncStatus(fn) {

@@ -85,7 +85,7 @@ const syncFetch = async function<Data>(
     mergeIntoLocal: (
         remote: Blob<Data>,
         etag: string,
-    ) => Promise<{ blob: Blob<Data>, stamp: ?string }>,
+    ) => Promise<?{ blob: Blob<Data>, stamp: ?string }>,
 
     updateMeta: (
         serverEtag: ?string,
@@ -108,19 +108,31 @@ const syncFetch = async function<Data>(
     let toSend = local ? local.blob : null;
     if (remote) {
         const response = await mergeIntoLocal(remote.blob, remote.etag);
-        toSend = response.blob;
-        dirtyStamp = response.stamp;
+        if (response) {
+            toSend = response.blob;
+            dirtyStamp = response.stamp;
+            console.log('merged with changes');
+        } else {
+            toSend = null;
+            // TODO dirtyStamp should not be truthy in this case I don't think
+            // console.log('dirtyStamp', dirtyStamp);
+            dirtyStamp = null;
+        }
     }
     let newServerEtag = null;
     if (toSend) {
+        console.log(remote ? 'pushing up merged' : 'pushing up local');
+        const t = toSend;
         Object.keys(toSend).forEach(colid => {
-            if (Array.isArray(toSend[colid])) {
+            if (Array.isArray(t[colid])) {
                 throw new Error('Array in collection!');
             }
         });
         newServerEtag = await putRemote(toSend);
     }
-    await updateMeta(newServerEtag, dirtyStamp);
+    if (newServerEtag || dirtyStamp) {
+        await updateMeta(newServerEtag, dirtyStamp);
+    }
 };
 
 // TODO dedup with polling network
@@ -141,6 +153,7 @@ const createNetwork = <Delta, Data>(
             connectionListeners.forEach(f => f(currentSyncStatus));
         },
         peerChange => {
+            console.log('received peer change');
             handleCrossTabChanges(peerChange).catch(err =>
                 console.log('failed', err.message, err.stack),
             );
@@ -166,7 +179,10 @@ const createNetwork = <Delta, Data>(
                                         res.status === 304 ||
                                         res.status === 404
                                     ) {
-                                        console.log('No changes!');
+                                        console.log(
+                                            'No changes from server!',
+                                            etag,
+                                        );
                                         return null;
                                     }
                                     if (res.status !== 200) {

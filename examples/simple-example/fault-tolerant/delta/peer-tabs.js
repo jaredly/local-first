@@ -31,13 +31,18 @@ export const peerTabAwareSync = function<SyncStatus>(
     };
 
     channel.onmessage = (
-        msg: { type: 'change', peerChange: PeerChange } | { type: 'sync' },
+        msg:
+            | { type: 'change', peerChange: PeerChange }
+            | { type: 'sync' }
+            | { type: 'status', status: SyncStatus },
     ) => {
-        console.log('got a message');
+        console.log('got a peer message', msg.type);
         if (msg.type === 'sync' && sync !== originalSync) {
             sync();
         } else if (msg.type === 'change') {
             handleCrossTabChange(msg.peerChange);
+        } else if (msg.type === 'status') {
+            onStatus(msg.status);
         }
         console.log('Processed message', msg);
     };
@@ -49,8 +54,13 @@ export const peerTabAwareSync = function<SyncStatus>(
     });
 
     return {
-        sendConnectionStatus: (status: SyncStatus) => {},
-        sendCrossTabChange: (change: PeerChange) => {},
+        sendConnectionStatus: (status: SyncStatus) => {
+            channel.postMessage({ type: 'status', status });
+        },
+        sendCrossTabChange: (change: PeerChange) => {
+            console.log('Sending changes', change);
+            channel.postMessage({ type: 'change', peerChange: change });
+        },
         sync: () => sync(),
     };
 };

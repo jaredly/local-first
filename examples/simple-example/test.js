@@ -91,6 +91,7 @@ const setupServer = () => {
     }
     const blobPath = dataDir + '/blobs/stuff';
     if (fs.existsSync(blobPath)) {
+        console.log('ditching the data stuff');
         fs.unlinkSync(blobPath);
     }
     // Start serevr
@@ -140,6 +141,7 @@ const contention = async () => {
     expect(await getCachedData(pageC), { a: itemA }, 'C 1');
 
     // await wait(1000);
+    await browser.close();
     app.http.close();
 };
 
@@ -244,6 +246,7 @@ const full = async () => {
     );
     await triggerSync(pageC);
     await wait();
+    console.log('checking');
     expect(
         await getCachedData(pageC),
         { a: itemA, b: itemB, c: itemC },
@@ -251,6 +254,8 @@ const full = async () => {
     );
 
     await addItem(pageC, 'd', itemD);
+    await wait();
+    await triggerSync(pageB);
     await wait();
     expect(
         await getCachedData(pageA),
@@ -357,7 +362,7 @@ const compaction = async () => {
 const run = async () => {
     await full();
     await contention();
-    // await compaction();
+    await compaction();
 };
 
 run()

@@ -4,7 +4,7 @@ import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 import { type CursorType } from '../client';
-import deepEqual from 'fast-deep-equal';
+import deepEqual from '@birchill/json-equalish';
 import type { FullPersistence } from '../delta/types';
 
 export const makePersistence = function(
@@ -78,6 +78,7 @@ export const makePersistence = function(
             );
             const blob = {};
             const changedIds = {};
+            let anyChanged = false;
             await Promise.all(
                 Object.keys(datas).map(async col => {
                     const store = tx.objectStore('col:' + col);
@@ -92,6 +93,13 @@ export const makePersistence = function(
                             blob[col][key] = datas[col][key];
                         }
                         if (!deepEqual(prev, blob[col][key])) {
+                            anyChanged = true;
+                            const a = JSON.stringify(prev);
+                            const b = JSON.stringify(blob[col][key]);
+                            if (a === b) {
+                                throw new Error('Jsonify says they are same');
+                            }
+                            console.log('Different', a, b);
                             if (!changedIds[col]) {
                                 changedIds[col] = [key];
                             } else {
@@ -102,11 +110,18 @@ export const makePersistence = function(
                     });
                 }),
             );
+            console.log('After merge, any changed?', anyChanged);
             await tx.objectStore('meta').put(etag, 'serverEtag');
             const dirty = await tx.objectStore('meta').get('dirty');
             // console.log('Merged', blob);
             await tx.done;
-            return { merged: { blob, stamp: dirty }, changedIds };
+            if (!anyChanged) {
+                return null;
+            }
+            return {
+                merged: { blob, stamp: dirty },
+                changedIds,
+            };
         },
         async applyDelta<Delta, Data>(
             collection: string,
@@ -128,7 +143,7 @@ export const makePersistence = function(
             }
 
             await tx.objectStore('col:' + collection).put({ id, value });
-            return data;
+            return value;
         },
     };
 };

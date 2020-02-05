@@ -1,6 +1,6 @@
 // @flow
 
-import type { Client, Collection } from '../types';
+import type { Client, Collection, PeerChange } from '../types';
 import type {
     Persistence,
     Network,
@@ -57,6 +57,7 @@ export const getCollection = function<Delta, Data, T>(
     state: CollectionState<Data, T>,
     getStamp: () => string,
     setDirty: () => void,
+    sendCrossTabChanges: PeerChange => mixed,
 ): Collection<T> {
     return {
         async save(id: string, node: T) {
@@ -73,6 +74,7 @@ export const getCollection = function<Delta, Data, T>(
                 crdt.deltas.stamp(delta),
                 crdt.deltas.apply,
             );
+            sendCrossTabChanges({ col: colid, nodes: [id] });
             setDirty();
         },
 
@@ -99,6 +101,7 @@ export const getCollection = function<Delta, Data, T>(
             if (!deepEqual(plain, newPlain)) {
                 send(state, id, newPlain);
             }
+            sendCrossTabChanges({ col: colid, nodes: [id] });
             setDirty();
         },
 
@@ -130,6 +133,7 @@ export const getCollection = function<Delta, Data, T>(
                 stamp,
                 crdt.deltas.apply,
             );
+            sendCrossTabChanges({ col: colid, nodes: [id] });
             setDirty();
         },
 

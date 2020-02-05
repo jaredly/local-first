@@ -200,6 +200,7 @@ function createClient<Delta, Data, SyncStatus>(
                 state[colid],
                 getStamp,
                 network.setDirty,
+                network.sendCrossTabChanges,
             );
         },
         onSyncStatus(fn) {
