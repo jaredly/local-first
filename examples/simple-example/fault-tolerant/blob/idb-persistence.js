@@ -7,17 +7,19 @@ import { type CursorType } from '../client';
 import deepEqual from 'fast-deep-equal';
 import type { FullPersistence } from '../delta/types';
 
-export const makePersistence = function<Data>(
+export const makePersistence = function(
     name: string,
     collections: Array<string>,
 ): FullPersistence {
     const db = openDB(name, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
             collections.forEach(name =>
-                db.createObjectStore(name, { keyPath: 'id' }),
+                db.createObjectStore('col:' + name, { keyPath: 'id' }),
             );
+            db.createObjectStore('meta');
         },
     });
+    const allStores = collections.map(name => 'col:' + name).concat(['meta']);
 
     return {
         collections,
@@ -33,27 +35,51 @@ export const makePersistence = function<Data>(
             items.forEach(item => (res[item.id] = item.value));
             return res;
         },
-        async getFull() {
-            const tx = (await db).transaction(collections, 'readonly');
+        async updateMeta(serverEtag: ?string, dirtyStampToClear: ?string) {
+            const tx = (await db).transaction('meta', 'readwrite');
+            if (serverEtag) {
+                tx.store.put(serverEtag, 'serverEtag');
+            }
+            if (dirtyStampToClear) {
+                const current = tx.store.get('dirty');
+                if (current === dirtyStampToClear) {
+                    tx.store.put(null, 'dirty');
+                }
+            }
+        },
+        async getFull<Data>() {
+            const tx = (await db).transaction(allStores, 'readonly');
+            const dirty = await tx.objectStore('meta').get('dirty');
+            const serverEtag = await tx.objectStore('meta').get('serverEtag');
+            console.log('dirty', dirty);
+            if (!dirty) {
+                return { local: null, serverEtag };
+            }
             const res = {};
             await Promise.all(
                 collections.map(async id => {
                     res[id] = {};
-                    const all = await tx.objectStore(id).getAll();
+                    const all = await tx.objectStore('col:' + id).getAll();
                     all.forEach(item => (res[id][item.id] = item.value));
                 }),
             );
-            return res;
+            return { local: { blob: res, stamp: dirty }, serverEtag };
         },
         async mergeFull<Data>(
             datas: { [col: string]: { [key: string]: Data } },
+            etag: string,
             merge: (Data, Data) => Data,
         ) {
-            const tx = (await db).transaction(Object.keys(datas), 'readwrite');
+            const tx = (await db).transaction(
+                Object.keys(datas)
+                    .map(name => 'col:' + name)
+                    .concat(['meta']),
+                'readwrite',
+            );
             const res = {};
             await Promise.all(
                 Object.keys(datas).map(async col => {
-                    const store = tx.objectStore(col);
+                    const store = tx.objectStore('col:' + col);
                     res[col] = await store.getAll();
                     Object.keys(datas[col]).forEach(key => {
                         const prev = res[col][key];
@@ -68,36 +94,31 @@ export const makePersistence = function<Data>(
                     });
                 }),
             );
+            await tx.objectStore('meta').put(etag, 'serverEtag');
+            const dirty = await tx.objectStore('meta').get('dirty');
             await tx.done;
-            return res;
+            return { blob: res, stamp: dirty };
         },
-        async applyDelta<Delta>(
+        async applyDelta<Delta, Data>(
             collection: string,
-            deltas: Array<{ node: string, delta: Delta }>,
+            id: string,
+            delta: Delta,
+            stamp: string,
             apply: (?Data, Delta) => Data,
         ) {
-            const tx = (await db).transaction(collection, 'readwrite');
-            const changedIds = {};
-            deltas.forEach(d => (changedIds[d.node] = true));
-
-            const gotten = await Promise.all(
-                Object.keys(changedIds).map(id => tx.store.get(id)),
+            const tx = (await db).transaction(
+                ['col:' + collection, 'meta'],
+                'readwrite',
             );
-            const data = {};
-            gotten.forEach(res => {
-                if (res) {
-                    data[res.id] = res.value;
-                }
-            });
+            let data = await tx.objectStore('col:' + collection).get(id);
+            const value = apply(data ? data.value : null, delta);
 
-            deltas.forEach(({ node, delta }) => {
-                data[node] = apply(data[node], delta);
-            });
-            await Promise.all(
-                Object.keys(changedIds).map(id =>
-                    tx.store.put({ id, value: data[id] }),
-                ),
-            );
+            const dirty = await tx.objectStore('meta').get('dirty');
+            if (!dirty || dirty < stamp) {
+                await tx.objectStore('meta').put(stamp, 'dirty');
+            }
+
+            await tx.objectStore('col:' + collection).put({ id, value });
             return data;
         },
     };

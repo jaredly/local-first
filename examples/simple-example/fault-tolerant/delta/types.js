@@ -33,13 +33,19 @@ export type Persistence = {
 
 export type FullPersistence = {
     ...Persistence,
-    getFull<Data>(): Promise<{ [colid: string]: { [key: string]: Data } }>,
+    getFull<Data>(): Promise<{
+        local: ?{ blob: Blob<Data>, stamp: string },
+        serverEtag: ?string,
+    }>,
     mergeFull<Data>(
-        full: {
-            [colid: string]: { [key: string]: Data },
-        },
+        full: Blob<Data>,
+        etag: string,
         merge: (Data, Data) => Data,
-    ): Promise<{ [colid: string]: { [key: string]: Data } }>,
+    ): Promise<{ blob: Blob<Data>, stamp: ?string }>,
+    updateMeta: (
+        serverEtag: ?string,
+        dirtyStampToClear: ?string,
+    ) => Promise<void>,
 };
 
 export type DeltaPersistence = {
@@ -71,9 +77,18 @@ export type Blob<Data> = {
 };
 
 export type BlobNetworkCreator<Data, SyncStatus> = (
-    sessionId: string,
-    getFull: () => Promise<{ blob: Blob<Data>, etag: ?string }>,
-    putFull: (Blob<Data>, string) => Promise<void>,
+    getLocal: () => Promise<{
+        local: ?{ blob: Blob<Data>, stamp: string },
+        serverEtag: ?string,
+    }>,
+    mergeIntoLocal: (
+        remote: Blob<Data>,
+        etag: string,
+    ) => Promise<{ blob: Blob<Data>, stamp: ?string }>,
+    updateMeta: (
+        newServerEtag: ?string,
+        dirtyFlagToClear: ?string,
+    ) => Promise<void>,
     handleCrossTabChanges: (PeerChange) => Promise<void>,
 ) => Network<SyncStatus>;
 

@@ -53,11 +53,15 @@ function createClient<Delta, Data, SyncStatus>(
     };
 
     const network = createNetwork(
-        clock.node,
+        // Hmm maybe I'm keeping network & persistence at an artificial distance
+        // I could just be passing persistence to the network creator...
+        // As long as the crdt was baked into the persistence,
+        // which doesn't seem terrible.
         () => persistence.getFull(),
-        full => {
-            return persistence.mergeFull(full, crdt.merge).then(() => {});
+        (full, etag) => {
+            return persistence.mergeFull(full, etag, crdt.merge);
         },
+        persistence.updateMeta,
         (msg: PeerChange) => {
             return onCrossTabChanges(
                 crdt,

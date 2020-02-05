@@ -68,11 +68,29 @@ I mean tbh I probably can use the HLC as the etag, I just can't do greater-than 
 
 // Ok the part where we get very specific
 const syncFetch = async function<Data>(
+    getRemote: (etag: ?string) => Promise<?{ blob: Blob<Data>, etag: string }>,
+    putRemote: (Blob<Data>) => Promise<string>,
+
     getLocal: () => Promise<{
         local: ?{ blob: Blob<Data>, stamp: string },
         serverEtag: ?string,
     }>,
-    getRemote: (etag: ?string) => Promise<{ blob: ?Blob<Data>, etag: string }>,
+    /* hrm ok so the case where:
+
+    - getLocal gives a blob and a stamp
+    while getting remote, we do a local action, that changes the dirty stamp.
+    - remote has changes, so we mergeIntoLocal, yielding a merged data that includes the data of the new stamp.
+    ...
+    */
+    mergeIntoLocal: (
+        remote: Blob<Data>,
+        etag: string,
+    ) => Promise<{ blob: Blob<Data>, stamp: ?string }>,
+
+    updateMeta: (
+        serverEtag: ?string,
+        dirtyFlagToClear: ?string,
+    ) => Promise<void>,
     // getRemote: string => Promise<?Blob<Data>>,
     // putRemote: Blob<Data> => Promise<string>,
     // // url: string,
@@ -82,59 +100,31 @@ const syncFetch = async function<Data>(
     // putEtag,
 ) {
     const { local, serverEtag } = await getLocal();
-    const { blob: remote, etag: newServerEtag } = await getRemote(serverEtag);
+    let dirtyStamp = local ? local.stamp : null;
+    const remote = await getRemote(serverEtag);
     if (!local && !remote) {
         return; // no changes
     }
     let toSend = local ? local.blob : null;
     if (remote) {
-        toSend = await mergeIntoLocal(remote, newServerEtag);
+        const response = await mergeIntoLocal(remote.blob, remote.etag);
+        toSend = response.blob;
+        dirtyStamp = response.stamp;
     }
+    let newServerEtag = null;
     if (toSend) {
-        const etag = await putRemote(toSend);
-        await storeServerEtag(etag);
+        newServerEtag = await putRemote(toSend);
     }
-    if (local) {
-        await clearDirtyFlag(local.stamp);
-    }
-
-    const { full, etag } = await getFull();
-    const currentRemote = await getRemote(etag);
-    if (!currentRemote) {
-        // we don't need to merge in remote changes, we can just push.
-        const etag = await putRemote(full);
-        await putEtag(etag);
-        return;
-    } else {
-        const merged = await putFull(await currentRemote);
-        await fetch(url, {
-            method: 'POST',
-            body: JSON.stringify(full),
-            headers: { 'Content-type': 'application/json' },
-        });
-    }
-    const full = await getFull();
-    // console.log('messages', messages);
-    const res = await fetch(`${url}?sessionId=${sessionId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(messages),
-    });
-    if (res.status !== 200) {
-        throw new Error(`Unexpected status ${res.status}`);
-    }
-    const data = await res.json();
-    console.log('sync:data', data);
-    await onMessages(data);
+    await updateMeta(newServerEtag, dirtyStamp);
 };
 
 // TODO dedup with polling network
-const createPollingNetwork = <Delta, Data>(
+const createNetwork = <Delta, Data>(
     url: string,
 ): BlobNetworkCreator<Data, SyncStatus> => (
-    sessionId,
-    getFull,
-    putFull,
+    getLocal,
+    mergeIntoLocal,
+    updateMeta,
     handleCrossTabChanges,
 ): Network<SyncStatus> => {
     const connectionListeners = [];
@@ -160,12 +150,21 @@ const createPollingNetwork = <Delta, Data>(
                             syncFetch(
                                 async etag => {
                                     const res = await fetch(url, {
-                                        headers: { 'If-None-Match': etag },
+                                        headers: {
+                                            'If-None-Match': etag ? etag : '',
+                                        },
                                     });
                                     if (res.status === 304) {
                                         return null;
                                     }
-                                    return res.json();
+                                    const blob = await res.json();
+                                    const newEtag = res.headers.get('etag');
+                                    if (!newEtag) {
+                                        throw new Error(
+                                            `Remote didn't set an etag`,
+                                        );
+                                    }
+                                    return { blob, etag: newEtag };
                                 },
                                 async blob => {
                                     const res = await fetch(url, {
@@ -176,10 +175,17 @@ const createPollingNetwork = <Delta, Data>(
                                         },
                                     });
                                     console.log(res.headers);
-                                    return res.headers['ETag'];
+                                    const etag = res.headers.get('etag');
+                                    if (!etag) {
+                                        throw new Error(
+                                            `Remote didn't respond to post with an etag`,
+                                        );
+                                    }
+                                    return etag;
                                 },
-                                getFull,
-                                putFull,
+                                getLocal,
+                                mergeIntoLocal,
+                                updateMeta,
                             ).then(
                                 () => {
                                     currentSyncStatus = { status: 'connected' };
