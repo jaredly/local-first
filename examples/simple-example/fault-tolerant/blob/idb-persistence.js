@@ -94,12 +94,6 @@ export const makePersistence = function(
                         }
                         if (!deepEqual(prev, blob[col][key])) {
                             anyChanged = true;
-                            const a = JSON.stringify(prev);
-                            const b = JSON.stringify(blob[col][key]);
-                            if (a === b) {
-                                throw new Error('Jsonify says they are same');
-                            }
-                            console.log('Different', a, b);
                             if (!changedIds[col]) {
                                 changedIds[col] = [key];
                             } else {

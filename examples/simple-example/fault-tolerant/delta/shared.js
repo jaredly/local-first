@@ -9,6 +9,11 @@ import type {
     FullPersistence,
     NetworkCreator,
 } from './types';
+import {
+    type Schema,
+    validate,
+    validateSet,
+} from '@local-first/nested-object-crdt/schema.js';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as hlc from '@local-first/hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';
@@ -58,9 +63,11 @@ export const getCollection = function<Delta, Data, T>(
     getStamp: () => string,
     setDirty: () => void,
     sendCrossTabChanges: PeerChange => mixed,
+    schema: Schema,
 ): Collection<T> {
     return {
         async save(id: string, node: T) {
+            validate(node, schema);
             state.cache[id] = crdt.merge(
                 state.cache[id],
                 crdt.createValue(node, getStamp()),
@@ -79,6 +86,7 @@ export const getCollection = function<Delta, Data, T>(
         },
 
         async setAttribute(id: string, path: Array<string>, value: any) {
+            validateSet(schema, path, value);
             const delta = crdt.deltas.set(
                 path,
                 crdt.createValue(value, getStamp()),

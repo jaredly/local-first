@@ -6,6 +6,7 @@ import type {
     FullPersistence,
     BlobNetworkCreator,
 } from '../delta/types';
+import { type Schema } from '@local-first/nested-object-crdt/schema.js';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as hlc from '@local-first/hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';
@@ -28,6 +29,7 @@ import { type ClientMessage, type ServerMessage } from '../server';
 
 function createClient<Delta, Data, SyncStatus>(
     crdt: CRDTImpl<Delta, Data>,
+    schemas: { [colid: string]: Schema },
     clockPersist: ClockPersist,
     persistence: FullPersistence,
     createNetwork: BlobNetworkCreator<Data, SyncStatus>,
@@ -130,6 +132,7 @@ function createClient<Delta, Data, SyncStatus>(
                 getStamp,
                 network.setDirty,
                 network.sendCrossTabChanges,
+                schemas[colid],
             );
         },
         onSyncStatus(fn) {

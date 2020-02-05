@@ -42,6 +42,7 @@ const clockPersist = (key: string) => ({
 const setupBlob = () => {
     return createBlobClient(
         crdt,
+        { tasks: ItemSchema },
         clockPersist('local-first'),
         makeBlobPersistence('local-first', ['tasks']),
         createBasicBlobNetwork('http://localhost:9900/blob'),
@@ -51,6 +52,7 @@ const setupBlob = () => {
 const setupDelta = () => {
     return createDeltaClient(
         crdt,
+        { tasks: ItemSchema },
         clockPersist('local-first'),
         makeDeltaPersistence('local-first', ['tasks']),
         // createPollingNetwork('http://localhost:9900/sync'),

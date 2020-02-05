@@ -2,6 +2,7 @@
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import { type PeerChange } from '../client';
 import { type ClientMessage, type ServerMessage } from '../server';
+import { type Schema } from '@local-first/nested-object-crdt/schema.js';
 
 export type Network<SyncStatus> = {
     onSyncStatus(fn: (SyncStatus) => void): void,

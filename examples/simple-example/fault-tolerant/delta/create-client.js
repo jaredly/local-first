@@ -11,6 +11,7 @@ import type {
 } from './types';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as hlc from '@local-first/hybrid-logical-clock';
+import { type Schema } from '@local-first/nested-object-crdt/schema.js';
 import deepEqual from 'fast-deep-equal';
 import { type PeerChange } from '../client';
 
@@ -141,6 +142,7 @@ const handleMessages = async function<Delta, Data>(
 
 function createClient<Delta, Data, SyncStatus>(
     crdt: CRDTImpl<Delta, Data>,
+    schemas: { [colid: string]: Schema },
     clockPersist: ClockPersist,
     persistence: DeltaPersistence,
     createNetwork: NetworkCreator<Delta, Data, SyncStatus>,
@@ -201,6 +203,7 @@ function createClient<Delta, Data, SyncStatus>(
                 getStamp,
                 network.setDirty,
                 network.sendCrossTabChanges,
+                schemas[colid],
             );
         },
         onSyncStatus(fn) {

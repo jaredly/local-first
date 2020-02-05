@@ -42,6 +42,7 @@ window.setupWebSockets = port =>
 window.setupBlob = port => {
     const client = createBlobClient(
         crdt,
+        { tasks: ItemSchema },
         clockPersist('local-first'),
         makeBlobPersistence('local-first', ['tasks']),
         // etag: ?string => Promise<?Blob<Data>>
@@ -57,6 +58,7 @@ window.setupBlob = port => {
 const setup = makeNetwork => {
     const client = createClient(
         crdt,
+        { tasks: ItemSchema },
         clockPersist('test'),
         makeDeltaPersistence('test', ['tasks']),
         makeNetwork,
