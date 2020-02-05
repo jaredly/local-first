@@ -12,6 +12,8 @@ import type {
 } from '../fault-tolerant/server';
 import { ItemSchema } from '../shared/schema.js';
 
+import path from 'path';
+import fs from 'fs';
 import levelup from 'levelup';
 import leveldown from 'leveldown';
 import setupPersistence from './sqlite-persistence';
@@ -45,6 +47,7 @@ export const makeServer = (dataPath: string) =>
 
 export const runServer = <Delta, Data>(
     port: number,
+    dataPath: string,
     server: ServerState<Delta, Data>,
 ) => {
     const express = require('express');
@@ -54,6 +57,35 @@ export const runServer = <Delta, Data>(
     const wsInst = ws(app);
     app.use(require('cors')());
     app.use(require('body-parser').json());
+
+    const genEtag = stat => `${stat.mtime.getTime()}:${stat.size}`;
+
+    app.get('/blob/:name', (req, res) => {
+        const filePath = path.join(dataPath, 'blobs', req.params['name']);
+        if (!fs.existsSync(filePath)) {
+            res.status(404);
+            return res.end();
+        }
+        const stat = fs.statSync(filePath);
+        const etag = genEtag(stat);
+        if (etag == req.get('if-none-match')) {
+            res.header('etag', etag);
+            res.status(304);
+            res.end();
+            return;
+        }
+        res.json(JSON.parse(fs.readFileSync(filePath, 'utf8')));
+    });
+
+    app.put('/blob/:name', (req, res) => {
+        const filePath = path.join(dataPath, 'blobs', req.params['name']);
+        fs.writeFileSync(filePath, JSON.stringify(req.body), 'utf8');
+        const stat = fs.statSync(filePath);
+        const etag = genEtag(stat);
+        res.set('etag', etag);
+        res.status(204);
+        res.end();
+    });
 
     app.post('/sync', (req, res) => {
         if (!req.query.sessionId) {

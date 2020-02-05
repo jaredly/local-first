@@ -89,9 +89,9 @@ const setupServer = () => {
     }
     // Start serevr
     const server = makeServer(dataDir);
-    const app = runServer(serverPort, server);
+    const app = runServer(serverPort, dataDir, server);
     console.log('listening on ' + serverPort);
-    return { app, server };
+    return { app, server, dataDir };
 };
 
 const wait = (time = 100) => new Promise(res => setTimeout(res, time));
@@ -138,7 +138,7 @@ const contention = async () => {
 };
 
 const full = async () => {
-    let { app, server } = setupServer();
+    let { app, server, dataDir } = setupServer();
     const itemA = {
         title: 'Item A',
         completed: false,
@@ -212,7 +212,7 @@ const full = async () => {
     expect(await getData(pageA), { a: itemA, b: itemB, c: itemC }, 'A 3');
     expect(await getData(pageB), { a: itemA, b: itemB }, 'B 3');
 
-    app = runServer(serverPort, server);
+    app = runServer(serverPort, dataDir, server);
     console.log('please reconnect');
     await wait(1000);
 

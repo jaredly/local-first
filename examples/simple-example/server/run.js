@@ -2,5 +2,6 @@
 // @flow
 require('@babel/register');
 const { runServer, makeServer } = require('./index.js');
-runServer(9900, makeServer(__dirname + '/.data'));
+const dataPath = __dirname + '/.data';
+runServer(9900, dataPath, makeServer(dataPath));
 console.log('listening on 9900');

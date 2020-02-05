@@ -72,8 +72,8 @@ export type Blob<Data> = {
 
 export type BlobNetworkCreator<Data, SyncStatus> = (
     sessionId: string,
-    getFull: () => Promise<Blob<Data>>,
-    putFull: (Blob<Data>) => Promise<void>,
+    getFull: () => Promise<{ blob: Blob<Data>, etag: ?string }>,
+    putFull: (Blob<Data>, string) => Promise<void>,
     handleCrossTabChanges: (PeerChange) => Promise<void>,
 ) => Network<SyncStatus>;
 
