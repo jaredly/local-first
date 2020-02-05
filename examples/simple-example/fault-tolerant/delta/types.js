@@ -41,7 +41,10 @@ export type FullPersistence = {
         full: Blob<Data>,
         etag: string,
         merge: (Data, Data) => Data,
-    ): Promise<{ blob: Blob<Data>, stamp: ?string }>,
+    ): Promise<{
+        merged: { blob: Blob<Data>, stamp: ?string },
+        changedIds: { [colid: string]: Array<string> },
+    }>,
     updateMeta: (
         serverEtag: ?string,
         dirtyStampToClear: ?string,
@@ -84,6 +87,7 @@ export type BlobNetworkCreator<Data, SyncStatus> = (
     mergeIntoLocal: (
         remote: Blob<Data>,
         etag: string,
+        (PeerChange) => mixed,
     ) => Promise<{ blob: Blob<Data>, stamp: ?string }>,
     updateMeta: (
         newServerEtag: ?string,

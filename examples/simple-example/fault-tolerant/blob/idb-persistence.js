@@ -24,15 +24,16 @@ export const makePersistence = function(
     return {
         collections,
         async load(collection: string, id: string) {
-            const data = await (await db).get(collection, id);
+            const data = await (await db).get('col:' + collection, id);
             if (data) {
                 return data.value;
             }
         },
         async loadAll(collection: string) {
-            const items = await (await db).getAll(collection);
+            const items = await (await db).getAll('col:' + collection);
             const res = {};
             items.forEach(item => (res[item.id] = item.value));
+            await new Promise(res => setTimeout(res, 50));
             return res;
         },
         async updateMeta(serverEtag: ?string, dirtyStampToClear: ?string) {
@@ -51,19 +52,18 @@ export const makePersistence = function(
             const tx = (await db).transaction(allStores, 'readonly');
             const dirty = await tx.objectStore('meta').get('dirty');
             const serverEtag = await tx.objectStore('meta').get('serverEtag');
-            console.log('dirty', dirty);
             if (!dirty) {
                 return { local: null, serverEtag };
             }
-            const res = {};
+            const blob = {};
             await Promise.all(
-                collections.map(async id => {
-                    res[id] = {};
-                    const all = await tx.objectStore('col:' + id).getAll();
-                    all.forEach(item => (res[id][item.id] = item.value));
+                collections.map(async colid => {
+                    blob[colid] = {};
+                    const all = await tx.objectStore('col:' + colid).getAll();
+                    all.forEach(item => (blob[colid][item.id] = item.value));
                 }),
             );
-            return { local: { blob: res, stamp: dirty }, serverEtag };
+            return { local: { blob, stamp: dirty }, serverEtag };
         },
         async mergeFull<Data>(
             datas: { [col: string]: { [key: string]: Data } },
@@ -76,28 +76,37 @@ export const makePersistence = function(
                     .concat(['meta']),
                 'readwrite',
             );
-            const res = {};
+            const blob = {};
+            const changedIds = {};
             await Promise.all(
                 Object.keys(datas).map(async col => {
                     const store = tx.objectStore('col:' + col);
-                    res[col] = await store.getAll();
+                    blob[col] = {};
+                    const items = await store.getAll();
+                    items.forEach(item => (blob[col][item.id] = item.value));
                     Object.keys(datas[col]).forEach(key => {
-                        const prev = res[col][key];
+                        const prev = blob[col][key];
                         if (prev) {
-                            res[col][key] = merge(prev, datas[col][key]);
+                            blob[col][key] = merge(prev, datas[col][key]);
                         } else {
-                            res[col][key] = datas[col][key];
+                            blob[col][key] = datas[col][key];
                         }
-                        if (!deepEqual(prev, res[col][key])) {
-                            store.put(res[col][key]);
+                        if (!deepEqual(prev, blob[col][key])) {
+                            if (!changedIds[col]) {
+                                changedIds[col] = [key];
+                            } else {
+                                changedIds[col].push(key);
+                            }
+                            store.put({ id: key, value: blob[col][key] });
                         }
                     });
                 }),
             );
             await tx.objectStore('meta').put(etag, 'serverEtag');
             const dirty = await tx.objectStore('meta').get('dirty');
+            // console.log('Merged', blob);
             await tx.done;
-            return { blob: res, stamp: dirty };
+            return { merged: { blob, stamp: dirty }, changedIds };
         },
         async applyDelta<Delta, Data>(
             collection: string,

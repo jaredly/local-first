@@ -134,6 +134,9 @@ const value = function<T>(crdt: CRDT): T {
     if (crdt.type === 'plain') {
         return (crdt.value: any);
     } else {
+        if (!crdt.map) {
+            throw new Error(`Invalid CRDT! ${JSON.stringify(crdt)}`);
+        }
         const map = {};
         Object.keys(crdt.map)
             .sort()

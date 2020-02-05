@@ -30,12 +30,30 @@ const clockPersist = (key: string) => ({
     },
 });
 
+import createBlobClient from '../fault-tolerant/blob/create-client';
+import makeBlobPersistence from '../fault-tolerant/blob/idb-persistence';
+import createBasicBlobNetwork from '../fault-tolerant/blob/basic-network';
+
 // window.clientLib = clientLib;
 window.ItemSchema = ItemSchema;
 window.setupPolling = port =>
     setup(createPollingNetwork(`http://localhost:${port}/sync`));
 window.setupWebSockets = port =>
     setup(createWebSocketNetwork(`ws://localhost:${port}/sync`));
+window.setupBlob = port => {
+    const client = createBlobClient(
+        crdt,
+        clockPersist('local-first'),
+        makeBlobPersistence('local-first', ['tasks']),
+        // etag: ?string => Promise<?Blob<Data>>
+        // Blob<data> => Promise<string>
+        createBasicBlobNetwork(`http://localhost:${port}/blob/stuff`),
+        // createPollingNetwork('http://localhost:9900/sync'),
+        // createWebSocketNetwork('ws://localhost:9900/sync'),
+    );
+    console.log('set up blob');
+    window.client = client;
+};
 
 const setup = makeNetwork => {
     const client = createClient(

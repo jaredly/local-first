@@ -19,7 +19,7 @@ const setupPage = async (browser, target, name, clearOut = true) => {
     pageA.on('console', async msg => {
         console.log(
             name,
-            await Promise.all(msg.args().map(h => h.jsonValue())),
+            ...(await Promise.all(msg.args().map(h => h.jsonValue()))),
         );
     });
     await pageA.goto(target);
@@ -31,7 +31,8 @@ const setupPage = async (browser, target, name, clearOut = true) => {
                 window.indexedDB.deleteDatabase(r[i].name);
             }
         }
-        window.setupWebSockets(port);
+        window.setupBlob(port);
+        // window.setupWebSockets(port);
         window.collection = window.client.getCollection('tasks');
         window.data = await window.collection.loadAll();
         window.collection.onChanges(changes => {
@@ -48,6 +49,7 @@ const setupPage = async (browser, target, name, clearOut = true) => {
 };
 
 const getData = page => page.evaluate(() => window.collection.loadAll());
+const triggerSync = page => page.evaluate(() => window.client.setDirty());
 const getCachedData = page => page.evaluate(() => window.data);
 const addItem = (page, id, item) => {
     console.log(chalk.bold.magenta('++'), 'adding item', id, page.name);
@@ -86,6 +88,10 @@ const setupServer = () => {
     const dbPath = dataDir + '/data.db';
     if (fs.existsSync(dbPath)) {
         fs.unlinkSync(dbPath);
+    }
+    const blobPath = dataDir + '/blobs/stuff';
+    if (fs.existsSync(blobPath)) {
+        fs.unlinkSync(blobPath);
     }
     // Start serevr
     const server = makeServer(dataDir);
@@ -186,7 +192,7 @@ const full = async () => {
         chalk.green('Page B'),
     );
 
-    // NOTE uncommenting this triggers the issue
+    // This is a peer of pageA, and will *not* be the leader.
     const pageC = await setupPage(
         browser,
         `http://localhost:${parcelPort}/`,
@@ -195,8 +201,12 @@ const full = async () => {
     );
 
     await wait(500);
+    console.log('getting pagea data');
     expect(await getData(pageB), { a: itemA }, 'B 0');
     await addItem(pageB, 'b', itemB);
+    await triggerSync(pageB);
+    await wait();
+    await triggerSync(pageA);
     await wait();
     expect(await getData(pageA), { a: itemA, b: itemB }, 'A 2');
     expect(await getData(pageB), { a: itemA, b: itemB }, 'B 2');
@@ -217,17 +227,23 @@ const full = async () => {
     await wait(1000);
 
     expect(await getData(pageA), { a: itemA, b: itemB, c: itemC }, 'A 4');
+    await triggerSync(pageA);
+    await wait();
     expect(
         await getCachedData(pageA),
         { a: itemA, b: itemB, c: itemC },
         'A 4 cached',
     );
+    await triggerSync(pageB);
+    await wait();
     expect(await getData(pageB), { a: itemA, b: itemB, c: itemC }, 'B 4');
     expect(
         await getCachedData(pageB),
         { a: itemA, b: itemB, c: itemC },
         'B 4 cached',
     );
+    await triggerSync(pageC);
+    await wait();
     expect(
         await getCachedData(pageC),
         { a: itemA, b: itemB, c: itemC },
@@ -314,6 +330,7 @@ const compaction = async () => {
         await wait(50);
     }
 
+    console.log('getting pagea data');
     expect(await getData(pageA), data, 'A 2');
     server.persistence.compact('tasks', Date.now(), clientLib.mergeDeltas);
 
@@ -338,13 +355,14 @@ const compaction = async () => {
 };
 
 const run = async () => {
-    // await full();
-    // await contention();
-    await compaction();
+    await full();
+    await contention();
+    // await compaction();
 };
 
 run()
     .catch(err => {
+        console.log('Toplevel error');
         console.error(err);
         process.exit(1);
     })

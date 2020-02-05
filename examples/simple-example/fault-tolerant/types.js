@@ -44,6 +44,7 @@ export type Client<SyncStatus> = {
     getCollection<T>(id: string): Collection<T>,
     onSyncStatus(fn: (SyncStatus) => void): void,
     getSyncStatus(): SyncStatus,
+    setDirty(): void,
 };
 
 export type makeClient = <Delta, Data>(

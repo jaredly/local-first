@@ -42,10 +42,6 @@ const useCollection = (client, name) => {
     );
     const [data, setData] = React.useState((col.loadAll(): Tasks));
     React.useEffect(() => {
-        // col.loadAll().then(data => {
-        // console.log('loaded all', data);
-        // console.log(Object.keys(client.collections[name].data));
-        // setData(a => ({ ...a, ...data }));
         col.onChanges(changes => {
             setData(data => {
                 const n = { ...data };
@@ -59,7 +55,6 @@ const useCollection = (client, name) => {
                 return n;
             });
         });
-        // });
     }, []);
     return [col, data];
 };

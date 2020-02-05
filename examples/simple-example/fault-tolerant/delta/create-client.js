@@ -191,6 +191,7 @@ function createClient<Delta, Data, SyncStatus>(
     return {
         sessionId: clock.node,
         getStamp,
+        setDirty: network.setDirty,
         getCollection<T>(colid: string) {
             return getCollection(
                 colid,

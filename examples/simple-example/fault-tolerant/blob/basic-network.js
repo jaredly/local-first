@@ -113,6 +113,11 @@ const syncFetch = async function<Data>(
     }
     let newServerEtag = null;
     if (toSend) {
+        Object.keys(toSend).forEach(colid => {
+            if (Array.isArray(toSend[colid])) {
+                throw new Error('Array in collection!');
+            }
+        });
         newServerEtag = await putRemote(toSend);
     }
     await updateMeta(newServerEtag, dirtyStamp);
@@ -149,32 +154,54 @@ const createNetwork = <Delta, Data>(
                         backOff(() =>
                             syncFetch(
                                 async etag => {
+                                    console.log('Checking for new data', etag);
                                     const res = await fetch(url, {
                                         headers: {
                                             'If-None-Match': etag ? etag : '',
+                                            'Access-control-request-headers':
+                                                'etag,content-type,content-length',
                                         },
                                     });
-                                    if (res.status === 304) {
+                                    if (
+                                        res.status === 304 ||
+                                        res.status === 404
+                                    ) {
+                                        console.log('No changes!');
                                         return null;
+                                    }
+                                    if (res.status !== 200) {
+                                        throw new Error(
+                                            `Unexpected status on get ${res.status}`,
+                                        );
                                     }
                                     const blob = await res.json();
                                     const newEtag = res.headers.get('etag');
+                                    console.log('New etag', newEtag);
                                     if (!newEtag) {
                                         throw new Error(
-                                            `Remote didn't set an etag`,
+                                            `Remote didn't set an etag on get`,
                                         );
                                     }
                                     return { blob, etag: newEtag };
                                 },
                                 async blob => {
+                                    console.log('Pushing new data');
                                     const res = await fetch(url, {
-                                        method: 'POST',
+                                        method: 'PUT',
                                         body: JSON.stringify(blob),
                                         headers: {
                                             'Content-type': 'application/json',
+                                            'Access-control-request-headers':
+                                                'etag,content-type,content-length',
                                         },
                                     });
-                                    console.log(res.headers);
+                                    if (res.status !== 204) {
+                                        throw new Error(
+                                            `Unexpected status: ${
+                                                res.status
+                                            }, ${JSON.stringify(res.headers)}`,
+                                        );
+                                    }
                                     const etag = res.headers.get('etag');
                                     if (!etag) {
                                         throw new Error(
@@ -184,7 +211,12 @@ const createNetwork = <Delta, Data>(
                                     return etag;
                                 },
                                 getLocal,
-                                mergeIntoLocal,
+                                (remote, etag) =>
+                                    mergeIntoLocal(
+                                        remote,
+                                        etag,
+                                        sendCrossTabChange,
+                                    ),
                                 updateMeta,
                             ).then(
                                 () => {
@@ -197,7 +229,8 @@ const createNetwork = <Delta, Data>(
                                 },
                                 err => {
                                     console.error('Failed to sync');
-                                    console.error(err);
+                                    console.error(err.message);
+                                    console.error(err.stack);
                                     currentSyncStatus = {
                                         status: 'disconnected',
                                     };

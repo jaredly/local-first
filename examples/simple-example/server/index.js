@@ -55,7 +55,7 @@ export const runServer = <Delta, Data>(
 
     const app = express();
     const wsInst = ws(app);
-    app.use(require('cors')());
+    app.use(require('cors')({ exposedHeaders: ['etag'] }));
     app.use(require('body-parser').json());
 
     const genEtag = stat => `${stat.mtime.getTime()}:${stat.size}`;
@@ -69,11 +69,14 @@ export const runServer = <Delta, Data>(
         const stat = fs.statSync(filePath);
         const etag = genEtag(stat);
         if (etag == req.get('if-none-match')) {
-            res.header('etag', etag);
+            res.set('ETag', etag);
+            console.log('GET no change', etag);
             res.status(304);
             res.end();
             return;
         }
+        console.log('GET', etag);
+        res.set('ETag', etag);
         res.json(JSON.parse(fs.readFileSync(filePath, 'utf8')));
     });
 
@@ -82,7 +85,8 @@ export const runServer = <Delta, Data>(
         fs.writeFileSync(filePath, JSON.stringify(req.body), 'utf8');
         const stat = fs.statSync(filePath);
         const etag = genEtag(stat);
-        res.set('etag', etag);
+        console.log('Updating server state', etag);
+        res.set('ETag', etag);
         res.status(204);
         res.end();
     });

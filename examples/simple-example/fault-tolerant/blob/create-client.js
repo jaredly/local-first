@@ -58,8 +58,48 @@ function createClient<Delta, Data, SyncStatus>(
         // As long as the crdt was baked into the persistence,
         // which doesn't seem terrible.
         () => persistence.getFull(),
-        (full, etag) => {
-            return persistence.mergeFull(full, etag, crdt.merge);
+        async (full, etag, sendCrossTabChanges) => {
+            const { merged, changedIds } = await persistence.mergeFull(
+                full,
+                etag,
+                crdt.merge,
+            );
+            Object.keys(changedIds).forEach(colid => {
+                const col = state[colid];
+                const data = merged.blob[colid];
+                if (col.listeners.length) {
+                    const changes = changedIds[colid].map(id => ({
+                        id,
+                        value: crdt.value(data[id]),
+                    }));
+                    col.listeners.forEach(listener => {
+                        listener(changes);
+                    });
+                }
+                changedIds[colid].forEach(id => {
+                    // Only update the cache if the node has already been cached
+                    if (state[colid].cache[id]) {
+                        state[colid].cache[id] = data[id];
+                    }
+                    if (col.itemListeners[id]) {
+                        col.itemListeners[id].forEach(fn =>
+                            fn(crdt.value(data[id])),
+                        );
+                    }
+                });
+
+                if (changedIds[colid].length) {
+                    console.log(
+                        'Broadcasting to client-level listeners',
+                        changedIds[colid],
+                    );
+                    sendCrossTabChanges({
+                        col: colid,
+                        nodes: changedIds[colid],
+                    });
+                }
+            });
+            return merged;
         },
         persistence.updateMeta,
         (msg: PeerChange) => {
@@ -75,6 +115,7 @@ function createClient<Delta, Data, SyncStatus>(
 
     return {
         sessionId: clock.node,
+        setDirty: network.setDirty,
         getStamp,
         getCollection<T>(colid: string) {
             return getCollection(
