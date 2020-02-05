@@ -1,7 +1,7 @@
 // @flow
 import type { BlobNetworkCreator, Network, Blob } from '../delta/types';
 import { peerTabAwareSync } from '../delta/peer-tabs';
-import poller from '../../client/poller';
+import poller from '../../shared/poller';
 import backOff from '../../shared/back-off';
 import { debounce } from '../debounce';
 

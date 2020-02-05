@@ -5,8 +5,6 @@ import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-// import { makeNetwork } from './poll';
-import { makeNetwork } from './ws';
 import makeClient, {
     getStamp,
     receiveCrossTabChanges,
@@ -41,36 +39,26 @@ const clockPersist = (key: string) => ({
     },
 });
 
-const setup = () => {
-    const client = createBlobClient(
+const setupBlob = () => {
+    return createBlobClient(
         crdt,
         clockPersist('local-first'),
         makeBlobPersistence('local-first', ['tasks']),
-        // etag: ?string => Promise<?Blob<Data>>
-        // Blob<data> => Promise<string>
         createBasicBlobNetwork('http://localhost:9900/blob'),
-        // createPollingNetwork('http://localhost:9900/sync'),
-        // createWebSocketNetwork('ws://localhost:9900/sync'),
     );
-
-    // const client = createDeltaClient(
-    //     crdt,
-    //     clockPersist('local-first'),
-    //     makeDeltaPersistence('local-first', ['tasks']),
-    //     // createPollingNetwork('http://localhost:9900/sync'),
-    //     createWebSocketNetwork('ws://localhost:9900/sync'),
-    // );
-    return client;
 };
 
-const client = setup();
-// const {
-//     client,
-//     onConnection,
-// }: {
-//     onConnection: *,
-//     client: ClientState<Delta, Data>,
-// } = (window.client = setup());
+const setupDelta = () => {
+    return createDeltaClient(
+        crdt,
+        clockPersist('local-first'),
+        makeDeltaPersistence('local-first', ['tasks']),
+        // createPollingNetwork('http://localhost:9900/sync'),
+        createWebSocketNetwork('ws://localhost:9900/sync'),
+    );
+};
+
+const client = setupBlob();
 
 type Tasks = {
     [key: string]: {

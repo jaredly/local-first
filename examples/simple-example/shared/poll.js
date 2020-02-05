@@ -6,7 +6,7 @@ import {
     type ServerMessage,
 } from '../fault-tolerant/server';
 import type { Persistence } from '../fault-tolerant/types.js';
-import backOff from '../shared/back-off';
+import backOff from './back-off';
 import poller from './poller';
 
 const syncFetch = async function<Delta, Data>(
