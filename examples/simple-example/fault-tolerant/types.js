@@ -1,9 +1,26 @@
 // @flow
-import { type ClientState, type CRDTImpl } from './client';
 import type { HLC } from '@local-first/hybrid-logical-clock';
-import type { CursorType } from './server.js';
+import { type ClientMessage, type ServerMessage } from './server';
+import { type Schema } from '@local-first/nested-object-crdt/schema.js';
 
+export type CursorType = number;
 export type PeerChange = { col: string, nodes: Array<string> };
+
+export type Network<SyncStatus> = {
+    onSyncStatus(fn: (SyncStatus) => void): void,
+    getSyncStatus(): SyncStatus,
+    sendCrossTabChanges(PeerChange): void,
+    setDirty: () => void,
+};
+
+export type Client<SyncStatus> = {
+    sessionId: string,
+    getStamp(): string,
+    getCollection<T>(id: string): Collection<T>,
+    onSyncStatus(fn: (SyncStatus) => void): void,
+    getSyncStatus(): SyncStatus,
+    setDirty(): void,
+};
 
 export type Collection<T> = {
     save: (id: string, value: T) => Promise<void>,
@@ -19,93 +36,98 @@ export type Collection<T> = {
     onItemChange: (id: string, (value: ?T) => void) => () => void,
 };
 
-// How does this line up with actual states?
-export type SyncStatus =
-    | {
-          status: 'disconnected',
-          lastSync: ?number,
-          unsavedChanges: boolean,
-      }
-    | {
-          status: 'real-time',
-      }
-    | {
-          status: 'unsaved-changes',
-          lastSync: ?number,
-      }
-    | {
-          status: 'synced',
-          lastSync: number,
-      };
+// does persistence encapsulate the crdt?
+// umm maybe?
+// or we pass in the crdt with each call? yep
 
-export type Client<SyncStatus> = {
-    sessionId: string,
-    getStamp(): string,
-    getCollection<T>(id: string): Collection<T>,
-    onSyncStatus(fn: (SyncStatus) => void): void,
-    getSyncStatus(): SyncStatus,
-    setDirty(): void,
-};
-
-export type makeClient = <Delta, Data>(
-    persistence: Persistence<Delta, Data>,
-    crdt: CRDTImpl<Delta, Data>,
-    setDirty: () => void,
-    initialCollections: ?Array<string>,
-) => ClientState<Delta, Data>;
-
-export type makeNetwork = <Delta, Data>(
-    persistence: Persistence<Delta, Data>,
-    url: string,
-    crdt: CRDTImpl<Delta, Data>,
-) => {
-    client: ClientState<Delta, Data>,
-    onConnection: ((boolean) => void) => void,
-};
-
-export type CorePersistence<Data> = {
+// Ok, so this is the min required for the `getCollection` thing to work, I believe.
+export type Persistence = {
     collections: Array<string>,
-    saveHLC(hlc: HLC): void,
-    getHLC(): HLC,
-
-    get(collection: string, id: string): Promise<?Data>,
-    getAll(collection: string): Promise<{ [key: string]: Data }>,
+    // save<T>(colid: string, id: string, node: T): Promise<void>,
+    // this saves local
+    applyDelta<Delta, Data>(
+        colid: string,
+        id: string,
+        delta: Delta,
+        stamp: string,
+        apply: (?Data, Delta) => Data,
+    ): Promise<Data>,
+    load<T>(colid: string, id: string): Promise<?T>,
+    loadAll<T>(colid: string): Promise<{ [key: string]: T }>,
+    // delete(colid: string, id: string): Promise<void>,
 };
 
-export type FullPersistence<Data> = {
-    ...CorePersistence<Data>,
-    getFull(): Promise<{ [colid: string]: { [node: string]: Data } }>,
-    updateFull(
-        { [colid: string]: { [node: string]: Data } },
-        merge: (Data, Data) => Data,
-    ): Promise<{
-        [colid: string]: { [node: string]: Data },
+export type FullPersistence = {
+    ...Persistence,
+    getFull<Data>(): Promise<{
+        local: ?{ blob: Blob<Data>, stamp: string },
+        serverEtag: ?string,
     }>,
-    update<Delta>(
-        collection: string,
-        deltas: Array<{ node: string, delta: Delta }>,
-        apply: (data: ?Data, delta: Delta) => Data,
-    ): Promise<{ [key: string]: Data }>,
+    mergeFull<Data>(
+        full: Blob<Data>,
+        etag: string,
+        merge: (Data, Data) => Data,
+    ): Promise<?{
+        merged: { blob: Blob<Data>, stamp: ?string },
+        changedIds: { [colid: string]: Array<string> },
+    }>,
+    updateMeta: (
+        serverEtag: ?string,
+        dirtyStampToClear: ?string,
+    ) => Promise<void>,
 };
 
-export type Persistence<Delta, Data> = {
-    ...CorePersistence<Data>,
-    // saveHLC(hlc: HLC): void,
-    // getHLC(): HLC,
-    // get(collection: string, id: string): Promise<?Data>,
-    // getAll(collection: string): Promise<{ [key: string]: Data }>,
-
-    deltas(
+export type DeltaPersistence = {
+    ...Persistence,
+    // this doesn't save deltas locally, because they came from remote-land
+    applyDeltas<Delta, Data>(
+        colid: string,
+        deltas: Array<{ node: string, delta: Delta, stamp: string }>,
+        serverCursor: number,
+        apply: (?Data, Delta) => Data,
+    ): Promise<{ [key: string]: Data }>,
+    deltas<Delta>(
         collection: string,
     ): Promise<Array<{ node: string, delta: Delta, stamp: string }>>,
-    getServerCursor(collection: string): Promise<?CursorType>,
+    getServerCursor(collection: string): Promise<?number>,
 
     deleteDeltas(collection: string, upTo: string): Promise<void>,
-    update(
-        collection: string,
-        deltas: Array<{ node: string, delta: Delta, stamp: string }>,
-        apply: (data: ?Data, delta: Delta) => Data,
-        serverCursor: ?CursorType,
-        storeDeltas: boolean,
-    ): Promise<{ [key: string]: Data }>,
 };
+
+export type ClockPersist = {
+    get(init: () => HLC): HLC,
+    set(HLC): void,
+};
+
+export type Blob<Data> = {
+    [colid: string]: {
+        [id: string]: Data,
+    },
+};
+
+export type BlobNetworkCreator<Data, SyncStatus> = (
+    getLocal: () => Promise<{
+        local: ?{ blob: Blob<Data>, stamp: string },
+        serverEtag: ?string,
+    }>,
+    mergeIntoLocal: (
+        remote: Blob<Data>,
+        etag: string,
+        (PeerChange) => mixed,
+    ) => Promise<?{ blob: Blob<Data>, stamp: ?string }>,
+    updateMeta: (
+        newServerEtag: ?string,
+        dirtyFlagToClear: ?string,
+    ) => Promise<void>,
+    handleCrossTabChanges: (PeerChange) => Promise<void>,
+) => Network<SyncStatus>;
+
+export type NetworkCreator<Delta, Data, SyncStatus> = (
+    sessionId: string,
+    getMessages: (fresh: boolean) => Promise<Array<ClientMessage<Delta, Data>>>,
+    handleMessages: (
+        Array<ServerMessage<Delta, Data>>,
+        (PeerChange) => mixed,
+    ) => Promise<void>,
+    handleCrossTabChanges: (PeerChange) => Promise<void>,
+) => Network<SyncStatus>;

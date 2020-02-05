@@ -5,14 +5,6 @@ import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-import makeClient, {
-    getStamp,
-    receiveCrossTabChanges,
-    getCollection,
-    type ClientState,
-    type CursorType,
-} from '../fault-tolerant/client';
-import { syncMessages, onMessage } from '../fault-tolerant/delta-client';
 import { ItemSchema } from '../shared/schema.js';
 
 import createDeltaClient from '../fault-tolerant/delta/create-client';

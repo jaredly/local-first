@@ -3,9 +3,8 @@ import { openDB } from 'idb';
 import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-import { type CursorType } from '../client';
 import deepEqual from '@birchill/json-equalish';
-import type { FullPersistence } from '../delta/types';
+import type { FullPersistence } from '../types';
 
 export const makePersistence = function(
     name: string,

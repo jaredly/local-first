@@ -1,6 +1,6 @@
 // @flow
 
-export type { Client } from './types';
+// export type { Client } from './types';
 
 // // Delta-based
 // export { default as pollingDeltaNetwork } from './delta/polling-network';

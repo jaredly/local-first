@@ -3,9 +3,9 @@ import { openDB } from 'idb';
 import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-import { type CursorType } from '../client';
+import { type CursorType } from '../types';
 import deepEqual from 'fast-deep-equal';
-import type { Persistence, FullPersistence, DeltaPersistence } from './types';
+import type { Persistence, FullPersistence, DeltaPersistence } from '../types';
 
 // export const makeFullPersistence = function<Data>(
 //     name: string,

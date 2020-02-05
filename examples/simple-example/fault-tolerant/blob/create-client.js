@@ -1,16 +1,15 @@
 // @flow
 
-import type { Client, Collection } from '../types';
+import type { Client, Collection, PeerChange } from '../types';
 import type {
     ClockPersist,
     FullPersistence,
     BlobNetworkCreator,
-} from '../delta/types';
+} from '../types';
 import { type Schema } from '@local-first/nested-object-crdt/schema.js';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as hlc from '@local-first/hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';
-import { type PeerChange } from '../client';
 
 import {
     newCollection,
@@ -18,7 +17,7 @@ import {
     onCrossTabChanges,
     type CRDTImpl,
     type CollectionState,
-} from '../delta/shared';
+} from '../shared';
 
 const genId = () =>
     Math.random()

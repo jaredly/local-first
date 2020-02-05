@@ -6,7 +6,7 @@ import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 // import { makeNetwork as makePoll } from '../shared/poll';
 // import { makeNetwork as makeWS } from './ws';
 // import makeClient, * as clientLib from '../fault-tolerant/client';
-import * as deltaLib from '../fault-tolerant/delta-client';
+// import * as deltaLib from '../fault-tolerant/delta-client';
 import { ItemSchema } from '../shared/schema.js';
 
 import createClient from '../fault-tolerant/delta/create-client';

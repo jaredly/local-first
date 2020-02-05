@@ -9,7 +9,7 @@ import makeClient, {
     dump,
     inflate,
     type ClientState,
-} from '../simple/client';
+} from './client';
 import backOff from '../shared/back-off';
 import type { CRDTImpl } from '../simple/client';
 

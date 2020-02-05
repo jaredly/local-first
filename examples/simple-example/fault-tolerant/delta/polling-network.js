@@ -1,6 +1,5 @@
 // @flow
 
-import type { Client, Collection } from '../types';
 import type {
     Persistence,
     Network,
@@ -8,7 +7,7 @@ import type {
     DeltaPersistence,
     FullPersistence,
     NetworkCreator,
-} from './types';
+} from '../types';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as hlc from '@local-first/hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';

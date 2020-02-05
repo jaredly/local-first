@@ -1,17 +1,16 @@
 // @flow
 
-import type { Client, Collection } from '../types';
 import type {
     Persistence,
     Network,
     ClockPersist,
     DeltaPersistence,
     FullPersistence,
-} from './types';
+} from '../types';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as hlc from '@local-first/hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';
-import { type PeerChange } from '../client';
+import { type PeerChange } from '../types';
 
 export const peerTabAwareSync = function<SyncStatus>(
     onStatus: SyncStatus => void,
