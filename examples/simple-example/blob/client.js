@@ -15,7 +15,6 @@ import makeClient, {
 } from '../fault-tolerant/client';
 import { syncMessages, onMessage } from '../fault-tolerant/delta-client';
 import { ItemSchema } from '../shared/schema.js';
-import makeFullPersistence from '../client/idb-persistence';
 
 // const syncFetch = async function<Delta, Data>(
 //     url: string,

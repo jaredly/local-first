@@ -8,12 +8,15 @@ import { makeNetwork as makeWS } from './ws';
 // import makeClient, * as clientLib from '../fault-tolerant/client';
 import * as deltaLib from '../fault-tolerant/delta-client';
 import { ItemSchema } from '../shared/schema.js';
-import makePersistence from './idb-persistence';
 
 import createClient from '../fault-tolerant/delta/create-client';
 import makeDeltaPersistence from '../fault-tolerant/delta/idb-persistence';
 import createPollingNetwork from '../fault-tolerant/delta/polling-network';
 import createWebSocketNetwork from '../fault-tolerant/delta/websocket-network';
+
+import createBlobClient from '../fault-tolerant/blob/create-client';
+import makeBlobPersistence from '../fault-tolerant/blob/idb-persistence';
+import createBasicBlobNetwork from '../fault-tolerant/blob/basic-network';
 
 const clockPersist = (key: string) => ({
     get(init) {
@@ -29,10 +32,6 @@ const clockPersist = (key: string) => ({
         localStorage.setItem(key, hlc.pack(clock));
     },
 });
-
-import createBlobClient from '../fault-tolerant/blob/create-client';
-import makeBlobPersistence from '../fault-tolerant/blob/idb-persistence';
-import createBasicBlobNetwork from '../fault-tolerant/blob/basic-network';
 
 // window.clientLib = clientLib;
 window.ItemSchema = ItemSchema;

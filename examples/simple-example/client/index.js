@@ -16,7 +16,6 @@ import makeClient, {
 } from '../fault-tolerant/client';
 import { syncMessages, onMessage } from '../fault-tolerant/delta-client';
 import { ItemSchema } from '../shared/schema.js';
-import makePersistence from './idb-persistence';
 
 import createDeltaClient from '../fault-tolerant/delta/create-client';
 import makeDeltaPersistence from '../fault-tolerant/delta/idb-persistence';
