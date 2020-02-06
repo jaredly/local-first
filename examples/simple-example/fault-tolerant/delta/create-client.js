@@ -29,7 +29,7 @@ const genId = () =>
         .slice(2);
 
 import { type ClientMessage, type ServerMessage } from '../server';
-const getMessages = function<Delta, Data>(
+export const getMessages = function<Delta, Data>(
     persistence: DeltaPersistence,
     reconnected: boolean,
 ): Promise<Array<ClientMessage<Delta, Data>>> {
@@ -59,7 +59,7 @@ const getMessages = function<Delta, Data>(
     ).then(a => a.filter(Boolean));
 };
 
-const handleMessages = async function<Delta, Data>(
+export const handleMessages = async function<Delta, Data>(
     crdt: CRDTImpl<Delta, Data>,
     persistence: DeltaPersistence,
     messages: Array<ServerMessage<Delta, Data>>,

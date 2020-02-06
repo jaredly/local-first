@@ -1,6 +1,6 @@
 // @flow
 
-import type { Client, Collection, PeerChange } from '../types';
+import type { Client, Collection, PeerChange, Blob } from '../types';
 import type {
     ClockPersist,
     FullPersistence,
@@ -25,6 +25,52 @@ const genId = () =>
         .slice(2);
 
 import { type ClientMessage, type ServerMessage } from '../server';
+
+export const updateCacheAndNotify = function<Delta, Data>(
+    state: { [key: string]: CollectionState<Data, any> },
+    crdt: CRDTImpl<Delta, Data>,
+    changedIds: { [key: string]: Array<string> },
+    blob: Blob<Data>,
+    sendCrossTabChanges: PeerChange => mixed,
+) {
+    Object.keys(changedIds).forEach(colid => {
+        const col = state[colid];
+        const data = blob[colid];
+        if (col.listeners.length) {
+            const changes = changedIds[colid].map(id => ({
+                id,
+                value: crdt.value(data[id]),
+            }));
+            changedIds[colid].forEach(id => {
+                state[colid].cache[id] = data[id];
+            });
+            col.listeners.forEach(listener => {
+                listener(changes);
+            });
+        }
+        changedIds[colid].forEach(id => {
+            // Only update the cache if the node has already been cached
+            // Umm is this necessary though?
+            if (state[colid].cache[id] || col.itemListeners[id]) {
+                state[colid].cache[id] = data[id];
+            }
+            if (col.itemListeners[id]) {
+                col.itemListeners[id].forEach(fn => fn(crdt.value(data[id])));
+            }
+        });
+
+        if (changedIds[colid].length) {
+            console.log(
+                'Broadcasting to client-level listeners',
+                changedIds[colid],
+            );
+            sendCrossTabChanges({
+                col: colid,
+                nodes: changedIds[colid],
+            });
+        }
+    });
+};
 
 function createClient<Delta, Data, SyncStatus>(
     crdt: CRDTImpl<Delta, Data>,
@@ -58,52 +104,25 @@ function createClient<Delta, Data, SyncStatus>(
         // I could just be passing persistence to the network creator...
         // As long as the crdt was baked into the persistence,
         // which doesn't seem terrible.
-        () => persistence.getFull(),
+        // Wait the update messaging & caching stuff is the difference though.
+        persistence.getFull,
         async (full, etag, sendCrossTabChanges) => {
-            const result = await persistence.mergeFull(full, etag, crdt.merge);
+            const result = await persistence.mergeFull<Data>(
+                full,
+                etag,
+                crdt.merge,
+            );
             if (!result) {
                 return null;
             }
             const { merged, changedIds } = result;
-            Object.keys(changedIds).forEach(colid => {
-                const col = state[colid];
-                const data = merged.blob[colid];
-                if (col.listeners.length) {
-                    const changes = changedIds[colid].map(id => ({
-                        id,
-                        value: crdt.value(data[id]),
-                    }));
-                    changedIds[colid].forEach(id => {
-                        state[colid].cache[id] = data[id];
-                    });
-                    col.listeners.forEach(listener => {
-                        listener(changes);
-                    });
-                }
-                changedIds[colid].forEach(id => {
-                    // Only update the cache if the node has already been cached
-                    // Umm is this necessary though?
-                    if (state[colid].cache[id] || col.itemListeners[id]) {
-                        state[colid].cache[id] = data[id];
-                    }
-                    if (col.itemListeners[id]) {
-                        col.itemListeners[id].forEach(fn =>
-                            fn(crdt.value(data[id])),
-                        );
-                    }
-                });
-
-                if (changedIds[colid].length) {
-                    console.log(
-                        'Broadcasting to client-level listeners',
-                        changedIds[colid],
-                    );
-                    sendCrossTabChanges({
-                        col: colid,
-                        nodes: changedIds[colid],
-                    });
-                }
-            });
+            updateCacheAndNotify(
+                state,
+                crdt,
+                changedIds,
+                merged.blob,
+                sendCrossTabChanges,
+            );
             return merged;
         },
         persistence.updateMeta,
