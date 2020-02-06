@@ -6,34 +6,37 @@ import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 import deepEqual from '@birchill/json-equalish';
 import type { FullPersistence } from '../types';
 
+// export const
+
+const itemMap = items => {
+    const res = {};
+    items.forEach(item => (res[item.id] = item.value));
+    return res;
+};
+
 export const makePersistence = function(
     name: string,
     collections: Array<string>,
 ): FullPersistence {
+    const colName = name => name + ':nodes';
     const db = openDB(name, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
             collections.forEach(name =>
-                db.createObjectStore('col:' + name, { keyPath: 'id' }),
+                db.createObjectStore(colName(name), { keyPath: 'id' }),
             );
             db.createObjectStore('meta');
         },
     });
-    const allStores = collections.map(name => 'col:' + name).concat(['meta']);
+    const allStores = collections.map(name => colName(name)).concat(['meta']);
 
     return {
         collections,
         async load(collection: string, id: string) {
-            const data = await (await db).get('col:' + collection, id);
-            if (data) {
-                return data.value;
-            }
+            const data = await (await db).get(colName(collection), id);
+            return data ? data.value : null;
         },
         async loadAll(collection: string) {
-            const items = await (await db).getAll('col:' + collection);
-            const res = {};
-            items.forEach(item => (res[item.id] = item.value));
-            await new Promise(res => setTimeout(res, 50));
-            return res;
+            return itemMap(await (await db).getAll(colName(collection)));
         },
         async updateMeta(serverEtag: ?string, dirtyStampToClear: ?string) {
             const tx = (await db).transaction('meta', 'readwrite');
@@ -57,9 +60,9 @@ export const makePersistence = function(
             const blob = {};
             await Promise.all(
                 collections.map(async colid => {
-                    blob[colid] = {};
-                    const all = await tx.objectStore('col:' + colid).getAll();
-                    all.forEach(item => (blob[colid][item.id] = item.value));
+                    blob[colid] = itemMap(
+                        await tx.objectStore(colName(colid)).getAll(),
+                    );
                 }),
             );
             return { local: { blob, stamp: dirty }, serverEtag };
@@ -71,7 +74,7 @@ export const makePersistence = function(
         ) {
             const tx = (await db).transaction(
                 Object.keys(datas)
-                    .map(name => 'col:' + name)
+                    .map(name => colName(name))
                     .concat(['meta']),
                 'readwrite',
             );
@@ -80,10 +83,8 @@ export const makePersistence = function(
             let anyChanged = false;
             await Promise.all(
                 Object.keys(datas).map(async col => {
-                    const store = tx.objectStore('col:' + col);
-                    blob[col] = {};
-                    const items = await store.getAll();
-                    items.forEach(item => (blob[col][item.id] = item.value));
+                    const store = tx.objectStore(colName(col));
+                    blob[col] = itemMap(await store.getAll());
                     Object.keys(datas[col]).forEach(key => {
                         const prev = blob[col][key];
                         if (prev) {
@@ -124,10 +125,10 @@ export const makePersistence = function(
             apply: (?Data, Delta) => Data,
         ) {
             const tx = (await db).transaction(
-                ['col:' + collection, 'meta'],
+                [colName(collection), 'meta'],
                 'readwrite',
             );
-            let data = await tx.objectStore('col:' + collection).get(id);
+            let data = await tx.objectStore(colName(collection)).get(id);
             const value = apply(data ? data.value : null, delta);
 
             const dirty = await tx.objectStore('meta').get('dirty');
@@ -135,7 +136,7 @@ export const makePersistence = function(
                 await tx.objectStore('meta').put(stamp, 'dirty');
             }
 
-            await tx.objectStore('col:' + collection).put({ id, value });
+            await tx.objectStore(colName(collection)).put({ id, value });
             return value;
         },
     };
