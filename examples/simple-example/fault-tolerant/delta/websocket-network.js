@@ -9,14 +9,14 @@ const reconnectingSocket = (
     url,
     onOpen,
     onMessage: string => void,
-    listeners: Array<(SyncStatus) => void>,
+    updateStatus: SyncStatus => void,
 ) => {
     const state: { socket: ?WebSocket } = {
         socket: null,
     };
     const reconnect = () => {
         state.socket = null;
-        listeners.forEach(f => f({ status: 'disconnected' }));
+        updateStatus({ status: 'disconnected' });
         backOff(
             () =>
                 new Promise((res, rej) => {
@@ -26,7 +26,7 @@ const reconnectingSocket = (
                         state.socket = socket;
                         opened = true;
                         res(true);
-                        listeners.forEach(f => f({ status: 'connected' }));
+                        updateStatus({ status: 'connected' });
                         onOpen();
                     });
                     socket.addEventListener('close', () => {
@@ -57,21 +57,10 @@ const createWebSocketNetwork = <Delta, Data>(
     sessionId: string,
     getMessages,
     handleMessages,
-    handleCrossTabChanges,
 ): Network<SyncStatus> => {
-    const connectionListeners = [];
-    let currentSyncStatus = { status: 'disconnected' };
-    const { sendConnectionStatus, sendCrossTabChange, sync } = peerTabAwareSync(
-        status => {
-            currentSyncStatus = status;
-            connectionListeners.forEach(f => f(currentSyncStatus));
-        },
-        peerChange => {
-            handleCrossTabChanges(peerChange).catch(err =>
-                console.log('failed', err.message, err.stack),
-            );
-        },
-        () => {
+    return {
+        initial: { status: 'disconnected' },
+        createSync: (sendCrossTabChange, updateStatus) => {
             console.log('Im the leader');
             const state = reconnectingSocket(
                 `${url}?sessionId=${sessionId}`,
@@ -80,7 +69,7 @@ const createWebSocketNetwork = <Delta, Data>(
                     const messages = JSON.parse(msg);
                     handleMessages(messages, sendCrossTabChange);
                 },
-                connectionListeners,
+                updateStatus,
             );
 
             const sync = (reconnected: boolean = false) => {
@@ -104,19 +93,6 @@ const createWebSocketNetwork = <Delta, Data>(
                 }
             };
             return sync;
-        },
-    );
-
-    return {
-        setDirty: sync,
-        onSyncStatus: fn => {
-            connectionListeners.push(fn);
-        },
-        getSyncStatus() {
-            return currentSyncStatus;
-        },
-        sendCrossTabChanges(peerChange) {
-            sendCrossTabChange(peerChange);
         },
     };
 };

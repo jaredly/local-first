@@ -6,6 +6,7 @@ import type {
     FullPersistence,
     BlobNetworkCreator,
 } from '../types';
+import { peerTabAwareNetwork } from '../delta/peer-tabs';
 import { type Schema } from '@local-first/nested-object-crdt/schema.js';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as hlc from '@local-first/hybrid-logical-clock';
@@ -99,33 +100,7 @@ function createClient<Delta, Data, SyncStatus>(
         clockPersist.set(clock);
     };
 
-    const network = createNetwork(
-        // Hmm maybe I'm keeping network & persistence at an artificial distance
-        // I could just be passing persistence to the network creator...
-        // As long as the crdt was baked into the persistence,
-        // which doesn't seem terrible.
-        // Wait the update messaging & caching stuff is the difference though.
-        persistence.getFull,
-        async (full, etag, sendCrossTabChanges) => {
-            const result = await persistence.mergeFull<Data>(
-                full,
-                etag,
-                crdt.merge,
-            );
-            if (!result) {
-                return null;
-            }
-            const { merged, changedIds } = result;
-            updateCacheAndNotify(
-                state,
-                crdt,
-                changedIds,
-                merged.blob,
-                sendCrossTabChanges,
-            );
-            return merged;
-        },
-        persistence.updateMeta,
+    const network = peerTabAwareNetwork(
         (msg: PeerChange) => {
             return onCrossTabChanges(
                 crdt,
@@ -135,6 +110,29 @@ function createClient<Delta, Data, SyncStatus>(
                 msg.nodes,
             );
         },
+        createNetwork(
+            persistence.getFull,
+            async (full, etag, sendCrossTabChanges) => {
+                const result = await persistence.mergeFull<Data>(
+                    full,
+                    etag,
+                    crdt.merge,
+                );
+                if (!result) {
+                    return null;
+                }
+                const { merged, changedIds } = result;
+                updateCacheAndNotify(
+                    state,
+                    crdt,
+                    changedIds,
+                    merged.blob,
+                    sendCrossTabChanges,
+                );
+                return merged;
+            },
+            persistence.updateMeta,
+        ),
     );
 
     return {

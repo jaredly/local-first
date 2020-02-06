@@ -6,7 +6,7 @@ import { type Schema } from '@local-first/nested-object-crdt/schema.js';
 export type CursorType = number;
 export type PeerChange = { col: string, nodes: Array<string> };
 
-export type Network<SyncStatus> = {
+export type OldNetwork<SyncStatus> = {
     onSyncStatus(fn: (SyncStatus) => void): void,
     getSyncStatus(): SyncStatus,
     sendCrossTabChanges(PeerChange): void,
@@ -57,6 +57,53 @@ export type Persistence = {
     // delete(colid: string, id: string): Promise<void>,
 };
 
+export type MultiPersistence = {
+    ...Persistence,
+    getFull<Data>(
+        serverId: string,
+    ): Promise<{
+        local: ?{ blob: Blob<Data>, stamp: string },
+        serverEtag: ?string,
+    }>,
+    mergeFull<Data>(
+        serverId: string,
+        full: Blob<Data>,
+        etag: string,
+        merge: (Data, Data) => Data,
+    ): Promise<?{
+        merged: { blob: Blob<Data>, stamp: ?string },
+        changedIds: { [colid: string]: Array<string> },
+    }>,
+    updateMeta: (
+        serverId: string,
+        serverEtag: ?string,
+        dirtyStampToClear: ?string,
+    ) => Promise<void>,
+    applyDeltas<Delta, Data>(
+        serverId: string,
+        colid: string,
+        deltas: Array<{ node: string, delta: Delta, stamp: string }>,
+        serverCursor: number,
+        apply: (?Data, Delta) => Data,
+    ): Promise<{ [key: string]: Data }>,
+    deltas<Delta>(
+        serverId: string,
+        collection: string,
+    ): Promise<Array<{ node: string, delta: Delta, stamp: string }>>,
+    getServerCursor(serverId: string, collection: string): Promise<?number>,
+
+    // Hmm how do I manage this?
+    // Do I need to keep an internal meta of the ack's of each thing?
+    // I guess I probably do.
+    // Where do I send that in?
+    // I guess here actually.
+    deleteDeltas(
+        serverId: string,
+        collection: string,
+        upTo: string,
+    ): Promise<void>,
+};
+
 export type FullPersistence = {
     ...Persistence,
     getFull<Data>(): Promise<{
@@ -105,6 +152,14 @@ export type Blob<Data> = {
     },
 };
 
+export type Network<SyncStatus> = {
+    initial: SyncStatus,
+    createSync: (
+        sendCrossTabChange: (PeerChange) => void,
+        (SyncStatus) => void,
+    ) => () => void,
+};
+
 export type BlobNetworkCreator<Data, SyncStatus> = (
     getLocal: () => Promise<{
         local: ?{ blob: Blob<Data>, stamp: string },
@@ -119,7 +174,6 @@ export type BlobNetworkCreator<Data, SyncStatus> = (
         newServerEtag: ?string,
         dirtyFlagToClear: ?string,
     ) => Promise<void>,
-    handleCrossTabChanges: (PeerChange) => Promise<void>,
 ) => Network<SyncStatus>;
 
 export type NetworkCreator<Delta, Data, SyncStatus> = (
@@ -129,5 +183,4 @@ export type NetworkCreator<Delta, Data, SyncStatus> = (
         Array<ServerMessage<Delta, Data>>,
         (PeerChange) => mixed,
     ) => Promise<void>,
-    handleCrossTabChanges: (PeerChange) => Promise<void>,
 ) => Network<SyncStatus>;

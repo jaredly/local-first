@@ -1,6 +1,6 @@
 // @flow
-import type { BlobNetworkCreator, Network, Blob } from '../types';
-import { peerTabAwareSync } from '../delta/peer-tabs';
+import type { BlobNetworkCreator, Network, Blob, PeerChange } from '../types';
+import { peerTabAwareNetwork } from '../delta/peer-tabs';
 import poller from '../../shared/poller';
 import backOff from '../../shared/back-off';
 import { debounce } from '../debounce';
@@ -91,13 +91,6 @@ const syncFetch = async function<Data>(
         serverEtag: ?string,
         dirtyFlagToClear: ?string,
     ) => Promise<void>,
-    // getRemote: string => Promise<?Blob<Data>>,
-    // putRemote: Blob<Data> => Promise<string>,
-    // // url: string,
-    // // sessionId: string,
-    // getFull,
-    // putFull,
-    // putEtag,
 ) {
     const { local, serverEtag } = await getLocal();
     let dirtyStamp = local ? local.stamp : null;
@@ -135,6 +128,112 @@ const syncFetch = async function<Data>(
     }
 };
 
+const makeSync = <Delta, Data>(
+    url: string,
+    getLocal: () => Promise<{
+        local: ?{ blob: Blob<Data>, stamp: string },
+        serverEtag: ?string,
+    }>,
+    mergeIntoLocal: (
+        remote: Blob<Data>,
+        etag: string,
+        (PeerChange) => mixed,
+    ) => Promise<?{ blob: Blob<Data>, stamp: ?string }>,
+    updateMeta: (
+        newServerEtag: ?string,
+        dirtyFlagToClear: ?string,
+    ) => Promise<void>,
+    sendCrossTabChanges,
+    updateSyncStatus,
+) => {
+    console.log('Im the leader');
+    const poll = poller(
+        3 * 1000,
+        () =>
+            new Promise(res => {
+                backOff(() =>
+                    syncFetch(
+                        async etag => {
+                            console.log('Checking for new data', etag);
+                            const res = await fetch(url, {
+                                headers: {
+                                    'If-None-Match': etag ? etag : '',
+                                    'Access-control-request-headers':
+                                        'etag,content-type,content-length',
+                                },
+                            });
+                            if (res.status === 304 || res.status === 404) {
+                                console.log('No changes from server!', etag);
+                                return null;
+                            }
+                            if (res.status !== 200) {
+                                throw new Error(
+                                    `Unexpected status on get ${res.status}`,
+                                );
+                            }
+                            const blob = await res.json();
+                            const newEtag = res.headers.get('etag');
+                            console.log('New etag', newEtag);
+                            if (!newEtag) {
+                                throw new Error(
+                                    `Remote didn't set an etag on get`,
+                                );
+                            }
+                            return { blob, etag: newEtag };
+                        },
+                        async blob => {
+                            console.log('Pushing new data');
+                            const res = await fetch(url, {
+                                method: 'PUT',
+                                body: JSON.stringify(blob),
+                                headers: {
+                                    'Content-type': 'application/json',
+                                    'Access-control-request-headers':
+                                        'etag,content-type,content-length',
+                                },
+                            });
+                            if (res.status !== 204) {
+                                throw new Error(
+                                    `Unexpected status: ${
+                                        res.status
+                                    }, ${JSON.stringify(res.headers)}`,
+                                );
+                            }
+                            const etag = res.headers.get('etag');
+                            if (!etag) {
+                                throw new Error(
+                                    `Remote didn't respond to post with an etag`,
+                                );
+                            }
+                            return etag;
+                        },
+                        getLocal,
+                        (remote, etag) =>
+                            mergeIntoLocal(remote, etag, sendCrossTabChanges),
+                        updateMeta,
+                    ).then(
+                        () => {
+                            updateSyncStatus({ status: 'connected' });
+                            res();
+                            return true;
+                        },
+                        err => {
+                            console.error('Failed to sync');
+                            console.error(err.message);
+                            console.error(err.stack);
+                            updateSyncStatus({
+                                status: 'disconnected',
+                            });
+                            return false;
+                        },
+                    ),
+                );
+            }),
+    );
+    poll();
+    return debounce(poll);
+};
+
 // TODO dedup with polling network
 const createNetwork = <Delta, Data>(
     url: string,
@@ -144,136 +243,17 @@ const createNetwork = <Delta, Data>(
     updateMeta,
     handleCrossTabChanges,
 ): Network<SyncStatus> => {
-    const connectionListeners = [];
-    let currentSyncStatus = { status: 'disconnected' };
-
-    const { sendConnectionStatus, sendCrossTabChange, sync } = peerTabAwareSync(
-        status => {
-            currentSyncStatus = status;
-            connectionListeners.forEach(f => f(currentSyncStatus));
-        },
-        peerChange => {
-            console.log('received peer change');
-            handleCrossTabChanges(peerChange).catch(err =>
-                console.log('failed', err.message, err.stack),
-            );
-        },
-        () => {
-            console.log('Im the leader');
-            const poll = poller(
-                3 * 1000,
-                () =>
-                    new Promise(res => {
-                        backOff(() =>
-                            syncFetch(
-                                async etag => {
-                                    console.log('Checking for new data', etag);
-                                    const res = await fetch(url, {
-                                        headers: {
-                                            'If-None-Match': etag ? etag : '',
-                                            'Access-control-request-headers':
-                                                'etag,content-type,content-length',
-                                        },
-                                    });
-                                    if (
-                                        res.status === 304 ||
-                                        res.status === 404
-                                    ) {
-                                        console.log(
-                                            'No changes from server!',
-                                            etag,
-                                        );
-                                        return null;
-                                    }
-                                    if (res.status !== 200) {
-                                        throw new Error(
-                                            `Unexpected status on get ${res.status}`,
-                                        );
-                                    }
-                                    const blob = await res.json();
-                                    const newEtag = res.headers.get('etag');
-                                    console.log('New etag', newEtag);
-                                    if (!newEtag) {
-                                        throw new Error(
-                                            `Remote didn't set an etag on get`,
-                                        );
-                                    }
-                                    return { blob, etag: newEtag };
-                                },
-                                async blob => {
-                                    console.log('Pushing new data');
-                                    const res = await fetch(url, {
-                                        method: 'PUT',
-                                        body: JSON.stringify(blob),
-                                        headers: {
-                                            'Content-type': 'application/json',
-                                            'Access-control-request-headers':
-                                                'etag,content-type,content-length',
-                                        },
-                                    });
-                                    if (res.status !== 204) {
-                                        throw new Error(
-                                            `Unexpected status: ${
-                                                res.status
-                                            }, ${JSON.stringify(res.headers)}`,
-                                        );
-                                    }
-                                    const etag = res.headers.get('etag');
-                                    if (!etag) {
-                                        throw new Error(
-                                            `Remote didn't respond to post with an etag`,
-                                        );
-                                    }
-                                    return etag;
-                                },
-                                getLocal,
-                                (remote, etag) =>
-                                    mergeIntoLocal(
-                                        remote,
-                                        etag,
-                                        sendCrossTabChange,
-                                    ),
-                                updateMeta,
-                            ).then(
-                                () => {
-                                    currentSyncStatus = { status: 'connected' };
-                                    connectionListeners.forEach(f =>
-                                        f(currentSyncStatus),
-                                    );
-                                    res();
-                                    return true;
-                                },
-                                err => {
-                                    console.error('Failed to sync');
-                                    console.error(err.message);
-                                    console.error(err.stack);
-                                    currentSyncStatus = {
-                                        status: 'disconnected',
-                                    };
-                                    connectionListeners.forEach(f =>
-                                        f(currentSyncStatus),
-                                    );
-                                    return false;
-                                },
-                            ),
-                        );
-                    }),
-            );
-            poll();
-            return debounce(poll);
-        },
-    );
-
     return {
-        setDirty: sync,
-        onSyncStatus: fn => {
-            connectionListeners.push(fn);
-        },
-        getSyncStatus() {
-            return currentSyncStatus;
-        },
-        sendCrossTabChanges(peerChange) {
-            sendCrossTabChange(peerChange);
+        initial: { status: 'disconnected' },
+        createSync: (sendCrossTabChanges, updateSyncStatus) => {
+            return makeSync(
+                url,
+                getLocal,
+                mergeIntoLocal,
+                updateMeta,
+                sendCrossTabChanges,
+                updateSyncStatus,
+            );
         },
     };
 };

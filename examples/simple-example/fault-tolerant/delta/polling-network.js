@@ -51,22 +51,10 @@ const createPollingNetwork = <Delta, Data>(
     sessionId,
     getMessages,
     handleMessages,
-    handleCrossTabChanges,
 ): Network<SyncStatus> => {
-    const connectionListeners = [];
-    let currentSyncStatus = { status: 'disconnected' };
-
-    const { sendConnectionStatus, sendCrossTabChange, sync } = peerTabAwareSync(
-        status => {
-            currentSyncStatus = status;
-            connectionListeners.forEach(f => f(currentSyncStatus));
-        },
-        peerChange => {
-            handleCrossTabChanges(peerChange).catch(err =>
-                console.log('failed', err.message, err.stack),
-            );
-        },
-        () => {
+    return {
+        initial: { status: 'disconnected' },
+        createSync: (sendCrossTabChange, updateStatus) => {
             console.log('Im the leader');
             const poll = poller(
                 3 * 1000,
@@ -77,22 +65,16 @@ const createPollingNetwork = <Delta, Data>(
                                 handleMessages(messages, sendCrossTabChange),
                             ).then(
                                 () => {
-                                    currentSyncStatus = { status: 'connected' };
-                                    connectionListeners.forEach(f =>
-                                        f(currentSyncStatus),
-                                    );
+                                    updateStatus({ status: 'connected' });
                                     res();
                                     return true;
                                 },
                                 err => {
                                     console.error('Failed to sync');
                                     console.error(err);
-                                    currentSyncStatus = {
+                                    updateStatus({
                                         status: 'disconnected',
-                                    };
-                                    connectionListeners.forEach(f =>
-                                        f(currentSyncStatus),
-                                    );
+                                    });
                                     return false;
                                 },
                             ),
@@ -101,19 +83,6 @@ const createPollingNetwork = <Delta, Data>(
             );
             poll();
             return debounce(poll);
-        },
-    );
-
-    return {
-        setDirty: sync,
-        onSyncStatus: fn => {
-            connectionListeners.push(fn);
-        },
-        getSyncStatus() {
-            return currentSyncStatus;
-        },
-        sendCrossTabChanges(peerChange) {
-            sendCrossTabChange(peerChange);
         },
     };
 };

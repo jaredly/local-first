@@ -3,7 +3,7 @@
 import type { Collection, PeerChange } from './types';
 import type {
     Persistence,
-    Network,
+    OldNetwork,
     ClockPersist,
     DeltaPersistence,
     FullPersistence,

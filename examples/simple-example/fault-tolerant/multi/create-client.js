@@ -2,15 +2,13 @@
 
 import type { Client } from '../types';
 import type {
-    Persistence,
-    OldNetwork,
-    Network,
     ClockPersist,
-    DeltaPersistence,
-    FullPersistence,
+    MultiPersistence,
+    Network,
     NetworkCreator,
+    BlobNetworkCreator,
 } from '../types';
-import { peerTabAwareNetwork } from './peer-tabs';
+import { peerTabAwareNetworks } from '../delta/peer-tabs';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as hlc from '@local-first/hybrid-logical-clock';
 import { type Schema } from '@local-first/nested-object-crdt/schema.js';
@@ -32,7 +30,8 @@ const genId = () =>
 
 import { type ClientMessage, type ServerMessage } from '../server';
 export const getMessages = function<Delta, Data>(
-    persistence: DeltaPersistence,
+    serverId: string,
+    persistence: MultiPersistence,
     reconnected: boolean,
 ): Promise<Array<ClientMessage<Delta, Data>>> {
     return Promise.all(
@@ -40,8 +39,9 @@ export const getMessages = function<Delta, Data>(
             async (
                 collection: string,
             ): Promise<?ClientMessage<Delta, Data>> => {
-                const deltas = await persistence.deltas(collection);
+                const deltas = await persistence.deltas(serverId, collection);
                 const serverCursor = await persistence.getServerCursor(
+                    serverId,
                     collection,
                 );
                 if (deltas.length || !serverCursor || reconnected) {
@@ -62,8 +62,9 @@ export const getMessages = function<Delta, Data>(
 };
 
 export const handleMessages = async function<Delta, Data>(
+    serverId: string,
     crdt: CRDTImpl<Delta, Data>,
-    persistence: DeltaPersistence,
+    persistence: MultiPersistence,
     messages: Array<ServerMessage<Delta, Data>>,
     state: { [colid: string]: CollectionState<Data, any> },
     recvClock: HLC => void,
@@ -87,6 +88,7 @@ export const handleMessages = async function<Delta, Data>(
                 const changedIds = Object.keys(changed);
                 console.log('applying deltas', msg.serverCursor);
                 const data = await persistence.applyDeltas(
+                    serverId,
                     msg.collection,
                     deltasWithStamps,
                     msg.serverCursor,
@@ -136,7 +138,11 @@ export const handleMessages = async function<Delta, Data>(
                     recvClock(hlc.unpack(maxStamp));
                 }
             } else if (msg.type === 'ack') {
-                return persistence.deleteDeltas(msg.collection, msg.deltaStamp);
+                return persistence.deleteDeltas(
+                    serverId,
+                    msg.collection,
+                    msg.deltaStamp,
+                );
             }
         }),
     );
@@ -146,9 +152,12 @@ function createClient<Delta, Data, SyncStatus>(
     crdt: CRDTImpl<Delta, Data>,
     schemas: { [colid: string]: Schema },
     clockPersist: ClockPersist,
-    persistence: DeltaPersistence,
-    createNetwork: NetworkCreator<Delta, Data, SyncStatus>,
-): Client<SyncStatus> {
+    persistence: MultiPersistence,
+    deltaNetworks: {
+        [serverId: string]: NetworkCreator<Delta, Data, SyncStatus>,
+    },
+    blobNetworks: { [serverId: string]: BlobNetworkCreator<Data, SyncStatus> },
+): Client<{ [key: string]: SyncStatus }> {
     let clock = clockPersist.get(() => hlc.init(genId(), Date.now()));
     const state: { [key: string]: CollectionState<Data, any> } = {};
     persistence.collections.forEach(id => (state[id] = newCollection()));
@@ -169,21 +178,33 @@ function createClient<Delta, Data, SyncStatus>(
         clockPersist.set(clock);
     };
 
-    const network = peerTabAwareNetwork(
-        (msg: PeerChange) => {
-            return onCrossTabChanges(
-                crdt,
-                persistence,
-                state[msg.col],
-                msg.col,
-                msg.nodes,
-            );
-        },
-        createNetwork(
+    const allDirty = [];
+
+    // Oh noes!!! Here we are, needing to extract out the cross-tab
+    // stuff. Only one thing should handle cross-tabs.
+    // This makes me think that actually no networks should
+    // handle their own cross-tabulation.
+    // Which makes sense, especially in a native app situation,
+    // where there would be no cross-tab shenanigans.
+    const handlePeerChange = (msg: PeerChange) => {
+        return onCrossTabChanges(
+            crdt,
+            persistence,
+            state[msg.col],
+            msg.col,
+            msg.nodes,
+        );
+    };
+
+    const allNetworks: { [key: string]: Network<SyncStatus> } = {};
+
+    Object.keys(deltaNetworks).forEach(serverId => {
+        allNetworks[serverId] = deltaNetworks[serverId](
             clock.node,
-            fresh => getMessages(persistence, fresh),
+            fresh => getMessages(serverId, persistence, fresh),
             (messages, sendCrossTabChanges) =>
                 handleMessages(
+                    serverId,
                     crdt,
                     persistence,
                     messages,
@@ -191,13 +212,16 @@ function createClient<Delta, Data, SyncStatus>(
                     recvClock,
                     sendCrossTabChanges,
                 ),
-        ),
-    );
+        );
+    });
+    const network = peerTabAwareNetworks(handlePeerChange, allNetworks);
+
+    const setDirty = () => allDirty.forEach(f => f());
 
     return {
         sessionId: clock.node,
         getStamp,
-        setDirty: network.setDirty,
+        setDirty,
         getCollection<T>(colid: string) {
             return getCollection(
                 colid,
@@ -205,7 +229,7 @@ function createClient<Delta, Data, SyncStatus>(
                 persistence,
                 state[colid],
                 getStamp,
-                network.setDirty,
+                setDirty,
                 network.sendCrossTabChanges,
                 schemas[colid],
             );
