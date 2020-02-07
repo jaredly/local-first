@@ -67,7 +67,10 @@ const createWebSocketNetwork = <Delta, Data>(
                 () => sync(true),
                 msg => {
                     const messages = JSON.parse(msg);
-                    handleMessages(messages, sendCrossTabChange);
+                    handleMessages(messages, sendCrossTabChange).catch(err => {
+                        console.log('Failed to handle messages!');
+                        console.error(err);
+                    });
                 },
                 updateStatus,
             );

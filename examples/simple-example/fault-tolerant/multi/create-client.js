@@ -24,6 +24,29 @@ import {
     type CollectionState,
 } from '../shared';
 
+/*
+
+Ok folks, we've got issues with peer-tabs
+
+I'd rather not be waiting for 100s of miliseconds while
+we work out whether or not we're the leader tab.
+
+If you're the first tab, then there's a minimum of 300ms before
+you can declare yourself the leader .... which allows for race
+conditions.
+
+So I think the ideal is:
+- on page load, do a request to get all the things you're missing.
+- add those in n stuff.
+- then do leader election, and whoever wins gets to continue things.
+
+What are the issues that come from two tabs making a request at the same time?
+> um if multiple websockets with the same sessionid connect, bad things happen.
+
+but that's it I think. And I can ~prevent that on the server side by hanging up.
+
+*/
+
 const genId = () =>
     Math.random()
         .toString(36)
@@ -87,7 +110,15 @@ export const handleMessages = async function<Delta, Data>(
                 }));
 
                 const changedIds = Object.keys(changed);
-                console.log('applying deltas', msg.serverCursor);
+                console.log(
+                    'applying deltas',
+                    msg.serverCursor,
+                    msg.deltas.length,
+                    msg.deltas,
+                );
+                if (!msg.serverCursor && !msg.deltas.length) {
+                    return;
+                }
                 const data = await persistence.applyDeltas(
                     serverId,
                     msg.collection,
@@ -97,6 +128,7 @@ export const handleMessages = async function<Delta, Data>(
                 );
 
                 if (col.listeners.length) {
+                    console.log('notifying global listeners');
                     const changes = changedIds.map(id => ({
                         id,
                         value: crdt.value(data[id]),

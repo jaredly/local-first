@@ -37,6 +37,7 @@ const setupPage = async (browser, target, name, clearOut = true) => {
         // window.setupWebSockets(port);
         window.collection = window.client.getCollection('tasks');
         window.data = await window.collection.loadAll();
+        console.log('initial cache', window.data);
         window.collection.onChanges(changes => {
             changes.forEach(({ value, id }) => {
                 if (value) {
@@ -46,6 +47,8 @@ const setupPage = async (browser, target, name, clearOut = true) => {
                 }
             });
         });
+        // Wait for leader election to play out
+        await new Promise(res => setTimeout(res, 500));
     }, serverPort);
     return pageA;
 };
@@ -189,6 +192,7 @@ const full = async () => {
     await addItem(pageA, 'a', itemA);
     expect(await getData(pageA), { a: itemA }, 'A 1');
 
+    // await wait(1500);
     // Different origin, so they won't share indexeddbs
     const pageB = await setupPage(
         browser,
@@ -204,9 +208,10 @@ const full = async () => {
         false,
     );
 
-    await wait(500);
+    await wait(300);
     console.log('getting pagea data');
     expect(await getData(pageB), { a: itemA }, 'B 0');
+    expect(await getCachedData(pageB), { a: itemA }, 'B 0');
     await addItem(pageB, 'b', itemB);
     await triggerSync(pageB);
     await wait();

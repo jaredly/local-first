@@ -76,16 +76,14 @@ export const applyDeltas = async function<Delta, Data>(
     // or store the deltas
     blobServerIds: ?Array<string>,
 ) {
-    console.log('Apply to collection', collection, 'year');
-    const stores =
-        blobServerIds != null
-            ? [
-                  deltasName(collection),
-                  colName(collection),
-                  metaName(collection),
-                  'blob-meta',
-              ]
-            : [deltasName(collection), colName(collection)];
+    console.log('Apply to collection', collection);
+    const stores = [deltasName(collection), colName(collection)];
+    if (blobServerIds != null) {
+        stores.push('blob-meta');
+    }
+    if (serverCursor) {
+        stores.push(metaName(collection));
+    }
     const tx = (await db).transaction(stores, 'readwrite');
     if (blobServerIds != null) {
         const deltaStore = tx.objectStore(deltasName(collection));
@@ -96,7 +94,6 @@ export const applyDeltas = async function<Delta, Data>(
     deltas.forEach(d => (idMap[d.node] = true));
     const ids = Object.keys(idMap);
     const gotten = await Promise.all(ids.map(id => nodes.get(id)));
-    // console.log('loaded up', ids, gotten);
     const map = {};
     gotten.forEach(res => {
         if (res) {
@@ -106,7 +103,6 @@ export const applyDeltas = async function<Delta, Data>(
     deltas.forEach(({ node, delta }) => {
         map[node] = apply(map[node], delta);
     });
-    // console.log('idb changeMany processed', ids, map, serverCursor);
     ids.forEach(id => (map[id] ? nodes.put({ id, value: map[id] }) : null));
     if (serverCursor) {
         tx.objectStore(metaName(collection)).put(
@@ -147,6 +143,7 @@ const makePersistence = (
 ): MultiPersistence => {
     const db = openDB(name, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
+            console.log('Setting up database');
             collections.forEach(name => {
                 db.createObjectStore(deltasName(name), {
                     keyPath: 'stamp',
@@ -213,7 +210,6 @@ const makePersistence = (
 
         async deleteDeltas(serverId: string, collection: string, upTo: string) {
             if (deltaServerIds.length === 1) {
-                // console.log('delete up to', upTo);
                 let cursor = await (await db)
                     .transaction(deltasName(collection), 'readwrite')
                     // $FlowFixMe why doesn't flow like this
@@ -425,7 +421,6 @@ const makePersistence = (
             const dirty = await tx
                 .objectStore('blob-meta')
                 .get(serverId + '-dirty');
-            // console.log('Merged', blob);
             await tx.done;
             if (!anyChanged) {
                 return null;

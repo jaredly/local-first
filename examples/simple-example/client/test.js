@@ -45,13 +45,14 @@ window.setupMulti = port => {
         { tasks: ItemSchema },
         clockPersist('multi'),
         makeMultiPersistence(
-            'multi-first',
+            'multi-first-second',
             ['tasks'],
             ['deltaws'],
             // ['fileblob'],
             [],
         ),
         { deltaws: createWebSocketNetwork(`ws://localhost:${port}/sync`) },
+        // { deltaws: createPollingNetwork(`http://localhost:${port}/sync`) },
         {},
         // {
         //     fileblob: createBasicBlobNetwork(
