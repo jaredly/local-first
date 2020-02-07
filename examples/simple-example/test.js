@@ -14,6 +14,7 @@ const parcelPort = 9223;
 const serverPort = 9224;
 
 const setupPage = async (browser, target, name, clearOut = true) => {
+    console.log(chalk.underline.blue.bold('## New Page ##'), name);
     const pageA = await browser.newPage();
     pageA.name = name;
     pageA.on('console', async msg => {
@@ -31,7 +32,8 @@ const setupPage = async (browser, target, name, clearOut = true) => {
                 window.indexedDB.deleteDatabase(r[i].name);
             }
         }
-        window.setupBlob(port);
+        window.setupMulti(port);
+        // window.setupBlob(port);
         // window.setupWebSockets(port);
         window.collection = window.client.getCollection('tasks');
         window.data = await window.collection.loadAll();
@@ -360,8 +362,11 @@ const compaction = async () => {
 };
 
 const run = async () => {
+    console.log(chalk.red.bold.underline.bgWhite('  Full  '));
     await full();
+    console.log(chalk.red.bold.underline.bgWhite('  Contention  '));
     await contention();
+    console.log(chalk.red.bold.underline.bgWhite('  Compaction  '));
     await compaction();
 };
 

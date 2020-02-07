@@ -61,7 +61,7 @@ const createWebSocketNetwork = <Delta, Data>(
     return {
         initial: { status: 'disconnected' },
         createSync: (sendCrossTabChange, updateStatus) => {
-            console.log('Im the leader');
+            console.log('Im the leader (websocket)');
             const state = reconnectingSocket(
                 `${url}?sessionId=${sessionId}`,
                 () => sync(true),

@@ -55,7 +55,7 @@ const createPollingNetwork = <Delta, Data>(
     return {
         initial: { status: 'disconnected' },
         createSync: (sendCrossTabChange, updateStatus) => {
-            console.log('Im the leader');
+            console.log('Im the leader (polling)');
             const poll = poller(
                 3 * 1000,
                 () =>

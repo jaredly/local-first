@@ -14,6 +14,7 @@ import * as hlc from '@local-first/hybrid-logical-clock';
 import { type Schema } from '@local-first/nested-object-crdt/schema.js';
 import deepEqual from 'fast-deep-equal';
 import { type PeerChange } from '../types';
+import { updateCacheAndNotify } from '../blob/create-client';
 
 import {
     newCollection,
@@ -214,14 +215,41 @@ function createClient<Delta, Data, SyncStatus>(
                 ),
         );
     });
-    const network = peerTabAwareNetworks(handlePeerChange, allNetworks);
 
-    const setDirty = () => allDirty.forEach(f => f());
+    Object.keys(blobNetworks).forEach(serverId => {
+        allNetworks[serverId] = blobNetworks[serverId](
+            () => persistence.getFull(serverId),
+            async (full, etag, sendCrossTabChanges) => {
+                const result = await persistence.mergeFull<Data>(
+                    serverId,
+                    full,
+                    etag,
+                    crdt.merge,
+                );
+                if (!result) {
+                    return null;
+                }
+                const { merged, changedIds } = result;
+                updateCacheAndNotify(
+                    state,
+                    crdt,
+                    changedIds,
+                    merged.blob,
+                    sendCrossTabChanges,
+                );
+                return merged;
+            },
+            (etag, dirtyFlag) =>
+                persistence.updateMeta(serverId, etag, dirtyFlag),
+        );
+    });
+
+    const network = peerTabAwareNetworks(handlePeerChange, allNetworks);
 
     return {
         sessionId: clock.node,
         getStamp,
-        setDirty,
+        setDirty: network.setDirty,
         getCollection<T>(colid: string) {
             return getCollection(
                 colid,
@@ -229,7 +257,7 @@ function createClient<Delta, Data, SyncStatus>(
                 persistence,
                 state[colid],
                 getStamp,
-                setDirty,
+                network.setDirty,
                 network.sendCrossTabChanges,
                 schemas[colid],
             );

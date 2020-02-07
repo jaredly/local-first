@@ -146,7 +146,7 @@ const makeSync = <Delta, Data>(
     sendCrossTabChanges,
     updateSyncStatus,
 ) => {
-    console.log('Im the leader');
+    console.log('Im the leader (basic blob)');
     const poll = poller(
         3 * 1000,
         () =>

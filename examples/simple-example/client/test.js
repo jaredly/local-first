@@ -18,6 +18,9 @@ import createBlobClient from '../fault-tolerant/blob/create-client';
 import makeBlobPersistence from '../fault-tolerant/blob/idb-persistence';
 import createBasicBlobNetwork from '../fault-tolerant/blob/basic-network';
 
+import createMultiClient from '../fault-tolerant/multi/create-client';
+import makeMultiPersistence from '../fault-tolerant/multi/idb-persistence';
+
 const clockPersist = (key: string) => ({
     get(init) {
         const raw = localStorage.getItem(key);
@@ -35,6 +38,30 @@ const clockPersist = (key: string) => ({
 
 // window.clientLib = clientLib;
 window.ItemSchema = ItemSchema;
+
+window.setupMulti = port => {
+    const client = createMultiClient(
+        crdt,
+        { tasks: ItemSchema },
+        clockPersist('multi'),
+        makeMultiPersistence(
+            'multi-first',
+            ['tasks'],
+            ['deltaws'],
+            // ['fileblob'],
+            [],
+        ),
+        { deltaws: createWebSocketNetwork(`ws://localhost:${port}/sync`) },
+        {},
+        // {
+        //     fileblob: createBasicBlobNetwork(
+        //         `http://localhost:${port}/blob/fileblob`,
+        //     ),
+        // },
+    );
+    window.client = client;
+};
+
 window.setupPolling = port =>
     setup(createPollingNetwork(`http://localhost:${port}/sync`));
 window.setupWebSockets = port =>

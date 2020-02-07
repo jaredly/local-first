@@ -76,17 +76,16 @@ export const applyDeltas = async function<Delta, Data>(
     // or store the deltas
     blobServerIds: ?Array<string>,
 ) {
-    console.log('Apply to collection', collection);
+    console.log('Apply to collection', collection, 'year');
     const stores =
         blobServerIds != null
             ? [
                   deltasName(collection),
                   colName(collection),
                   metaName(collection),
-                  'meta',
+                  'blob-meta',
               ]
             : [deltasName(collection), colName(collection)];
-    // console.log('Opening for stores', stores);
     const tx = (await db).transaction(stores, 'readwrite');
     if (blobServerIds != null) {
         const deltaStore = tx.objectStore(deltasName(collection));
@@ -124,10 +123,14 @@ export const applyDeltas = async function<Delta, Data>(
         }
         await Promise.all(
             blobServerIds.map(async sid => {
-                await tx.objectStore('meta').put();
-                const dirty = await tx.objectStore('meta').get(sid + '-dirty');
+                // await tx.objectStore('blob-meta').put();
+                const dirty = await tx
+                    .objectStore('blob-meta')
+                    .get(sid + '-dirty');
                 if (!dirty || dirty < maxStamp) {
-                    await tx.objectStore('meta').put(maxStamp, sid + '-dirty');
+                    await tx
+                        .objectStore('blob-meta')
+                        .put(maxStamp, sid + '-dirty');
                 }
             }),
         );
@@ -145,7 +148,7 @@ const makePersistence = (
     const db = openDB(name, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
             collections.forEach(name => {
-                db.createObjectStore(name + ':deltas', {
+                db.createObjectStore(deltasName(name), {
                     keyPath: 'stamp',
                 });
                 db.createObjectStore(colName(name), { keyPath: 'id' });
@@ -157,7 +160,7 @@ const makePersistence = (
                 // (once all of them have seen it).
                 // If there's only one deltaServerId, that makes
                 // it easier.
-                db.createObjectStore(name + ':deltas-meta');
+                db.createObjectStore(metaName(name));
             });
             // stores
             // sid-dirty (dirty with respect to this server?)
@@ -290,15 +293,15 @@ const makePersistence = (
         //     apply: (?Data, Delta) => Data,
         // ) {
         //     const tx = (await db).transaction(
-        //         [colName(collection), 'meta'],
+        //         [colName(collection), 'blob-meta'],
         //         'readwrite',
         //     );
         //     let data = await tx.objectStore(colName(collection)).get(id);
         //     const value = apply(data ? data.value : null, delta);
 
-        //     const dirty = await tx.objectStore('meta').get('dirty');
+        //     const dirty = await tx.objectStore('blob-meta').get('dirty');
         //     if (!dirty || dirty < stamp) {
-        //         await tx.objectStore('meta').put(stamp, 'dirty');
+        //         await tx.objectStore('blob-meta').put(stamp, 'dirty');
         //     }
 
         //     await tx.objectStore(colName(collection)).put({ id, value });
@@ -342,7 +345,7 @@ const makePersistence = (
             serverEtag: ?string,
             dirtyStampToClear: ?string,
         ) {
-            const tx = (await db).transaction('meta', 'readwrite');
+            const tx = (await db).transaction('blob-meta', 'readwrite');
             if (serverEtag) {
                 tx.store.put(serverEtag, serverId + '-serverEtag');
             }
@@ -355,12 +358,14 @@ const makePersistence = (
         },
         async getFull<Data>(serverId: string) {
             const tx = (await db).transaction(
-                collections.map(colName).concat('meta'),
+                collections.map(colName).concat('blob-meta'),
                 'readonly',
             );
-            const dirty = await tx.objectStore('meta').get(serverId + '-dirty');
+            const dirty = await tx
+                .objectStore('blob-meta')
+                .get(serverId + '-dirty');
             const serverEtag = await tx
-                .objectStore('meta')
+                .objectStore('blob-meta')
                 .get(serverId + '-serverEtag');
             if (!dirty) {
                 return { local: null, serverEtag };
@@ -384,7 +389,7 @@ const makePersistence = (
             const tx = (await db).transaction(
                 Object.keys(datas)
                     .map(name => colName(name))
-                    .concat(['meta']),
+                    .concat(['blob-meta']),
                 'readwrite',
             );
             const blob = {};
@@ -414,8 +419,12 @@ const makePersistence = (
                 }),
             );
             console.log('After merge, any changed?', anyChanged);
-            await tx.objectStore('meta').put(etag, serverId + '-serverEtag');
-            const dirty = await tx.objectStore('meta').get(serverId + '-dirty');
+            await tx
+                .objectStore('blob-meta')
+                .put(etag, serverId + '-serverEtag');
+            const dirty = await tx
+                .objectStore('blob-meta')
+                .get(serverId + '-dirty');
             // console.log('Merged', blob);
             await tx.done;
             if (!anyChanged) {
