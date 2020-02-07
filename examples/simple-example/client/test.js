@@ -48,17 +48,20 @@ window.setupMulti = port => {
             'multi-first-second',
             ['tasks'],
             ['deltaws'],
-            // ['fileblob'],
-            [],
+            // [],
+            ['fileblob', 'otherfileblob'],
         ),
         { deltaws: createWebSocketNetwork(`ws://localhost:${port}/sync`) },
         // { deltaws: createPollingNetwork(`http://localhost:${port}/sync`) },
-        {},
-        // {
-        //     fileblob: createBasicBlobNetwork(
-        //         `http://localhost:${port}/blob/fileblob`,
-        //     ),
-        // },
+        // {},
+        {
+            fileblob: createBasicBlobNetwork(
+                `http://localhost:${port}/blob/stuff`,
+            ),
+            otherfileblob: createBasicBlobNetwork(
+                `http://localhost:${port}/blob/other`,
+            ),
+        },
     );
     window.client = client;
 };

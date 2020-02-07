@@ -88,17 +88,17 @@ const expect = (a, b, message) => {
 const bundler = new Bundler([__dirname + '/test.html'], {});
 bundler.serve(parcelPort);
 
+const rmF = path => {
+    if (fs.existsSync(path)) {
+        fs.unlinkSync(path);
+    }
+};
+
 const setupServer = () => {
     const dataDir = __dirname + '/.test-data';
-    const dbPath = dataDir + '/data.db';
-    if (fs.existsSync(dbPath)) {
-        fs.unlinkSync(dbPath);
-    }
-    const blobPath = dataDir + '/blobs/stuff';
-    if (fs.existsSync(blobPath)) {
-        console.log('ditching the data stuff');
-        fs.unlinkSync(blobPath);
-    }
+    rmF(dataDir + '/data.db');
+    rmF(dataDir + '/blobs/stuff');
+    rmF(dataDir + '/blobs/other');
     // Start serevr
     const server = makeServer(dataDir);
     const app = runServer(serverPort, dataDir, server);
