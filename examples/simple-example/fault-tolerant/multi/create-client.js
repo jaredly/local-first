@@ -45,6 +45,10 @@ What are the issues that come from two tabs making a request at the same time?
 
 but that's it I think. And I can ~prevent that on the server side by hanging up.
 
+.... on further investigation, this isn't the reason my tests were failing.
+I think.
+So maybe this won't be a big deal?
+
 */
 
 const genId = () =>

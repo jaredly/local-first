@@ -39,7 +39,22 @@ const clockPersist = (key: string) => ({
 // window.clientLib = clientLib;
 window.ItemSchema = ItemSchema;
 
-window.setupMulti = port => {
+window.setupMulti = configs => {
+    const deltas = {};
+    const blobs = {};
+    Object.keys(configs).forEach(key => {
+        switch (configs[key].type) {
+            case 'ws':
+                deltas[key] = createWebSocketNetwork(configs[key].url);
+                break;
+            case 'poll':
+                deltas[key] = createPollingNetwork(configs[key].url);
+                break;
+            case 'blob':
+                blobs[key] = createBasicBlobNetwork(configs[key].url);
+                break;
+        }
+    });
     const client = createMultiClient(
         crdt,
         { tasks: ItemSchema },
@@ -47,21 +62,11 @@ window.setupMulti = port => {
         makeMultiPersistence(
             'multi-first-second',
             ['tasks'],
-            ['deltaws'],
-            // [],
-            ['fileblob', 'otherfileblob'],
+            Object.keys(deltas),
+            Object.keys(blobs),
         ),
-        { deltaws: createWebSocketNetwork(`ws://localhost:${port}/sync`) },
-        // { deltaws: createPollingNetwork(`http://localhost:${port}/sync`) },
-        // {},
-        {
-            fileblob: createBasicBlobNetwork(
-                `http://localhost:${port}/blob/stuff`,
-            ),
-            otherfileblob: createBasicBlobNetwork(
-                `http://localhost:${port}/blob/other`,
-            ),
-        },
+        deltas,
+        blobs,
     );
     window.client = client;
 };

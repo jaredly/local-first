@@ -24,32 +24,50 @@ const setupPage = async (browser, target, name, clearOut = true) => {
         );
     });
     await pageA.goto(target);
-    await pageA.evaluate(async (port, clearOut) => {
-        // Clear out current databases
-        if (clearOut) {
-            const r = await window.indexedDB.databases();
-            for (var i = 0; i < r.length; i++) {
-                window.indexedDB.deleteDatabase(r[i].name);
-            }
-        }
-        window.setupMulti(port);
-        // window.setupBlob(port);
-        // window.setupWebSockets(port);
-        window.collection = window.client.getCollection('tasks');
-        window.data = await window.collection.loadAll();
-        console.log('initial cache', window.data);
-        window.collection.onChanges(changes => {
-            changes.forEach(({ value, id }) => {
-                if (value) {
-                    window.data[id] = value;
-                } else {
-                    delete window.data[id];
+    await pageA.evaluate(
+        async (port, clearOut) => {
+            // Clear out current databases
+            if (clearOut) {
+                const r = await window.indexedDB.databases();
+                for (var i = 0; i < r.length; i++) {
+                    window.indexedDB.deleteDatabase(r[i].name);
                 }
+            }
+            console.log('PORT', port);
+            window.setupMulti({
+                // deltaws: {
+                //     type: 'ws',
+                //     url: `ws://localhost:${port}/sync`,
+                // },
+                // fileblob: {
+                //     type: 'blob',
+                //     url: `http://localhost:${port}/blob/stuff`,
+                // },
+                otherfileblob: {
+                    type: 'blob',
+                    url: `http://localhost:${port}/blob/other`,
+                },
             });
-        });
-        // Wait for leader election to play out
-        await new Promise(res => setTimeout(res, 500));
-    }, serverPort);
+            // window.setupBlob(port);
+            // window.setupWebSockets(port);
+            window.collection = window.client.getCollection('tasks');
+            window.data = await window.collection.loadAll();
+            console.log('initial cache', window.data);
+            window.collection.onChanges(changes => {
+                changes.forEach(({ value, id }) => {
+                    if (value) {
+                        window.data[id] = value;
+                    } else {
+                        delete window.data[id];
+                    }
+                });
+            });
+            // Wait for leader election to play out
+            await new Promise(res => setTimeout(res, 500));
+        },
+        serverPort,
+        clearOut,
+    );
     return pageA;
 };
 

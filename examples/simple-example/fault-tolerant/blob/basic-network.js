@@ -146,6 +146,7 @@ const makeSync = <Delta, Data>(
     sendCrossTabChanges,
     updateSyncStatus,
 ) => {
+    console.log('Maing sync with', url, getLocal, mergeIntoLocal, updateMeta);
     console.log('Im the leader (basic blob)');
     const poll = poller(
         3 * 1000,
