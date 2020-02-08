@@ -35,14 +35,14 @@ const setupPage = async (browser, target, name, clearOut = true) => {
             }
             console.log('PORT', port);
             window.setupMulti({
-                // deltaws: {
-                //     type: 'ws',
-                //     url: `ws://localhost:${port}/sync`,
-                // },
-                // fileblob: {
-                //     type: 'blob',
-                //     url: `http://localhost:${port}/blob/stuff`,
-                // },
+                deltaws: {
+                    type: 'ws',
+                    url: `ws://localhost:${port}/sync`,
+                },
+                fileblob: {
+                    type: 'blob',
+                    url: `http://localhost:${port}/blob/stuff`,
+                },
                 otherfileblob: {
                     type: 'blob',
                     url: `http://localhost:${port}/blob/other`,

@@ -111,6 +111,11 @@ export const applyDeltas = async function<Delta, Data>(
         );
     }
     if (blobServerIds != null) {
+        // ok this assumption here (that I can get the maxStamp by
+        // just taking the stamp of each delta) gets a little tricky
+        // if I'm deriving the deltas from a full upgrade.
+        // But that just means that I need to do a deep check for the
+        // stamps of the deltas, which should be fine.
         let maxStamp = deltas[0].stamp;
         for (let i = 1; i < deltas.length; i++) {
             if (deltas[i].stamp > maxStamp) {
@@ -119,7 +124,6 @@ export const applyDeltas = async function<Delta, Data>(
         }
         await Promise.all(
             blobServerIds.map(async sid => {
-                // await tx.objectStore('blob-meta').put();
                 const dirty = await tx
                     .objectStore('blob-meta')
                     .get(sid + '-dirty');
@@ -138,7 +142,7 @@ export const applyDeltas = async function<Delta, Data>(
 const makePersistence = (
     name: string,
     collections: Array<string>,
-    deltaServerIds: Array<string>,
+    deltaServerId: ?string,
     blobServerIds: Array<string>,
 ): MultiPersistence => {
     const db = openDB(name, 1, {
@@ -172,30 +176,7 @@ const makePersistence = (
             serverId: string,
             collection: string,
         ): Promise<Array<{ node: string, delta: Delta, stamp: string }>> {
-            if (deltaServerIds.length === 1) {
-                return await (await db).getAll(deltasName(collection));
-            }
-            const tx = (await db).transaction(
-                [deltasName(collection), metaName(collection)],
-                'readonly',
-            );
-            const ack = await tx
-                .objectStore(metaName(collection))
-                .get(serverId + '-ack');
-            if (ack) {
-                const results = [];
-                let cursor = await tx
-                    .objectStore(deltasName(collection))
-                    // $FlowFixMe
-                    .openCursor(IDBKeyRange.lowerBound(ack, true));
-                while (cursor) {
-                    results.push(cursor.value);
-                    cursor = await cursor.continue();
-                }
-                return results;
-            } else {
-                return tx.objectStore(deltasName(collection)).getAll();
-            }
+            return await (await db).getAll(deltasName(collection));
         },
 
         async getServerCursor(
@@ -209,53 +190,15 @@ const makePersistence = (
         },
 
         async deleteDeltas(serverId: string, collection: string, upTo: string) {
-            if (deltaServerIds.length === 1) {
-                let cursor = await (await db)
-                    .transaction(deltasName(collection), 'readwrite')
-                    // $FlowFixMe why doesn't flow like this
-                    .store.openCursor(IDBKeyRange.upperBound(upTo));
-                while (cursor) {
-                    cursor.delete();
-                    cursor = await cursor.continue();
-                }
-                return;
+            let cursor = await (await db)
+                .transaction(deltasName(collection), 'readwrite')
+                // $FlowFixMe why doesn't flow like this
+                .store.openCursor(IDBKeyRange.upperBound(upTo));
+            while (cursor) {
+                cursor.delete();
+                cursor = await cursor.continue();
             }
-
-            const tx = (await db).transaction(
-                [deltasName(collection), metaName(collection)],
-                'readwrite',
-            );
-            const acks = {};
-            let preMin = null;
-            for (const sid of deltaServerIds) {
-                acks[sid] = await tx
-                    .objectStore(metaName(collection))
-                    .get(sid + '-ack');
-                if (acks[sid] && (!preMin || acks[sid] < preMin)) {
-                    preMin = acks[sid];
-                }
-            }
-            acks[serverId] = upTo;
-            await tx
-                .objectStore(metaName(collection))
-                .put(upTo, serverId + '-ack');
-            let postMin = upTo;
-            deltaServerIds.forEach(sid => {
-                if (acks[sid] < postMin) {
-                    postMin = acks[sid];
-                }
-            });
-            if (!preMin || postMin > preMin) {
-                // we have things to delete!
-                let cursor = await tx
-                    .objectStore(deltasName(collection))
-                    // $FlowFixMe
-                    .openCursor(IDBKeyRange.upperBound(postMin));
-                while (cursor) {
-                    cursor.delete();
-                    cursor = await cursor.continue();
-                }
-            }
+            return;
         },
 
         async applyDelta<Delta, Data>(
@@ -280,29 +223,6 @@ const makePersistence = (
             );
             return map[id];
         },
-
-        // async applyDelta<Delta, Data>(
-        //     collection: string,
-        //     id: string,
-        //     delta: Delta,
-        //     stamp: string,
-        //     apply: (?Data, Delta) => Data,
-        // ) {
-        //     const tx = (await db).transaction(
-        //         [colName(collection), 'blob-meta'],
-        //         'readwrite',
-        //     );
-        //     let data = await tx.objectStore(colName(collection)).get(id);
-        //     const value = apply(data ? data.value : null, delta);
-
-        //     const dirty = await tx.objectStore('blob-meta').get('dirty');
-        //     if (!dirty || dirty < stamp) {
-        //         await tx.objectStore('blob-meta').put(stamp, 'dirty');
-        //     }
-
-        //     await tx.objectStore(colName(collection)).put({ id, value });
-        //     return value;
-        // },
 
         async load<T>(collection: string, id: string): Promise<?T> {
             const data = await (await db).get(colName(collection), id);
