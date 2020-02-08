@@ -79,29 +79,18 @@ export type MultiPersistence = {
         serverEtag: ?string,
         dirtyStampToClear: ?string,
     ) => Promise<void>,
+
     applyDeltas<Delta, Data>(
-        serverId: string,
         colid: string,
         deltas: Array<{ node: string, delta: Delta, stamp: string }>,
         serverCursor: number,
         apply: (?Data, Delta) => Data,
     ): Promise<{ [key: string]: Data }>,
     deltas<Delta>(
-        serverId: string,
         collection: string,
     ): Promise<Array<{ node: string, delta: Delta, stamp: string }>>,
-    getServerCursor(serverId: string, collection: string): Promise<?number>,
-
-    // Hmm how do I manage this?
-    // Do I need to keep an internal meta of the ack's of each thing?
-    // I guess I probably do.
-    // Where do I send that in?
-    // I guess here actually.
-    deleteDeltas(
-        serverId: string,
-        collection: string,
-        upTo: string,
-    ): Promise<void>,
+    getServerCursor(collection: string): Promise<?number>,
+    deleteDeltas(collection: string, upTo: string): Promise<void>,
 };
 
 export type FullPersistence = {

@@ -3,10 +3,6 @@ import * as hlc from '@local-first/hybrid-logical-clock';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-// import { makeNetwork as makePoll } from '../shared/poll';
-// import { makeNetwork as makeWS } from './ws';
-// import makeClient, * as clientLib from '../fault-tolerant/client';
-// import * as deltaLib from '../fault-tolerant/delta-client';
 import { ItemSchema } from '../shared/schema.js';
 
 import createClient from '../fault-tolerant/delta/create-client';
@@ -36,24 +32,13 @@ const clockPersist = (key: string) => ({
     },
 });
 
-// window.clientLib = clientLib;
 window.ItemSchema = ItemSchema;
 
-window.setupMulti = configs => {
+window.setupMulti = (deltaNetwork, blobConfigs) => {
     const deltas = {};
     const blobs = {};
-    Object.keys(configs).forEach(key => {
-        switch (configs[key].type) {
-            case 'ws':
-                deltas[key] = createWebSocketNetwork(configs[key].url);
-                break;
-            case 'poll':
-                deltas[key] = createPollingNetwork(configs[key].url);
-                break;
-            case 'blob':
-                blobs[key] = createBasicBlobNetwork(configs[key].url);
-                break;
-        }
+    Object.keys(blobConfigs).forEach(key => {
+        blobs[key] = createBasicBlobNetwork(blobConfigs[key]);
     });
     const client = createMultiClient(
         crdt,
@@ -62,10 +47,14 @@ window.setupMulti = configs => {
         makeMultiPersistence(
             'multi-first-second',
             ['tasks'],
-            Object.keys(deltas),
+            deltaNetwork ? true : false,
             Object.keys(blobs),
         ),
-        deltas,
+        deltaNetwork
+            ? deltaNetwork.type === 'ws'
+                ? createWebSocketNetwork(deltaNetwork.url)
+                : createPollingNetwork(deltaNetwork.url)
+            : null,
         blobs,
     );
     window.client = client;

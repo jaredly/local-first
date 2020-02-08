@@ -70,7 +70,7 @@ const createPollingNetwork = <Delta, Data>(
                                     return true;
                                 },
                                 err => {
-                                    console.error('Failed to sync');
+                                    console.error('Failed to sync polling');
                                     console.error(err);
                                     updateStatus({
                                         status: 'disconnected',

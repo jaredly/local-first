@@ -219,7 +219,7 @@ const makeSync = <Delta, Data>(
                             return true;
                         },
                         err => {
-                            console.error('Failed to sync');
+                            console.error('Failed to sync blob ' + err.message);
                             console.error(err.message);
                             console.error(err.stack);
                             updateSyncStatus({

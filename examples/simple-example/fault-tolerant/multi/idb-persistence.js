@@ -70,7 +70,7 @@ export const applyDeltas = async function<Delta, Data>(
     db: Promise<*>,
     collection: string,
     deltas: Array<{ node: string, delta: Delta, stamp: string }>,
-    serverCursor: ?{ id: string, cursor: CursorType },
+    serverCursor: ?CursorType,
     apply: (?Data, Delta) => Data,
     // if null, we're getting the data from remote, so don't mark dirty
     // or store the deltas
@@ -105,10 +105,7 @@ export const applyDeltas = async function<Delta, Data>(
     });
     ids.forEach(id => (map[id] ? nodes.put({ id, value: map[id] }) : null));
     if (serverCursor) {
-        tx.objectStore(metaName(collection)).put(
-            serverCursor.cursor,
-            serverCursor.id + '-cursor',
-        );
+        tx.objectStore(metaName(collection)).put(serverCursor, 'cursor');
     }
     if (blobServerIds != null) {
         // ok this assumption here (that I can get the maxStamp by
@@ -142,7 +139,7 @@ export const applyDeltas = async function<Delta, Data>(
 const makePersistence = (
     name: string,
     collections: Array<string>,
-    deltaServerId: ?string,
+    deltaServer: boolean,
     blobServerIds: Array<string>,
 ): MultiPersistence => {
     const db = openDB(name, 1, {
@@ -173,23 +170,16 @@ const makePersistence = (
     return {
         collections,
         async deltas<Delta>(
-            serverId: string,
             collection: string,
         ): Promise<Array<{ node: string, delta: Delta, stamp: string }>> {
             return await (await db).getAll(deltasName(collection));
         },
 
-        async getServerCursor(
-            serverId: string,
-            collection: string,
-        ): Promise<?number> {
-            return await (await db).get(
-                metaName(collection),
-                serverId + '-cursor',
-            );
+        async getServerCursor(collection: string): Promise<?number> {
+            return await (await db).get(metaName(collection), 'cursor');
         },
 
-        async deleteDeltas(serverId: string, collection: string, upTo: string) {
+        async deleteDeltas(collection: string, upTo: string) {
             let cursor = await (await db)
                 .transaction(deltasName(collection), 'readwrite')
                 // $FlowFixMe why doesn't flow like this
@@ -208,8 +198,6 @@ const makePersistence = (
             stamp: string,
             apply: (?Data, Delta) => Data,
         ): Promise<Data> {
-            // console.log('Applying a single delta, local mutation');
-            // console.log(new Error().stack);
             if (!collections.includes(colid)) {
                 throw new Error('Unknown collection ' + colid);
             }
@@ -236,13 +224,11 @@ const makePersistence = (
         },
 
         async applyDeltas<Delta, Data>(
-            serverId: string,
             collection: string,
             deltas: Array<{ node: string, delta: Delta, stamp: string }>,
             serverCursor: ?CursorType,
             apply: (?Data, Delta) => Data,
         ) {
-            // console.log('got deltas from the server I guess');
             if (!collections.includes(collection)) {
                 throw new Error('Unknown collection ' + collection);
             }
@@ -250,7 +236,7 @@ const makePersistence = (
                 db,
                 collection,
                 deltas,
-                serverCursor ? { cursor: serverCursor, id: serverId } : null,
+                serverCursor,
                 apply,
                 null,
             );

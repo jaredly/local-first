@@ -58,7 +58,6 @@ const genId = () =>
 
 import { type ClientMessage, type ServerMessage } from '../server';
 export const getMessages = function<Delta, Data>(
-    serverId: string,
     persistence: MultiPersistence,
     reconnected: boolean,
 ): Promise<Array<ClientMessage<Delta, Data>>> {
@@ -67,9 +66,8 @@ export const getMessages = function<Delta, Data>(
             async (
                 collection: string,
             ): Promise<?ClientMessage<Delta, Data>> => {
-                const deltas = await persistence.deltas(serverId, collection);
+                const deltas = await persistence.deltas(collection);
                 const serverCursor = await persistence.getServerCursor(
-                    serverId,
                     collection,
                 );
                 if (deltas.length || !serverCursor || reconnected) {
@@ -90,7 +88,6 @@ export const getMessages = function<Delta, Data>(
 };
 
 export const handleMessages = async function<Delta, Data>(
-    serverId: string,
     crdt: CRDTImpl<Delta, Data>,
     persistence: MultiPersistence,
     messages: Array<ServerMessage<Delta, Data>>,
@@ -124,7 +121,6 @@ export const handleMessages = async function<Delta, Data>(
                     return;
                 }
                 const data = await persistence.applyDeltas(
-                    serverId,
                     msg.collection,
                     deltasWithStamps,
                     msg.serverCursor,
@@ -175,11 +171,7 @@ export const handleMessages = async function<Delta, Data>(
                     recvClock(hlc.unpack(maxStamp));
                 }
             } else if (msg.type === 'ack') {
-                return persistence.deleteDeltas(
-                    serverId,
-                    msg.collection,
-                    msg.deltaStamp,
-                );
+                return persistence.deleteDeltas(msg.collection, msg.deltaStamp);
             }
         }),
     );
@@ -190,9 +182,7 @@ function createClient<Delta, Data, SyncStatus>(
     schemas: { [colid: string]: Schema },
     clockPersist: ClockPersist,
     persistence: MultiPersistence,
-    deltaNetworks: {
-        [serverId: string]: NetworkCreator<Delta, Data, SyncStatus>,
-    },
+    deltaNetwork: ?NetworkCreator<Delta, Data, SyncStatus>,
     blobNetworks: { [serverId: string]: BlobNetworkCreator<Data, SyncStatus> },
 ): Client<{ [key: string]: SyncStatus }> {
     let clock = clockPersist.get(() => hlc.init(genId(), Date.now()));
@@ -235,13 +225,15 @@ function createClient<Delta, Data, SyncStatus>(
 
     const allNetworks: { [key: string]: Network<SyncStatus> } = {};
 
-    Object.keys(deltaNetworks).forEach(serverId => {
-        allNetworks[serverId] = deltaNetworks[serverId](
+    if (blobNetworks[':delta:']) {
+        throw new Error(`Can't have a blob network with the id :delta:`);
+    }
+    if (deltaNetwork) {
+        allNetworks[':delta:'] = deltaNetwork(
             clock.node,
-            fresh => getMessages(serverId, persistence, fresh),
+            fresh => getMessages(persistence, fresh),
             (messages, sendCrossTabChanges) =>
                 handleMessages(
-                    serverId,
                     crdt,
                     persistence,
                     messages,
@@ -250,7 +242,7 @@ function createClient<Delta, Data, SyncStatus>(
                     sendCrossTabChanges,
                 ),
         );
-    });
+    }
 
     Object.keys(blobNetworks).forEach(serverId => {
         allNetworks[serverId] = blobNetworks[serverId](

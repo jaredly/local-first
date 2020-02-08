@@ -34,20 +34,16 @@ const setupPage = async (browser, target, name, clearOut = true) => {
                 }
             }
             console.log('PORT', port);
-            window.setupMulti({
-                deltaws: {
+            window.setupMulti(
+                {
                     type: 'ws',
                     url: `ws://localhost:${port}/sync`,
                 },
-                fileblob: {
-                    type: 'blob',
-                    url: `http://localhost:${port}/blob/stuff`,
+                {
+                    fileblob: `http://localhost:${port}/blob/stuff`,
+                    otherfileblob: `http://localhost:${port}/blob/other`,
                 },
-                otherfileblob: {
-                    type: 'blob',
-                    url: `http://localhost:${port}/blob/other`,
-                },
-            });
+            );
             // window.setupBlob(port);
             // window.setupWebSockets(port);
             window.collection = window.client.getCollection('tasks');
