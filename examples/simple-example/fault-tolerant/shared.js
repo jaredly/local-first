@@ -34,6 +34,7 @@ export type CRDTImpl<Delta, Data> = {
     merge(?Data, Data): Data,
     value<T>(Data): T,
     deltas: {
+        diff(?Data, Data): Delta,
         set(Array<string>, Data): Delta,
         remove(string): Delta,
         apply(?Data, Delta): Data,

@@ -65,11 +65,13 @@ export type MultiPersistence = {
         local: ?{ blob: Blob<Data>, stamp: string },
         serverEtag: ?string,
     }>,
-    mergeFull<Data>(
+    mergeFull<Delta, Data>(
         serverId: string,
         full: Blob<Data>,
         etag: string,
         merge: (Data, Data) => Data,
+        diff: (one: ?Data, two: Data) => Delta,
+        ts: () => string,
     ): Promise<?{
         merged: { blob: Blob<Data>, stamp: ?string },
         changedIds: { [colid: string]: Array<string> },
@@ -146,7 +148,8 @@ export type Network<SyncStatus> = {
     createSync: (
         sendCrossTabChange: (PeerChange) => void,
         (SyncStatus) => void,
-    ) => () => void,
+        softResync: () => void,
+    ) => (softResync: boolean) => void,
 };
 
 export type BlobNetworkCreator<Data, SyncStatus> = (

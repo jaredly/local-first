@@ -65,6 +65,13 @@ const latestStamp = (data: CRDT): string => {
 };
 
 const deltas = {
+    diff: (one: ?CRDT, two: CRDT) => {
+        if (!one) {
+            return deltas.set([], two);
+        }
+        // TODO something a little more intelligent probably?
+        return deltas.set([], two);
+    },
     stamp: (delta: Delta): string => latestStamp(delta.value),
     set: (path: Array<string>, value: CRDT): Delta => ({
         type: 'set',

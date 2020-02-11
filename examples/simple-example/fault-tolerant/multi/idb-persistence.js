@@ -76,7 +76,7 @@ export const applyDeltas = async function<Delta, Data>(
     // or store the deltas
     blobServerIds: ?Array<string>,
 ) {
-    console.log('Apply to collection', collection);
+    console.log('Apply to collection', collection, deltas.length, 'deltas');
     const stores = [deltasName(collection), colName(collection)];
     if (blobServerIds != null) {
         stores.push('blob-meta');
@@ -107,7 +107,7 @@ export const applyDeltas = async function<Delta, Data>(
     if (serverCursor) {
         tx.objectStore(metaName(collection)).put(serverCursor, 'cursor');
     }
-    if (blobServerIds != null) {
+    if (blobServerIds != null && blobServerIds.length > 0) {
         // ok this assumption here (that I can get the maxStamp by
         // just taking the stamp of each delta) gets a little tricky
         // if I'm deriving the deltas from a full upgrade.
@@ -119,6 +119,13 @@ export const applyDeltas = async function<Delta, Data>(
                 maxStamp = deltas[i].stamp;
             }
         }
+        console.log(
+            'Setting dirty as',
+            maxStamp,
+            'for blob servers',
+            blobServerIds,
+        );
+
         await Promise.all(
             blobServerIds.map(async sid => {
                 const dirty = await tx
@@ -238,7 +245,7 @@ const makePersistence = (
                 deltas,
                 serverCursor,
                 apply,
-                null,
+                blobServerIds,
             );
         },
 
@@ -282,18 +289,110 @@ const makePersistence = (
             );
             return { local: { blob, stamp: dirty }, serverEtag };
         },
-        async mergeFull<Data>(
+
+        async mergeFull<Delta, Data>(
             serverId: string,
             datas: { [col: string]: { [key: string]: Data } },
             etag: string,
             merge: (Data, Data) => Data,
+            diff: (?Data, Data) => Delta,
+            ts: () => string,
         ) {
+            if (deltaServer) {
+                const tx = (await db).transaction(
+                    []
+                        .concat(
+                            ...Object.keys(datas).map(name => [
+                                deltasName(name),
+                                colName(name),
+                            ]),
+                        )
+                        .concat(['blob-meta']),
+                    'readwrite',
+                );
+                if (blobServerIds.length > 1) {
+                    const newDirtyStamp = ts();
+                    await Promise.all(
+                        blobServerIds
+                            .filter(id => id !== serverId)
+                            .map(async sid => {
+                                await tx
+                                    .objectStore('blob-meta')
+                                    .put(newDirtyStamp, sid + '-dirty');
+                            }),
+                    );
+                }
+                const blob = {};
+                const changedIds = {};
+                let anyChanged = false;
+                await Promise.all(
+                    Object.keys(datas).map(async col => {
+                        const deltas = [];
+                        const store = tx.objectStore(colName(col));
+                        blob[col] = itemMap(await store.getAll());
+                        Object.keys(datas[col]).forEach(key => {
+                            const prev = blob[col][key];
+                            if (prev) {
+                                blob[col][key] = merge(prev, datas[col][key]);
+                            } else {
+                                blob[col][key] = datas[col][key];
+                            }
+                            if (!deepEqual(prev, blob[col][key])) {
+                                deltas.push({
+                                    node: key,
+                                    delta: diff(prev, blob[col][key]),
+                                    stamp: ts(),
+                                });
+                                anyChanged = true;
+                                if (!changedIds[col]) {
+                                    changedIds[col] = [key];
+                                } else {
+                                    changedIds[col].push(key);
+                                }
+                                store.put({ id: key, value: blob[col][key] });
+                            }
+                        });
+                        const deltaStore = tx.objectStore(deltasName(col));
+                        deltas.forEach(delta => deltaStore.put(delta));
+                    }),
+                );
+                console.log('After merge, any changed?', anyChanged);
+                await tx
+                    .objectStore('blob-meta')
+                    .put(etag, serverId + '-serverEtag');
+                const dirty = await tx
+                    .objectStore('blob-meta')
+                    .get(serverId + '-dirty');
+                await tx.done;
+                if (!anyChanged) {
+                    return null;
+                }
+                return {
+                    merged: { blob, stamp: dirty },
+                    changedIds,
+                };
+            }
+
             const tx = (await db).transaction(
                 Object.keys(datas)
                     .map(name => colName(name))
                     .concat(['blob-meta']),
                 'readwrite',
             );
+
+            if (blobServerIds.length > 1) {
+                const newDirtyStamp = ts();
+                await Promise.all(
+                    blobServerIds
+                        .filter(id => id !== serverId)
+                        .map(async sid => {
+                            await tx
+                                .objectStore('blob-meta')
+                                .put(newDirtyStamp, sid + '-dirty');
+                        }),
+                );
+            }
+
             const blob = {};
             const changedIds = {};
             let anyChanged = false;

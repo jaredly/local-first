@@ -61,6 +61,7 @@ export const runServer = <Delta, Data>(
     const genEtag = stat => `${stat.mtime.getTime()}:${stat.size}`;
 
     app.get('/blob/:name', (req, res) => {
+        console.log(`Getting blob ${req.params['name']}`);
         const filePath = path.join(dataPath, 'blobs', req.params['name']);
         if (!fs.existsSync(filePath)) {
             res.status(404);
@@ -81,6 +82,7 @@ export const runServer = <Delta, Data>(
     });
 
     app.put('/blob/:name', (req, res) => {
+        console.log(`Updating blob ${req.params['name']}`);
         const filePath = path.join(dataPath, 'blobs', req.params['name']);
         fs.writeFileSync(filePath, JSON.stringify(req.body), 'utf8');
         const stat = fs.statSync(filePath);

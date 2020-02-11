@@ -145,6 +145,7 @@ const makeSync = <Delta, Data>(
     ) => Promise<void>,
     sendCrossTabChanges,
     updateSyncStatus,
+    softResync,
 ) => {
     console.log('Maing sync with', url, getLocal, mergeIntoLocal, updateMeta);
     console.log('Im the leader (basic blob)');
@@ -209,8 +210,17 @@ const makeSync = <Delta, Data>(
                             return etag;
                         },
                         getLocal,
-                        (remote, etag) =>
-                            mergeIntoLocal(remote, etag, sendCrossTabChanges),
+                        async (remote, etag) => {
+                            const res = await mergeIntoLocal(
+                                remote,
+                                etag,
+                                sendCrossTabChanges,
+                            );
+                            if (res) {
+                                softResync();
+                            }
+                            return res;
+                        },
                         updateMeta,
                     ).then(
                         () => {
@@ -232,7 +242,11 @@ const makeSync = <Delta, Data>(
             }),
     );
     poll();
-    return debounce(poll);
+    const syncer = debounce(poll);
+    return softResync => {
+        // might need changes
+        return syncer();
+    };
 };
 
 // TODO dedup with polling network
@@ -246,7 +260,7 @@ const createNetwork = <Delta, Data>(
 ): Network<SyncStatus> => {
     return {
         initial: { status: 'disconnected' },
-        createSync: (sendCrossTabChanges, updateSyncStatus) => {
+        createSync: (sendCrossTabChanges, updateSyncStatus, softResync) => {
             return makeSync(
                 url,
                 getLocal,
@@ -254,6 +268,7 @@ const createNetwork = <Delta, Data>(
                 updateMeta,
                 sendCrossTabChanges,
                 updateSyncStatus,
+                softResync,
             );
         },
     };

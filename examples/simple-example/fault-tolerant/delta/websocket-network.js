@@ -60,11 +60,11 @@ const createWebSocketNetwork = <Delta, Data>(
 ): Network<SyncStatus> => {
     return {
         initial: { status: 'disconnected' },
-        createSync: (sendCrossTabChange, updateStatus) => {
+        createSync: (sendCrossTabChange, updateStatus, softResync) => {
             console.log('Im the leader (websocket)');
             const state = reconnectingSocket(
                 `${url}?sessionId=${sessionId}`,
-                () => sync(true),
+                () => sync(false),
                 msg => {
                     const messages = JSON.parse(msg);
                     handleMessages(messages, sendCrossTabChange).catch(err => {
@@ -75,10 +75,10 @@ const createWebSocketNetwork = <Delta, Data>(
                 updateStatus,
             );
 
-            const sync = (reconnected: boolean = false) => {
+            const sync = (softSync: boolean) => {
                 if (state.socket) {
                     const socket = state.socket;
-                    getMessages(reconnected).then(
+                    getMessages(!softSync).then(
                         messages => {
                             if (messages.length) {
                                 socket.send(JSON.stringify(messages));

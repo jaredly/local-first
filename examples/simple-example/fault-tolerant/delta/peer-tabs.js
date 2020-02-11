@@ -42,6 +42,13 @@ export const peerTabAwareNetworks = function<SyncStatus>(
                         currentSyncStatus[key] = status;
                         connectionListeners.forEach(f => f(currentSyncStatus));
                     },
+                    () => {
+                        Object.keys(syncs).forEach(k => {
+                            if (k !== key) {
+                                syncs[k](true);
+                            }
+                        });
+                    },
                 );
             });
             return () => {
@@ -83,10 +90,17 @@ export const peerTabAwareNetwork = function<SyncStatus>(
             handleCrossTabChanges(peerChange);
         },
         sendCrossTabChange => {
-            return network.createSync(sendCrossTabChange, status => {
-                currentSyncStatus = status;
-                connectionListeners.forEach(f => f(currentSyncStatus));
-            });
+            const sync = network.createSync(
+                sendCrossTabChange,
+                status => {
+                    currentSyncStatus = status;
+                    connectionListeners.forEach(f => f(currentSyncStatus));
+                },
+                () => {
+                    // do nothing
+                },
+            );
+            return () => sync(false);
         },
     );
 

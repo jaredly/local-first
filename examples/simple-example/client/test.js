@@ -32,6 +32,30 @@ const clockPersist = (key: string) => ({
     },
 });
 
+window.setupLocalCache = async collection => {
+    window.collection = window.client.getCollection(collection);
+    window.data = await window.collection.loadAll();
+    window.collection.onChanges(changes => {
+        changes.forEach(({ value, id }) => {
+            if (value) {
+                window.data[id] = value;
+            } else {
+                delete window.data[id];
+            }
+        });
+    });
+};
+
+window.clearData = async () => {
+    Object.keys(localStorage).forEach(key => {
+        localStorage.removeItem(key);
+    });
+    const r = await window.indexedDB.databases();
+    for (var i = 0; i < r.length; i++) {
+        window.indexedDB.deleteDatabase(r[i].name);
+    }
+};
+
 window.ItemSchema = ItemSchema;
 
 window.setupMulti = (deltaNetwork, blobConfigs) => {

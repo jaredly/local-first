@@ -248,11 +248,13 @@ function createClient<Delta, Data, SyncStatus>(
         allNetworks[serverId] = blobNetworks[serverId](
             () => persistence.getFull(serverId),
             async (full, etag, sendCrossTabChanges) => {
-                const result = await persistence.mergeFull<Data>(
+                const result = await persistence.mergeFull<Delta, Data>(
                     serverId,
                     full,
                     etag,
                     crdt.merge,
+                    crdt.deltas.diff,
+                    getStamp,
                 );
                 if (!result) {
                     return null;
