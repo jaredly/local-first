@@ -173,10 +173,6 @@ const deltaAndBlob = async () => {
     expect(await getData(pageB), {}, 'B 0');
     expect(await getData(pageC), {}, 'C 0');
     await addItem(pageA, 'a', itemA);
-    await triggerSync(pageB);
-    await wait();
-    console.log('triggering again, so it will complete the sync');
-    await triggerSync(pageB);
     await wait();
     await triggerSync(pageC);
     await wait();
@@ -190,9 +186,6 @@ const deltaAndBlob = async () => {
     await wait();
     await triggerSync(pageB);
     await wait();
-    console.log('triggering again, so it will complete the sync');
-    // await triggerSync(pageB);
-    // await wait();
 
     expect(await getData(pageA), { a: itemA, b: itemB }, 'A 2');
     expect(await getData(pageB), { a: itemA, b: itemB }, 'B 2');
@@ -246,9 +239,6 @@ const twoBlobs = async () => {
     await wait();
     await triggerSync(pageB);
     await wait();
-    console.log('triggering again, so it will complete the sync');
-    await triggerSync(pageB);
-    await wait();
     await triggerSync(pageC);
     await wait();
     expect(await getData(pageA), { a: itemA }, 'A 1');
@@ -256,15 +246,6 @@ const twoBlobs = async () => {
     expect(await getData(pageC), { a: itemA }, 'C 1');
 
     // const context = browser.createIncognitoBrowserContext();
-
-    // const pageD = await setupPage(
-    //     browser,
-    //     `http://[::1]:${parcelPort}/`,
-    //     chalk.magentaBright('D'),
-    //     null,
-    //     { file: `http://localhost:${serverPort}/blob/backup` },
-    //     true,
-    // );
 
     await browser.close();
     app.http.close();
@@ -275,9 +256,6 @@ const run = async () => {
     await deltaAndBlob();
     console.log(chalk.red.bold.underline.bgWhite('  Two Blobs  '));
     await twoBlobs();
-    // await contention();
-    // console.log(chalk.red.bold.underline.bgWhite('  Compaction  '));
-    // await compaction();
 };
 
 run()

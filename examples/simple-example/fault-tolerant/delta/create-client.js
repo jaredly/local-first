@@ -69,6 +69,7 @@ export const handleMessages = async function<Delta, Data>(
     recvClock: HLC => void,
     sendCrossTabChanges: PeerChange => mixed,
 ) {
+    let hasChanged = false;
     await Promise.all(
         messages.map(async msg => {
             if (msg.type === 'sync') {
@@ -123,6 +124,7 @@ export const handleMessages = async function<Delta, Data>(
                         col: msg.collection,
                         nodes: changedIds,
                     });
+                    hasChanged = true;
                 }
 
                 let maxStamp = null;
@@ -140,6 +142,7 @@ export const handleMessages = async function<Delta, Data>(
             }
         }),
     );
+    return hasChanged;
 };
 
 function createClient<Delta, Data, SyncStatus>(
