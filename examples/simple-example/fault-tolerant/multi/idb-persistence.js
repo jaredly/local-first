@@ -144,7 +144,13 @@ export const applyDeltas = async function<Delta, Data>(
     return map;
 };
 
-const makeDb = async (name, collections, deltaServer, deltaCreate) => {
+const makeDb = async (
+    name,
+    collections,
+    deltaServer,
+    deltaCreate,
+    blobServerIds,
+) => {
     const db = await openDB(name, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
             console.log('Setting up database');
@@ -169,6 +175,20 @@ const makeDb = async (name, collections, deltaServer, deltaCreate) => {
             db.createObjectStore('blob-meta');
         },
     });
+    if (blobServerIds) {
+        const tx = db.transaction('blob-meta', 'readwrite');
+        await Promise.all(
+            blobServerIds.map(async id => {
+                const dirty = await tx.store.get(id + '-dirty');
+                // only if undefined, meaning not yet set
+                if (!dirty && dirty !== null) {
+                    tx.store.put('0', id + '-dirty');
+                }
+                // console.log('[blob init]', id, dirty);
+            }),
+        );
+        await tx.done;
+    }
     if (deltaServer) {
         console.log('!!! yes server');
         for (const collection of collections) {
@@ -218,7 +238,13 @@ const makePersistence = (
         id: string,
     ) => { node: string, delta: Delta, stamp: string },
 ): MultiPersistence => {
-    const db = makeDb(name, collections, deltaServer, deltaCreate);
+    const db = makeDb(
+        name,
+        collections,
+        deltaServer,
+        deltaCreate,
+        blobServerIds,
+    );
 
     return {
         collections,

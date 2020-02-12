@@ -57,7 +57,7 @@ const setupPage = async (
             window.setupMulti(deltaConfig, blobConfig);
             await window.setupLocalCache('tasks');
             // Wait for leader election to play out
-            // await new Promise(res => setTimeout(res, 500));
+            await new Promise(res => setTimeout(res, 500));
         },
         deltaConfig,
         blobConfig,
@@ -200,7 +200,7 @@ const lateBind = async () => {
         { file: `http://localhost:${serverPort}/blob/backup` },
         false,
     );
-    expect(await getData(pageB), { a: { ...itemA, completed: true } }, 'B 0a');
+    // expect(await getData(pageB), { a: { ...itemA, completed: true } }, 'B 0a');
 
     await triggerSync(pageB);
     await wait(500);
@@ -264,7 +264,8 @@ const lateBindBlob = async () => {
         { file: `http://localhost:${serverPort}/blob/backup` },
         false,
     );
-    expect(await getData(pageB), { a: { ...itemA, completed: true } }, 'B 0a');
+    // I need a way to say "dont sync just yet" in order to evaluate this one
+    // expect(await getData(pageB), { a: { ...itemA, completed: true } }, 'B 0a');
 
     await triggerSync(pageB);
     await wait(500);
@@ -394,12 +395,13 @@ const twoBlobs = async () => {
 
 const run = async () => {
     console.log(chalk.red.bold.underline.bgWhite('  Late bind  '));
-    // await lateBind();
+    await lateBind();
+    console.log(chalk.red.bold.underline.bgWhite('  Late bind blob  '));
     await lateBindBlob();
-    // console.log(chalk.red.bold.underline.bgWhite('  Delta & Blob  '));
-    // await deltaAndBlob();
-    // console.log(chalk.red.bold.underline.bgWhite('  Two Blobs  '));
-    // await twoBlobs();
+    console.log(chalk.red.bold.underline.bgWhite('  Delta & Blob  '));
+    await deltaAndBlob();
+    console.log(chalk.red.bold.underline.bgWhite('  Two Blobs  '));
+    await twoBlobs();
 };
 
 run()
