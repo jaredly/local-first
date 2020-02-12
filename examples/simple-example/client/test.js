@@ -16,21 +16,7 @@ import createBasicBlobNetwork from '../fault-tolerant/blob/basic-network';
 
 import createMultiClient from '../fault-tolerant/multi/create-client';
 import makeMultiPersistence from '../fault-tolerant/multi/idb-persistence';
-
-const clockPersist = (key: string) => ({
-    get(init) {
-        const raw = localStorage.getItem(key);
-        if (!raw) {
-            const res = init();
-            localStorage.setItem(key, hlc.pack(res));
-            return res;
-        }
-        return hlc.unpack(raw);
-    },
-    set(clock: HLC) {
-        localStorage.setItem(key, hlc.pack(clock));
-    },
-});
+import { PersistentClock, localStorageClockPersist } from './persistent-clock';
 
 window.setupLocalCache = async collection => {
     window.collection = window.client.getCollection(collection);
@@ -64,15 +50,25 @@ window.setupMulti = (deltaNetwork, blobConfigs) => {
     Object.keys(blobConfigs).forEach(key => {
         blobs[key] = createBasicBlobNetwork(blobConfigs[key]);
     });
+    const clock = new PersistentClock(localStorageClockPersist('multi'));
+    const deltaCreate = (
+        data: Data,
+        id: string,
+    ): { node: string, delta: Delta, stamp: string } => ({
+        delta: crdt.deltas.set([], data),
+        node: id,
+        stamp: clock.get(),
+    });
     const client = createMultiClient(
         crdt,
         { tasks: ItemSchema },
-        clockPersist('multi'),
+        clock,
         makeMultiPersistence(
             'multi-first-second',
             ['tasks'],
             deltaNetwork ? true : false,
             Object.keys(blobs),
+            deltaCreate,
         ),
         deltaNetwork
             ? deltaNetwork.type === 'ws'
@@ -92,7 +88,7 @@ window.setupBlob = port => {
     const client = createBlobClient(
         crdt,
         { tasks: ItemSchema },
-        clockPersist('local-first'),
+        localStorageClockPersist('local-first'),
         makeBlobPersistence('local-first', ['tasks']),
         // etag: ?string => Promise<?Blob<Data>>
         // Blob<data> => Promise<string>
@@ -108,7 +104,7 @@ const setup = makeNetwork => {
     const client = createClient(
         crdt,
         { tasks: ItemSchema },
-        clockPersist('test'),
+        localStorageClockPersist('test'),
         makeDeltaPersistence('test', ['tasks']),
         makeNetwork,
     );

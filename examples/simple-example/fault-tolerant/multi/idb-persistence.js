@@ -87,6 +87,7 @@ export const applyDeltas = async function<Delta, Data>(
     const tx = (await db).transaction(stores, 'readwrite');
     if (blobServerIds != null) {
         const deltaStore = tx.objectStore(deltasName(collection));
+        console.log(`PUTTING DELTAS`);
         deltas.forEach(obj => deltaStore.put(obj));
     }
     const nodes = tx.objectStore(colName(collection));
@@ -143,13 +144,8 @@ export const applyDeltas = async function<Delta, Data>(
     return map;
 };
 
-const makePersistence = (
-    name: string,
-    collections: Array<string>,
-    deltaServer: boolean,
-    blobServerIds: Array<string>,
-): MultiPersistence => {
-    const db = openDB(name, 1, {
+const makeDb = async (name, collections, deltaServer, deltaCreate) => {
+    const db = await openDB(name, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
             console.log('Setting up database');
             collections.forEach(name => {
@@ -173,20 +169,81 @@ const makePersistence = (
             db.createObjectStore('blob-meta');
         },
     });
+    if (deltaServer) {
+        console.log('!!! yes server');
+        for (const collection of collections) {
+            const cursor = await db.get(metaName(collection), 'cursor');
+            // No server cursor, and no deltas saved
+            const deltas = await db.count(deltasName(collection));
+            if (!cursor && deltas === 0) {
+                console.log('!!! need to backfill');
+                const tx = db.transaction(
+                    [colName(collection), deltasName(collection)],
+                    'readwrite',
+                );
+                const items = await tx
+                    .objectStore(colName(collection))
+                    .getAll();
+                const deltas = tx.objectStore(deltasName(collection));
+                for (const item of items) {
+                    const delta = deltaCreate(item.value, item.id);
+                    deltas.put(delta);
+                }
+                console.log('put in', items.length, 'deltas');
+                await tx.done;
+            } else {
+                console.log(
+                    'not that',
+                    cursor,
+                    deltas,
+                    typeof cursor,
+                    !cursor,
+                    deltas == 0,
+                    deltas === 0,
+                );
+            }
+        }
+    }
+
+    return db;
+};
+
+const makePersistence = (
+    name: string,
+    collections: Array<string>,
+    deltaServer: boolean,
+    blobServerIds: Array<string>,
+    deltaCreate: (
+        data: Data,
+        id: string,
+    ) => { node: string, delta: Delta, stamp: string },
+): MultiPersistence => {
+    const db = makeDb(name, collections, deltaServer, deltaCreate);
 
     return {
         collections,
         async deltas<Delta>(
             collection: string,
         ): Promise<Array<{ node: string, delta: Delta, stamp: string }>> {
+            if (!deltaServer) {
+                throw new Error(`No delta server configured`);
+            }
+            console.log('getting deltas');
             return await (await db).getAll(deltasName(collection));
         },
 
         async getServerCursor(collection: string): Promise<?number> {
+            if (!deltaServer) {
+                throw new Error(`No delta server configured`);
+            }
             return await (await db).get(metaName(collection), 'cursor');
         },
 
         async deleteDeltas(collection: string, upTo: string) {
+            if (!deltaServer) {
+                throw new Error(`No delta server configured`);
+            }
+            console.log('DELETING DELTAS');
             let cursor = await (await db)
                 .transaction(deltasName(collection), 'readwrite')
                 // $FlowFixMe why doesn't flow like this
@@ -207,6 +264,29 @@ const makePersistence = (
         ): Promise<Data> {
             if (!collections.includes(colid)) {
                 throw new Error('Unknown collection ' + colid);
+            }
+            if (!deltaServer) {
+                const tx = (await db).transaction(
+                    [colName(colid), 'blob-meta'],
+                    'readwrite',
+                );
+                let data = await tx.objectStore(colName(colid)).get(id);
+                const value = apply(data ? data.value : null, delta);
+
+                blobServerIds.forEach(async serverId => {
+                    const dirty = await tx
+                        .objectStore('blob-meta')
+                        .get(serverId + '-dirty');
+                    if (!dirty || dirty < stamp) {
+                        await tx
+                            .objectStore('meta')
+                            .put(stamp, serverId + '-dirty');
+                    }
+                });
+
+                await tx.objectStore(colName(colid)).put({ id, value });
+                await tx.done;
+                return value;
             }
             const map = await applyDeltas(
                 db,
@@ -236,6 +316,9 @@ const makePersistence = (
             serverCursor: ?CursorType,
             apply: (?Data, Delta) => Data,
         ) {
+            if (!deltaServer) {
+                throw new Error(`No delta server configured`);
+            }
             if (!collections.includes(collection)) {
                 throw new Error('Unknown collection ' + collection);
             }
@@ -353,6 +436,7 @@ const makePersistence = (
                             }
                         });
                         const deltaStore = tx.objectStore(deltasName(col));
+                        console.log('PUTTING DELTAS');
                         deltas.forEach(delta => deltaStore.put(delta));
                     }),
                 );

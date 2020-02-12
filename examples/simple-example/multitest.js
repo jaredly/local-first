@@ -202,7 +202,8 @@ const lateBind = async () => {
     );
     expect(await getData(pageB), { a: { ...itemA, completed: true } }, 'B 0a');
 
-    await wait();
+    await triggerSync(pageB);
+    await wait(500);
     expect(await getData(pageA), { a: mergedItem }, 'A 1');
     expect(await getData(pageB), { a: mergedItem }, 'B 1');
 

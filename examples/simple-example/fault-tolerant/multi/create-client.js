@@ -15,6 +15,7 @@ import { type Schema } from '@local-first/nested-object-crdt/schema.js';
 import deepEqual from 'fast-deep-equal';
 import { type PeerChange } from '../types';
 import { updateCacheAndNotify } from '../blob/create-client';
+import { type PersistentClock } from '../../client/persistent-clock';
 
 import {
     newCollection,
@@ -51,16 +52,17 @@ So maybe this won't be a big deal?
 
 */
 
-const genId = () =>
-    Math.random()
-        .toString(36)
-        .slice(2);
+// const genId = () =>
+//     Math.random()
+//         .toString(36)
+//         .slice(2);
 
 import { type ClientMessage, type ServerMessage } from '../server';
 export const getMessages = function<Delta, Data>(
     persistence: MultiPersistence,
     reconnected: boolean,
 ): Promise<Array<ClientMessage<Delta, Data>>> {
+    console.log('getting messages');
     return Promise.all(
         persistence.collections.map(
             async (
@@ -81,6 +83,8 @@ export const getMessages = function<Delta, Data>(
                             delta,
                         })),
                     };
+                } else {
+                    console.log('noe messages', deltas, serverCursor);
                 }
             },
         ),
@@ -183,30 +187,30 @@ export const handleMessages = async function<Delta, Data>(
 function createClient<Delta, Data, SyncStatus>(
     crdt: CRDTImpl<Delta, Data>,
     schemas: { [colid: string]: Schema },
-    clockPersist: ClockPersist,
+    clock: PersistentClock,
     persistence: MultiPersistence,
     deltaNetwork: ?NetworkCreator<Delta, Data, SyncStatus>,
     blobNetworks: { [serverId: string]: BlobNetworkCreator<Data, SyncStatus> },
 ): Client<{ [key: string]: SyncStatus }> {
-    let clock = clockPersist.get(() => hlc.init(genId(), Date.now()));
+    // let clock = clockPersist.get(() => hlc.init(genId(), Date.now()));
     const state: { [key: string]: CollectionState<Data, any> } = {};
     persistence.collections.forEach(id => (state[id] = newCollection()));
 
-    const getStamp = () => {
-        clock = hlc.inc(clock, Date.now());
-        clockPersist.set(clock);
-        return hlc.pack(clock);
-    };
+    // const getStamp = () => {
+    //     clock = hlc.inc(clock, Date.now());
+    //     clockPersist.set(clock);
+    //     return hlc.pack(clock);
+    // };
 
-    const setClock = (newClock: HLC) => {
-        clock = newClock;
-        clockPersist.set(clock);
-    };
+    // const setClock = (newClock: HLC) => {
+    //     clock = newClock;
+    //     clockPersist.set(clock);
+    // };
 
-    const recvClock = (newClock: HLC) => {
-        clock = hlc.recv(clock, newClock, Date.now());
-        clockPersist.set(clock);
-    };
+    // const recvClock = (newClock: HLC) => {
+    //     clock = hlc.recv(clock, newClock, Date.now());
+    //     clockPersist.set(clock);
+    // };
 
     const allDirty = [];
 
@@ -233,7 +237,7 @@ function createClient<Delta, Data, SyncStatus>(
     }
     if (deltaNetwork) {
         allNetworks[':delta:'] = deltaNetwork(
-            clock.node,
+            clock.now.node,
             fresh => getMessages(persistence, fresh),
             (messages, sendCrossTabChanges) =>
                 handleMessages(
@@ -241,7 +245,7 @@ function createClient<Delta, Data, SyncStatus>(
                     persistence,
                     messages,
                     state,
-                    recvClock,
+                    clock.recv,
                     sendCrossTabChanges,
                 ),
         );
@@ -257,7 +261,7 @@ function createClient<Delta, Data, SyncStatus>(
                     etag,
                     crdt.merge,
                     crdt.deltas.diff,
-                    getStamp,
+                    clock.get,
                 );
                 if (!result) {
                     return null;
@@ -280,8 +284,8 @@ function createClient<Delta, Data, SyncStatus>(
     const network = peerTabAwareNetworks(handlePeerChange, allNetworks);
 
     return {
-        sessionId: clock.node,
-        getStamp,
+        sessionId: clock.now.node,
+        getStamp: clock.get,
         setDirty: network.setDirty,
         getCollection<T>(colid: string) {
             return getCollection(
@@ -289,7 +293,7 @@ function createClient<Delta, Data, SyncStatus>(
                 crdt,
                 persistence,
                 state[colid],
-                getStamp,
+                clock.get,
                 network.setDirty,
                 network.sendCrossTabChanges,
                 schemas[colid],
