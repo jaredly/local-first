@@ -57,7 +57,7 @@ const setupPage = async (
             window.setupMulti(deltaConfig, blobConfig);
             await window.setupLocalCache('tasks');
             // Wait for leader election to play out
-            await new Promise(res => setTimeout(res, 500));
+            // await new Promise(res => setTimeout(res, 500));
         },
         deltaConfig,
         blobConfig,
@@ -134,6 +134,80 @@ const itemB = {
     completed: true,
     createdDate: Date.now(),
     tags: {},
+};
+
+/**
+ * This is about adding a delta server after you've already been
+ * talking to a blob server.
+ *
+ * So [A] is connected w/ deltas
+ * And then [B] is connected w/ blob
+ * both A and B add the same item, and make changes,
+ * such that it would merge.
+ *
+ * Then [B] closes & re-opens with both blob and delta.
+ *
+ * After syncing, [A] and [B] should both have the merged
+ * item.
+ */
+const lateBind = async () => {
+    const serverPort = 11111;
+    const { app, server, dataDir } = setupServer(serverPort);
+
+    const browser = await puppeteer.launch();
+
+    const pageA = await setupPage(
+        browser,
+        `http://localhost:${parcelPort}/`,
+        chalk.red('A'),
+        { type: 'ws', url: `ws://localhost:${serverPort}/sync` },
+        {},
+        true,
+    );
+
+    let pageB = await setupPage(
+        browser,
+        `http://127.0.0.1:${parcelPort}/`,
+        chalk.green('B'),
+        null,
+        { file: `http://localhost:${serverPort}/blob/backup` },
+        true,
+    );
+
+    const mergedItem = { ...itemA };
+
+    await addItem(pageA, 'a', itemA);
+    await addItem(pageB, 'a', itemA);
+    const newTitle = 'A title from page A';
+    await setAttribute(pageA, 'a', 'title', newTitle);
+    await setAttribute(pageB, 'a', 'completed', true);
+
+    expect(await getData(pageA), { a: { ...itemA, title: newTitle } }, 'A 0');
+    expect(await getData(pageB), { a: { ...itemA, completed: true } }, 'B 0');
+
+    mergedItem.title = newTitle;
+    mergedItem.completed = true;
+    await wait();
+
+    await pageB.close();
+
+    pageB = await setupPage(
+        browser,
+        `http://127.0.0.1:${parcelPort}/`,
+        chalk.green('B'),
+        { type: 'ws', url: `ws://localhost:${serverPort}/sync` },
+        { file: `http://localhost:${serverPort}/blob/backup` },
+        // don't clear out the data
+        false,
+    );
+    expect(await getData(pageB), { a: { ...itemA, completed: true } }, 'B 0a');
+
+    await wait();
+    expect(await getData(pageA), { a: mergedItem }, 'A 1');
+    expect(await getData(pageB), { a: mergedItem }, 'B 1');
+
+    await browser.close();
+    app.http.close();
 };
 
 const deltaAndBlob = async () => {
@@ -252,10 +326,12 @@ const twoBlobs = async () => {
 };
 
 const run = async () => {
-    console.log(chalk.red.bold.underline.bgWhite('  Delta & Blob  '));
-    await deltaAndBlob();
-    console.log(chalk.red.bold.underline.bgWhite('  Two Blobs  '));
-    await twoBlobs();
+    console.log(chalk.red.bold.underline.bgWhite('  Late bind  '));
+    await lateBind();
+    // console.log(chalk.red.bold.underline.bgWhite('  Delta & Blob  '));
+    // await deltaAndBlob();
+    // console.log(chalk.red.bold.underline.bgWhite('  Two Blobs  '));
+    // await twoBlobs();
 };
 
 run()
