@@ -94,6 +94,7 @@ const syncFetch = async function<Data>(
 ) {
     const { local, serverEtag } = await getLocal();
     let dirtyStamp = local ? local.stamp : null;
+    console.log(`[blob]`, dirtyStamp ? 'local changes!' : 'no local changes');
     const remote = await getRemote(serverEtag);
     if (!local && !remote) {
         return; // no changes
@@ -104,7 +105,7 @@ const syncFetch = async function<Data>(
         if (response) {
             toSend = response.blob;
             dirtyStamp = response.stamp;
-            console.log('merged with changes');
+            console.log('[blob] merged with changes');
         } else {
             toSend = null;
             // TODO dirtyStamp should not be truthy in this case I don't think
@@ -114,7 +115,9 @@ const syncFetch = async function<Data>(
     }
     let newServerEtag = null;
     if (toSend) {
-        console.log(remote ? 'pushing up merged' : 'pushing up local');
+        console.log(
+            remote ? '[blob] pushing up merged' : '[blob] pushing up local',
+        );
         const t = toSend;
         Object.keys(toSend).forEach(colid => {
             if (Array.isArray(t[colid])) {
@@ -147,8 +150,14 @@ const makeSync = <Delta, Data>(
     updateSyncStatus,
     softResync,
 ) => {
-    console.log('Maing sync with', url, getLocal, mergeIntoLocal, updateMeta);
-    console.log('Im the leader (basic blob)');
+    console.log(
+        '[blob] Maing sync with',
+        url,
+        getLocal,
+        mergeIntoLocal,
+        updateMeta,
+    );
+    console.log('[blob] Im the leader (basic blob)');
     const poll = poller(
         3 * 1000,
         () =>
@@ -156,7 +165,7 @@ const makeSync = <Delta, Data>(
                 backOff(() =>
                     syncFetch(
                         async etag => {
-                            console.log('Checking for new data', etag);
+                            console.log('[blob] Checking for new data', etag);
                             const res = await fetch(url, {
                                 headers: {
                                     'If-None-Match': etag ? etag : '',
@@ -165,7 +174,10 @@ const makeSync = <Delta, Data>(
                                 },
                             });
                             if (res.status === 304 || res.status === 404) {
-                                console.log('No changes from server!', etag);
+                                console.log(
+                                    '[blob] No changes from server!',
+                                    etag,
+                                );
                                 return null;
                             }
                             if (res.status !== 200) {
@@ -175,7 +187,7 @@ const makeSync = <Delta, Data>(
                             }
                             const blob = await res.json();
                             const newEtag = res.headers.get('etag');
-                            console.log('New etag', newEtag);
+                            console.log('[blob] New etag', newEtag);
                             if (!newEtag) {
                                 throw new Error(
                                     `Remote didn't set an etag on get`,
@@ -184,7 +196,7 @@ const makeSync = <Delta, Data>(
                             return { blob, etag: newEtag };
                         },
                         async blob => {
-                            console.log('Pushing new data');
+                            console.log('[blob] Pushing new data');
                             const res = await fetch(url, {
                                 method: 'PUT',
                                 body: JSON.stringify(blob),
