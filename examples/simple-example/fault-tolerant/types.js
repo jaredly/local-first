@@ -36,10 +36,6 @@ export type Collection<T> = {
     onItemChange: (id: string, (value: ?T) => void) => () => void,
 };
 
-// does persistence encapsulate the crdt?
-// umm maybe?
-// or we pass in the crdt with each call? yep
-
 // Ok, so this is the min required for the `getCollection` thing to work, I believe.
 export type Persistence = {
     collections: Array<string>,

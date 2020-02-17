@@ -6,7 +6,7 @@ import type {
     FullPersistence,
     BlobNetworkCreator,
 } from '../types';
-import { peerTabAwareNetwork } from '../delta/peer-tabs';
+import { peerTabAwareNetwork } from '../peer-tabs';
 import { type Schema } from '@local-first/nested-object-crdt/schema.js';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as hlc from '@local-first/hybrid-logical-clock';

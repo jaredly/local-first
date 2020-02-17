@@ -18,26 +18,6 @@ import levelup from 'levelup';
 import leveldown from 'leveldown';
 import setupPersistence from './sqlite-persistence';
 
-const loadAll = (
-    stream,
-    parse = false,
-): Promise<Array<{ key: string, value: string }>> => {
-    return new Promise((res, rej) => {
-        const items = [];
-        stream
-            .on('data', data => items.push(data))
-            .on('error', err => rej(err))
-            .on('close', () => res(items))
-            .on('end', () => res(items));
-    });
-};
-
-const toObj = (array, key, value) => {
-    const obj = {};
-    array.forEach(item => (obj[key(item)] = value(item)));
-    return obj;
-};
-
 export const makeServer = (dataPath: string) =>
     make<Delta, Data>(crdt, setupPersistence(dataPath), (
         collectionId /*: string*/,

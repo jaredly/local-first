@@ -370,14 +370,6 @@ const compaction = async () => {
 
     await wait(500);
     expect(await getData(pageB), data, 'B 2');
-
-    // app.http.close();
-    // app.wsInst.getWss().clients.forEach(client => {
-    //     client.close();
-    // });
-    // app = runServer(serverPort, server);
-    // console.log('please reconnect');
-    // await wait(1000);
 };
 
 const run = async () => {

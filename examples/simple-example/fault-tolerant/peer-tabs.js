@@ -7,11 +7,11 @@ import type {
     ClockPersist,
     DeltaPersistence,
     FullPersistence,
-} from '../types';
+} from './types';
 import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as hlc from '@local-first/hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';
-import { type PeerChange } from '../types';
+import { type PeerChange } from './types';
 
 export const peerTabAwareNetworks = function<SyncStatus>(
     handleCrossTabChanges: PeerChange => mixed,
