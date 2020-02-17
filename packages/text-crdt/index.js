@@ -1,3 +1,174 @@
+// Based on RGA
+// And this great explanation
+// https://www.youtube.com/watch?v=yCcWpzY8dIA
+
+type CRDT<Format> = {|
+    items: Array<Span<Format>>,
+|};
+
+type Span<Format> = {|
+    id: [number, string],
+    left: [number, string],
+    text: string,
+    deleted?: boolean,
+    // TODO merging formats might be a little dicey?
+    // I'll parameterize on it, -- you provide your own "format" crdt
+    format?: Format,
+|};
+
+type MergeFormats<Format> = (Format, Format) => Format;
+
+export const insert = (crdt, span) => {
+    const [id, site] = span.left;
+    for (let i = 0; i < crdt.items.length; i++) {
+        const item = crdt.items[i];
+        console.log(item.id, span.left);
+        if (
+            item.id[0] === id &&
+            item.id[1] === site &&
+            item.text.length === 1
+        ) {
+            for (let j = i + 1; j < crdt.items.length; j++) {
+                const two = crdt.items[j];
+                if (two.id[0] < span.id[0]) {
+                    crdt.items.splice(j, 0, span);
+                    return;
+                }
+            }
+            // TODO follow the afters in case they're larger
+            crdt.items.push(span);
+            return;
+        } else if (
+            item.id[1] === site &&
+            item.id[0] <= id &&
+            item.id[0] + item.text.length > id
+        ) {
+            const delta = id - item.id[0] + 1;
+            const pre = { ...item, text: item.text.slice(0, delta) };
+            const post = {
+                ...item,
+                text: item.text.slice(delta),
+                id: [item.id[0] + delta, item.id[1]],
+            };
+            crdt.items.splice(i, 1, pre, span, post);
+            // split
+            return;
+        }
+    }
+    console.log('failed!!');
+};
+
+export const format = (crdt, ids, format, merge) => {
+    // TODO
+};
+
+export const del = (crdt, array) => {
+    // TODO
+};
+
+export const applyDelta = (
+    crdt: CRDT<Format>,
+    delta: Delta<Format>,
+    mergeFormats: MergeFormats<Format>,
+) => {
+    switch (delta.type) {
+        case 'insert':
+            insert(crdt, delta.span);
+            break;
+        case 'format':
+            format(crdt, delta.array, delta.format, mergeFormats);
+            break;
+        case 'delete':
+            del(crdt, delta.array);
+    }
+};
+
+type Delta<Format> =
+    | {
+          type: 'insert',
+          span: Span<Format>,
+      }
+    | {
+          type: 'format',
+          // [idnum, sitenum, spanlength]
+          array: Array<[number, string, number]>,
+          format: Format,
+      }
+    | {
+          type: 'delete',
+          array: Array<[number, string, number]>,
+      };
+
+export const init = () => ({ items: [] });
+export const toString = d => d.items.map(m => m.text).join('');
+
+const toKey = ([id, site]) => `${id}:${site}`;
+
+const assemble = (afters, spans, dest) => {
+    spans.sort((a, b) =>
+        a.id[0] === b.id[0] ? cmp(a.id[1], b.id[1]) : b.id[0] - a.id[0],
+    );
+    spans.forEach(span => {
+        const [id, site] = span.id;
+        if (span.text.length === 1) {
+            dest.push(span);
+            const key = toKey(span.id);
+            if (afters[key]) {
+                assemble(afters, afters[key], dest);
+            }
+        } else {
+            let last = 0;
+            for (let i = 0; i < span.text.length; i++) {
+                // const key = toKey([span.id[0] + i, span.id[1]]);
+                // if (afters[key])
+                // assemble(afters, )
+            }
+            if (last === 0) {
+                dest.push(span);
+                const key = toKey(span.id);
+                if (afters[key]) {
+                    assemble(afters, afters[key], dest);
+                }
+            } else {
+                const lastId = [id + last, site];
+                const lastSpan = {
+                    ...span,
+                    text: span.text.slice(last),
+                    id: lastId,
+                };
+                dest.push(span);
+                const key = toKey(lastId);
+                if (afters[key]) {
+                    assemble(afters, afters[key], dest);
+                }
+                //
+            }
+        }
+    });
+};
+
+export const merge = (
+    one: CRDT<Format>,
+    two: CRDT<Format>,
+    mergeFormats: (Format, Format) => Format,
+): CRDT<Format> => {
+    const afters = {};
+    one.items.forEach(span => {
+        const before = toKey(span.left);
+        if (!afters[before]) {
+            afters[before] = [span];
+        } else {
+            afters[before].push(span);
+        }
+    });
+    const items = [];
+    let currents = ['0:root'];
+    while (currents.length) {}
+};
+// insert
+// delete
+// format
+
 /*
 ## General outline, of my "not-woot"
 

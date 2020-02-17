@@ -4,8 +4,6 @@ require('@babel/register');
 const puppeteer = require('puppeteer');
 const Bundler = require('parcel');
 const { runServer, makeServer } = require('./server/index.js');
-const serverLib = require('@local-first/core/lib/server');
-const clientLib = require('@local-first/nested-object-crdt');
 const chalk = require('chalk');
 const deepEqual = require('fast-deep-equal');
 const fs = require('fs');

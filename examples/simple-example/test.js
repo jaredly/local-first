@@ -4,8 +4,7 @@ require('@babel/register');
 const puppeteer = require('puppeteer');
 const Bundler = require('parcel');
 const { runServer, makeServer } = require('./server/index.js');
-const serverLib = require('@local-first/core/lib/server');
-const clientLib = require('@local-first/nested-object-crdt');
+const crdt = require('@local-first/nested-object-crdt');
 const chalk = require('chalk');
 const deepEqual = require('fast-deep-equal');
 const fs = require('fs');
@@ -358,7 +357,7 @@ const compaction = async () => {
 
     console.log('getting pagea data');
     expect(await getData(pageA), data, 'A 2');
-    server.persistence.compact('tasks', Date.now(), clientLib.mergeDeltas);
+    server.persistence.compact('tasks', Date.now(), crdt.mergeDeltas);
 
     // Different origin, so they won't share indexeddbs
     pageB = await setupPage(
