@@ -5,13 +5,12 @@ import type {
     Collection,
     PeerChange,
     Blob,
-    ClockPersist,
+    PersistentClock,
     FullPersistence,
     BlobNetworkCreator,
 } from '../types';
 import { peerTabAwareNetwork } from '../peer-tabs';
 import { type Schema } from '@local-first/nested-object-crdt/schema.js';
-import type { HLC } from '@local-first/hybrid-logical-clock';
 import * as hlc from '@local-first/hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';
 
@@ -29,6 +28,22 @@ const genId = () =>
         .slice(2);
 
 import { type ClientMessage, type ServerMessage } from '../server';
+
+export const fullMaxStamp = function<Delta, Data>(
+    crdt: CRDTImpl<Delta, Data>,
+    full: Blob<Data>,
+) {
+    let maxStamp = null;
+    Object.keys(full).forEach(colid => {
+        Object.keys(full[colid]).forEach(key => {
+            const latest = crdt.maxStamp(full[colid][key]);
+            if (latest && (!maxStamp || latest > maxStamp)) {
+                maxStamp = latest;
+            }
+        });
+    });
+    return maxStamp;
+};
 
 export const updateCacheAndNotify = function<Delta, Data>(
     state: { [key: string]: CollectionState<Data, any> },
@@ -79,29 +94,12 @@ export const updateCacheAndNotify = function<Delta, Data>(
 function createClient<Delta, Data, SyncStatus>(
     crdt: CRDTImpl<Delta, Data>,
     schemas: { [colid: string]: Schema },
-    clockPersist: ClockPersist,
+    clock: PersistentClock,
     persistence: FullPersistence,
     createNetwork: BlobNetworkCreator<Data, SyncStatus>,
 ): Client<SyncStatus> {
-    let clock = clockPersist.get(() => hlc.init(genId(), Date.now()));
     const state: { [key: string]: CollectionState<Data, any> } = {};
     persistence.collections.forEach(id => (state[id] = newCollection()));
-
-    const getStamp = () => {
-        clock = hlc.inc(clock, Date.now());
-        clockPersist.set(clock);
-        return hlc.pack(clock);
-    };
-
-    const setClock = (newClock: HLC) => {
-        clock = newClock;
-        clockPersist.set(clock);
-    };
-
-    const recvClock = (newClock: HLC) => {
-        clock = hlc.recv(clock, newClock, Date.now());
-        clockPersist.set(clock);
-    };
 
     const network = peerTabAwareNetwork(
         (msg: PeerChange) => {
@@ -116,6 +114,10 @@ function createClient<Delta, Data, SyncStatus>(
         createNetwork(
             persistence.getFull,
             async (full, etag, sendCrossTabChanges) => {
+                const max = fullMaxStamp(crdt, full);
+                if (max) {
+                    clock.recv(max);
+                }
                 const result = await persistence.mergeFull<Data>(
                     full,
                     etag,
@@ -139,16 +141,16 @@ function createClient<Delta, Data, SyncStatus>(
     );
 
     return {
-        sessionId: clock.node,
+        sessionId: clock.now.node,
         setDirty: network.setDirty,
-        getStamp,
+        getStamp: clock.get,
         getCollection<T>(colid: string) {
             return getCollection(
                 colid,
                 crdt,
                 persistence,
                 state[colid],
-                getStamp,
+                clock.get,
                 network.setDirty,
                 network.sendCrossTabChanges,
                 schemas[colid],

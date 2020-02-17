@@ -15,7 +15,8 @@ import * as hlc from '@local-first/hybrid-logical-clock';
 import { type Schema } from '@local-first/nested-object-crdt/schema.js';
 import deepEqual from 'fast-deep-equal';
 import { type PeerChange } from '../types';
-import { updateCacheAndNotify } from '../blob/create-client';
+import { updateCacheAndNotify, fullMaxStamp } from '../blob/create-client';
+import { type ClientMessage, type ServerMessage } from '../server';
 
 import {
     newCollection,
@@ -52,12 +53,6 @@ So maybe this won't be a big deal?
 
 */
 
-// const genId = () =>
-//     Math.random()
-//         .toString(36)
-//         .slice(2);
-
-import { type ClientMessage, type ServerMessage } from '../server';
 export const getMessages = function<Delta, Data>(
     persistence: MultiPersistence,
     reconnected: boolean,
@@ -192,34 +187,11 @@ function createClient<Delta, Data, SyncStatus>(
     deltaNetwork: ?NetworkCreator<Delta, Data, SyncStatus>,
     blobNetworks: { [serverId: string]: BlobNetworkCreator<Data, SyncStatus> },
 ): Client<{ [key: string]: SyncStatus }> {
-    // let clock = clockPersist.get(() => hlc.init(genId(), Date.now()));
     const state: { [key: string]: CollectionState<Data, any> } = {};
     persistence.collections.forEach(id => (state[id] = newCollection()));
 
-    // const getStamp = () => {
-    //     clock = hlc.inc(clock, Date.now());
-    //     clockPersist.set(clock);
-    //     return hlc.pack(clock);
-    // };
-
-    // const setClock = (newClock: HLC) => {
-    //     clock = newClock;
-    //     clockPersist.set(clock);
-    // };
-
-    // const recvClock = (newClock: HLC) => {
-    //     clock = hlc.recv(clock, newClock, Date.now());
-    //     clockPersist.set(clock);
-    // };
-
     const allDirty = [];
 
-    // Oh noes!!! Here we are, needing to extract out the cross-tab
-    // stuff. Only one thing should handle cross-tabs.
-    // This makes me think that actually no networks should
-    // handle their own cross-tabulation.
-    // Which makes sense, especially in a native app situation,
-    // where there would be no cross-tab shenanigans.
     const handlePeerChange = (msg: PeerChange) => {
         return onCrossTabChanges(
             crdt,
@@ -255,6 +227,10 @@ function createClient<Delta, Data, SyncStatus>(
         allNetworks[serverId] = blobNetworks[serverId](
             () => persistence.getFull(serverId),
             async (full, etag, sendCrossTabChanges) => {
+                const max = fullMaxStamp(crdt, full);
+                if (max) {
+                    clock.recv(max);
+                }
                 const result = await persistence.mergeFull<Delta, Data>(
                     serverId,
                     full,
