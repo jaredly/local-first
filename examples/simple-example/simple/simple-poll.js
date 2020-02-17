@@ -9,7 +9,7 @@ import makeClient, {
     type ClientState,
     type CRDTImpl,
 } from './client';
-import backOff from '../shared/back-off';
+import backOff from '../../../packages/core/src/back-off';
 
 const sync = async function<Delta, Data>(
     url: string,

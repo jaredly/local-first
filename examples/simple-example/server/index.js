@@ -3,13 +3,13 @@
 import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 import type { Schema } from '@local-first/nested-object-crdt/lib/schema.js';
-import make, { onMessage, getMessages } from '../fault-tolerant/server';
+import make, { onMessage, getMessages } from '@local-first/core/lib/server';
 import type {
     ClientMessage,
     ServerMessage,
     CursorType,
     ServerState,
-} from '../fault-tolerant/server';
+} from '@local-first/core/lib/server';
 import { ItemSchema } from '../shared/schema.js';
 
 import path from 'path';

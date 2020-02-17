@@ -16,8 +16,8 @@ import { type ClientMessage, type ServerMessage } from '../server';
 type SyncStatus = { status: 'connected' } | { status: 'disconnected' };
 
 import { peerTabAwareSync } from '../peer-tabs';
-import poller from '../../shared/poller';
-import backOff from '../../shared/back-off';
+import poller from '../poller';
+import backOff from '../back-off';
 import { debounce } from '../debounce';
 
 // Ok the part where we get very specific

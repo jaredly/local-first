@@ -1,7 +1,10 @@
 // @flow
 
-import type { Client, Collection, PeerChange, Blob } from '../types';
 import type {
+    Client,
+    Collection,
+    PeerChange,
+    Blob,
     ClockPersist,
     FullPersistence,
     BlobNetworkCreator,

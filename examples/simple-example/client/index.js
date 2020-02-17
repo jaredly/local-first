@@ -7,14 +7,14 @@ import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 import { ItemSchema } from '../shared/schema.js';
 
-import createDeltaClient from '../fault-tolerant/delta/create-client';
-import makeDeltaPersistence from '../fault-tolerant/delta/idb-persistence';
-import createPollingNetwork from '../fault-tolerant/delta/polling-network';
-import createWebSocketNetwork from '../fault-tolerant/delta/websocket-network';
+import createDeltaClient from '@local-first/core/lib/delta/create-client';
+import makeDeltaPersistence from '@local-first/core/lib/delta/idb-persistence';
+import createPollingNetwork from '@local-first/core/lib/delta/polling-network';
+import createWebSocketNetwork from '@local-first/core/lib/delta/websocket-network';
 
-import createBlobClient from '../fault-tolerant/blob/create-client';
-import makeBlobPersistence from '../fault-tolerant/blob/idb-persistence';
-import createBasicBlobNetwork from '../fault-tolerant/blob/basic-network';
+import createBlobClient from '@local-first/core/lib/blob/create-client';
+import makeBlobPersistence from '@local-first/core/lib/blob/idb-persistence';
+import createBasicBlobNetwork from '@local-first/core/lib/blob/basic-network';
 
 const clockPersist = (key: string) => ({
     get(init) {

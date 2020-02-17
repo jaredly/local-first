@@ -10,7 +10,7 @@ import makeClient, {
     inflate,
     type ClientState,
 } from './client';
-import backOff from '../shared/back-off';
+import backOff from '@local-first/core/lib/back-off';
 import type { CRDTImpl } from '../simple/client';
 
 const reconnectingSocket = (

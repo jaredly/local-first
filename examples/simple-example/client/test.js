@@ -5,17 +5,17 @@ import * as crdt from '@local-first/nested-object-crdt';
 import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
 import { ItemSchema } from '../shared/schema.js';
 
-import createClient from '../fault-tolerant/delta/create-client';
-import makeDeltaPersistence from '../fault-tolerant/delta/idb-persistence';
-import createPollingNetwork from '../fault-tolerant/delta/polling-network';
-import createWebSocketNetwork from '../fault-tolerant/delta/websocket-network';
+import createClient from '@local-first/core/lib/delta/create-client';
+import makeDeltaPersistence from '@local-first/core/lib/delta/idb-persistence';
+import createPollingNetwork from '@local-first/core/lib/delta/polling-network';
+import createWebSocketNetwork from '@local-first/core/lib/delta/websocket-network';
 
-import createBlobClient from '../fault-tolerant/blob/create-client';
-import makeBlobPersistence from '../fault-tolerant/blob/idb-persistence';
-import createBasicBlobNetwork from '../fault-tolerant/blob/basic-network';
+import createBlobClient from '@local-first/core/lib/blob/create-client';
+import makeBlobPersistence from '@local-first/core/lib/blob/idb-persistence';
+import createBasicBlobNetwork from '@local-first/core/lib/blob/basic-network';
 
-import createMultiClient from '../fault-tolerant/multi/create-client';
-import makeMultiPersistence from '../fault-tolerant/multi/idb-persistence';
+import createMultiClient from '@local-first/core/lib/multi/create-client';
+import makeMultiPersistence from '@local-first/core/lib/multi/idb-persistence';
 import { PersistentClock, localStorageClockPersist } from './persistent-clock';
 
 window.setupLocalCache = async collection => {

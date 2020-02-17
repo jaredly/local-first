@@ -1,8 +1,8 @@
 // @flow
 import type { BlobNetworkCreator, Network, Blob, PeerChange } from '../types';
 import { peerTabAwareNetwork } from '../peer-tabs';
-import poller from '../../shared/poller';
-import backOff from '../../shared/back-off';
+import poller from '../poller';
+import backOff from '../back-off';
 import { debounce } from '../debounce';
 
 type SyncStatus = { status: 'connected' } | { status: 'disconnected' };

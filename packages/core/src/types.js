@@ -133,6 +133,13 @@ export type ClockPersist = {
     set(HLC): void,
 };
 
+export type PersistentClock = {
+    get(): string,
+    set(newClock: HLC): void,
+    recv(newClock: HLC): void,
+    now: HLC,
+};
+
 export type Blob<Data> = {
     [colid: string]: {
         [id: string]: Data,
