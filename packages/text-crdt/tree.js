@@ -257,7 +257,10 @@ export const walk = function<Format>(
     node.children.forEach(child => walk(child, fn));
 };
 
-export const init = function<Format>(site: string, roots: Array<Node<Format>>) {
+export const inflate = function<Format>(
+    site: string,
+    roots: Array<Node<Format>>,
+) {
     let largest = 0;
     const map = {};
     roots.forEach(node =>
@@ -268,7 +271,10 @@ export const init = function<Format>(site: string, roots: Array<Node<Format>>) {
             }
         }),
     );
-    return { site, roots, map, largestLocalId: largest };
+};
+
+export const init = function<Format>(site: string) {
+    return { site, roots: [], map: {}, largestLocalId: 0 };
 };
 
 // MUTATIVE!! TODO try making an immutable version?

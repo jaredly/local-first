@@ -155,7 +155,7 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
 };
 
 const state /*:State*/ = {
-    text: crdt.init('a', []),
+    text: crdt.init('a'),
     mode: 'insert',
     sel: { cursor: 0, anchor: 0 },
 };
