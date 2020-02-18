@@ -14,8 +14,10 @@ type Format = {|
 |}
 type State = {|
     text: crdt.CRDT<Format>,
+    sync: Array<crdt.Delta<Format>>,
     sel: {anchor: number, cursor: number},
     mode: 'insert' | 'normal' | 'visual',
+    pos: number,
 |}
 */
 
@@ -36,37 +38,56 @@ const mergeFormats = (a /*:Format*/, b /*:Format*/) /*:Format*/ =>
     (Object.assign({}, a, b) /*: any*/);
 
 const sortCursor = selection => {
-    const { cursor, anchor } = state.sel;
+    const { cursor, anchor } = selection;
     const at = Math.min(cursor, anchor);
     const count = Math.max(cursor, anchor) - at + 1;
     return { at, count };
 };
 
-const draw = (state /*:State*/) => {
+const applyDelta = (state, delta) => {
+    crdt.apply(state.text, delta, mergeFormats);
+    state.sync.push(delta);
+};
+
+const draw = (state /*:State*/, pos) => {
     let text = '<type something>';
     if (state.mode === 'visual') {
         const { at, count } = sortCursor(state.sel);
         const c /*:crdt.CRDT<Format>*/ = crdt.inflate(
-            'a',
+            state.text.site,
             clone(state.text.roots),
         );
         const delta = crdt.localFormat(c, at, count, { highlight: true });
         crdt.apply(c, delta, mergeFormats);
         text = crdt.toString(c, format);
-        program.move(0, 9);
-        program.eraseInLine(2);
-        program.write(
-            JSON.stringify(crdt.selectionToSpans(state.text, at, count)),
-        );
+        // program.move(0, 9);
+        // program.eraseInLine(2);
+        // program.write(
+        //     JSON.stringify(crdt.selectionToSpans(state.text, at, count)),
+        // );
     } else {
         text = crdt.toString(state.text, format);
     }
 
     program.cursorShape(state.mode === 'insert' ? 'line' : 'block');
-    program.move(0, 0);
+    program.move(0, pos);
     program.eraseInLine(2);
     program.write(text);
-    program.move(state.sel.cursor, 0);
+    program.move(state.sel.cursor, pos);
+};
+
+const debug = (state, pos) => {
+    const plain = crdt.toString(state.text);
+    program.move(0, pos);
+    program.eraseInLine(2);
+    program.write(crdt.toDebug(state.text));
+    program.move(0, pos + 1);
+    program.eraseInLine(2);
+    program.write(
+        `Cached: ${length(state.text)} - Full: ${plain.length} - Mode: ${
+            state.mode
+        } - Cursor: ${JSON.stringify(state.sel)}`,
+    );
 };
 
 const moveSel = (state, pos) => {
@@ -88,11 +109,7 @@ const length = state => {
 
 const visualFormat = (state, format) => {
     const { at, count } = sortCursor(state.sel);
-    crdt.apply(
-        state.text,
-        crdt.localFormat(state.text, at, count, format),
-        mergeFormats,
-    );
+    applyDelta(state, crdt.localFormat(state.text, at, count, format));
     state.mode = 'normal';
     state.sel = { anchor: at, cursor: at };
 };
@@ -125,11 +142,7 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
         }
         if (ch === 'd' || ch === 'x') {
             const { at, count } = sortCursor(state.sel);
-            crdt.apply(
-                state.text,
-                crdt.localDelete(state.text, at, count),
-                mergeFormats,
-            );
+            applyDelta(state, crdt.localDelete(state.text, at, count));
             state.mode = 'normal';
             state.sel = { anchor: at, cursor: at };
         }
@@ -142,10 +155,9 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
             if (state.sel.cursor > 0) {
                 moveSelRel(state, -1);
                 // state.pos -= 1;
-                crdt.apply(
-                    state.text,
+                applyDelta(
+                    state,
                     crdt.localDelete(state.text, state.sel.cursor, 1),
-                    mergeFormats,
                 );
             }
             // state.text =
@@ -156,14 +168,13 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
         if (!ch) {
             return;
         }
-        crdt.apply(
-            state.text,
+        applyDelta(
+            state,
             // TODO copy the format of the text under cursor.
             // Also TODO, establish a "bias", so if you came from the left,
             // you get the left format, and if you come from the right,
             // you get the right's
             crdt.localInsert(state.text, state.sel.cursor, ch, null),
-            mergeFormats,
         );
         // state.text =
         //     state.text.slice(0, state.pos) + ch + state.text.slice(state.pos);
@@ -173,6 +184,10 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
         if (ch === 'A') {
             moveSel(state, length(state.text));
             state.mode = 'insert';
+            return;
+        }
+        if (ch === '0') {
+            moveSel(state, 0);
             return;
         }
         if (ch === 'h' || evt.full === 'left') {
@@ -202,54 +217,74 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
         }
         if (ch === 'x') {
             if (state.sel.cursor < length(state.text)) {
-                crdt.apply(
-                    state.text,
+                applyDelta(
+                    state,
                     crdt.localDelete(state.text, state.sel.cursor, 1),
-                    mergeFormats,
                 );
             }
         }
     }
 };
 
-const state /*:State*/ = {
+const stateA /*:State*/ = {
     text: crdt.init('a'),
     mode: 'normal',
     sel: { cursor: 0, anchor: 0 },
+    sync: [],
+    pos: 0,
 };
+
 crdt.apply(
-    state.text,
+    stateA.text,
     crdt.localInsert(
-        state.text,
+        stateA.text,
         0,
         'Hello folks, this is the editor extraordinaire.',
     ),
     mergeFormats,
 );
 
-program.on('keypress', function(ch, evt) {
-    handleKeyPress(state, ch, evt);
-    debug(state);
-    draw(state);
-});
-
-const debug = state => {
-    const plain = crdt.toString(state.text);
-    program.move(0, 5);
-    program.eraseInLine(2);
-    program.write(crdt.toDebug(state.text));
-    program.move(0, 6);
-    program.eraseInLine(2);
-    program.write(
-        `Cached: ${length(state.text)} - Full: ${plain.length} - Mode: ${
-            state.mode
-        } - Cursor: ${JSON.stringify(state.sel)}`,
-    );
+const stateB /*:State*/ = {
+    text: crdt.inflate('b', clone(stateA.text.roots)),
+    mode: 'normal',
+    sync: [],
+    sel: { cursor: 0, anchor: 0 },
+    pos: 10,
 };
+
+const programState = {
+    editors: {
+        a: stateA,
+        b: stateB,
+    },
+    focused: 'a',
+};
+
+program.on('keypress', function(ch, evt) {
+    if (evt.full === 'tab') {
+        programState.focused = programState.focused === 'a' ? 'b' : 'a';
+    }
+    if (ch === 's') {
+        // sync them!
+        programState.editors.a.sync.forEach(delta => {
+            crdt.apply(programState.editors.b.text, delta, mergeFormats);
+        });
+        programState.editors.b.sync.forEach(delta => {
+            crdt.apply(programState.editors.a.text, delta, mergeFormats);
+        });
+        programState.editors.a.sync = [];
+        programState.editors.b.sync = [];
+        fullRefresh();
+        return;
+    }
+    const editor = programState.editors[programState.focused];
+    handleKeyPress(editor, ch, evt);
+    debug(editor, editor.pos + 5);
+    draw(editor, editor.pos);
+});
 
 program.key('q', function(ch, key) {
     program.clear();
-    // program.disableMouse();
     program.cursorShape('block');
     program.normalBuffer();
     process.exit(0);
@@ -264,9 +299,16 @@ program.on('mouse', function(data) {
     }
 });
 
-setTimeout(() => {
-    program.alternateBuffer();
-    program.clear();
-    draw(state);
-    program.feed();
-}, 5);
+const fullRefresh = () => {
+    Object.keys(programState.editors).forEach(key => {
+        const editor = programState.editors[key];
+        debug(editor, editor.pos + 5);
+        draw(editor, editor.pos);
+    });
+    const editor = programState.editors[programState.focused];
+    draw(editor, editor.pos);
+};
+
+program.alternateBuffer();
+program.clear();
+fullRefresh();
