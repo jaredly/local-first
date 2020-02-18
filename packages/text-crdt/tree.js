@@ -441,11 +441,10 @@ const mergeDown = function<Format>(crdt: CRDT<Format>, node: Node<Format>) {
 
 const updateNode = function<Format>(
     crdt: CRDT<Format>,
-    key: string,
+    node: Node<Format>,
     remove: boolean,
     format: ?{ merge: (Format, Format) => Format, fmt: Format },
 ) {
-    const node = crdt.map[key];
     if (remove && !node.deleted) {
         node.deleted = true;
         node.size -= node.text.length;
@@ -462,11 +461,7 @@ const updateNode = function<Format>(
             node.format = format.fmt;
         }
     }
-    if (
-        node.parent !== '0:root' &&
-        parent.children.length === 1 &&
-        mergeable(crdt.map[node.parent], node)
-    ) {
+    if (node.parent !== '0:root' && mergeable(crdt.map[node.parent], node)) {
         const parent = crdt.map[node.parent];
         parent.text += node.text;
         delete crdt.map[toKey(node.id)];
@@ -483,6 +478,7 @@ const mergeable = function<Format>(
     child: Node<Format> | Span<Format>,
 ) {
     return (
+        parent.children.length <= 1 &&
         parent.id[1] === child.id[1] &&
         parent.id[0] + parent.text.length === child.id[0] &&
         parent.deleted == child.deleted &&
@@ -497,8 +493,6 @@ const updateSpans = function<Format>(
     format: ?{ merge: (Format, Format) => Format, fmt: Format },
 ) {
     spans.forEach(([id, site, length]) => {
-        // ok so the several cofigurations
-        // there's a node that is exactly the span! congrats
         if (!ensureNodeAt(crdt, [id, site])) {
             throw new Error(`Cannot update span ${id}:${site}`);
         }
@@ -508,52 +502,11 @@ const updateSpans = function<Format>(
             if (node.text.length > length) {
                 split(crdt, key, length);
             }
-            console.log('updating');
-            updateNode(crdt, key, remove, format);
+            updateNode(crdt, node, remove, format);
+            // Note that this length, importantly, doesn't care about whether the node is deleted
             length -= node.text.length;
             id += node.text.length;
         }
-
-        /*
-  exact match
-  [----------] span
-  {----------} node
-
-  exact start, subset
-  [----------] span
-  {-------------} node
-
-  exact start, after node matches
-  [----------]
-  {----}{----}
-
-  exact start, afternode subset
-  [----------]
-  {----}{------}
-
-  subset
-    [-----]
-  {-----------}
-
-    [--------]
-  {----------}
-
-    [--------]
-  {----}{------}
-
-  ok is there a way to make it so
-
-  hello folks
-  - delete hello
-  - insert 40 after 'hel'
-
-  convergently also deletes the 'hel'?
-  probably not, because we don't have causality...
-  yeah, I'll leave that alone for now.
-  Even though it will cause a weirdness.
-
-
-        */
     });
 };
 

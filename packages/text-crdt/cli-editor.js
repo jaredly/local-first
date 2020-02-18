@@ -53,6 +53,11 @@ const draw = (state /*:State*/) => {
         const delta = crdt.localFormat(c, at, count, { highlight: true });
         crdt.apply(c, delta, mergeFormats);
         text = crdt.toString(c, format);
+        program.move(0, 9);
+        program.eraseInLine(2);
+        program.write(
+            JSON.stringify(crdt.selectionToSpans(state.text, at, count)),
+        );
     } else {
         text = crdt.toString(state.text, format);
     }
@@ -81,6 +86,17 @@ const length = state => {
     return res;
 };
 
+const visualFormat = (state, format) => {
+    const { at, count } = sortCursor(state.sel);
+    crdt.apply(
+        state.text,
+        crdt.localFormat(state.text, at, count, format),
+        mergeFormats,
+    );
+    state.mode = 'normal';
+    state.sel = { anchor: at, cursor: at };
+};
+
 const handleKeyPress = (state /*:State*/, ch, evt) => {
     if (evt.full === 'enter' || evt.full === 'return') {
         return;
@@ -102,24 +118,10 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
             return;
         }
         if (ch === 'b') {
-            const { at, count } = sortCursor(state.sel);
-            crdt.apply(
-                state.text,
-                crdt.localFormat(state.text, at, count, { bold: true }),
-                mergeFormats,
-            );
-            state.mode = 'normal';
-            state.sel = { anchor: at, cursor: at };
+            visualFormat(state, { bold: true });
         }
         if (ch === 'u') {
-            const { at, count } = sortCursor(state.sel);
-            crdt.apply(
-                state.text,
-                crdt.localFormat(state.text, at, count, { underline: true }),
-                mergeFormats,
-            );
-            state.mode = 'normal';
-            state.sel = { anchor: at, cursor: at };
+            visualFormat(state, { underline: true });
         }
         if (ch === 'd' || ch === 'x') {
             const { at, count } = sortCursor(state.sel);
@@ -137,13 +139,15 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
             return;
         }
         if (evt.full === 'backspace') {
-            moveSelRel(state, -1);
-            // state.pos -= 1;
-            crdt.apply(
-                state.text,
-                crdt.localDelete(state.text, state.sel.cursor, 1),
-                mergeFormats,
-            );
+            if (state.sel.cursor > 0) {
+                moveSelRel(state, -1);
+                // state.pos -= 1;
+                crdt.apply(
+                    state.text,
+                    crdt.localDelete(state.text, state.sel.cursor, 1),
+                    mergeFormats,
+                );
+            }
             // state.text =
             //     state.text.slice(0, state.pos) +
             //     state.text.slice(state.pos + 1);
@@ -168,6 +172,7 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
     } else {
         if (ch === 'A') {
             moveSel(state, length(state.text));
+            state.mode = 'insert';
             return;
         }
         if (ch === 'h' || evt.full === 'left') {
