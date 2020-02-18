@@ -18,6 +18,7 @@ type Span<Format> = {|
 |};
 
 type MergeFormats<Format> = (?Format, ?Format) => ?Format;
+type Ids = Array<[number, string, number]>;
 
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
@@ -109,7 +110,7 @@ type Delta<Format> =
 export const init = function<Format>(): CRDT<Format> {
     return { items: [] };
 };
-export const toString = d =>
+export const toString = (d: CRDT<any>) =>
     d.items
         .filter(m => !m.deleted)
         .map(m => m.text)
@@ -117,7 +118,7 @@ export const toString = d =>
 
 const toKey = ([id, site]) => `${id}:${site}`;
 
-const assemble = (afters, spans, dest) => {
+const assemble = function<Format>(afters, spans, dest: Array<Span<Format>>) {
     spans.sort((a, b) =>
         a.id[0] === b.id[0] ? cmp(a.id[1], b.id[1]) : b.id[0] - a.id[0],
     );
