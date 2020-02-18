@@ -50,6 +50,8 @@ type Delta<Format> =
       };
 
 type CRDT<Format> = {|
+    site: string,
+    largestLocalId: number,
     roots: Array<Node<Format>>,
     map: { [key: string]: Node<Format> },
 |};
@@ -61,9 +63,9 @@ export const nodeToString = (node: Node<mixed>) =>
 export const toString = (crdt: CRDT<mixed>) =>
     crdt.roots.map(nodeToString).join('');
 
-export const init = function<Format>(): CRDT<Format> {
-    return { roots: [], map: {} };
-};
+// export const init = function<Format>(): CRDT<Format> {
+//     return { roots: [], map: {} };
+// };
 
 type Op =
     | {| delete: number |}
@@ -71,11 +73,120 @@ type Op =
     | {| insert: string, attributes?: mixed |};
 type QuillDelta = { ops: Array<Op> };
 
-export const fromQuillDelta = (delta: QuillDelta): Array<Delta<mixed>> => {
-    return [];
+const locForPosInNode = (node, pos) => {
+    if (!node.deleted && pos <= node.text.length) {
+        return [node.id, pos];
+    }
+    for (let i = 0; i < node.children.length; i++) {
+        const child = node.children[i];
+        const found = locForPosInNode(child, pos);
+        if (found) {
+            return found;
+        }
+        pos -= child.size;
+    }
 };
 
-// Remote ops
+const locForPos = (crdt, pos) => {
+    let total = 0;
+    for (let i = 0; i < crdt.roots.length; i++) {
+        const node = crdt.roots[i];
+        const found = locForPosInNode(node, pos);
+        if (found) {
+            return found;
+        }
+        pos -= node.size;
+    }
+};
+
+const selectionToPosInNodes = (crdt, node, offset, count, spans) => {
+    if (!node.deleted && offset < node.text.length) {
+        if (offset + count <= node.text.length) {
+            spans.push([node.id[0] + offset, node.id[1], count]);
+            return 0;
+        } else {
+            spans.push([
+                node.id[0] + offset,
+                node.id[1],
+                node.text.length - offset,
+            ]);
+            count = count - (node.text.length - offset);
+        }
+    }
+    for (let i = 0; i < node.children.length; i++) {
+        const child = node.children[i];
+        count = selectionToPosInNodes(crdt, child, 0, count, spans);
+        if (count <= 0) {
+            return 0;
+        }
+    }
+    return count;
+};
+
+export const selectionToSpans = function<Format>(
+    crdt: CRDT<Format>,
+    at: number,
+    count: number,
+) {
+    const spos = locForPos(crdt, at);
+    if (!spos) {
+        return null;
+    }
+    const spans = [];
+    selectionToPosInNodes(
+        crdt,
+        crdt.map[toKey(spos[0])],
+        spos[1],
+        count,
+        spans,
+    );
+    return spans;
+};
+
+export const localDelete = function<Format>(
+    crdt: CRDT<Format>,
+    at: number,
+    count: number,
+) {
+    return { type: 'delete', spans: selectionToSpans(crdt, at, count) };
+};
+
+export const localFormat = function<Format>(
+    crdt: CRDT<Format>,
+    at: number,
+    count: number,
+    format: Format,
+) {
+    return { type: 'format', spans: selectionToSpans(crdt, at, count), format };
+};
+
+export const localInsert = function<Format>(
+    crdt: CRDT<Format>,
+    at: number,
+    text: string,
+    format: ?Format,
+) {
+    const spos = locForPos(crdt, at);
+    if (!spos) {
+        return null;
+    }
+    return {
+        type: 'insert',
+        span: {
+            id: '??',
+            after: [spos[0][0] + spos[1], spos[0][1]],
+            text,
+            deleted: false,
+            format,
+        },
+    };
+};
+
+export const init = function<Format>(site: string, roots: Array<Node<Format>>) {
+    return {};
+};
+
+// MUTATIVE!! TODO try making an immutable version?
 
 const split = function<Format>(
     crdt: CRDT<Format>,
@@ -115,7 +226,7 @@ const splitAtKey = function<Format>(crdt: CRDT<Format>, key: [number, string]) {
     return false;
 };
 
-const keyCmp = ([a, b], [c, d]) => {
+const keyCmp = ([a, b]: [number, string], [c, d]: [number, string]) => {
     return a < c ? -1 : a > c ? 1 : b < d ? -1 : b > d ? 1 : 0;
 };
 
@@ -148,6 +259,23 @@ const parentForAfter = function<Format>(
 
 export const insert = function<Format>(crdt: CRDT<Format>, span: Span<Format>) {
     const key = toKey(span.after);
+    if (key === '0:root') {
+        // insert into the roots
+        const { after, ...spanRest } = span;
+        let idx = crdt.roots.length;
+        for (let i = 0; i < crdt.roots.length; i++) {
+            if (keyCmp(crdt.roots[0].id, span.id) < 1) {
+                idx = i;
+                break;
+            }
+        }
+        crdt.roots.splice(idx, 0, {
+            ...spanRest,
+            parent: key,
+            size: span.text.length,
+            children: [],
+        });
+    }
     const parentKey = parentForAfter(crdt, span.after);
     if (!parentKey) {
         return false;
@@ -155,7 +283,7 @@ export const insert = function<Format>(crdt: CRDT<Format>, span: Span<Format>) {
     const parent = crdt.map[parentKey];
     let idx = parent.children.length;
     for (let i = 0; i < parent.children.length; i++) {
-        if (keyCmp(parent.children[0], span.id) < 1) {
+        if (keyCmp(parent.children[0].id, span.id) < 1) {
             idx = i;
             break;
         }
