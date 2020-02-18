@@ -7,6 +7,8 @@
 // I thought that parent ==== after
 // but instead, after = [parent.id[0] + parent.text.length - 1, parent.id[1]]
 
+const deepEqual = require('@birchill/json-equalish').default;
+
 type Span<Format> = {|
     id: [number, string],
     after: [number, string],
@@ -99,7 +101,7 @@ export const nodeToDebug = (node: Node<Object>) =>
     '[' +
     toKey(node.id) +
     '·' +
-    (node.deleted ? `del${node.text.length}` : node.text) +
+    (node.deleted ? '~' + node.text + '~' : node.text) +
     ']' +
     (node.format ? JSON.stringify(node.format) : '') +
     (node.children.length
@@ -295,9 +297,6 @@ const split = function<Format>(
         children: node.children,
     };
     crdt.map[toKey(newNode.id)] = newNode;
-    if (!node.deleted) {
-        node.size -= node.text.length - splitPoint;
-    }
     node.text = node.text.slice(0, splitPoint);
     node.children = [newNode];
 };
@@ -376,7 +375,25 @@ export const insert = function<Format>(crdt: CRDT<Format>, span: Span<Format>) {
         return false;
     }
     const parent = crdt.map[parentKey];
-    console.log(parentKey, parent.id);
+
+    // Auto-compaction!
+    if (mergeable(parent, span)) {
+        parent.text += span.text;
+        parent.size += span.text.length;
+
+        let pkey = parent.parent;
+        while (pkey !== '0:root') {
+            // console.log('SIZE UPDATE', pkey);
+            if (!crdt.map[pkey]) {
+                console.log(Object.keys(crdt.map));
+            }
+            crdt.map[pkey].size += span.text.length;
+            pkey = crdt.map[pkey].parent;
+        }
+        return;
+    }
+
+    // Non-compactable insert
     let idx = parent.children.length;
     for (let i = 0; i < parent.children.length; i++) {
         if (keyCmp(parent.children[0].id, span.id) < 1) {
@@ -396,7 +413,6 @@ export const insert = function<Format>(crdt: CRDT<Format>, span: Span<Format>) {
 
     let pkey = parentKey;
     while (pkey !== '0:root') {
-        // console.log('SIZE UPDATE', pkey);
         if (!crdt.map[pkey]) {
             console.log(Object.keys(crdt.map));
         }
@@ -417,7 +433,6 @@ const updateNode = function<Format>(
         node.size -= node.text.length;
         let pkey = node.parent;
         while (pkey != '0:root') {
-            // console.log('OK size update', pkey);
             crdt.map[pkey].size -= node.text.length;
             pkey = crdt.map[pkey].parent;
         }
@@ -429,6 +444,38 @@ const updateNode = function<Format>(
             node.format = format.fmt;
         }
     }
+    // ok here is where we might compact
+    if (node.parent !== '0:root') {
+        const parent = crdt.map[node.parent];
+        // this is a consecutive node
+        if (parent.children.length === 1 && mergeable(parent, node)) {
+            parent.text += node.text;
+            delete crdt.map[toKey(node.id)];
+            // parent.children = parent.children.filter(child => child !== node);
+            parent.children = node.children;
+            node.children.forEach(child => (child.parent = toKey(parent.id)));
+        }
+    }
+    // TODO dunno if I can relax this restriction
+    if (node.children.length === 1 && mergeable(node, node.children[0])) {
+        const child = node.children[0];
+        node.children = child.children;
+        node.children.forEach(child => (child.parent = toKey(node.id)));
+        node.text += child.text;
+        delete crdt.map[toKey(child.id)];
+    }
+};
+
+const mergeable = function<Format>(
+    parent: Node<Format>,
+    child: Node<Format> | Span<Format>,
+) {
+    return (
+        parent.id[1] === child.id[1] &&
+        parent.id[0] + parent.text.length === child.id[0] &&
+        parent.deleted == child.deleted &&
+        deepEqual(parent.format, child.format)
+    );
 };
 
 const updateSpans = function<Format>(
@@ -448,7 +495,6 @@ const updateSpans = function<Format>(
             const node = crdt.map[key];
             if (node.text.length > length) {
                 split(crdt, key, length);
-                // split
             }
             updateNode(crdt, key, remove, format);
             length -= node.text.length;

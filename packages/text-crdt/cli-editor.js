@@ -60,7 +60,6 @@ const draw = (state /*:State*/) => {
     }
 
     program.write(text);
-    program.write(chalk.bold('blded'));
     // program.bg('!red');
     program.move(state.sel.cursor, 0);
 };
@@ -178,7 +177,7 @@ const debug = state => {
 
 program.key('q', function(ch, key) {
     program.clear();
-    program.disableMouse();
+    // program.disableMouse();
     program.cursorShape('block');
     program.normalBuffer();
     process.exit(0);

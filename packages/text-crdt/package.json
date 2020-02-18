@@ -13,6 +13,7 @@
         "chalk": "^3.0.0"
     },
     "dependencies": {
+        "@birchill/json-equalish": "^1.1.0",
         "flow-bin": "^0.118.0"
     }
 }
