@@ -40,15 +40,17 @@ const format = (text, format) => {
 
 // console.log(crdt.toString(state, format), crdt.toDebug(state));
 
-const state /*:CRDT<Format>*/ = crdt.init('a', []);
+const state /*:CRDT<Format>*/ = crdt.init('a');
 const deltas = [
-    state => crdt.localInsert(state, 0, 'a'),
-    state => crdt.localInsert(state, 1, 'b'),
-    state => crdt.localInsert(state, 2, 'c'),
-    state => crdt.localInsert(state, 3, 'd'),
+    state => crdt.localInsert(state, 0, 'A'),
+    state => crdt.localInsert(state, 1, 'B'),
+    state => crdt.localInsert(state, 2, 'C'),
+    state => crdt.localInsert(state, 3, 'D'),
+    state => crdt.localFormat(state, 2, 2, { underline: true }),
 ];
 deltas.forEach(maker => {
     const delta = maker(state);
     crdt.apply(state, delta, noop);
+    console.log(JSON.stringify(delta));
     console.log(crdt.toString(state, format), crdt.toDebug(state));
 });

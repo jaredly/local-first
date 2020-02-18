@@ -5,21 +5,21 @@ const chalk = require('chalk');
 var blessed = require('blessed'),
     program = blessed.program();
 
-const clone = m => JSON.parse(JSON.stringify(m));
+const clone = crdt => JSON.parse(JSON.stringify(crdt));
 /*::
-type Format = {
+type Format = {|
     bold?: boolean,
     underline?: boolean,
     highlight?: boolean,
-}
-type State = {
+|}
+type State = {|
     text: crdt.CRDT<Format>,
     sel: {anchor: number, cursor: number},
-    mode: 'insert' | 'normal',
-}
+    mode: 'insert' | 'normal' | 'visual',
+|}
 */
 
-const format = (text, format) => {
+const format = (text /*:string*/, format /*:Format*/) => {
     if (format.bold) {
         text = chalk.bold(text);
     }
@@ -32,35 +32,35 @@ const format = (text, format) => {
     return text;
 };
 
-const mergeFormats = (a, b) => Object.assign({}, a, b);
+const mergeFormats = (a /*:Format*/, b /*:Format*/) /*:Format*/ =>
+    (Object.assign({}, a, b) /*: any*/);
+
+const sortCursor = selection => {
+    const { cursor, anchor } = state.sel;
+    const at = Math.min(cursor, anchor);
+    const count = Math.max(cursor, anchor) - at + 1;
+    return { at, count };
+};
 
 const draw = (state /*:State*/) => {
-    program.cursorShape(state.mode === 'insert' ? 'line' : 'block');
-    program.cursorColor('red');
-    program.move(0, 0);
-    program.eraseInLine(2);
-    // program.bg('red');
-
-    // TODO how do I do a highlight overlay?
-    // If it was immutable, I could just add a "format" command right here ....
     let text = '<type something>';
-    if (state.sel.cursor !== state.sel.anchor) {
-        const { cursor, anchor } = state.sel;
-        const first = Math.min(cursor, anchor);
-        const count = Math.max(cursor, anchor) - first;
-        const c = clone(state.text);
-        crdt.apply(
-            c,
-            crdt.localFormat(c, first, count, { highlight: true }),
-            mergeFormats,
+    if (state.mode === 'visual') {
+        const { at, count } = sortCursor(state.sel);
+        const c /*:crdt.CRDT<Format>*/ = crdt.inflate(
+            'a',
+            clone(state.text.roots),
         );
+        const delta = crdt.localFormat(c, at, count, { highlight: true });
+        crdt.apply(c, delta, mergeFormats);
         text = crdt.toString(c, format);
     } else {
         text = crdt.toString(state.text, format);
     }
 
+    program.cursorShape(state.mode === 'insert' ? 'line' : 'block');
+    program.move(0, 0);
+    program.eraseInLine(2);
     program.write(text);
-    // program.bg('!red');
     program.move(state.sel.cursor, 0);
 };
 
@@ -68,9 +68,11 @@ const moveSel = (state, pos) => {
     state.sel.cursor = pos;
     state.sel.anchor = pos;
 };
-const moveSelRel = (state, diff) => {
+const moveSelRel = (state, diff, align = true) => {
     state.sel.cursor += diff;
-    state.sel.anchor = state.sel.cursor;
+    if (align) {
+        state.sel.anchor = state.sel.cursor;
+    }
 };
 
 const length = state => {
@@ -83,7 +85,53 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
     if (evt.full === 'enter' || evt.full === 'return') {
         return;
     }
-    if (state.mode === 'insert') {
+    if (state.mode === 'visual') {
+        if (ch === 'h' || evt.full === 'left') {
+            if (state.sel.cursor > 0) {
+                moveSelRel(state, -1, false);
+            }
+        }
+        if (ch === 'l' || evt.full === 'right') {
+            if (state.sel.cursor < length(state.text)) {
+                moveSelRel(state, 1, false);
+            }
+        }
+        if (evt.full === 'escape') {
+            state.mode = 'normal';
+            state.sel.anchor = state.sel.cursor;
+            return;
+        }
+        if (ch === 'b') {
+            const { at, count } = sortCursor(state.sel);
+            crdt.apply(
+                state.text,
+                crdt.localFormat(state.text, at, count, { bold: true }),
+                mergeFormats,
+            );
+            state.mode = 'normal';
+            state.sel = { anchor: at, cursor: at };
+        }
+        if (ch === 'u') {
+            const { at, count } = sortCursor(state.sel);
+            crdt.apply(
+                state.text,
+                crdt.localFormat(state.text, at, count, { underline: true }),
+                mergeFormats,
+            );
+            state.mode = 'normal';
+            state.sel = { anchor: at, cursor: at };
+        }
+        if (ch === 'd' || ch === 'x') {
+            const { at, count } = sortCursor(state.sel);
+            crdt.apply(
+                state.text,
+                crdt.localDelete(state.text, at, count),
+                mergeFormats,
+            );
+            state.mode = 'normal';
+            state.sel = { anchor: at, cursor: at };
+        }
+    } else if (state.mode === 'insert') {
         if (evt.full === 'escape') {
             state.mode = 'normal';
             return;
@@ -93,7 +141,7 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
             // state.pos -= 1;
             crdt.apply(
                 state.text,
-                crdt.localDelete(state.text, state.sel.cursor + 1, 1),
+                crdt.localDelete(state.text, state.sel.cursor, 1),
                 mergeFormats,
             );
             // state.text =
@@ -118,6 +166,10 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
         // state.pos += 1;
         moveSelRel(state, 1);
     } else {
+        if (ch === 'A') {
+            moveSel(state, length(state.text));
+            return;
+        }
         if (ch === 'h' || evt.full === 'left') {
             if (state.sel.cursor > 0) {
                 moveSelRel(state, -1);
@@ -130,6 +182,9 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
                 // state.pos += 1;
             }
         }
+        if (ch === 'v') {
+            state.mode = 'visual';
+        }
         if (ch === 'i') {
             state.mode = 'insert';
         }
@@ -141,23 +196,31 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
             state.mode = 'insert';
         }
         if (ch === 'x') {
-            crdt.apply(
-                state.text,
-                crdt.localDelete(state.text, state.sel.cursor + 1, 1),
-                mergeFormats,
-            );
-            // state.text =
-            //     state.text.slice(0, state.pos) +
-            //     state.text.slice(state.pos + 1);
+            if (state.sel.cursor < length(state.text)) {
+                crdt.apply(
+                    state.text,
+                    crdt.localDelete(state.text, state.sel.cursor, 1),
+                    mergeFormats,
+                );
+            }
         }
     }
 };
 
 const state /*:State*/ = {
     text: crdt.init('a'),
-    mode: 'insert',
+    mode: 'normal',
     sel: { cursor: 0, anchor: 0 },
 };
+crdt.apply(
+    state.text,
+    crdt.localInsert(
+        state.text,
+        0,
+        'Hello folks, this is the editor extraordinaire.',
+    ),
+    mergeFormats,
+);
 
 program.on('keypress', function(ch, evt) {
     handleKeyPress(state, ch, evt);
@@ -166,13 +229,17 @@ program.on('keypress', function(ch, evt) {
 });
 
 const debug = state => {
+    const plain = crdt.toString(state.text);
     program.move(0, 5);
     program.eraseInLine(2);
-    const plain = crdt.toString(state.text);
     program.write(crdt.toDebug(state.text));
     program.move(0, 6);
     program.eraseInLine(2);
-    program.write(`Cached: ${length(state.text)} - Full: ${plain.length}`);
+    program.write(
+        `Cached: ${length(state.text)} - Full: ${plain.length} - Mode: ${
+            state.mode
+        } - Cursor: ${JSON.stringify(state.sel)}`,
+    );
 };
 
 program.key('q', function(ch, key) {

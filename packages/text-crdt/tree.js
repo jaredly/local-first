@@ -19,7 +19,7 @@ type Span<Format> = {|
     format?: ?Format,
 |};
 
-type Node<Format> = {|
+export type Node<Format> = {|
     id: [number, string],
     // this is the actual node we're under
     parent: string,
@@ -32,6 +32,13 @@ type Node<Format> = {|
     // the number of *non-deleted* characters contained in this tree
     size: number,
     children: Array<Node<Format>>,
+|};
+
+export type CRDT<Format> = {|
+    site: string,
+    largestLocalId: number,
+    roots: Array<Node<Format>>,
+    map: { [key: string]: Node<Format> },
 |};
 
 type Spans = Array<[number, string, number]>;
@@ -67,13 +74,6 @@ export const apply = function<Format>(
             throw new Error(`Unknown delta: ${delta.type}`);
     }
 };
-
-export type CRDT<Format> = {|
-    site: string,
-    largestLocalId: number,
-    roots: Array<Node<Format>>,
-    map: { [key: string]: Node<Format> },
-|};
 
 const toKey = ([id, site]: [number, string]) => `${id}:${site}`;
 
@@ -182,7 +182,7 @@ export const selectionToSpans = function<Format>(
     at: number,
     count: number,
 ) {
-    const spos = locForPos(crdt, at);
+    const spos = locForPos(crdt, at + 1);
     if (!spos) {
         return null;
     }
@@ -262,7 +262,7 @@ export const walk = function<Format>(
 export const inflate = function<Format>(
     site: string,
     roots: Array<Node<Format>>,
-) {
+): CRDT<Format> {
     let largest = 0;
     const map = {};
     roots.forEach(node =>
@@ -273,6 +273,7 @@ export const inflate = function<Format>(
             }
         }),
     );
+    return { site, roots, map, largestLocalId: largest };
 };
 
 export const init = function<Format>(site: string) {
@@ -421,6 +422,23 @@ export const insert = function<Format>(crdt: CRDT<Format>, span: Span<Format>) {
     }
 };
 
+const mergeDown = function<Format>(crdt: CRDT<Format>, node: Node<Format>) {
+    // TODO dunno if I can relax the '1 child' restriction
+    if (node.children.length !== 1) {
+        return;
+    }
+    const child = node.children[0];
+    if (!mergeable(node, child)) {
+        return;
+    }
+
+    node.children = child.children;
+    node.children.forEach(child => (child.parent = toKey(node.id)));
+    node.text += child.text;
+    delete crdt.map[toKey(child.id)];
+    mergeDown(crdt, node);
+};
+
 const updateNode = function<Format>(
     crdt: CRDT<Format>,
     key: string,
@@ -444,25 +462,19 @@ const updateNode = function<Format>(
             node.format = format.fmt;
         }
     }
-    // ok here is where we might compact
-    if (node.parent !== '0:root') {
+    if (
+        node.parent !== '0:root' &&
+        parent.children.length === 1 &&
+        mergeable(crdt.map[node.parent], node)
+    ) {
         const parent = crdt.map[node.parent];
-        // this is a consecutive node
-        if (parent.children.length === 1 && mergeable(parent, node)) {
-            parent.text += node.text;
-            delete crdt.map[toKey(node.id)];
-            // parent.children = parent.children.filter(child => child !== node);
-            parent.children = node.children;
-            node.children.forEach(child => (child.parent = toKey(parent.id)));
-        }
-    }
-    // TODO dunno if I can relax this restriction
-    if (node.children.length === 1 && mergeable(node, node.children[0])) {
-        const child = node.children[0];
-        node.children = child.children;
-        node.children.forEach(child => (child.parent = toKey(node.id)));
-        node.text += child.text;
-        delete crdt.map[toKey(child.id)];
+        parent.text += node.text;
+        delete crdt.map[toKey(node.id)];
+        parent.children = node.children;
+        node.children.forEach(child => (child.parent = toKey(parent.id)));
+        mergeDown(crdt, parent);
+    } else {
+        mergeDown(crdt, node);
     }
 };
 
@@ -496,6 +508,7 @@ const updateSpans = function<Format>(
             if (node.text.length > length) {
                 split(crdt, key, length);
             }
+            console.log('updating');
             updateNode(crdt, key, remove, format);
             length -= node.text.length;
             id += node.text.length;
