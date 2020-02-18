@@ -480,7 +480,7 @@ const updateNode = function<Format>(
         node.deleted = true;
         node.size -= node.text.length;
         let pkey = node.parent;
-        while (pkey != '0:root') {
+        while (pkey !== '0:root') {
             crdt.map[pkey].size -= node.text.length;
             pkey = crdt.map[pkey].parent;
         }
