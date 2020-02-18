@@ -60,11 +60,11 @@ const draw = (state /*:State*/, pos) => {
         const delta = crdt.localFormat(c, at, count, { highlight: true });
         crdt.apply(c, delta, mergeFormats);
         text = crdt.toString(c, format);
-        // program.move(0, 9);
-        // program.eraseInLine(2);
-        // program.write(
-        //     JSON.stringify(crdt.selectionToSpans(state.text, at, count)),
-        // );
+        program.move(0, pos + 1);
+        program.eraseInLine(2);
+        program.write(
+            JSON.stringify(crdt.selectionToSpans(state.text, at, count)),
+        );
     } else {
         text = crdt.toString(state.text, format);
     }
@@ -204,6 +204,9 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
         }
         if (ch === 'v') {
             state.mode = 'visual';
+            if (state.sel.cursor === length(state.text)) {
+                moveSel(state, length(state.text) - 1);
+            }
         }
         if (ch === 'i') {
             state.mode = 'insert';
@@ -264,7 +267,8 @@ program.on('keypress', function(ch, evt) {
     if (evt.full === 'tab') {
         programState.focused = programState.focused === 'a' ? 'b' : 'a';
     }
-    if (ch === 's') {
+    const editor = programState.editors[programState.focused];
+    if (editor.mode === 'normal' && ch === 's') {
         // sync them!
         programState.editors.a.sync.forEach(delta => {
             crdt.apply(programState.editors.b.text, delta, mergeFormats);
@@ -277,7 +281,6 @@ program.on('keypress', function(ch, evt) {
         fullRefresh();
         return;
     }
-    const editor = programState.editors[programState.focused];
     handleKeyPress(editor, ch, evt);
     debug(editor, editor.pos + 5);
     draw(editor, editor.pos);

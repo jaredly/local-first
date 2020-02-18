@@ -177,6 +177,29 @@ const selectionToPosInNodes = (crdt, node, offset, count, spans) => {
     return count;
 };
 
+const nextSibling = function<Format>(
+    crdt: CRDT<Format>,
+    node: Node<Format>,
+): ?Node<Format> {
+    if (node.parent === '0:root') {
+        const idx = crdt.roots.indexOf(node);
+        if (idx === -1 || idx + 1 >= crdt.roots.length) {
+            return; // selection went too far
+        }
+        return crdt.roots[idx + 1];
+    } else {
+        const parent = crdt.map[node.parent];
+        const idx = parent.children.indexOf(node);
+        if (idx === -1) {
+            throw new Error(`Can't find node in parents`);
+        }
+        if (idx + 1 >= parent.children.length) {
+            return nextSibling(crdt, parent);
+        }
+        return parent.children[idx + 1];
+    }
+};
+
 export const selectionToSpans = function<Format>(
     crdt: CRDT<Format>,
     at: number,
@@ -187,13 +210,16 @@ export const selectionToSpans = function<Format>(
         return null;
     }
     const spans = [];
-    selectionToPosInNodes(
-        crdt,
-        crdt.map[toKey(spos[0])],
-        spos[1],
-        count,
-        spans,
-    );
+    let node: Node<Format> = crdt.map[toKey(spos[0])];
+    let left = selectionToPosInNodes(crdt, node, spos[1], count, spans);
+    while (left > 0) {
+        const next = nextSibling(crdt, node);
+        if (!next) {
+            return spans;
+        }
+        node = next;
+        left = selectionToPosInNodes(crdt, node, 0, left, spans);
+    }
     return spans;
 };
 
@@ -466,6 +492,9 @@ const updateNode = function<Format>(
             node.format = format.fmt;
         }
     }
+    if (node.parent !== '0:root' && !crdt.map[node.parent]) {
+        throw new Error(`Invalid parent ${node.parent}`);
+    }
     if (node.parent !== '0:root' && mergeable(crdt.map[node.parent], node)) {
         const parent = crdt.map[node.parent];
         parent.text += node.text;
@@ -498,10 +527,10 @@ const updateSpans = function<Format>(
     format: ?{ merge: (Format, Format) => Format, fmt: Format },
 ) {
     spans.forEach(([id, site, length]) => {
-        if (!ensureNodeAt(crdt, [id, site])) {
-            throw new Error(`Cannot update span ${id}:${site}`);
-        }
         while (length > 0) {
+            if (!ensureNodeAt(crdt, [id, site])) {
+                throw new Error(`Cannot update span ${id}:${site}`);
+            }
             const key = toKey([id, site]);
             const node = crdt.map[key];
             if (node.text.length > length) {
