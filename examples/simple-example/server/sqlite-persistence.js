@@ -1,7 +1,7 @@
 // @flow
 
-import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-import type { CursorType } from '@local-first/core/lib/server';
+import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
+import type { CursorType } from '../../../packages/core/src/server';
 const sqlite3 = require('better-sqlite3');
 
 function queryAll(db, sql, params = []) {

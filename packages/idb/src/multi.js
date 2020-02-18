@@ -49,9 +49,9 @@ It won't be that much code, I can rewrite it all later.
 
 // @flow
 import { openDB } from 'idb';
-import * as hlc from '@local-first/hybrid-logical-clock';
-import type { HLC } from '@local-first/hybrid-logical-clock';
-import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
+import * as hlc from '../../../packages/hybrid-logical-clock';
+import type { HLC } from '../../../packages/hybrid-logical-clock';
+import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
 import { type CursorType } from '../types';
 import deepEqual from 'fast-deep-equal';
 import type { MultiPersistence } from '../types';

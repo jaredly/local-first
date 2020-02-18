@@ -1,5 +1,5 @@
 // @flow
-import { type Schema } from '@local-first/nested-object-crdt/lib/schema.js';
+import { type Schema } from '../../../packages/nested-object-crdt/src/schema.js';
 
 const ItemSchema: Schema = {
     type: 'object',

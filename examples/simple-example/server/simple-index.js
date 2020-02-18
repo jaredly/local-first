@@ -2,9 +2,9 @@
 // @flow
 
 import express from 'express';
-import * as crdt from '@local-first/nested-object-crdt';
-import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-import type { Schema } from '@local-first/nested-object-crdt/lib/schema.js';
+import * as crdt from '../../../packages/nested-object-crdt';
+import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
+import type { Schema } from '../../../packages/nested-object-crdt/src/schema.js';
 import ws from 'express-ws';
 import make, {
     onMessage,

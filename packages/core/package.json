@@ -1,10 +1,10 @@
 {
-    "name": "@local-first/core",
+    "name": "../../../packages/core",
     "version": "1.0.0",
     "dependencies": {
         "@birchill/json-equalish": "^1.1.0",
-        "@local-first/hybrid-logical-clock": "^1.0",
-        "@local-first/nested-object-crdt": "^1.0",
+        "../../../packages/hybrid-logical-clock": "^1.0",
+        "../../../packages/nested-object-crdt": "^1.0",
         "broadcast-channel": "^3.0.3"
     },
     "browserslist": [

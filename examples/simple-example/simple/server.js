@@ -1,10 +1,10 @@
 // @flow
-import * as hlc from '@local-first/hybrid-logical-clock';
+import * as hlc from '../../../packages/hybrid-logical-clock';
 import {
     type Schema,
     validate,
     validateSet,
-} from '@local-first/nested-object-crdt/lib/schema.js';
+} from '../../../packages/nested-object-crdt/src/schema.js';
 
 export type ClientMessage<Delta, Data> = {
     type: 'sync',

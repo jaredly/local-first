@@ -10,9 +10,9 @@ import type {
     PersistentClock,
 } from '../types';
 import { peerTabAwareNetworks } from '../peer-tabs';
-import type { HLC } from '@local-first/hybrid-logical-clock';
-import * as hlc from '@local-first/hybrid-logical-clock';
-import { type Schema } from '@local-first/nested-object-crdt/schema.js';
+import type { HLC } from '../../../packages/hybrid-logical-clock';
+import * as hlc from '../../../packages/hybrid-logical-clock';
+import { type Schema } from '../../../packages/nested-object-crdt/schema.js';
 import deepEqual from 'fast-deep-equal';
 import { type PeerChange } from '../types';
 import { updateCacheAndNotify, fullMaxStamp } from '../blob/create-client';

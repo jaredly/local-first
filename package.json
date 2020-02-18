@@ -1,13 +1,15 @@
 {
     "private": true,
-    "type": "module",
-    "workspaces": [
-        "packages/*",
-        "examples/*"
-    ],
     "devDependencies": {
+        "@babel/cli": "^7.8.4",
+        "@babel/core": "^7.8.4",
+        "@babel/preset-flow": "^7.8.3",
+        "@babel/register": "^7.8.3",
         "jest": "^24.9.0",
         "parcel": "^1.12.4",
         "prettier": "^1.19.1"
+    },
+    "dependencies": {
+        "flow-bin": "^0.118.0"
     }
 }

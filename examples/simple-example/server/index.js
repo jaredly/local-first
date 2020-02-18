@@ -1,15 +1,18 @@
 #!/usr/bin/env node -r @babel/register
 // @flow
-import * as crdt from '@local-first/nested-object-crdt';
-import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-import type { Schema } from '@local-first/nested-object-crdt/lib/schema.js';
-import make, { onMessage, getMessages } from '@local-first/core/lib/server';
+import * as crdt from '../../../packages/nested-object-crdt';
+import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
+import type { Schema } from '../../../packages/nested-object-crdt/src/schema.js';
+import make, {
+    onMessage,
+    getMessages,
+} from '../../../packages/core/src/server';
 import type {
     ClientMessage,
     ServerMessage,
     CursorType,
     ServerState,
-} from '@local-first/core/lib/server';
+} from '../../../packages/core/src/server';
 import { ItemSchema } from '../shared/schema.js';
 
 import path from 'path';

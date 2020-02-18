@@ -1,9 +1,9 @@
 // @flow
 import { openDB } from 'idb';
-import * as hlc from '@local-first/hybrid-logical-clock';
-import type { HLC } from '@local-first/hybrid-logical-clock';
-import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
-import { type CursorType } from '@local-first/core/src/types';
+import * as hlc from '../../../packages/hybrid-logical-clock';
+import type { HLC } from '../../../packages/hybrid-logical-clock';
+import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
+import { type CursorType } from '../../../packages/core/src/types';
 import deepEqual from 'fast-deep-equal';
 import type { Persistence, FullPersistence, DeltaPersistence } from '../types';
 

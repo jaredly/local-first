@@ -1,21 +1,21 @@
 // @flow
-import * as hlc from '@local-first/hybrid-logical-clock';
-import type { HLC } from '@local-first/hybrid-logical-clock';
-import * as crdt from '@local-first/nested-object-crdt';
-import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
+import * as hlc from '../../../packages/hybrid-logical-clock';
+import type { HLC } from '../../../packages/hybrid-logical-clock';
+import * as crdt from '../../../packages/nested-object-crdt';
+import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
 import { ItemSchema } from '../shared/schema.js';
 
-import createClient from '@local-first/core/lib/delta/create-client';
-import makeDeltaPersistence from '@local-first/core/lib/delta/idb-persistence';
-import createPollingNetwork from '@local-first/core/lib/delta/polling-network';
-import createWebSocketNetwork from '@local-first/core/lib/delta/websocket-network';
+import createClient from '../../../packages/core/src/delta/create-client';
+import makeDeltaPersistence from '../../../packages/core/src/delta/idb-persistence';
+import createPollingNetwork from '../../../packages/core/src/delta/polling-network';
+import createWebSocketNetwork from '../../../packages/core/src/delta/websocket-network';
 
-import createBlobClient from '@local-first/core/lib/blob/create-client';
-import makeBlobPersistence from '@local-first/core/lib/blob/idb-persistence';
-import createBasicBlobNetwork from '@local-first/core/lib/blob/basic-network';
+import createBlobClient from '../../../packages/core/src/blob/create-client';
+import makeBlobPersistence from '../../../packages/core/src/blob/idb-persistence';
+import createBasicBlobNetwork from '../../../packages/core/src/blob/basic-network';
 
-import createMultiClient from '@local-first/core/lib/multi/create-client';
-import makeMultiPersistence from '@local-first/core/lib/multi/idb-persistence';
+import createMultiClient from '../../../packages/core/src/multi/create-client';
+import makeMultiPersistence from '../../../packages/core/src/multi/idb-persistence';
 import { PersistentClock, localStorageClockPersist } from './persistent-clock';
 
 window.setupLocalCache = async collection => {

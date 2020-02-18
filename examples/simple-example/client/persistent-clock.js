@@ -1,6 +1,6 @@
 // @flow
-import * as hlc from '@local-first/hybrid-logical-clock';
-import type { HLC } from '@local-first/hybrid-logical-clock';
+import * as hlc from '../../../packages/hybrid-logical-clock';
+import type { HLC } from '../../../packages/hybrid-logical-clock';
 
 export const localStorageClockPersist = (key: string) => ({
     get(init: () => HLC): HLC {

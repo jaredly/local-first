@@ -1,13 +1,13 @@
 // @flow
 import React from 'react';
 import { render } from 'react-dom';
-import * as crdt from '@local-first/nested-object-crdt';
-import type { Delta, CRDT as Data } from '@local-first/nested-object-crdt';
+import * as crdt from '../../../packages/nested-object-crdt';
+import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
 // import makeClient from '../simple/simple-poll';
 import makeClient from '../simple/simple-ws';
 import { getCollection, type ClientState } from '../simple/client';
 import { ItemSchema } from '../shared/schema.js';
-import { type Schema } from '@local-first/nested-object-crdt/schema.js';
+import { type Schema } from '../../../packages/nested-object-crdt/schema.js';
 
 const genId = () =>
     Math.random()

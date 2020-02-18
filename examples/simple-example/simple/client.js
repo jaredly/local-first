@@ -1,13 +1,13 @@
 // @flow
 
-import * as hlc from '@local-first/hybrid-logical-clock';
-import type { HLC } from '@local-first/hybrid-logical-clock';
+import * as hlc from '../../../packages/hybrid-logical-clock';
+import type { HLC } from '../../../packages/hybrid-logical-clock';
 import type { ClientMessage, ServerMessage } from './server.js';
 import {
     type Schema,
     validate,
     validateSet,
-} from '@local-first/nested-object-crdt/schema.js';
+} from '../../../packages/nested-object-crdt/schema.js';
 
 export type CRDTImpl<Delta, Data> = {
     createEmpty: () => Data,
