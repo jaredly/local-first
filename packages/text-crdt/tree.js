@@ -402,7 +402,7 @@ export const insert = function<Format>(crdt: CRDT<Format>, span: Span<Format>) {
     // Non-compactable insert
     let idx = parent.children.length;
     for (let i = 0; i < parent.children.length; i++) {
-        if (keyCmp(parent.children[0].id, span.id) < 1) {
+        if (keyCmp(parent.children[i].id, span.id) < 1) {
             idx = i;
             break;
         }

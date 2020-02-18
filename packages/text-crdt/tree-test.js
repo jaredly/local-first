@@ -39,6 +39,7 @@ const format = (text, format) => {
 // );
 
 // console.log(crdt.toString(state, format), crdt.toDebug(state));
+const deepEqual = require('@birchill/json-equalish').default;
 
 const state /*:CRDT<Format>*/ = crdt.init('a');
 const deltas = [
@@ -54,3 +55,30 @@ deltas.forEach(maker => {
     console.log(JSON.stringify(delta));
     console.log(crdt.toString(state, format), crdt.toDebug(state));
 });
+
+const aState = crdt.init('a');
+crdt.apply(aState, crdt.localInsert(aState, 0, 'hello folks'), noop);
+const bState = crdt.inflate('b', JSON.parse(JSON.stringify(aState.roots)));
+const a = [state => crdt.localInsert(state, 3, 'abc')];
+const b = [state => crdt.localInsert(state, 3, '123')];
+
+const aSync = [];
+const bSync = [];
+a.forEach(delta => {
+    const d = delta(aState);
+    aSync.push(d);
+    crdt.apply(aState, d, noop);
+});
+b.forEach(delta => {
+    const d = delta(bState);
+    bSync.push(d);
+    crdt.apply(bState, d, noop);
+});
+aSync.forEach(delta => crdt.apply(bState, delta, noop));
+bSync.forEach(delta => crdt.apply(aState, delta, noop));
+
+if (!deepEqual(aState.roots, bState.roots)) {
+    console.log('Not equal after syncing');
+    console.log(crdt.toDebug(aState));
+    console.log(crdt.toDebug(bState));
+}
