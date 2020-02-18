@@ -14,7 +14,7 @@ type Span<Format> = {|
     deleted?: boolean,
     // TODO merging formats might be a little dicey?
     // I'll parameterize on it, -- you provide your own "format" crdt
-    format?: Format,
+    format?: ?Format,
 |};
 
 type Node<Format> = {|
@@ -26,7 +26,7 @@ type Node<Format> = {|
     // after: [number, string],
     text: string,
     deleted?: boolean,
-    format?: Format,
+    format?: ?Format,
     // the number of *non-deleted* characters contained in this tree
     size: number,
     children: Array<Node<Format>>,
@@ -34,7 +34,7 @@ type Node<Format> = {|
 
 type Spans = Array<[number, string, number]>;
 
-type Delta<Format> =
+export type Delta<Format> =
     | {
           type: 'insert',
           span: Span<Format>,
@@ -49,33 +49,74 @@ type Delta<Format> =
           format: Format,
       };
 
-type CRDT<Format> = {|
+export const apply = function<Format>(
+    crdt: CRDT<Format>,
+    delta: Delta<Format>,
+    merge: (Format, Format) => Format,
+) {
+    switch (delta.type) {
+        case 'insert':
+            return insert(crdt, delta.span);
+        case 'delete':
+            return remove(crdt, delta.positions);
+        case 'format':
+            return format(crdt, delta.positions, delta.format, merge);
+        default:
+            throw new Error(`Unknown delta: ${delta.type}`);
+    }
+};
+
+export type CRDT<Format> = {|
     site: string,
     largestLocalId: number,
     roots: Array<Node<Format>>,
     map: { [key: string]: Node<Format> },
 |};
 
-const toKey = ([id, site]) => `${id}:${site}`;
+const toKey = ([id, site]: [number, string]) => `${id}:${site}`;
 
-export const nodeToString = (node: Node<mixed>) =>
-    (node.deleted ? '' : node.text) + node.children.map(nodeToString).join('');
-export const toString = (crdt: CRDT<mixed>) =>
-    crdt.roots.map(nodeToString).join('');
+export const nodeToString = function<Format>(
+    node: Node<Format>,
+    format?: (string, Format) => string,
+) {
+    return (
+        (node.deleted
+            ? ''
+            : format && node.format
+            ? format(node.text, node.format)
+            : node.text) +
+        node.children.map(child => nodeToString(child, format)).join('')
+    );
+};
+export const toString = function<Format>(
+    crdt: CRDT<Format>,
+    format?: (string, Format) => string,
+) {
+    return crdt.roots.map(root => nodeToString(root, format)).join('');
+};
 
-// export const init = function<Format>(): CRDT<Format> {
-//     return { roots: [], map: {} };
-// };
+export const nodeToDebug = (node: Node<Object>) =>
+    '[' +
+    toKey(node.id) +
+    '·' +
+    (node.deleted ? `del${node.text.length}` : node.text) +
+    ']' +
+    (node.format ? JSON.stringify(node.format) : '') +
+    (node.children.length
+        ? '<' + node.children.map(nodeToDebug).join(';') + '>'
+        : '');
+export const toDebug = (crdt: CRDT<Object>) =>
+    crdt.roots.map(nodeToDebug).join(';;');
 
-type Op =
-    | {| delete: number |}
-    | {| retain: number, attributes?: mixed |}
-    | {| insert: string, attributes?: mixed |};
-type QuillDelta = { ops: Array<Op> };
+// type Op =
+//     | {| delete: number |}
+//     | {| retain: number, attributes?: mixed |}
+//     | {| insert: string, attributes?: mixed |};
+// type QuillDelta = { ops: Array<Op> };
 
 const locForPosInNode = (node, pos) => {
     if (!node.deleted && pos <= node.text.length) {
-        return [node.id, pos];
+        return [node.id, pos - 1];
     }
     for (let i = 0; i < node.children.length; i++) {
         const child = node.children[i];
@@ -87,7 +128,10 @@ const locForPosInNode = (node, pos) => {
     }
 };
 
-const locForPos = (crdt, pos) => {
+export const locForPos = function<Format>(
+    crdt: CRDT<Format>,
+    pos: number,
+): ?[[number, string], number] {
     let total = 0;
     for (let i = 0; i < crdt.roots.length; i++) {
         const node = crdt.roots[i];
@@ -147,8 +191,12 @@ export const localDelete = function<Format>(
     crdt: CRDT<Format>,
     at: number,
     count: number,
-) {
-    return { type: 'delete', spans: selectionToSpans(crdt, at, count) };
+): Delta<Format> {
+    const spans = selectionToSpans(crdt, at, count);
+    if (!spans) {
+        throw new Error(`Invalid position ${at}`);
+    }
+    return { type: 'delete', positions: spans };
 };
 
 export const localFormat = function<Format>(
@@ -156,8 +204,16 @@ export const localFormat = function<Format>(
     at: number,
     count: number,
     format: Format,
-) {
-    return { type: 'format', spans: selectionToSpans(crdt, at, count), format };
+): Delta<Format> {
+    const spans = selectionToSpans(crdt, at, count);
+    if (!spans) {
+        throw new Error(`Invalid position ${at}`);
+    }
+    return {
+        type: 'format',
+        positions: spans,
+        format,
+    };
 };
 
 export const localInsert = function<Format>(
@@ -165,25 +221,46 @@ export const localInsert = function<Format>(
     at: number,
     text: string,
     format: ?Format,
-) {
-    const spos = locForPos(crdt, at);
+): Delta<Format> {
+    const spos = at === 0 ? [[0, 'root'], 0] : locForPos(crdt, at);
     if (!spos) {
-        return null;
+        console.log('no pos for', at);
+        throw new Error(`No position for ${at}`);
     }
+    console.log(spos);
+    const id = crdt.largestLocalId + 1;
+    crdt.largestLocalId += text.length;
     return {
         type: 'insert',
         span: {
-            id: '??',
+            id: [id, crdt.site],
             after: [spos[0][0] + spos[1], spos[0][1]],
             text,
-            deleted: false,
             format,
         },
     };
 };
 
+export const walk = function<Format>(
+    node: Node<Format>,
+    fn: (Node<Format>) => void,
+) {
+    fn(node);
+    node.children.forEach(child => walk(child, fn));
+};
+
 export const init = function<Format>(site: string, roots: Array<Node<Format>>) {
-    return {};
+    let largest = 0;
+    const map = {};
+    roots.forEach(node =>
+        walk(node, node => {
+            map[toKey(node.id)] = node;
+            if (node.id[1] === site && node.id[0] > largest) {
+                largest = node.id[0];
+            }
+        }),
+    );
+    return { site, roots, map, largestLocalId: largest };
 };
 
 // MUTATIVE!! TODO try making an immutable version?
@@ -269,18 +346,23 @@ export const insert = function<Format>(crdt: CRDT<Format>, span: Span<Format>) {
                 break;
             }
         }
-        crdt.roots.splice(idx, 0, {
+        const node = {
             ...spanRest,
             parent: key,
             size: span.text.length,
             children: [],
-        });
+        };
+        crdt.map[toKey(node.id)] = node;
+        crdt.roots.splice(idx, 0, node);
+        return;
     }
     const parentKey = parentForAfter(crdt, span.after);
     if (!parentKey) {
+        console.log('no parent key', span.after);
         return false;
     }
     const parent = crdt.map[parentKey];
+    console.log(parentKey, parent.id);
     let idx = parent.children.length;
     for (let i = 0; i < parent.children.length; i++) {
         if (keyCmp(parent.children[0].id, span.id) < 1) {
@@ -289,17 +371,23 @@ export const insert = function<Format>(crdt: CRDT<Format>, span: Span<Format>) {
         }
     }
     const { after, ...spanRest } = span;
-    parent.children.splice(idx, 0, {
+    const node = {
         ...spanRest,
         parent: toKey(parent.id),
         size: span.text.length,
         children: [],
-    });
+    };
+    parent.children.splice(idx, 0, node);
+    crdt.map[toKey(node.id)] = node;
 
-    let pkey = key;
+    let pkey = parentKey;
     while (pkey !== '0:root') {
+        console.log('SIZE UPDATE', pkey);
+        if (!crdt.map[pkey]) {
+            console.log(Object.keys(crdt.map));
+        }
         crdt.map[pkey].size += span.text.length;
-        pkey = toKey(crdt.map[pkey].parent);
+        pkey = crdt.map[pkey].parent;
     }
 };
 
@@ -313,10 +401,11 @@ const updateNode = function<Format>(
     if (remove && !node.deleted) {
         node.deleted = true;
         node.size -= node.text.length;
-        let pkey = toKey(node.parent);
+        let pkey = node.parent;
         while (pkey != '0:root') {
+            console.log('OK size update', pkey);
             crdt.map[pkey].size -= node.text.length;
-            pkey = toKey(crdt.map[pkey].parent);
+            pkey = crdt.map[pkey].parent;
         }
     }
     if (format) {
