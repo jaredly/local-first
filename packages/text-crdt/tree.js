@@ -134,7 +134,7 @@ const locForPosInNode = (node, pos) => {
     }
 };
 
-export const locForPos = function<Format>(
+export const parentLocForPos = function<Format>(
     crdt: CRDT<Format>,
     pos: number,
 ): ?[[number, string], number] {
@@ -182,7 +182,7 @@ export const selectionToSpans = function<Format>(
     at: number,
     count: number,
 ) {
-    const spos = locForPos(crdt, at + 1);
+    const spos = parentLocForPos(crdt, at + 1);
     if (!spos) {
         return null;
     }
@@ -232,12 +232,17 @@ export const localInsert = function<Format>(
     text: string,
     format: ?Format,
 ): Delta<Format> {
-    const spos = at === 0 ? [[0, 'root'], 0] : locForPos(crdt, at);
+    const spos = at === 0 ? [[0, 'root'], 0] : parentLocForPos(crdt, at);
     if (!spos) {
         console.log('no pos for', at);
         throw new Error(`No position for ${at}`);
     }
-    // console.log('spos', spos);
+    const rightPos = parentLocForPos(crdt, at + 1);
+    crdt.largestLocalId = Math.max(
+        spos[0][0] + spos[1],
+        rightPos ? rightPos[0][0] + rightPos[1] : 0,
+        crdt.largestLocalId,
+    );
     const id = crdt.largestLocalId + 1;
     crdt.largestLocalId += text.length;
     return {
