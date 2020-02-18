@@ -93,7 +93,7 @@ fixtures.forEach((fixture, i) => {
     console.log('fixture #', i);
     console.log(crdt.toString(fixture.base));
     fixture.deltas.forEach(delta => {
-        crdt.applyDelta(fixture.base, delta);
+        crdt.applyDelta(fixture.base, delta, (a, b) => a);
         console.log(delta);
         console.log(fixture.base);
         console.log('After: ', crdt.toString(fixture.base));

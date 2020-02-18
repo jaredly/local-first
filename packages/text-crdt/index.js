@@ -1,3 +1,4 @@
+// @flow
 // Based on RGA
 // And this great explanation
 // https://www.youtube.com/watch?v=yCcWpzY8dIA
@@ -16,9 +17,11 @@ type Span<Format> = {|
     format?: Format,
 |};
 
-type MergeFormats<Format> = (Format, Format) => Format;
+type MergeFormats<Format> = (?Format, ?Format) => ?Format;
 
-export const insert = (crdt, span) => {
+const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
+export const insert = function<Format>(crdt: CRDT<Format>, span: Span<Format>) {
     const [id, site] = span.left;
     for (let i = 0; i < crdt.items.length; i++) {
         const item = crdt.items[i];
@@ -35,7 +38,6 @@ export const insert = (crdt, span) => {
                     return;
                 }
             }
-            // TODO follow the afters in case they're larger
             crdt.items.push(span);
             return;
         } else if (
@@ -58,19 +60,24 @@ export const insert = (crdt, span) => {
     console.log('failed!!');
 };
 
-export const format = (crdt, ids, format, merge) => {
+export const format = function<Format>(
+    crdt: CRDT<Format>,
+    ids: Ids,
+    format: Format,
+    merge: MergeFormats<Format>,
+) {
     // TODO
 };
 
-export const del = (crdt, array) => {
+export const del = function<Format>(crdt: CRDT<Format>, array: Ids) {
     // TODO
 };
 
-export const applyDelta = (
+export const applyDelta = function<Format>(
     crdt: CRDT<Format>,
     delta: Delta<Format>,
     mergeFormats: MergeFormats<Format>,
-) => {
+) {
     switch (delta.type) {
         case 'insert':
             insert(crdt, delta.span);
@@ -99,8 +106,14 @@ type Delta<Format> =
           array: Array<[number, string, number]>,
       };
 
-export const init = () => ({ items: [] });
-export const toString = d => d.items.map(m => m.text).join('');
+export const init = function<Format>(): CRDT<Format> {
+    return { items: [] };
+};
+export const toString = d =>
+    d.items
+        .filter(m => !m.deleted)
+        .map(m => m.text)
+        .join('');
 
 const toKey = ([id, site]) => `${id}:${site}`;
 
@@ -147,13 +160,16 @@ const assemble = (afters, spans, dest) => {
     });
 };
 
-export const merge = (
+export const merge = function<Format>(
     one: CRDT<Format>,
     two: CRDT<Format>,
-    mergeFormats: (Format, Format) => Format,
-): CRDT<Format> => {
+    mergeFormats: MergeFormats<Format>,
+): CRDT<Format> {
     const afters = {};
+    const spans = {};
     one.items.forEach(span => {
+        const key = toKey(span.id);
+        spans[key] = span;
         const before = toKey(span.left);
         if (!afters[before]) {
             afters[before] = [span];
@@ -161,9 +177,31 @@ export const merge = (
             afters[before].push(span);
         }
     });
-    const items = [];
-    let currents = ['0:root'];
-    while (currents.length) {}
+    two.items.forEach(span => {
+        const key = toKey(span.id);
+        if (spans[key]) {
+            if (spans[key].text.length === span.text.length) {
+                spans[key] = {
+                    ...spans[key],
+                    format: mergeFormats(spans[key].format, span.format),
+                };
+            } else {
+                // if the existing one is longer, we need to merge that format
+                // with all of mine that consist of that larger one, right?
+                // if the existing one is shorter, then we need to merge my format
+                // with the existing ones that match.
+            }
+        }
+        const before = toKey(span.left);
+        if (!afters[before]) {
+            afters[before] = [span];
+        } else {
+            afters[before].push(span);
+        }
+    });
+    const items: Array<Span<Format>> = [];
+    assemble(afters, afters['0:root'], items);
+    return { items };
 };
 // insert
 // delete
