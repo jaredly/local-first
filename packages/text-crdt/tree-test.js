@@ -22,20 +22,33 @@ const format = (text, format) => {
     return text;
 };
 
-const state /*:CRDT<Format>*/ = crdt.init('a', []);
-console.log(crdt.toString(state), crdt.toDebug(state));
-const d1 = crdt.localInsert(state, 0, 'hello', null);
-crdt.apply(state, d1, noop);
-console.log(crdt.toString(state), crdt.toDebug(state));
-// console.log(crdt.locForPos(state, 0));
-// console.log(crdt.locForPos(state, 1));
-// console.log(crdt.locForPos(state, 2));
-const d2 = crdt.localInsert(state, 2, 'world', null);
-console.log(d2);
-crdt.apply(state, d2, noop);
-console.log(crdt.toString(state), crdt.toDebug(state));
-crdt.apply(state, crdt.localFormat(state, 2, 2, { bold: true }), (a, b) =>
-    Object.assign({}, a, b),
-);
+// const state /*:CRDT<Format>*/ = crdt.init('a', []);
+// console.log(crdt.toString(state), crdt.toDebug(state));
+// const d1 = crdt.localInsert(state, 0, 'hello', null);
+// crdt.apply(state, d1, noop);
+// console.log(crdt.toString(state), crdt.toDebug(state));
+// // console.log(crdt.locForPos(state, 0));
+// // console.log(crdt.locForPos(state, 1));
+// // console.log(crdt.locForPos(state, 2));
+// const d2 = crdt.localInsert(state, 2, 'world', null);
+// console.log(d2);
+// crdt.apply(state, d2, noop);
+// console.log(crdt.toString(state), crdt.toDebug(state));
+// crdt.apply(state, crdt.localFormat(state, 2, 2, { bold: true }), (a, b) =>
+//     Object.assign({}, a, b),
+// );
 
-console.log(crdt.toString(state, format), crdt.toDebug(state));
+// console.log(crdt.toString(state, format), crdt.toDebug(state));
+
+const state /*:CRDT<Format>*/ = crdt.init('a', []);
+const deltas = [
+    state => crdt.localInsert(state, 0, 'a'),
+    state => crdt.localInsert(state, 1, 'b'),
+    state => crdt.localInsert(state, 2, 'c'),
+    state => crdt.localInsert(state, 3, 'd'),
+];
+deltas.forEach(maker => {
+    const delta = maker(state);
+    crdt.apply(state, delta, noop);
+    console.log(crdt.toString(state, format), crdt.toDebug(state));
+});

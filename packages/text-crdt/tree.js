@@ -116,7 +116,11 @@ export const toDebug = (crdt: CRDT<Object>) =>
 
 const locForPosInNode = (node, pos) => {
     if (!node.deleted && pos <= node.text.length) {
+        // console.log('works within', pos, node.text.length);
         return [node.id, pos - 1];
+    }
+    if (!node.deleted) {
+        pos -= node.text.length;
     }
     for (let i = 0; i < node.children.length; i++) {
         const child = node.children[i];
@@ -135,6 +139,10 @@ export const locForPos = function<Format>(
     let total = 0;
     for (let i = 0; i < crdt.roots.length; i++) {
         const node = crdt.roots[i];
+        if (pos > node.size) {
+            // console.log('pos larger than size');
+            continue;
+        }
         const found = locForPosInNode(node, pos);
         if (found) {
             return found;
@@ -227,7 +235,7 @@ export const localInsert = function<Format>(
         console.log('no pos for', at);
         throw new Error(`No position for ${at}`);
     }
-    console.log(spos);
+    // console.log('spos', spos);
     const id = crdt.largestLocalId + 1;
     crdt.largestLocalId += text.length;
     return {
@@ -382,7 +390,7 @@ export const insert = function<Format>(crdt: CRDT<Format>, span: Span<Format>) {
 
     let pkey = parentKey;
     while (pkey !== '0:root') {
-        console.log('SIZE UPDATE', pkey);
+        // console.log('SIZE UPDATE', pkey);
         if (!crdt.map[pkey]) {
             console.log(Object.keys(crdt.map));
         }
@@ -403,7 +411,7 @@ const updateNode = function<Format>(
         node.size -= node.text.length;
         let pkey = node.parent;
         while (pkey != '0:root') {
-            console.log('OK size update', pkey);
+            // console.log('OK size update', pkey);
             crdt.map[pkey].size -= node.text.length;
             pkey = crdt.map[pkey].parent;
         }
