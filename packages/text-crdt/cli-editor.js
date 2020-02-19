@@ -154,15 +154,11 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
         if (evt.full === 'backspace') {
             if (state.sel.cursor > 0) {
                 moveSelRel(state, -1);
-                // state.pos -= 1;
                 applyDelta(
                     state,
                     crdt.localDelete(state.text, state.sel.cursor, 1),
                 );
             }
-            // state.text =
-            //     state.text.slice(0, state.pos) +
-            //     state.text.slice(state.pos + 1);
             return;
         }
         if (!ch) {
@@ -176,9 +172,6 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
             // you get the right's
             crdt.localInsert(state.text, state.sel.cursor, ch, null),
         );
-        // state.text =
-        //     state.text.slice(0, state.pos) + ch + state.text.slice(state.pos);
-        // state.pos += 1;
         moveSelRel(state, 1);
     } else {
         if (ch === 'A') {
@@ -193,13 +186,11 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
         if (ch === 'h' || evt.full === 'left') {
             if (state.sel.cursor > 0) {
                 moveSelRel(state, -1);
-                // state.pos -= 1;
             }
         }
         if (ch === 'l' || evt.full === 'right') {
             if (state.sel.cursor < length(state.text)) {
                 moveSelRel(state, 1);
-                // state.pos += 1;
             }
         }
         if (ch === 'v') {
@@ -213,7 +204,6 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
         }
         if (ch === 'a') {
             if (state.sel.cursor < length(state.text)) {
-                // state.pos += 1;
                 moveSelRel(state, 1);
             }
             state.mode = 'insert';
