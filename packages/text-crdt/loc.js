@@ -1,6 +1,9 @@
 // @flow
-import type { Node, CRDT, Spans } from './types';
+import type { Node, CRDT } from './types';
 import { toKey, length } from './utils';
+
+export const rootSite = '-root-';
+export const rootParent = '0:-root-';
 
 // Ok I actually need a better plan
 // char-space -> crdt-space
@@ -60,7 +63,7 @@ export const posToPreLoc = (
     pos: number,
 ): [[number, string], number] => {
     if (pos === 0) {
-        return [[0, 'root'], 0];
+        return [[0, rootSite], 0];
     }
     for (let i = 0; i < crdt.roots.length; i++) {
         if (pos <= crdt.roots[i].size) {
@@ -111,7 +114,7 @@ export const posToPostLoc = (
         pos -= crdt.roots[i].size;
     }
     if (pos === 0) {
-        return [[1, 'root'], 0];
+        return [[1, rootSite], 0];
     }
     throw new Error(`Pos ${pos} is outside the bounds`);
 };
@@ -157,7 +160,7 @@ export const charactersBeforeNode = function<Format>(
     let total = 0;
     while (node) {
         const siblings =
-            node.parent === '0:root'
+            node.parent === rootParent
                 ? crdt.roots
                 : crdt.map[node.parent].children;
         const idx = siblings.indexOf(node);
@@ -171,7 +174,7 @@ export const charactersBeforeNode = function<Format>(
         for (let i = 0; i < idx; i++) {
             total += siblings[i].size;
         }
-        if (node.parent === '0:root') {
+        if (node.parent === rootParent) {
             break;
         } else {
             node = crdt.map[node.parent];
@@ -184,7 +187,7 @@ export const charactersBeforeNode = function<Format>(
 };
 
 export const locToPos = function<Format>(crdt: CRDT<Format>, loc: Loc): number {
-    if (loc.site === 'root') {
+    if (loc.site === rootSite) {
         return loc.id === 0 ? 0 : length(crdt);
     }
     // step 1: find the node this loc is within

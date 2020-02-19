@@ -3,18 +3,6 @@ import Quill from 'quill';
 import * as crdt from '../../packages/text-crdt/tree';
 import * as debug from '../../packages/text-crdt/debug';
 
-// const one = new Quill('#one', {
-//     theme: 'snow',
-// });
-// const two = new Quill('#two', {
-//     theme: 'snow',
-// });
-
-// const oneState = crdt.init('one');
-// crdt.apply(oneState, delta, noop);
-// const twoState = crdt.init('two');
-// crdt.apply(twoState, delta, noop);
-
 const deltaToChange = (state, delta) => {
     const changes = [];
     let pos = 0;
@@ -26,7 +14,6 @@ const deltaToChange = (state, delta) => {
             changes.push(
                 crdt.localInsert(state, pos, op.insert, op.attributes),
             );
-            // not changing
         } else if (op.retain) {
             if (op.attributes) {
                 changes.push(
@@ -37,15 +24,14 @@ const deltaToChange = (state, delta) => {
         }
     });
     return changes;
-    // console.log(JSON.stringify(delta));
 };
 
 const changeToDelta = (state, change) => {
     switch (change.type) {
         case 'insert':
-            console.log('insert at', change.span.after);
-            const [id, site] = change.span.after;
-            const pos = crdt.locToPos(state, { id, site, pre: true });
+            const [id, site] = change.span.id;
+            const pos = crdt.locToPos(state, { id, site, pre: false });
+            console.log(id, site, pos);
             if (pos === 0) {
                 return [{ insert: change.span.text }];
             }
@@ -97,13 +83,16 @@ const editors = {};
 const noop = (a, b) => Object.assign({}, a, b);
 const initialDelta = {
     type: 'insert',
-    span: { id: [2, 'root'], after: [0, 'root'], text: '\n' },
+    span: { id: [0, '-initial-'], after: [0, crdt.rootSite], text: '\n' },
 };
 
 const addEditor = (name, broadcast, accept) => {
     const div = document.createElement('div');
     div.id = name;
-    document.body.appendChild(div);
+    div.style.marginBottom = '12px';
+    if (document.body) {
+        document.body.appendChild(div);
+    }
     editors[name] = {
         state: crdt.init(name),
         ui: new Quill(div, { theme: 'snow' }),
@@ -122,6 +111,7 @@ const addEditor = (name, broadcast, accept) => {
                 crdt.apply(editors[name].state, change, noop);
                 Object.keys(editors).forEach(id => {
                     if (id !== name && editors[id].accept) {
+                        crdt.apply(editors[id].state, change, noop);
                         const asOne = changeToDelta(editors[id].state, change);
                         if (asOne) {
                             console.log(JSON.stringify(asOne));
@@ -129,9 +119,13 @@ const addEditor = (name, broadcast, accept) => {
                         } else {
                             console.error('Unable to convert back', change);
                         }
-                        crdt.apply(editors[id].state, change, noop);
+                        console.log(crdt.toString(editors[id].state));
                     }
                 });
+            });
+        } else {
+            changes.forEach(change => {
+                crdt.apply(editors[name].state, change, noop);
             });
         }
     });
@@ -141,36 +135,3 @@ addEditor('one', true, true);
 addEditor('two', true, true);
 addEditor('three', false, true);
 addEditor('four', true, false);
-
-// two.on('text-change', function(delta, oldDelta, source) {
-//     if (source === 'me') {
-//         return;
-//     }
-//     console.log('changing', delta);
-//     const changes = deltaToChange(twoState, delta.ops);
-//     changes.forEach(change => {
-//         crdt.apply(twoState, change, noop);
-//         const asOne = changeToDelta(oneState, change);
-//         if (asOne) {
-//             console.log(JSON.stringify(asOne));
-//             one.updateContents(asOne, 'me');
-//         } else {
-//             console.error('Unable to convert back', change);
-//         }
-//         crdt.apply(oneState, change, noop);
-//     });
-//     console.log(debug.toDebug(twoState));
-//     console.log(JSON.stringify(two.getContents()));
-// });
-
-// one.on('text-change', function(delta, oldDelta, source) {
-//     if (source === 'me') {
-//         return;
-//     }
-//     console.log('New delta!', delta, source);
-//     const changes = deltaToChange(oneState, delta.ops);
-//     changes.forEach(change => {
-//         console.log('one change', change);
-//         crdt.apply(oneState, change, noop);
-//     });
-// });

@@ -5,6 +5,7 @@ import {
     posToPreLoc,
     charactersBeforeNode,
     nodeForKey,
+    rootParent,
     type Loc,
 } from './loc';
 import { toKey, length } from './utils';
@@ -14,7 +15,7 @@ const nextSibling = function<Format>(
     crdt: CRDT<Format>,
     node: Node<Format>,
 ): ?Node<Format> {
-    if (node.parent === '0:root') {
+    if (node.parent === rootParent) {
         const idx = crdt.roots.indexOf(node);
         if (idx === -1 || idx + 1 >= crdt.roots.length) {
             return; // selection went too far

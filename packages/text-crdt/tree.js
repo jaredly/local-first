@@ -6,14 +6,12 @@
 const deepEqual = require('@birchill/json-equalish').default;
 import type { Node, CRDT, Delta, Span, PreNode } from './types';
 import { toKey, length, keyCmp } from './utils';
-// import { parentLocForPos, selectionToSpans } from './query';
 import { locToPos, posToLoc } from './loc';
 import { selectionToSpans, spansToSelections } from './span';
 export * from './types';
 export * from './span';
 export * from './update';
 export * from './loc';
-// export * from './query';
 export * from './utils';
 export * from './check';
 

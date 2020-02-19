@@ -2,6 +2,7 @@
 const deepEqual = require('@birchill/json-equalish').default;
 import type { Node, CRDT, Delta, Span, PreNode } from './types';
 import { toKey, length, keyCmp } from './utils';
+import { rootParent } from './loc';
 
 // MUTATIVE!! TODO try making an immutable version?
 
@@ -90,7 +91,7 @@ export const insert = function<Format>(
     span: PreNode<Format>,
 ) {
     const key = toKey(span.after);
-    if (key === '0:root') {
+    if (key === rootParent) {
         // insert into the roots
         const { after, ...spanRest } = span;
         let idx = crdt.roots.length;
@@ -123,7 +124,7 @@ export const insert = function<Format>(
         parent.size += span.text.length;
 
         let pkey = parent.parent;
-        while (pkey !== '0:root') {
+        while (pkey !== rootParent) {
             // console.log('SIZE UPDATE', pkey);
             if (!crdt.map[pkey]) {
                 console.log(Object.keys(crdt.map));
@@ -153,7 +154,7 @@ export const insert = function<Format>(
     crdt.map[toKey(node.id)] = node;
 
     let pkey = parentKey;
-    while (pkey !== '0:root') {
+    while (pkey !== rootParent) {
         if (!crdt.map[pkey]) {
             console.log(Object.keys(crdt.map));
         }
@@ -189,7 +190,7 @@ const updateNode = function<Format>(
         node.deleted = true;
         node.size -= node.text.length;
         let pkey = node.parent;
-        while (pkey !== '0:root') {
+        while (pkey !== rootParent) {
             crdt.map[pkey].size -= node.text.length;
             pkey = crdt.map[pkey].parent;
         }
@@ -201,10 +202,10 @@ const updateNode = function<Format>(
             node.format = format.fmt;
         }
     }
-    if (node.parent !== '0:root' && !crdt.map[node.parent]) {
+    if (node.parent !== rootParent && !crdt.map[node.parent]) {
         throw new Error(`Invalid parent ${node.parent}`);
     }
-    if (node.parent !== '0:root' && mergeable(crdt.map[node.parent], node)) {
+    if (node.parent !== rootParent && mergeable(crdt.map[node.parent], node)) {
         const parent = crdt.map[node.parent];
         parent.text += node.text;
         delete crdt.map[toKey(node.id)];
