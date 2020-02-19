@@ -1,11 +1,9 @@
 // @flow
 require('@babel/register');
 const crdt = require('./tree');
-const chalk = require('chalk');
-var blessed = require('blessed'),
-    program = blessed.program();
 
 const clone = crdt => JSON.parse(JSON.stringify(crdt));
+
 /*::
 type Format = {|
     bold?: boolean,
@@ -22,6 +20,7 @@ type State = {|
 */
 
 const format = (text /*:string*/, format /*:Format*/) => {
+    const chalk = require('chalk');
     if (format.bold) {
         text = chalk.bold(text);
     }
@@ -49,7 +48,7 @@ const applyDelta = (state, delta) => {
     state.sync.push(delta);
 };
 
-const draw = (state /*:State*/, pos) => {
+const draw = (cli, state /*:State*/, pos) => {
     let text = '<type something>';
     if (state.mode === 'visual') {
         const { at, count } = sortCursor(state.sel);
@@ -60,30 +59,28 @@ const draw = (state /*:State*/, pos) => {
         const delta = crdt.localFormat(c, at, count, { highlight: true });
         crdt.apply(c, delta, mergeFormats);
         text = crdt.toString(c, format);
-        program.move(0, pos + 1);
-        program.eraseInLine(2);
-        program.write(
-            JSON.stringify(crdt.selectionToSpans(state.text, at, count)),
-        );
+        cli.move(0, pos + 1);
+        cli.eraseInLine(2);
+        cli.write(JSON.stringify(crdt.selectionToSpans(state.text, at, count)));
     } else {
         text = crdt.toString(state.text, format);
     }
 
-    program.cursorShape(state.mode === 'insert' ? 'line' : 'block');
-    program.move(0, pos);
-    program.eraseInLine(2);
-    program.write(text);
-    program.move(state.sel.cursor, pos);
+    cli.cursorShape(state.mode === 'insert' ? 'line' : 'block');
+    cli.move(0, pos);
+    cli.eraseInLine(2);
+    cli.write(text);
+    cli.move(state.sel.cursor, pos);
 };
 
-const debug = (state, pos) => {
+const debug = (cli, state, pos) => {
     const plain = crdt.toString(state.text);
-    program.move(0, pos);
-    program.eraseInLine(2);
-    program.write(crdt.toDebug(state.text));
-    program.move(0, pos + 1);
-    program.eraseInLine(2);
-    program.write(
+    cli.move(0, pos);
+    cli.eraseInLine(2);
+    cli.write(crdt.toDebug(state.text));
+    cli.move(0, pos + 1);
+    cli.eraseInLine(2);
+    cli.write(
         `Cached: ${crdt.length(state.text)} - Full: ${plain.length} - Mode: ${
             state.mode
         } - Cursor: ${JSON.stringify(state.sel)}`,
@@ -108,110 +105,272 @@ const visualFormat = (state, format) => {
     state.sel = { anchor: at, cursor: at };
 };
 
-const handleKeyPress = (state /*:State*/, ch, evt) => {
-    if (evt.full === 'enter' || evt.full === 'return') {
-        return;
+const handleKeyPress2 = (mode, length, sel, ch, evt) => {
+    if (evt.full === 'tab') {
+        return [{ type: 'tab' }];
     }
-    if (state.mode === 'visual') {
+    if (mode === 'normal' && ch === 's') {
+        return [{ type: 'sync' }];
+    }
+
+    if (evt.full === 'enter' || evt.full === 'return') {
+        return [];
+    }
+    if (mode === 'visual') {
         if (ch === 'h' || evt.full === 'left') {
-            if (state.sel.cursor > 0) {
-                moveSelRel(state, -1, false);
+            if (sel.cursor > 0) {
+                return [{ type: 'selrel', rel: -1, keep: true }];
+                // moveSelRel(sel, -1, false);
             }
         }
         if (ch === 'l' || evt.full === 'right') {
-            if (state.sel.cursor < crdt.length(state.text)) {
-                moveSelRel(state, 1, false);
+            if (sel.cursor < length) {
+                // moveSelRel(sel, 1, false);
+                return [{ type: 'selrel', rel: 1, keep: true }];
             }
         }
         if (evt.full === 'escape') {
-            state.mode = 'normal';
-            state.sel.anchor = state.sel.cursor;
-            return;
+            // sel.anchor = sel.cursor;
+            return [
+                { type: 'mode', mode: 'normal' },
+                { type: 'sel', sel: sel.cursor },
+            ];
+            // state.mode = 'normal';
+            // return;
         }
         if (ch === 'b') {
-            visualFormat(state, { bold: true });
+            const { at, count } = sortCursor(sel);
+            return [
+                { type: 'format', format: { bold: true }, at, count },
+                { type: 'mode', mode: 'normal' },
+                { type: 'sel', sel: at },
+            ];
+            // visualFormat(state, { bold: true });
         }
         if (ch === 'u') {
-            visualFormat(state, { underline: true });
+            const { at, count } = sortCursor(sel);
+            return [
+                { type: 'format', format: { underline: true }, at, count },
+                { type: 'mode', mode: 'normal' },
+                { type: 'sel', sel: at },
+            ];
+            // visualFormat(state, { underline: true });
         }
         if (ch === 'd' || ch === 'x') {
-            const { at, count } = sortCursor(state.sel);
-            applyDelta(state, crdt.localDelete(state.text, at, count));
-            state.mode = 'normal';
-            state.sel = { anchor: at, cursor: at };
+            const { at, count } = sortCursor(sel);
+            // sel.anchor = at
+            // sel.cursor = at
+            // sel = { anchor: at, cursor: at };
+            return [
+                { type: 'mode', mode: 'normal' },
+                { type: 'delete', at, count },
+                { type: 'sel', sel: at },
+            ];
+            // applyDelta(state, crdt.localDelete(state.text, at, count));
+            // state.mode = 'normal';
+            // state.sel = { anchor: at, cursor: at };
         }
-    } else if (state.mode === 'insert') {
+    } else if (mode === 'insert') {
         if (evt.full === 'escape') {
-            state.mode = 'normal';
-            return;
+            // state.mode = 'normal';
+            return [{ type: 'mode', mode: 'normal' }];
         }
         if (evt.full === 'backspace') {
-            if (state.sel.cursor > 0) {
-                moveSelRel(state, -1);
-                applyDelta(
-                    state,
-                    crdt.localDelete(state.text, state.sel.cursor, 1),
-                );
+            if (sel.cursor > 0) {
+                return [
+                    { type: 'selrel', rel: -1 },
+                    { type: 'delete', at: sel.cursor - 1, count: 1 },
+                ];
+                // moveSelRel(sel, -1);rel: -1
+                // applyDelta(
+                //     state,
+                //     crdt.localDelete(state.text, state.sel.cursor, 1),
+                // );
             }
-            return;
+            return [];
         }
         if (!ch) {
-            return;
+            return [];
         }
-        applyDelta(
-            state,
-            // TODO copy the format of the text under cursor.
-            // Also TODO, establish a "bias", so if you came from the left,
-            // you get the left format, and if you come from the right,
-            // you get the right's
-            crdt.localInsert(state.text, state.sel.cursor, ch, null),
-        );
-        moveSelRel(state, 1);
+        return [
+            { type: 'insert', text: ch, at: sel.cursor },
+            { type: 'selrel', rel: 1 },
+        ];
+        // applyDelta(
+        //     state,
+        //     // TODO copy the format of the text under cursor.
+        //     // Also TODO, establish a "bias", so if you came from the left,
+        //     // you get the left format, and if you come from the right,
+        //     // you get the right's
+        //     crdt.localInsert(state.text, state.sel.cursor, ch, null),
+        // );
+        // moveSelRel(sel, 1);
     } else {
         if (ch === 'A') {
-            moveSel(state, crdt.length(state.text));
-            state.mode = 'insert';
-            return;
+            // moveSel(state, length);
+            // state.mode = 'insert';
+            return [
+                { type: 'sel', sel: length },
+                { type: 'mode', mode: 'insert' },
+            ];
+        }
+        if (ch === '$') {
+            return [{ type: 'sel', sel: length }];
         }
         if (ch === '0') {
-            moveSel(state, 0);
-            return;
+            return [{ type: 'sel', sel: 0 }];
         }
         if (ch === 'h' || evt.full === 'left') {
-            if (state.sel.cursor > 0) {
-                moveSelRel(state, -1);
+            if (sel.cursor > 0) {
+                // moveSelRel(sel, -1);
+                return [{ type: 'selrel', rel: -1 }];
             }
         }
         if (ch === 'l' || evt.full === 'right') {
-            if (state.sel.cursor < crdt.length(state.text)) {
-                moveSelRel(state, 1);
+            if (sel.cursor < length) {
+                // moveSelRel(sel, 1);
+                return [{ type: 'selrel', rel: 1 }];
             }
         }
         if (ch === 'v') {
-            state.mode = 'visual';
-            if (state.sel.cursor === crdt.length(state.text)) {
-                moveSel(state, crdt.length(state.text) - 1);
+            const actions = [{ type: 'mode', mode: 'visual' }];
+            // state.mode = 'visual';
+            if (sel.cursor === length) {
+                // moveSel(state, length - 1);
+                actions.push({ type: 'sel', sel: length - 1 });
             }
+            return actions;
         }
         if (ch === 'i') {
-            state.mode = 'insert';
+            // state.mode = 'insert';
+            return [{ type: 'mode', mode: 'insert' }];
         }
         if (ch === 'a') {
-            if (state.sel.cursor < crdt.length(state.text)) {
-                moveSelRel(state, 1);
+            const actions = [{ type: 'mode', mode: 'insert' }];
+            if (sel.cursor < length) {
+                actions.push({ type: 'selrel', rel: 1 });
+                // moveSelRel(sel, 1);
             }
-            state.mode = 'insert';
+            // state.mode = 'insert';
+            return actions;
         }
         if (ch === 'x') {
-            if (state.sel.cursor < crdt.length(state.text)) {
-                applyDelta(
-                    state,
-                    crdt.localDelete(state.text, state.sel.cursor, 1),
-                );
+            if (sel.cursor < length) {
+                // applyDelta(
+                //     state,
+                //     crdt.localDelete(state.text, state.sel.cursor, 1),
+                // );
+                return [{ type: 'delete', at: sel.cursor, count: 1 }];
             }
         }
     }
+    return [];
 };
+
+// const handleKeyPress = (state /*:State*/, ch, evt) => {
+//     if (evt.full === 'enter' || evt.full === 'return') {
+//         return;
+//     }
+//     if (state.mode === 'visual') {
+//         if (ch === 'h' || evt.full === 'left') {
+//             if (state.sel.cursor > 0) {
+//                 moveSelRel(state, -1, false);
+//             }
+//         }
+//         if (ch === 'l' || evt.full === 'right') {
+//             if (state.sel.cursor < crdt.length(state.text)) {
+//                 moveSelRel(state, 1, false);
+//             }
+//         }
+//         if (evt.full === 'escape') {
+//             state.mode = 'normal';
+//             state.sel.anchor = state.sel.cursor;
+//             return;
+//         }
+//         if (ch === 'b') {
+//             visualFormat(state, { bold: true });
+//         }
+//         if (ch === 'u') {
+//             visualFormat(state, { underline: true });
+//         }
+//         if (ch === 'd' || ch === 'x') {
+//             const { at, count } = sortCursor(state.sel);
+//             applyDelta(state, crdt.localDelete(state.text, at, count));
+//             state.mode = 'normal';
+//             state.sel = { anchor: at, cursor: at };
+//         }
+//     } else if (state.mode === 'insert') {
+//         if (evt.full === 'escape') {
+//             state.mode = 'normal';
+//             return;
+//         }
+//         if (evt.full === 'backspace') {
+//             if (state.sel.cursor > 0) {
+//                 moveSelRel(state, -1);
+//                 applyDelta(
+//                     state,
+//                     crdt.localDelete(state.text, state.sel.cursor, 1),
+//                 );
+//             }
+//             return;
+//         }
+//         if (!ch) {
+//             return;
+//         }
+//         applyDelta(
+//             state,
+//             // TODO copy the format of the text under cursor.
+//             // Also TODO, establish a "bias", so if you came from the left,
+//             // you get the left format, and if you come from the right,
+//             // you get the right's
+//             crdt.localInsert(state.text, state.sel.cursor, ch, null),
+//         );
+//         moveSelRel(state, 1);
+//     } else {
+//         if (ch === 'A') {
+//             moveSel(state, crdt.length(state.text));
+//             state.mode = 'insert';
+//             return;
+//         }
+//         if (ch === '0') {
+//             moveSel(state, 0);
+//             return;
+//         }
+//         if (ch === 'h' || evt.full === 'left') {
+//             if (state.sel.cursor > 0) {
+//                 moveSelRel(state, -1);
+//             }
+//         }
+//         if (ch === 'l' || evt.full === 'right') {
+//             if (state.sel.cursor < crdt.length(state.text)) {
+//                 moveSelRel(state, 1);
+//             }
+//         }
+//         if (ch === 'v') {
+//             state.mode = 'visual';
+//             if (state.sel.cursor === crdt.length(state.text)) {
+//                 moveSel(state, crdt.length(state.text) - 1);
+//             }
+//         }
+//         if (ch === 'i') {
+//             state.mode = 'insert';
+//         }
+//         if (ch === 'a') {
+//             if (state.sel.cursor < crdt.length(state.text)) {
+//                 moveSelRel(state, 1);
+//             }
+//             state.mode = 'insert';
+//         }
+//         if (ch === 'x') {
+//             if (state.sel.cursor < crdt.length(state.text)) {
+//                 applyDelta(
+//                     state,
+//                     crdt.localDelete(state.text, state.sel.cursor, 1),
+//                 );
+//             }
+//         }
+//     }
+// };
 
 const stateA /*:State*/ = {
     text: crdt.init('a'),
@@ -247,72 +406,170 @@ const programState = {
     focused: 'a',
 };
 
-program.on('keypress', function(ch, evt) {
-    if (evt.full === 'tab') {
-        programState.focused = programState.focused === 'a' ? 'b' : 'a';
+const sync = programState => {
+    const { a, b } = programState.editors;
+    // sync them!
+    // const aCursor = a.sel.cursor;
+    const aPlace = crdt.parentLocForPos(a.text, a.sel.cursor);
+    const bPlace = crdt.parentLocForPos(b.text, b.sel.cursor);
+    if (aPlace) {
+        const res = crdt.textPositionForLoc(a.text, aPlace);
+        if (res !== a.sel.cursor) {
+            console.log(res, a.sel.cursor, aPlace);
+            throw new Error('Failure!');
+        }
     }
-    const editor = programState.editors[programState.focused];
-    if (editor.mode === 'normal' && ch === 's') {
-        const { a, b } = programState.editors;
-        // sync them!
-        // const aCursor = a.sel.cursor;
-        const aPlace = crdt.parentLocForPos(a.text, a.sel.cursor);
-        const bPlace = crdt.parentLocForPos(b.text, b.sel.cursor);
-        if (aPlace) {
-            const res = crdt.textPositionForLoc(a.text, aPlace);
-            if (res !== a.sel.cursor) {
-                console.log(res, a.sel.cursor, aPlace);
-                throw new Error('Failure!');
+    a.sync.forEach(delta => {
+        crdt.apply(b.text, delta, mergeFormats);
+    });
+    b.sync.forEach(delta => {
+        crdt.apply(a.text, delta, mergeFormats);
+    });
+    if (aPlace) {
+        a.sel.cursor = crdt.textPositionForLoc(a.text, aPlace);
+    }
+    if (bPlace) {
+        b.sel.cursor = crdt.textPositionForLoc(b.text, bPlace);
+    }
+    a.sync = [];
+    b.sync = [];
+    fullRefresh();
+};
+
+const handleAction = (programState, editor, action) => {
+    switch (action.type) {
+        case 'sync':
+            return sync(programState);
+        case 'tab':
+            programState.focused = programState.focused === 'a' ? 'b' : 'a';
+            return;
+        case 'mode':
+            editor.mode = action.mode;
+            return;
+        case 'sel':
+            editor.sel.cursor = action.sel;
+            editor.sel.anchor = action.sel;
+            return;
+        case 'selrel':
+            editor.sel.cursor += action.rel;
+            if (!action.keep) {
+                editor.sel.anchor = editor.sel.cursor;
             }
-        }
-        a.sync.forEach(delta => {
-            crdt.apply(b.text, delta, mergeFormats);
-        });
-        b.sync.forEach(delta => {
-            crdt.apply(a.text, delta, mergeFormats);
-        });
-        if (aPlace) {
-            a.sel.cursor = crdt.textPositionForLoc(a.text, aPlace);
-        }
-        if (bPlace) {
-            b.sel.cursor = crdt.textPositionForLoc(b.text, bPlace);
-        }
-        a.sync = [];
-        b.sync = [];
-        fullRefresh();
-        return;
+            return;
+        case 'format':
+            applyDelta(
+                editor,
+                crdt.localFormat(
+                    editor.text,
+                    action.at,
+                    action.count,
+                    action.format,
+                ),
+            );
+            // editor.mode = 'normal';
+            // state.sel = { anchor: at, cursor: at };
+            return;
+        case 'delete':
+            applyDelta(
+                editor,
+                crdt.localDelete(editor.text, action.at, action.count),
+            );
+            return;
+        case 'insert':
+            applyDelta(
+                editor,
+                // TODO copy the format of the text under cursor.
+                // Also TODO, establish a "bias", so if you came from the left,
+                // you get the left format, and if you come from the right,
+                // you get the right's
+                crdt.localInsert(editor.text, action.at, action.text),
+            );
+            return;
+        default:
+            throw new Error('done');
     }
-    handleKeyPress(editor, ch, evt);
-    debug(editor, editor.pos + 5);
-    draw(editor, editor.pos);
+};
+
+const cleanState = programState => ({
+    ...programState,
+    editors: {
+        a: {
+            ...programState.editors.a,
+            text: programState.editors.a.text.roots,
+        },
+        b: {
+            ...programState.editors.b,
+            text: programState.editors.b.text.roots,
+        },
+    },
 });
 
-program.key('q', function(ch, key) {
-    program.clear();
-    program.cursorShape('block');
-    program.normalBuffer();
+let logFile = __dirname + '/actions.log.txt';
+const fs = require('fs');
+if (fs.existsSync(logFile)) {
+    for (let i = 0; i < 100; i++) {
+        const full = __dirname + `/actions-${i}.log.txt`;
+        if (!fs.existsSync(full)) {
+            logFile = full;
+        }
+    }
+}
+
+const log = data => {
+    require('fs').appendFileSync(logFile, JSON.stringify(data) + '\n');
+};
+
+const cli = require('blessed').program();
+
+cli.on('keypress', function(ch, evt) {
+    try {
+        const editor = programState.editors[programState.focused];
+        const actions = handleKeyPress2(
+            editor.mode,
+            crdt.length(editor.text),
+            editor.sel,
+            ch,
+            evt,
+        );
+        log(actions);
+        actions.forEach(action => handleAction(programState, editor, action));
+        log(cleanState(programState));
+
+        debug(cli, editor, editor.pos + 5);
+        draw(cli, editor, editor.pos);
+        const newEditor = programState.editors[programState.focused];
+
+        if (editor !== newEditor) {
+            debug(cli, newEditor, newEditor.pos + 5);
+            draw(cli, newEditor, newEditor.pos);
+        }
+    } catch (err) {
+        cli.cursorShape('block');
+        cli.normalBuffer();
+        console.error(err.stack);
+        process.exit(0);
+    }
+});
+
+cli.key('q', function(ch, key) {
+    cli.clear();
+    cli.cursorShape('block');
+    cli.normalBuffer();
+    // We exited gracefully, it's fine
+    require('fs').unlinkSync(logFile);
     process.exit(0);
-});
-
-program.on('mouse', function(data) {
-    if (data.action === 'mousemove') {
-        program.move(data.x, data.y);
-        program.bg('red');
-        program.write('x');
-        program.bg('!red');
-    }
 });
 
 const fullRefresh = () => {
     Object.keys(programState.editors).forEach(key => {
         const editor = programState.editors[key];
-        debug(editor, editor.pos + 5);
-        draw(editor, editor.pos);
+        debug(cli, editor, editor.pos + 5);
+        draw(cli, editor, editor.pos);
     });
     const editor = programState.editors[programState.focused];
-    draw(editor, editor.pos);
+    draw(cli, editor, editor.pos);
 };
 
-program.alternateBuffer();
-program.clear();
+cli.alternateBuffer();
+cli.clear();
 fullRefresh();
