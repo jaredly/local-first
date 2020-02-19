@@ -144,9 +144,10 @@ export const checkNode = (node: Node<empty>) => {
     const ids = node.children.map(n => n.id);
     const copy = ids.slice();
     copy.sort((a, b) => keyCmp(b, a));
-    // newChildren.sort((a, b) => keyCmp(a.id, b.id))
     if (!deepEqual(copy, ids)) {
-        throw new Error(`Children out of order: ${ids} vs ${copy}`);
+        throw new Error(
+            `Children out of order: ${ids.join(',')} vs ${copy.join(',')}`,
+        );
     }
 };
 
