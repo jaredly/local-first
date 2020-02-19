@@ -116,6 +116,58 @@ export const toDebug = (crdt: CRDT<Object>) =>
 //     | {| insert: string, attributes?: mixed |};
 // type QuillDelta = { ops: Array<Op> };
 
+export const length = function<Format>(state: CRDT<Format>) {
+    let res = 0;
+    state.roots.forEach(r => (res += r.size));
+    return res;
+};
+
+const nodePosition = function<Format>(crdt: CRDT<Format>, node: Node<Format>) {
+    let total = 0;
+    while (node) {
+        const siblings =
+            node.parent === '0:root'
+                ? crdt.roots
+                : crdt.map[node.parent].children;
+        const idx = siblings.indexOf(node);
+        if (idx === -1) {
+            throw new Error(
+                `node not found in parents children ${toKey(node.id)} ${
+                    node.parent
+                } - ${siblings.map(s => toKey(s.id)).join(';')} - ${toDebug(
+                    crdt,
+                )}`,
+            );
+        }
+        for (let i = 0; i < idx; i++) {
+            total += siblings[i].size;
+        }
+        if (node.parent === '0:root') {
+            break;
+        } else {
+            node = crdt.map[node.parent];
+            if (!node.deleted) {
+                total += node.text.length;
+            }
+        }
+    }
+    return total;
+};
+
+export const textPositionForLoc = function<Format>(
+    crdt: CRDT<Format>,
+    [[id, site], offset]: [[number, string], number],
+) {
+    for (let i = id + offset; i >= 0; i--) {
+        const key = toKey([i, site]);
+        if (crdt.map[key]) {
+            // console.log('found parent at', i, id, offset);
+            return nodePosition(crdt, crdt.map[key]) + (id + offset - i) + 1;
+        }
+    }
+    return 0;
+};
+
 const locForPosInNode = (node, pos) => {
     if (!node.deleted && pos <= node.text.length) {
         // console.log('works within', pos, node.text.length);

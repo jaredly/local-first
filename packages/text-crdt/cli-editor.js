@@ -84,7 +84,7 @@ const debug = (state, pos) => {
     program.move(0, pos + 1);
     program.eraseInLine(2);
     program.write(
-        `Cached: ${length(state.text)} - Full: ${plain.length} - Mode: ${
+        `Cached: ${crdt.length(state.text)} - Full: ${plain.length} - Mode: ${
             state.mode
         } - Cursor: ${JSON.stringify(state.sel)}`,
     );
@@ -99,12 +99,6 @@ const moveSelRel = (state, diff, align = true) => {
     if (align) {
         state.sel.anchor = state.sel.cursor;
     }
-};
-
-const length = state => {
-    let res = 0;
-    state.roots.forEach(r => (res += r.size));
-    return res;
 };
 
 const visualFormat = (state, format) => {
@@ -125,7 +119,7 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
             }
         }
         if (ch === 'l' || evt.full === 'right') {
-            if (state.sel.cursor < length(state.text)) {
+            if (state.sel.cursor < crdt.length(state.text)) {
                 moveSelRel(state, 1, false);
             }
         }
@@ -175,7 +169,7 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
         moveSelRel(state, 1);
     } else {
         if (ch === 'A') {
-            moveSel(state, length(state.text));
+            moveSel(state, crdt.length(state.text));
             state.mode = 'insert';
             return;
         }
@@ -189,27 +183,27 @@ const handleKeyPress = (state /*:State*/, ch, evt) => {
             }
         }
         if (ch === 'l' || evt.full === 'right') {
-            if (state.sel.cursor < length(state.text)) {
+            if (state.sel.cursor < crdt.length(state.text)) {
                 moveSelRel(state, 1);
             }
         }
         if (ch === 'v') {
             state.mode = 'visual';
-            if (state.sel.cursor === length(state.text)) {
-                moveSel(state, length(state.text) - 1);
+            if (state.sel.cursor === crdt.length(state.text)) {
+                moveSel(state, crdt.length(state.text) - 1);
             }
         }
         if (ch === 'i') {
             state.mode = 'insert';
         }
         if (ch === 'a') {
-            if (state.sel.cursor < length(state.text)) {
+            if (state.sel.cursor < crdt.length(state.text)) {
                 moveSelRel(state, 1);
             }
             state.mode = 'insert';
         }
         if (ch === 'x') {
-            if (state.sel.cursor < length(state.text)) {
+            if (state.sel.cursor < crdt.length(state.text)) {
                 applyDelta(
                     state,
                     crdt.localDelete(state.text, state.sel.cursor, 1),
@@ -259,15 +253,32 @@ program.on('keypress', function(ch, evt) {
     }
     const editor = programState.editors[programState.focused];
     if (editor.mode === 'normal' && ch === 's') {
+        const { a, b } = programState.editors;
         // sync them!
-        programState.editors.a.sync.forEach(delta => {
-            crdt.apply(programState.editors.b.text, delta, mergeFormats);
+        // const aCursor = a.sel.cursor;
+        const aPlace = crdt.parentLocForPos(a.text, a.sel.cursor);
+        const bPlace = crdt.parentLocForPos(b.text, b.sel.cursor);
+        if (aPlace) {
+            const res = crdt.textPositionForLoc(a.text, aPlace);
+            if (res !== a.sel.cursor) {
+                console.log(res, a.sel.cursor, aPlace);
+                throw new Error('Failure!');
+            }
+        }
+        a.sync.forEach(delta => {
+            crdt.apply(b.text, delta, mergeFormats);
         });
-        programState.editors.b.sync.forEach(delta => {
-            crdt.apply(programState.editors.a.text, delta, mergeFormats);
+        b.sync.forEach(delta => {
+            crdt.apply(a.text, delta, mergeFormats);
         });
-        programState.editors.a.sync = [];
-        programState.editors.b.sync = [];
+        if (aPlace) {
+            a.sel.cursor = crdt.textPositionForLoc(a.text, aPlace);
+        }
+        if (bPlace) {
+            b.sel.cursor = crdt.textPositionForLoc(b.text, bPlace);
+        }
+        a.sync = [];
+        b.sync = [];
         fullRefresh();
         return;
     }

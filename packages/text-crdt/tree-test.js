@@ -82,3 +82,17 @@ if (!deepEqual(aState.roots, bState.roots)) {
     console.log(crdt.toDebug(aState));
     console.log(crdt.toDebug(bState));
 }
+
+for (let i = 0; i < crdt.length(aState); i++) {
+    const aPos = crdt.parentLocForPos(aState, i);
+    if (!aPos) {
+        throw new Error(`Invalid position ${i}`);
+    }
+    const back = crdt.textPositionForLoc(aState, aPos);
+    if (i !== back) {
+        console.log(`# Mismatch (${i})`);
+        console.log(crdt.toDebug(aState));
+        console.log(aPos);
+        console.log(back);
+    }
+}
