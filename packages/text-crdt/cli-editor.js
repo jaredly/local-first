@@ -82,7 +82,7 @@ const applyDelta = (state, delta) => {
 };
 
 const draw = (cli, state /*:State*/, pos) => {
-    let text = '<type something>';
+    let text = '';
     if (state.mode === 'visual') {
         const { at, count } = sortCursor(state.sel);
         const c /*:crdt.CRDT<Format>*/ = crdt.inflate(
@@ -266,10 +266,10 @@ const handleKeyPress = (mode, length, sel, ch, evt) => {
 const sync = programState => {
     const { a, b } = programState.editors;
     // sync them!
-    const aPlace = crdt.parentLocForPos(a.text, a.sel.cursor);
-    const aEnd = crdt.parentLocForPos(a.text, a.sel.anchor);
-    const bPlace = crdt.parentLocForPos(b.text, b.sel.cursor);
-    const bEnd = crdt.parentLocForPos(b.text, b.sel.anchor);
+    const aPlace = crdt.parentLocForPos(a.text, a.sel.cursor + 1);
+    const aEnd = crdt.parentLocForPos(a.text, a.sel.anchor + 1);
+    const bPlace = crdt.parentLocForPos(b.text, b.sel.cursor + 1);
+    const bEnd = crdt.parentLocForPos(b.text, b.sel.anchor + 1);
     a.sync.forEach(delta => {
         const pre = toDebug(b.text);
         crdt.apply(b.text, delta, mergeFormats);
@@ -278,16 +278,16 @@ const sync = programState => {
         crdt.apply(a.text, delta, mergeFormats);
     });
     if (aPlace) {
-        a.sel.cursor = crdt.textPositionForLoc(a.text, aPlace);
+        a.sel.cursor = crdt.textPositionForLoc(a.text, aPlace) - 1;
     }
     if (aEnd) {
-        a.sel.anchor = crdt.textPositionForLoc(a.text, aEnd);
+        a.sel.anchor = crdt.textPositionForLoc(a.text, aEnd) - 1;
     }
     if (bPlace) {
-        b.sel.cursor = crdt.textPositionForLoc(b.text, bPlace);
+        b.sel.cursor = crdt.textPositionForLoc(b.text, bPlace) - 1;
     }
     if (bEnd) {
-        b.sel.anchor = crdt.textPositionForLoc(b.text, bEnd);
+        b.sel.anchor = crdt.textPositionForLoc(b.text, bEnd) - 1;
     }
     a.sync = [];
     b.sync = [];
