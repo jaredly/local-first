@@ -98,7 +98,9 @@ const draw = (cli, state /*:State*/, pos) => {
         const aPlace = crdt.parentLocForPos(state.text, state.sel.cursor);
         cli.move(0, pos + 1);
         cli.eraseInLine(2);
-        cli.write(JSON.stringify(aPlace));
+        if (aPlace) {
+            cli.write(JSON.stringify(aPlace));
+        }
     } else {
         text = crdt.toString(state.text, format);
     }
@@ -266,10 +268,10 @@ const handleKeyPress = (mode, length, sel, ch, evt) => {
 const sync = programState => {
     const { a, b } = programState.editors;
     // sync them!
-    const aPlace = crdt.parentLocForPos(a.text, a.sel.cursor + 1);
-    const aEnd = crdt.parentLocForPos(a.text, a.sel.anchor + 1);
-    const bPlace = crdt.parentLocForPos(b.text, b.sel.cursor + 1);
-    const bEnd = crdt.parentLocForPos(b.text, b.sel.anchor + 1);
+    const aPlace = crdt.parentLocForPos(a.text, a.sel.cursor);
+    const aEnd = crdt.parentLocForPos(a.text, a.sel.anchor);
+    const bPlace = crdt.parentLocForPos(b.text, b.sel.cursor);
+    const bEnd = crdt.parentLocForPos(b.text, b.sel.anchor);
     a.sync.forEach(delta => {
         const pre = toDebug(b.text);
         crdt.apply(b.text, delta, mergeFormats);
@@ -278,16 +280,16 @@ const sync = programState => {
         crdt.apply(a.text, delta, mergeFormats);
     });
     if (aPlace) {
-        a.sel.cursor = crdt.textPositionForLoc(a.text, aPlace) - 1;
+        a.sel.cursor = crdt.textPositionForLoc(a.text, aPlace);
     }
     if (aEnd) {
-        a.sel.anchor = crdt.textPositionForLoc(a.text, aEnd) - 1;
+        a.sel.anchor = crdt.textPositionForLoc(a.text, aEnd);
     }
     if (bPlace) {
-        b.sel.cursor = crdt.textPositionForLoc(b.text, bPlace) - 1;
+        b.sel.cursor = crdt.textPositionForLoc(b.text, bPlace);
     }
     if (bEnd) {
-        b.sel.anchor = crdt.textPositionForLoc(b.text, bEnd) - 1;
+        b.sel.anchor = crdt.textPositionForLoc(b.text, bEnd);
     }
     a.sync = [];
     b.sync = [];

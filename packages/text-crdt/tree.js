@@ -211,7 +211,7 @@ export const textPositionForLoc = function<Format>(
         if (crdt.map[key]) {
             const pos = nodePosition(crdt, crdt.map[key]);
             // console.log('found parent at', i, id, offset, pos, key);
-            return pos + (id + offset - i) + 1;
+            return pos + (id + offset - i);
         }
     }
     throw new Error(`Unable to get position for loc ${id}-${site}+${offset}`);
@@ -238,6 +238,8 @@ export const parentLocForPos = function<Format>(
     crdt: CRDT<Format>,
     pos: number,
 ): ?[[number, string], number] {
+    // TODO account for this elsewhere
+    pos += 1;
     let total = 0;
     for (let i = 0; i < crdt.roots.length; i++) {
         const node = crdt.roots[i];
@@ -305,7 +307,7 @@ export const selectionToSpans = function<Format>(
     at: number,
     count: number,
 ) {
-    const spos = parentLocForPos(crdt, at + 1);
+    const spos = parentLocForPos(crdt, at);
     if (!spos) {
         return null;
     }
@@ -358,12 +360,12 @@ export const localInsert = function<Format>(
     text: string,
     format: ?Format,
 ): Delta<Format> {
-    const spos = at === 0 ? [[0, 'root'], 0] : parentLocForPos(crdt, at);
+    const spos = at === 0 ? [[0, 'root'], 0] : parentLocForPos(crdt, at - 1);
     if (!spos) {
         console.log('no pos for', at);
         throw new Error(`No position for ${at}`);
     }
-    const rightPos = parentLocForPos(crdt, at + 1);
+    const rightPos = parentLocForPos(crdt, at);
     crdt.largestLocalId = Math.max(
         spos[0][0] + spos[1],
         rightPos ? rightPos[0][0] + rightPos[1] : 0,
