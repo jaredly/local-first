@@ -43,7 +43,7 @@ const changeToDelta = (state, change) => {
     switch (change.type) {
         case 'insert':
             console.log('insert at', change.span.after);
-            const pos = crdt.textPositionForLoc(state, [change.span.after, 1]);
+            const pos = crdt.textPositionForLoc(state, [change.span.after, 0]);
             if (pos === 0) {
                 return [{ insert: change.span.text }];
             }
@@ -54,6 +54,19 @@ const changeToDelta = (state, change) => {
                     // attributes: change.span.format,
                 },
             ];
+        // Got to turn the spans into chunks of contiguousness, probs.
+        // case 'format':
+        //     const pos = crdt.textPositionForLoc(state, [change.span.after, 1]);
+        //     if (pos === 0) {
+        //         return [{ retain: pos, attributes: change.format }];
+        //     }
+        //     return [
+        //         { retain: pos },
+        //         {
+        //             retain: change.positions,
+        //             // attributes: change.span.format,
+        //         },
+        //     ];
     }
 };
 

@@ -38,6 +38,7 @@ const toDebug = crdt =>
     crdt.roots.map(node => nodeToDebug(node, 0)).join(chalk.red.bold(':'));
 
 /*::
+
 type Format = {|
     bold?: boolean,
     underline?: boolean,
@@ -96,12 +97,17 @@ const draw = (cli, state /*:State*/, pos) => {
         cli.eraseInLine(2);
         cli.write(JSON.stringify(crdt.selectionToSpans(state.text, at, count)));
         const aPlace = crdt.parentLocForPos(state.text, state.sel.cursor);
-        cli.move(0, pos + 1);
+        cli.move(0, pos + 2);
         cli.eraseInLine(2);
         if (aPlace) {
             cli.write(JSON.stringify(aPlace));
         }
     } else {
+        cli.move(0, pos + 1);
+        cli.eraseInLine(2);
+        cli.write(
+            JSON.stringify(crdt.parentLocForPos(state.text, state.sel.cursor)),
+        );
         text = crdt.toString(state.text, format);
     }
 
@@ -443,7 +449,7 @@ cli.on('keypress', function(ch, evt) {
         actions.forEach(action => handleAction(programState, editor, action));
         log(cleanState(programState));
 
-        crdt.checkConsistency(editor.text);
+        // crdt.checkConsistency(editor.text);
 
         debug(cli, editor, editor.pos + 5);
         draw(cli, editor, editor.pos);
@@ -504,6 +510,8 @@ if (toLoad) {
         }
     }
 }
+
+// crdt.checkConsistency(stateA.text);
 
 cli.alternateBuffer();
 cli.clear();
