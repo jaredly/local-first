@@ -7,7 +7,6 @@ export type PreNode<Format> = {|
     after: [number, string],
     text: string,
     deleted?: boolean,
-    // TODO merging formats might be a little dicey?
     // I'll parameterize on it, -- you provide your own "format" crdt
     format?: ?Format,
 |};
@@ -16,9 +15,6 @@ export type Node<Format> = {|
     id: [number, string],
     // this is the actual node we're under
     parent: string,
-    // this is the ID we come after, which, if the parent's length is >1, will be parent id + number... right?
-    // ok that seems redundant though
-    // after: [number, string],
     text: string,
     deleted?: boolean,
     format?: ?Format,

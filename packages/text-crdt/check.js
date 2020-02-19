@@ -1,7 +1,7 @@
 // @flow
 import type { Node, CRDT } from './types';
 import { toKey, keyCmp, length } from './utils';
-import { parentLocForPos, textPositionForLoc } from './tree';
+import { locToPos, posToLoc } from './loc';
 import deepEqual from '@birchill/json-equalish';
 
 export const checkNode = (node: Node<empty>) => {
@@ -37,11 +37,11 @@ export const checkConsistency = (state: CRDT<any>) => {
     state.roots.forEach(checkNode);
     const len = length(state);
     for (let i = 0; i < len; i++) {
-        const m = parentLocForPos(state, i);
+        const m = posToLoc(state, i, true);
         if (!m) {
             throw new Error(`No parent loc for cursor ${i}`);
         }
-        const back = textPositionForLoc(state, m);
+        const back = locToPos(state, m);
         if (back !== i) {
             throw new Error(
                 `To loc and back again failed; orig ${i} loc ${JSON.stringify(

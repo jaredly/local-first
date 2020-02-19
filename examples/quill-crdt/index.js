@@ -81,6 +81,7 @@ const deleteToDeltas = (state, positions) => {
 const editors = {};
 
 const noop = (a, b) => Object.assign({}, a, b);
+// Need initialDelta to match whata Quill expects
 const initialDelta = {
     type: 'insert',
     span: { id: [0, '-initial-'], after: [0, crdt.rootSite], text: '\n' },
@@ -100,32 +101,26 @@ const addEditor = (name, broadcast, accept) => {
         accept,
     };
     crdt.apply(editors[name].state, initialDelta, noop);
+
     editors[name].ui.on('text-change', (delta, oldDelta, source) => {
         if (source === 'crdt') {
             return;
         }
         const changes = deltaToChange(editors[name].state, delta);
         console.log('changes', JSON.stringify(changes));
+        changes.forEach(change => {
+            crdt.apply(editors[name].state, change, noop);
+        });
         if (broadcast) {
             changes.forEach(change => {
-                crdt.apply(editors[name].state, change, noop);
                 Object.keys(editors).forEach(id => {
                     if (id !== name && editors[id].accept) {
                         crdt.apply(editors[id].state, change, noop);
-                        const asOne = changeToDelta(editors[id].state, change);
-                        if (asOne) {
-                            console.log(JSON.stringify(asOne));
-                            editors[id].ui.updateContents(asOne, 'crdt');
-                        } else {
-                            console.error('Unable to convert back', change);
-                        }
+                        const deltas = changeToDelta(editors[id].state, change);
+                        editors[id].ui.updateContents(deltas, 'crdt');
                         console.log(crdt.toString(editors[id].state));
                     }
                 });
-            });
-        } else {
-            changes.forEach(change => {
-                crdt.apply(editors[name].state, change, noop);
             });
         }
     });
