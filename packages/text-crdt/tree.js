@@ -122,6 +122,26 @@ export const length = function<Format>(state: CRDT<Format>) {
     return res;
 };
 
+export const checkNode = (node: Node<empty>) => {
+    const key = toKey(node.id);
+    node.children.forEach(child => {
+        if (child.parent !== key) {
+            throw new Error(
+                `Child does not have parent as key: child ${toKey(
+                    child.id,
+                )} - expected parent ${key} - found parent reads ${
+                    child.parent
+                }`,
+            );
+        }
+        checkNode(child);
+    });
+};
+
+export const checkConsistency = (state: CRDT<empty>) => {
+    state.roots.forEach(checkNode);
+};
+
 const nodePosition = function<Format>(crdt: CRDT<Format>, node: Node<Format>) {
     let total = 0;
     while (node) {
@@ -380,6 +400,7 @@ const split = function<Format>(
         size: node.size - splitPoint,
         children: node.children,
     };
+    node.children.forEach(child => (child.parent = toKey(newNode.id)));
     crdt.map[toKey(newNode.id)] = newNode;
     node.text = node.text.slice(0, splitPoint);
     node.children = [newNode];

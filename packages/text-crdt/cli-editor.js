@@ -420,10 +420,26 @@ const sync = programState => {
         }
     }
     a.sync.forEach(delta => {
+        const pre = crdt.toDebug(b.text);
         crdt.apply(b.text, delta, mergeFormats);
+        try {
+            crdt.checkConsistency(b.text);
+        } catch (err) {
+            console.log('b', JSON.stringify(delta));
+            console.log(pre);
+            console.log(crdt.toDebug(b.text));
+            throw err;
+        }
     });
     b.sync.forEach(delta => {
         crdt.apply(a.text, delta, mergeFormats);
+        try {
+            crdt.checkConsistency(a.text);
+        } catch (err) {
+            console.log('a', JSON.stringify(delta));
+            console.log(crdt.toDebug(a.text));
+            throw err;
+        }
     });
     if (aPlace) {
         a.sel.cursor = crdt.textPositionForLoc(a.text, aPlace);
@@ -433,7 +449,6 @@ const sync = programState => {
     }
     a.sync = [];
     b.sync = [];
-    fullRefresh();
 };
 
 const handleAction = (programState, editor, action) => {
@@ -510,7 +525,9 @@ if (fs.existsSync(logFile)) {
     for (let i = 0; i < 100; i++) {
         const full = __dirname + `/actions-${i}.log.txt`;
         if (!fs.existsSync(full)) {
+            console.log('new actions file', full);
             logFile = full;
+            break;
         }
     }
 }
@@ -543,6 +560,9 @@ cli.on('keypress', function(ch, evt) {
             debug(cli, newEditor, newEditor.pos + 5);
             draw(cli, newEditor, newEditor.pos);
         }
+        if (actions.some(a => a.type === 'sync')) {
+            fullRefresh();
+        }
     } catch (err) {
         cli.cursorShape('block');
         cli.normalBuffer();
@@ -570,6 +590,31 @@ const fullRefresh = () => {
     draw(cli, editor, editor.pos);
 };
 
+const [_, __, toLoad] = process.argv;
+if (toLoad) {
+    const text = fs.readFileSync(toLoad, 'utf8').split('\n');
+    for (let i = 0; i < text.length; i += 2) {
+        const actions = JSON.parse(text[i]);
+        try {
+            actions.forEach(action =>
+                handleAction(
+                    programState,
+                    programState.editors[programState.focused],
+                    action,
+                ),
+            );
+            crdt.checkConsistency(programState.editors.a.text);
+            crdt.checkConsistency(programState.editors.b.text);
+        } catch (err) {
+            console.log(`Got to line ${i}`);
+            console.log(text[i]);
+            console.error(err.stack);
+            process.exit(0);
+        }
+    }
+}
+
 cli.alternateBuffer();
 cli.clear();
+
 fullRefresh();
