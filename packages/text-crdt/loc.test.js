@@ -1,4 +1,3 @@
-// @flow
 import { init, localInsert, localDelete, localFormat } from './tree';
 import { apply } from './update';
 import { length, toString } from './utils';
