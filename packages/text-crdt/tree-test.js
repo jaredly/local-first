@@ -6,12 +6,24 @@ const crdt = require('./tree');
 
 const noop = (a, b) => a;
 
+const chalk = require('chalk');
+const nodeToDebug = node =>
+    '[' +
+    chalk.dim(crdt.toKey(node.id)) +
+    '·' +
+    (node.deleted ? chalk.dim(node.text) : chalk.green(node.text)) +
+    ']' +
+    (node.format ? JSON.stringify(node.format) : '') +
+    (node.children.length
+        ? '<' + node.children.map(nodeToDebug).join(';') + '>'
+        : '');
+const toDebug = crdt => crdt.roots.map(nodeToDebug).join(';;');
+
 /*::
 import type {CRDT} from './tree'
 type Format = {bold?: boolean, underline?: boolean}
  */
 
-const chalk = require('chalk');
 const format = (text, format) => {
     if (format.bold) {
         text = chalk.bold(text);
@@ -23,22 +35,22 @@ const format = (text, format) => {
 };
 
 // const state /*:CRDT<Format>*/ = crdt.init('a', []);
-// console.log(crdt.toString(state), crdt.toDebug(state));
+// console.log(crdt.toString(state), toDebug(state));
 // const d1 = crdt.localInsert(state, 0, 'hello', null);
 // crdt.apply(state, d1, noop);
-// console.log(crdt.toString(state), crdt.toDebug(state));
+// console.log(crdt.toString(state), toDebug(state));
 // // console.log(crdt.locForPos(state, 0));
 // // console.log(crdt.locForPos(state, 1));
 // // console.log(crdt.locForPos(state, 2));
 // const d2 = crdt.localInsert(state, 2, 'world', null);
 // console.log(d2);
 // crdt.apply(state, d2, noop);
-// console.log(crdt.toString(state), crdt.toDebug(state));
+// console.log(crdt.toString(state), toDebug(state));
 // crdt.apply(state, crdt.localFormat(state, 2, 2, { bold: true }), (a, b) =>
 //     Object.assign({}, a, b),
 // );
 
-// console.log(crdt.toString(state, format), crdt.toDebug(state));
+// console.log(crdt.toString(state, format), toDebug(state));
 const deepEqual = require('@birchill/json-equalish').default;
 
 const state /*:CRDT<Format>*/ = crdt.init('a');
@@ -53,7 +65,7 @@ deltas.forEach(maker => {
     const delta = maker(state);
     crdt.apply(state, delta, noop);
     console.log(JSON.stringify(delta));
-    console.log(crdt.toString(state, format), crdt.toDebug(state));
+    console.log(crdt.toString(state, format), toDebug(state));
 });
 
 const aState = crdt.init('a');
@@ -79,8 +91,8 @@ bSync.forEach(delta => crdt.apply(aState, delta, noop));
 
 if (!deepEqual(aState.roots, bState.roots)) {
     console.log('Not equal after syncing');
-    console.log(crdt.toDebug(aState));
-    console.log(crdt.toDebug(bState));
+    console.log(toDebug(aState));
+    console.log(toDebug(bState));
 }
 
 for (let i = 0; i < crdt.length(aState); i++) {
@@ -91,7 +103,7 @@ for (let i = 0; i < crdt.length(aState); i++) {
     const back = crdt.textPositionForLoc(aState, aPos);
     if (i !== back) {
         console.log(`# Mismatch (${i})`);
-        console.log(crdt.toDebug(aState));
+        console.log(toDebug(aState));
         console.log(aPos);
         console.log(back);
     }

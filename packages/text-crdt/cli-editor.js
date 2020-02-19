@@ -4,6 +4,39 @@ const crdt = require('./tree');
 
 const clone = crdt => JSON.parse(JSON.stringify(crdt));
 
+const chalk = require('chalk');
+const colorLevel = level => {
+    const colors = [
+        'red',
+        'green',
+        'yellow',
+        'blue',
+        'magenta',
+        'cyan',
+        'redBright',
+        'greenBright',
+        'yellowBright',
+        'blueBright',
+        'magentaBright',
+        'cyanBright',
+    ];
+    return chalk[colors[level % colors.length]];
+};
+const nodeToDebug = (node, level) =>
+    chalk.dim(`${node.id[0]}${node.id[1]}`) +
+    '·' +
+    (node.deleted
+        ? chalk.dim.underline(node.text)
+        : colorLevel(level).underline(node.text)) +
+    (node.format ? JSON.stringify(node.format) : '') +
+    (node.children.length
+        ? '{' +
+          node.children.map(node => nodeToDebug(node, level + 1)).join(';') +
+          '}'
+        : '');
+const toDebug = crdt =>
+    crdt.roots.map(node => nodeToDebug(node, 0)).join(chalk.red.bold(':'));
+
 /*::
 type Format = {|
     bold?: boolean,
@@ -62,6 +95,10 @@ const draw = (cli, state /*:State*/, pos) => {
         cli.move(0, pos + 1);
         cli.eraseInLine(2);
         cli.write(JSON.stringify(crdt.selectionToSpans(state.text, at, count)));
+        const aPlace = crdt.parentLocForPos(state.text, state.sel.cursor);
+        cli.move(0, pos + 1);
+        cli.eraseInLine(2);
+        cli.write(JSON.stringify(aPlace));
     } else {
         text = crdt.toString(state.text, format);
     }
@@ -77,7 +114,7 @@ const debug = (cli, state, pos) => {
     const plain = crdt.toString(state.text);
     cli.move(0, pos);
     cli.eraseInLine(2);
-    cli.write(crdt.toDebug(state.text));
+    cli.write(toDebug(state.text));
     cli.move(0, pos + 1);
     cli.eraseInLine(2);
     cli.write(
@@ -226,40 +263,6 @@ const handleKeyPress = (mode, length, sel, ch, evt) => {
     return [];
 };
 
-const stateA /*:State*/ = {
-    text: crdt.init('a'),
-    mode: 'normal',
-    sel: { cursor: 0, anchor: 0 },
-    sync: [],
-    pos: 0,
-};
-
-crdt.apply(
-    stateA.text,
-    crdt.localInsert(
-        stateA.text,
-        0,
-        'Hello folks, this is the editor extraordinaire.',
-    ),
-    mergeFormats,
-);
-
-const stateB /*:State*/ = {
-    text: crdt.inflate('b', clone(stateA.text.roots)),
-    mode: 'normal',
-    sync: [],
-    sel: { cursor: 0, anchor: 0 },
-    pos: 10,
-};
-
-const programState = {
-    editors: {
-        a: stateA,
-        b: stateB,
-    },
-    focused: 'a',
-};
-
 const sync = programState => {
     const { a, b } = programState.editors;
     // sync them!
@@ -268,7 +271,7 @@ const sync = programState => {
     const bPlace = crdt.parentLocForPos(b.text, b.sel.cursor);
     const bEnd = crdt.parentLocForPos(b.text, b.sel.anchor);
     a.sync.forEach(delta => {
-        const pre = crdt.toDebug(b.text);
+        const pre = toDebug(b.text);
         crdt.apply(b.text, delta, mergeFormats);
     });
     b.sync.forEach(delta => {
@@ -346,6 +349,7 @@ const handleAction = (programState, editor, action) => {
 
 const cleanState = programState => ({
     ...programState,
+    states: [],
     editors: {
         a: {
             ...programState.editors.a,
@@ -375,9 +379,55 @@ const log = data => {
     require('fs').appendFileSync(logFile, JSON.stringify(data) + '\n');
 };
 
+const stateA /*:State*/ = {
+    text: crdt.init('a'),
+    mode: 'normal',
+    sel: { cursor: 0, anchor: 0 },
+    sync: [],
+    pos: 0,
+};
+
+crdt.apply(
+    stateA.text,
+    crdt.localInsert(
+        stateA.text,
+        0,
+        'Hello folks, this is the editor extraordinaire.',
+    ),
+    mergeFormats,
+);
+
+const stateB /*:State*/ = {
+    text: crdt.inflate('b', clone(stateA.text.roots)),
+    mode: 'normal',
+    sync: [],
+    sel: { cursor: 0, anchor: 0 },
+    pos: 10,
+};
+
+const programState = {
+    states: [],
+    editors: {
+        a: stateA,
+        b: stateB,
+    },
+    focused: 'a',
+};
+
 const cli = require('blessed').program();
 
 cli.on('keypress', function(ch, evt) {
+    if (ch === 'q' || ch === 'Q') {
+        cli.clear();
+        cli.cursorShape('block');
+        cli.normalBuffer();
+        if (ch === 'q') {
+            // We exited gracefully, it's fine
+            require('fs').unlinkSync(logFile);
+        }
+        process.exit(0);
+    }
+
     try {
         const editor = programState.editors[programState.focused];
         const actions = handleKeyPress(
@@ -390,6 +440,8 @@ cli.on('keypress', function(ch, evt) {
         log(actions);
         actions.forEach(action => handleAction(programState, editor, action));
         log(cleanState(programState));
+
+        crdt.checkConsistency(editor.text);
 
         debug(cli, editor, editor.pos + 5);
         draw(cli, editor, editor.pos);
@@ -410,15 +462,6 @@ cli.on('keypress', function(ch, evt) {
     }
 });
 
-cli.key('q', function(ch, key) {
-    cli.clear();
-    cli.cursorShape('block');
-    cli.normalBuffer();
-    // We exited gracefully, it's fine
-    require('fs').unlinkSync(logFile);
-    process.exit(0);
-});
-
 const fullRefresh = () => {
     Object.keys(programState.editors).forEach(key => {
         const editor = programState.editors[key];
@@ -433,6 +476,12 @@ const [_, __, toLoad] = process.argv;
 if (toLoad) {
     const text = fs.readFileSync(toLoad, 'utf8').split('\n');
     for (let i = 0; i < text.length; i += 2) {
+        if (!text[i].trim()) {
+            continue;
+        }
+        if (text[i][0] === '#') {
+            continue;
+        }
         const actions = JSON.parse(text[i]);
         try {
             actions.forEach(action =>
@@ -441,6 +490,9 @@ if (toLoad) {
                     programState.editors[programState.focused],
                     action,
                 ),
+            );
+            crdt.checkConsistency(
+                programState.editors[programState.focused].text,
             );
         } catch (err) {
             console.log(`Got to line ${i}`);

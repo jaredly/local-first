@@ -75,7 +75,7 @@ export const apply = function<Format>(
     }
 };
 
-const toKey = ([id, site]: [number, string]) => `${id}:${site}`;
+export const toKey = ([id, site]: [number, string]) => `${id}:${site}`;
 
 export const nodeToString = function<Format>(
     node: Node<Format>,
@@ -124,6 +124,7 @@ export const length = function<Format>(state: CRDT<Format>) {
 
 export const checkNode = (node: Node<empty>) => {
     const key = toKey(node.id);
+    let size = node.deleted ? 0 : node.text.length;
     node.children.forEach(child => {
         if (child.parent !== key) {
             throw new Error(
@@ -135,11 +136,35 @@ export const checkNode = (node: Node<empty>) => {
             );
         }
         checkNode(child);
+        size += child.size;
     });
+    if (size !== node.size) {
+        throw new Error(`Node size is wrong ${toKey(node.id)}`);
+    }
+    const ids = node.children.map(n => n.id);
+    const copy = ids.slice();
+    copy.sort((a, b) => keyCmp(b, a));
+    // newChildren.sort((a, b) => keyCmp(a.id, b.id))
+    if (!deepEqual(copy, ids)) {
+        throw new Error(`Children out of order: ${ids} vs ${copy}`);
+    }
 };
 
-export const checkConsistency = (state: CRDT<empty>) => {
+export const checkConsistency = (state: CRDT<any>) => {
     state.roots.forEach(checkNode);
+    const len = length(state);
+    for (let i = 0; i < len; i++) {
+        const m = parentLocForPos(state, i);
+        if (!m) {
+            throw new Error(`No parent loc for cursor ${i}`);
+        }
+        const back = textPositionForLoc(state, m);
+        if (back !== i) {
+            throw new Error(
+                `To loc and back again failed; orig ${i} loc ${m} result ${back}`,
+            );
+        }
+    }
 };
 
 const nodePosition = function<Format>(crdt: CRDT<Format>, node: Node<Format>) {
@@ -178,19 +203,19 @@ export const textPositionForLoc = function<Format>(
     crdt: CRDT<Format>,
     [[id, site], offset]: [[number, string], number],
 ) {
-    for (let i = id + offset; i >= 0; i--) {
+    for (let i = id + Math.max(0, offset); i >= 0; i--) {
         const key = toKey([i, site]);
         if (crdt.map[key]) {
-            // console.log('found parent at', i, id, offset);
-            return nodePosition(crdt, crdt.map[key]) + (id + offset - i) + 1;
+            const pos = nodePosition(crdt, crdt.map[key]);
+            // console.log('found parent at', i, id, offset, pos, key);
+            return pos + (id + offset - i) + 1;
         }
     }
-    return 0;
+    throw new Error(`Unable to get position for loc ${id}-${site}+${offset}`);
 };
 
 const locForPosInNode = (node, pos) => {
     if (!node.deleted && pos <= node.text.length) {
-        // console.log('works within', pos, node.text.length);
         return [node.id, pos - 1];
     }
     if (!node.deleted) {
@@ -214,7 +239,7 @@ export const parentLocForPos = function<Format>(
     for (let i = 0; i < crdt.roots.length; i++) {
         const node = crdt.roots[i];
         if (pos > node.size) {
-            // console.log('pos larger than size');
+            pos -= node.size;
             continue;
         }
         const found = locForPosInNode(node, pos);
