@@ -162,7 +162,9 @@ export const checkConsistency = (state: CRDT<any>) => {
         const back = textPositionForLoc(state, m);
         if (back !== i) {
             throw new Error(
-                `To loc and back again failed; orig ${i} loc ${m} result ${back}`,
+                `To loc and back again failed; orig ${i} loc ${JSON.stringify(
+                    m,
+                )} result ${back}`,
             );
         }
     }
