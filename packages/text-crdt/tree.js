@@ -206,6 +206,9 @@ export const textPositionForLoc = function<Format>(
     crdt: CRDT<Format>,
     [[id, site], offset]: [[number, string], number],
 ) {
+    if (id === 0 && site === 'root') {
+        return 0;
+    }
     for (let i = id + Math.max(0, offset); i >= 0; i--) {
         const key = toKey([i, site]);
         if (crdt.map[key]) {
