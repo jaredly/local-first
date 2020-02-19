@@ -1,8 +1,7 @@
 // @flow
 const deepEqual = require('@birchill/json-equalish').default;
-import type { Node, CRDT, Delta, Span, Spans } from './types';
+import type { Node, CRDT, Delta, Span, PreNode } from './types';
 import { toKey, length, keyCmp } from './utils';
-import { parentLocForPos } from './query';
 
 // MUTATIVE!! TODO try making an immutable version?
 
@@ -86,7 +85,10 @@ const parentForAfter = function<Format>(
     }
 };
 
-export const insert = function<Format>(crdt: CRDT<Format>, span: Span<Format>) {
+export const insert = function<Format>(
+    crdt: CRDT<Format>,
+    span: PreNode<Format>,
+) {
     const key = toKey(span.after);
     if (key === '0:root') {
         // insert into the roots
@@ -216,7 +218,7 @@ const updateNode = function<Format>(
 
 const mergeable = function<Format>(
     parent: Node<Format>,
-    child: Node<Format> | Span<Format>,
+    child: Node<Format> | PreNode<Format>,
 ) {
     return (
         parent.children.length <= 1 &&
@@ -229,11 +231,11 @@ const mergeable = function<Format>(
 
 const updateSpans = function<Format>(
     crdt: CRDT<Format>,
-    spans: Spans,
+    spans: Array<Span>,
     remove: boolean,
     format: ?{ merge: (Format, Format) => Format, fmt: Format },
 ) {
-    spans.forEach(([id, site, length]) => {
+    spans.forEach(({ id, site, length }) => {
         while (length > 0) {
             if (!ensureNodeAt(crdt, [id, site])) {
                 throw new Error(`Cannot update span ${id}:${site}`);
@@ -251,13 +253,13 @@ const updateSpans = function<Format>(
     });
 };
 
-export const remove = function<Format>(crdt: CRDT<Format>, spans: Spans) {
+export const remove = function<Format>(crdt: CRDT<Format>, spans: Array<Span>) {
     updateSpans(crdt, spans, true, null);
 };
 
 export const format = function<Format>(
     crdt: CRDT<Format>,
-    spans: Spans,
+    spans: Array<Span>,
     format: Format,
     merge: (Format, Format) => Format,
 ) {

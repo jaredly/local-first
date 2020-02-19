@@ -95,8 +95,10 @@ const draw = (cli, state /*:State*/, pos) => {
         text = crdt.toString(c, format);
         cli.move(0, pos + 1);
         cli.eraseInLine(2);
-        cli.write(JSON.stringify(crdt.selectionToSpans(state.text, at, count)));
-        const aPlace = crdt.parentLocForPos(state.text, state.sel.cursor);
+        cli.write(
+            JSON.stringify(crdt.selectionToSpans(state.text, at, at + count)),
+        );
+        const aPlace = crdt.posToLoc(state.text, state.sel.cursor, true);
         cli.move(0, pos + 2);
         cli.eraseInLine(2);
         if (aPlace) {
@@ -106,7 +108,10 @@ const draw = (cli, state /*:State*/, pos) => {
         cli.move(0, pos + 1);
         cli.eraseInLine(2);
         cli.write(
-            JSON.stringify(crdt.parentLocForPos(state.text, state.sel.cursor)),
+            JSON.stringify(crdt.posToLoc(state.text, state.sel.cursor, true)) +
+                JSON.stringify(
+                    crdt.posToLoc(state.text, state.sel.cursor, false),
+                ),
         );
         text = crdt.toString(state.text, format);
     }
@@ -274,10 +279,10 @@ const handleKeyPress = (mode, length, sel, ch, evt) => {
 const sync = programState => {
     const { a, b } = programState.editors;
     // sync them!
-    const aPlace = crdt.parentLocForPos(a.text, a.sel.cursor);
-    const aEnd = crdt.parentLocForPos(a.text, a.sel.anchor);
-    const bPlace = crdt.parentLocForPos(b.text, b.sel.cursor);
-    const bEnd = crdt.parentLocForPos(b.text, b.sel.anchor);
+    const aPlace = crdt.posToLoc(a.text, a.sel.cursor, false);
+    const aEnd = crdt.posToLoc(a.text, a.sel.anchor, true);
+    const bPlace = crdt.posToLoc(b.text, b.sel.cursor, false);
+    const bEnd = crdt.posToLoc(b.text, b.sel.anchor, true);
     a.sync.forEach(delta => {
         const pre = toDebug(b.text);
         crdt.apply(b.text, delta, mergeFormats);
@@ -285,18 +290,10 @@ const sync = programState => {
     b.sync.forEach(delta => {
         crdt.apply(a.text, delta, mergeFormats);
     });
-    if (aPlace) {
-        a.sel.cursor = crdt.textPositionForLoc(a.text, aPlace);
-    }
-    if (aEnd) {
-        a.sel.anchor = crdt.textPositionForLoc(a.text, aEnd);
-    }
-    if (bPlace) {
-        b.sel.cursor = crdt.textPositionForLoc(b.text, bPlace);
-    }
-    if (bEnd) {
-        b.sel.anchor = crdt.textPositionForLoc(b.text, bEnd);
-    }
+    a.sel.cursor = crdt.locToPos(a.text, aPlace);
+    a.sel.anchor = crdt.locToPos(a.text, aEnd);
+    b.sel.cursor = crdt.locToPos(b.text, bPlace);
+    b.sel.anchor = crdt.locToPos(b.text, bEnd);
     a.sync = [];
     b.sync = [];
 };

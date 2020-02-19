@@ -95,16 +95,32 @@ if (!deepEqual(aState.roots, bState.roots)) {
     console.log(toDebug(bState));
 }
 
+const insert = (state, pos, text) =>
+    crdt.apply(state, crdt.localInsert(state, pos, text), noop);
+const del = (state, pos, count) =>
+    crdt.apply(state, crdt.localDelete(state, pos, count), noop);
+
+insert(aState, 2, 'hi');
+insert(aState, 10, 'whatsit');
+del(aState, 3, 4);
+
+console.log(toDebug(aState));
 for (let i = 0; i < crdt.length(aState); i++) {
-    const aPos = crdt.parentLocForPos(aState, i);
-    if (!aPos) {
-        throw new Error(`Invalid position ${i}`);
-    }
-    const back = crdt.textPositionForLoc(aState, aPos);
+    const aPos = crdt.posToLoc(aState, i, true);
+    const bPos = crdt.posToLoc(aState, i, false);
+    const back = crdt.locToPos(aState, aPos);
+    const bback = crdt.locToPos(aState, bPos);
     if (i !== back) {
         console.log(`# Mismatch (${i})`);
         console.log(toDebug(aState));
         console.log(aPos);
         console.log(back);
     }
+    if (i !== bback) {
+        console.log(`# Mismatch (${i}) post`);
+        console.log(toDebug(aState));
+        console.log(bPos);
+        console.log(bback);
+    }
 }
+console.log('done');

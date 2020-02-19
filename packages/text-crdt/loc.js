@@ -26,16 +26,17 @@ yeah just 1 or 0 for the side, true or false.
 
 */
 
-const posToPreLocForNode = (node, pos) => {
+const posToPreLocForNode = (node, pos): [[number, string], number] => {
     if (pos === 1) {
-        return node.id;
+        return [node.id, 0];
     }
     if (pos > node.size) {
         throw new Error(`pos ${pos} not in node ${toKey(node.id)}`);
     }
     if (!node.deleted) {
         if (pos <= node.text.length) {
-            return [node.id[0] + pos - 1, node.id[1]];
+            return [node.id, pos - 1];
+            // return [node.id[0] + pos - 1, node.id[1]];
         }
         pos -= node.text.length;
     }
@@ -54,9 +55,12 @@ const posToPreLocForNode = (node, pos) => {
 };
 
 // This represents the loc that is before the pos...
-const posToPreLoc = (crdt, pos) => {
+export const posToPreLoc = (
+    crdt: CRDT<any>,
+    pos: number,
+): [[number, string], number] => {
     if (pos === 0) {
-        return [0, 'root'];
+        return [[0, 'root'], 0];
     }
     for (let i = 0; i < crdt.roots.length; i++) {
         if (pos <= crdt.roots[i].size) {
@@ -69,14 +73,15 @@ const posToPreLoc = (crdt, pos) => {
 
 const posToPostLocForNode = (node, pos) => {
     if (pos === 0) {
-        return node.id;
+        return [node.id, 0];
     }
     if (pos >= node.size) {
         throw new Error(`post pos ${pos} not in node ${toKey(node.id)}`);
     }
     if (!node.deleted) {
         if (pos < node.text.length) {
-            return [node.id[0] + pos, node.id[1]];
+            return [node.id, pos];
+            // return [node.id[0] + pos, node.id[1]];
         }
         pos -= node.text.length;
     }
@@ -95,7 +100,10 @@ const posToPostLocForNode = (node, pos) => {
 };
 
 // this represents the loc that is after the pos
-const posToPostLoc = (crdt, pos) => {
+export const posToPostLoc = (
+    crdt: CRDT<any>,
+    pos: number,
+): [[number, string], number] => {
     for (let i = 0; i < crdt.roots.length; i++) {
         if (pos < crdt.roots[i].size) {
             return posToPostLocForNode(crdt.roots[i], pos);
@@ -103,19 +111,19 @@ const posToPostLoc = (crdt, pos) => {
         pos -= crdt.roots[i].size;
     }
     if (pos === 0) {
-        return [1, 'root'];
+        return [[1, 'root'], 0];
     }
     throw new Error(`Pos ${pos} is outside the bounds`);
 };
 
-type Loc = { id: number, site: string, pre: boolean };
+export type Loc = { id: number, site: string, pre: boolean };
 
 export const posToLoc = function<Format>(
     crdt: CRDT<Format>,
     pos: number,
     // if true, loc is the char to the left of the pos (the "pre-loc")
     // if false, loc is the char to the right of the pos (the "post-loc")
-    anchorLeft: boolean,
+    anchorToLocAtLeft: boolean,
     // Note that I don't currently support anchoring to the right
     // of the end of the string, but I probably could?
     // ok 1:root is the end, 0:root is the start. cool beans
@@ -124,18 +132,18 @@ export const posToLoc = function<Format>(
     if (pos > total) {
         throw new Error(`Loc is outside of the bounds`);
     }
-    const [id, site] = anchorLeft
+    const [[id, site], offset] = anchorToLocAtLeft
         ? posToPreLoc(crdt, pos)
         : posToPostLoc(crdt, pos);
-    return { id, site, pre: anchorLeft };
+    return { id: id + offset, site, pre: anchorToLocAtLeft };
 };
 
-export const nodeForLoc = function<Format>(
+export const nodeForKey = function<Format>(
     crdt: CRDT<Format>,
-    loc: Loc,
+    key: [number, string],
 ): ?Node<Format> {
-    for (let i = loc.id; i >= 0; i--) {
-        const k = toKey([i, loc.site]);
+    for (let i = key[0]; i >= 0; i--) {
+        const k = toKey([i, key[1]]);
         if (crdt.map[k]) {
             return crdt.map[k];
         }
@@ -180,7 +188,7 @@ export const locToPos = function<Format>(crdt: CRDT<Format>, loc: Loc): number {
         return loc.id === 0 ? 0 : length(crdt);
     }
     // step 1: find the node this loc is within
-    const node = nodeForLoc(crdt, loc);
+    const node = nodeForKey(crdt, [loc.id, loc.site]);
     if (!node) {
         throw new Error(`Loc does not exist in tree ${JSON.stringify(loc)}`);
     }

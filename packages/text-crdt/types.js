@@ -1,6 +1,8 @@
 // @flow
 
-export type Span<Format> = {|
+export type Span = { id: number, site: string, length: number };
+
+export type PreNode<Format> = {|
     id: [number, string],
     after: [number, string],
     text: string,
@@ -32,19 +34,17 @@ export type CRDT<Format> = {|
     map: { [key: string]: Node<Format> },
 |};
 
-export type Spans = Array<[number, string, number]>;
-
 export type Delta<Format> =
     | {
           type: 'insert',
-          span: Span<Format>,
+          span: PreNode<Format>,
       }
     | {
           type: 'delete',
-          positions: Spans,
+          positions: Array<Span>,
       }
     | {
           type: 'format',
-          positions: Spans,
+          positions: Array<Span>,
           format: Format,
       };
