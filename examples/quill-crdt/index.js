@@ -16,32 +16,56 @@ const noop = (a, b) => Object.assign({}, a, b);
 // Need initialDelta to match whata Quill expects
 const initialDelta = {
     type: 'insert',
-    span: { id: [0, '-initial-'], after: [0, crdt.rootSite], text: '\n' },
+    span: {
+        id: [0, '-initial-'],
+        after: [0, crdt.rootSite],
+        text: 'Hello world! we did it.\n',
+    },
 };
 
-const addEditor = (name, broadcast, accept) => {
+const columns = [document.createElement('div'), document.createElement('div')];
+if (document.body) {
+    columns.forEach(column => document.body.appendChild(column));
+}
+
+const addEditor = (name, broadcast, accept, subtitle, color) => {
+    const container = document.createElement('div');
     const div = document.createElement('div');
     div.id = name;
-    div.style.marginBottom = '12px';
-    if (document.body) {
-        document.body.appendChild(div);
-    }
+    container.appendChild(div);
+    // div.style.marginBottom = '12px';
+    const description = document.createElement('div');
+    description.innerText = subtitle;
+    Object.assign(description.style, {
+        paddingBottom: '18px',
+        paddingTop: '6px',
+        paddingLeft: '6px',
+        fontSize: '10px',
+        fontFamily: 'system-ui',
+    });
+    container.appendChild(description);
+    columns[Object.keys(editors).length % 2].appendChild(container);
+    const state = crdt.init(name);
+    crdt.apply(state, initialDelta, noop);
+
     const ui = new Quill(div, { theme: 'snow', modules: { cursors: true } });
+    ui.setText(crdt.toString(state));
+
     const cursors = ui.getModule('cursors');
 
     Object.keys(editors).forEach(id => {
-        cursors.createCursor(id, id, 'red');
-        editors[id].cursors.createCursor(name, name, 'green');
+        cursors.createCursor(id, id, editors[id].color);
+        editors[id].cursors.createCursor(name, name, color);
     });
 
     editors[name] = {
-        state: crdt.init(name),
+        color,
+        state,
         ui,
         cursors,
         broadcast,
         accept,
     };
-    crdt.apply(editors[name].state, initialDelta, noop);
 
     if (broadcast) {
         editors[name].ui.on('selection-change', (range, oldRange, source) => {
@@ -119,8 +143,8 @@ const calcCursorPositions = editor => {
     return preRanges;
 };
 
-addEditor('one', true, true);
-addEditor('two', true, true);
-addEditor('two-2', true, true);
-addEditor('three', false, true);
-addEditor('four', true, false);
+addEditor('one', true, true, 'Full sync', 'red');
+addEditor('two', true, true, 'Full sync', 'green');
+addEditor('three', true, true, 'Full sync', 'blue');
+addEditor('four', false, true, `Receives, but doesn't broadcast`, 'orange');
+addEditor('five', true, false, `Broadcasts, but doesn't receive`, 'purple');
