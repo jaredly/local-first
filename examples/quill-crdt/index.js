@@ -2,6 +2,7 @@
 import Quill from 'quill';
 import * as crdt from '../../packages/text-crdt/tree';
 import * as debug from '../../packages/text-crdt/debug';
+import * as hlc from '../../packages/hybrid-logical-clock';
 import {
     deltaToChange,
     changeToDelta,
@@ -11,6 +12,8 @@ import QuillCursors from 'quill-cursors/dist/index.js';
 Quill.register('modules/cursors', QuillCursors);
 
 const editors = {};
+
+// const hlc
 
 const noop = (a, b) => Object.assign({}, a, b);
 // Need initialDelta to match whata Quill expects

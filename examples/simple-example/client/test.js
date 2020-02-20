@@ -88,7 +88,7 @@ window.setupBlob = port => {
     const client = createBlobClient(
         crdt,
         { tasks: ItemSchema },
-        localStorageClockPersist('local-first'),
+        new PersistentClock(localStorageClockPersist('local-first')),
         makeBlobPersistence('local-first', ['tasks']),
         // etag: ?string => Promise<?Blob<Data>>
         // Blob<data> => Promise<string>
@@ -104,7 +104,7 @@ const setup = makeNetwork => {
     const client = createClient(
         crdt,
         { tasks: ItemSchema },
-        localStorageClockPersist('test'),
+        new PersistentClock(localStorageClockPersist('test')),
         makeDeltaPersistence('test', ['tasks']),
         makeNetwork,
     );

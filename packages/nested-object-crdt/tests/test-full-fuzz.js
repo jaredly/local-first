@@ -8,7 +8,7 @@ import {
     showDelta,
     merge,
     show,
-} from '../index.js';
+} from '../src/index.js';
 
 import { generateDeltas } from './utils/generate-deltas';
 import { check } from './utils/permute';

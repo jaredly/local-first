@@ -13,9 +13,9 @@ import {
     type Schema,
     validate,
     validateSet,
-} from '../../../packages/nested-object-crdt/schema.js';
-import type { HLC } from '../../../packages/hybrid-logical-clock';
-import * as hlc from '../../../packages/hybrid-logical-clock';
+} from '../../nested-object-crdt/src/schema.js';
+import type { HLC } from '../../hybrid-logical-clock';
+import * as hlc from '../../hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';
 
 export type CollectionState<Data, T> = {

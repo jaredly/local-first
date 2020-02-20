@@ -1,5 +1,5 @@
 {
-    "name": "../../../packages/simple-client",
+    "name": "@local-first/simple-client",
     "version": "1.0.0",
     "scripts": {
         "test": "node -r @babel/register tests/test-full-fuzz.js"

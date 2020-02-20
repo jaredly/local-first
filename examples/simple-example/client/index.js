@@ -15,6 +15,7 @@ import createWebSocketNetwork from '../../../packages/core/src/delta/websocket-n
 import createBlobClient from '../../../packages/core/src/blob/create-client';
 import makeBlobPersistence from '../../../packages/core/src/blob/idb-persistence';
 import createBasicBlobNetwork from '../../../packages/core/src/blob/basic-network';
+import PersistentClock from './persistent-clock';
 
 const clockPersist = (key: string) => ({
     get(init) {
@@ -35,7 +36,7 @@ const setupBlob = () => {
     return createBlobClient(
         crdt,
         { tasks: ItemSchema },
-        clockPersist('local-first'),
+        new PersistentClock(clockPersist('local-first')),
         makeBlobPersistence('local-first', ['tasks']),
         createBasicBlobNetwork('http://localhost:9900/blob'),
     );
@@ -45,7 +46,7 @@ const setupDelta = () => {
     return createDeltaClient(
         crdt,
         { tasks: ItemSchema },
-        clockPersist('local-first'),
+        new PersistentClock(clockPersist('local-first')),
         makeDeltaPersistence('local-first', ['tasks']),
         // createPollingNetwork('http://localhost:9900/sync'),
         createWebSocketNetwork('ws://localhost:9900/sync'),
