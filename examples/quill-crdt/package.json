@@ -1,10 +1,11 @@
 {
-  "dependencies": {
-    "parcel": "^1.12.4",
-    "quill": "^1.3.7"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.8.4",
-    "@babel/plugin-proposal-class-properties": "^7.8.3"
-  }
+    "dependencies": {
+        "parcel": "^1.12.4",
+        "quill": "^1.3.7",
+        "quill-cursors": "https://github.com/jaredly/quill-cursors#quill-cursors-v3.0.2-gitpkg"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.8.4",
+        "@babel/plugin-proposal-class-properties": "^7.8.3"
+    }
 }

@@ -1,6 +1,6 @@
 // @flow
 
-const crdt = require('./');
+const crdt = require('.');
 
 const spans = (left, id, text) => {
     return text.split('').map((c, i) => ({
