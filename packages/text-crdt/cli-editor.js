@@ -127,7 +127,7 @@ const draw = (cli, state /*:State*/, pos, focused) => {
             cli.move(0, pos + 2);
             cli.eraseInLine(2);
             if (aPlace) {
-                cli.write(JSON.stringify(aPlace));
+                cli.write(JSON.stringify(aPlace) + ` ${at}:${count}`);
             }
         }
     } else {

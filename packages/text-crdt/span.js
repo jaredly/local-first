@@ -80,9 +80,25 @@ export const selectionToSpans = function<Format>(
     start: number,
     end: number,
 ): Array<Span> {
-    const [id, offset] = posToPostLoc(crdt, start);
+    let [id, offset] = posToPostLoc(crdt, start);
     const spans = [];
-    collectSpans(crdt, crdt.map[toKey(id)], offset, end - start, spans);
+    let count = end - start;
+    let node = crdt.map[toKey(id)];
+    while (count > 0) {
+        count = collectSpans(crdt, node, offset, count, spans);
+        if (!count) break;
+        let next = nextSibling(crdt, node);
+        if (!next) {
+            if (count === 1) {
+                break;
+            }
+            throw new Error(
+                `Selection length overreaches data: ${toKey(node.id)} ${count}`,
+            );
+        }
+        node = next;
+        offset = 0;
+    }
     return spans;
 };
 
