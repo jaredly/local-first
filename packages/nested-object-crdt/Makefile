@@ -1,8 +1,8 @@
 
-FLOW=$(patsubst %.js,lib/%.js.flow,$(wildcard *.js))
+FLOW=$(patsubst src/%.js,lib/%.js.flow,$(wildcard src/*.js))
 
-lib/%.js.flow: %.js
+lib/%.js.flow: src/%.js
 	cp $< $@
 
 build: $(FLOW)
-	yarn babel *.js -d lib
+	yarn babel src/*.js -d lib

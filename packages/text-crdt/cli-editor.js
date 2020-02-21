@@ -1,6 +1,8 @@
 // @flow
 require('@babel/register');
 const crdt = require('./tree');
+const hlc = require('../hybrid-logical-clock/lib');
+const ncrdt = require('../nested-object-crdt/lib');
 
 const clone = crdt => JSON.parse(JSON.stringify(crdt));
 
@@ -28,7 +30,7 @@ const nodeToDebug = (node, level) =>
     (node.deleted
         ? chalk.dim.underline(node.text)
         : colorLevel(level).underline(node.text)) +
-    (node.format ? JSON.stringify(node.format) : '') +
+    (node.format ? JSON.stringify(ncrdt.value(node.format)) : '') +
     (node.children.length
         ? '{' +
           node.children.map(node => nodeToDebug(node, level + 1)).join(';') +
@@ -39,24 +41,31 @@ const toDebug = crdt =>
 
 /*::
 
-type Format = {|
+type QuillFormat = {|
     bold?: boolean,
     underline?: boolean,
     highlight?: boolean,
 |}
+import type {CRDT} from '../nested-object-crdt';
+import type {HLC} from '../hybrid-logical-clock';
+type Format = CRDT;
 type State = {|
+    id: string,
+    clock: HLC,
     text: crdt.CRDT<Format>,
     sync: Array<crdt.Delta<Format>>,
     sel: {anchor: number, cursor: number},
     mode: 'insert' | 'normal' | 'visual',
     pos: number,
 |}
+
 */
 
-const format = (text /*:string*/, format /*:Format*/) => {
+const format = (text /*:string*/, crdt /*:Format*/) => {
+    const format = ncrdt.value(crdt);
     const chalk = require('chalk');
     if (format.bold) {
-        text = chalk.bold(text);
+        text = chalk.bold.blue(text);
     }
     if (format.underline) {
         text = chalk.underline(text);
@@ -64,11 +73,14 @@ const format = (text /*:string*/, format /*:Format*/) => {
     if (format.highlight) {
         text = chalk.bgWhite.black(text);
     }
+    if (format.lowlight) {
+        text = chalk.bgGray.black(text);
+    }
     return text;
 };
 
 const mergeFormats = (a /*:Format*/, b /*:Format*/) /*:Format*/ =>
-    (Object.assign({}, a, b) /*: any*/);
+    ncrdt.merge(a, b);
 
 const sortCursor = selection => {
     const { cursor, anchor } = selection;
@@ -82,37 +94,55 @@ const applyDelta = (state, delta) => {
     state.sync.push(delta);
 };
 
-const draw = (cli, state /*:State*/, pos) => {
+const DEBUG = !!process.env.DEBUG;
+
+const draw = (cli, state /*:State*/, pos, focused) => {
     let text = '';
-    if (state.mode === 'visual') {
+    if (state.mode === 'visual' || !focused) {
         const { at, count } = sortCursor(state.sel);
         const c /*:crdt.CRDT<Format>*/ = crdt.inflate(
             state.text.site,
             clone(state.text.roots),
         );
-        const delta = crdt.localFormat(c, at, count, { highlight: true });
+        const delta = crdt.localFormat(
+            c,
+            at,
+            count,
+            ncrdt.createValue(
+                focused ? { highlight: true } : { lowlight: true },
+                '',
+            ),
+        );
         crdt.apply(c, delta, mergeFormats);
         text = crdt.toString(c, format);
-        cli.move(0, pos + 1);
-        cli.eraseInLine(2);
-        cli.write(
-            JSON.stringify(crdt.selectionToSpans(state.text, at, at + count)),
-        );
-        const aPlace = crdt.posToLoc(state.text, state.sel.cursor, true);
-        cli.move(0, pos + 2);
-        cli.eraseInLine(2);
-        if (aPlace) {
-            cli.write(JSON.stringify(aPlace));
+        if (DEBUG) {
+            cli.move(0, pos + 1);
+            cli.eraseInLine(2);
+            cli.write(
+                JSON.stringify(
+                    crdt.selectionToSpans(state.text, at, at + count),
+                ),
+            );
+            const aPlace = crdt.posToLoc(state.text, state.sel.cursor, true);
+            cli.move(0, pos + 2);
+            cli.eraseInLine(2);
+            if (aPlace) {
+                cli.write(JSON.stringify(aPlace));
+            }
         }
     } else {
-        cli.move(0, pos + 1);
-        cli.eraseInLine(2);
-        cli.write(
-            JSON.stringify(crdt.posToLoc(state.text, state.sel.cursor, true)) +
+        if (DEBUG) {
+            cli.move(0, pos + 1);
+            cli.eraseInLine(2);
+            cli.write(
                 JSON.stringify(
-                    crdt.posToLoc(state.text, state.sel.cursor, false),
-                ),
-        );
+                    crdt.posToLoc(state.text, state.sel.cursor, true),
+                ) +
+                    JSON.stringify(
+                        crdt.posToLoc(state.text, state.sel.cursor, false),
+                    ),
+            );
+        }
         text = crdt.toString(state.text, format);
     }
 
@@ -124,6 +154,9 @@ const draw = (cli, state /*:State*/, pos) => {
 };
 
 const debug = (cli, state, pos) => {
+    if (!DEBUG) {
+        return;
+    }
     const plain = crdt.toString(state.text);
     cli.move(0, pos);
     cli.eraseInLine(2);
@@ -146,13 +179,6 @@ const moveSelRel = (state, diff, align = true) => {
     if (align) {
         state.sel.anchor = state.sel.cursor;
     }
-};
-
-const visualFormat = (state, format) => {
-    const { at, count } = sortCursor(state.sel);
-    applyDelta(state, crdt.localFormat(state.text, at, count, format));
-    state.mode = 'normal';
-    state.sel = { anchor: at, cursor: at };
 };
 
 const handleKeyPress = (mode, length, sel, ch, evt) => {
@@ -183,10 +209,27 @@ const handleKeyPress = (mode, length, sel, ch, evt) => {
                 { type: 'sel', sel: sel.cursor },
             ];
         }
+        // TODO have b toggle, by detecting current boldedness
+        if (ch === 'B') {
+            const { at, count } = sortCursor(sel);
+            return [
+                { type: 'format', format: { bold: false }, at, count },
+                { type: 'mode', mode: 'normal' },
+                { type: 'sel', sel: at },
+            ];
+        }
         if (ch === 'b') {
             const { at, count } = sortCursor(sel);
             return [
                 { type: 'format', format: { bold: true }, at, count },
+                { type: 'mode', mode: 'normal' },
+                { type: 'sel', sel: at },
+            ];
+        }
+        if (ch === 'U') {
+            const { at, count } = sortCursor(sel);
+            return [
+                { type: 'format', format: { underline: false }, at, count },
                 { type: 'mode', mode: 'normal' },
                 { type: 'sel', sel: at },
             ];
@@ -298,6 +341,12 @@ const sync = programState => {
     b.sync = [];
 };
 
+const getStamp = state => {
+    const clock = hlc.inc(state.clock, Date.now());
+    state.clock = clock;
+    return hlc.pack(clock);
+};
+
 const handleAction = (programState, editor, action) => {
     switch (action.type) {
         case 'sync':
@@ -325,7 +374,7 @@ const handleAction = (programState, editor, action) => {
                     editor.text,
                     action.at,
                     action.count,
-                    action.format,
+                    ncrdt.createValue(action.format, getStamp(editor)),
                 ),
             );
             // editor.mode = 'normal';
@@ -385,6 +434,8 @@ const log = data => {
 };
 
 const stateA /*:State*/ = {
+    id: 'a',
+    clock: hlc.init('a', Date.now()),
     text: crdt.init('a'),
     mode: 'normal',
     sel: { cursor: 0, anchor: 0 },
@@ -403,6 +454,8 @@ crdt.apply(
 );
 
 const stateB /*:State*/ = {
+    id: 'b',
+    clock: hlc.init('b', Date.now()),
     text: crdt.inflate('b', clone(stateA.text.roots)),
     mode: 'normal',
     sync: [],
@@ -449,12 +502,12 @@ cli.on('keypress', function(ch, evt) {
         // crdt.checkConsistency(editor.text);
 
         debug(cli, editor, editor.pos + 5);
-        draw(cli, editor, editor.pos);
+        draw(cli, editor, editor.pos, programState.focused === editor.id);
         const newEditor = programState.editors[programState.focused];
 
         if (editor !== newEditor) {
             debug(cli, newEditor, newEditor.pos + 5);
-            draw(cli, newEditor, newEditor.pos);
+            draw(cli, newEditor, newEditor.pos, true);
         }
         if (actions.some(a => a.type === 'sync')) {
             fullRefresh();
@@ -471,10 +524,10 @@ const fullRefresh = () => {
     Object.keys(programState.editors).forEach(key => {
         const editor = programState.editors[key];
         debug(cli, editor, editor.pos + 5);
-        draw(cli, editor, editor.pos);
+        draw(cli, editor, editor.pos, editor.id === programState.focused);
     });
     const editor = programState.editors[programState.focused];
-    draw(cli, editor, editor.pos);
+    draw(cli, editor, editor.pos, true);
 };
 
 const [_, __, toLoad] = process.argv;

@@ -19,10 +19,6 @@ export type PlainCRDT = {|
 // - you then set a map without the new attributes
 // - on merge, their earlier removal will win, because the merged map's stamp will be based on the added attribute that you don't have.
 
-// This is used as a filler for when we need to create a
-// "container" map that should never live on its own.
-const MIN_STAMP = '';
-
 export type CRDT = MapCRDT | PlainCRDT;
 
 export type Delta = {
@@ -31,6 +27,10 @@ export type Delta = {
     value: CRDT,
     // hlcStamp: string,
 };
+
+// This is used as a filler for when we need to create a
+// "container" map that should never live on its own.
+const MIN_STAMP = '';
 
 const showDelta = (delta: Delta) => {
     switch (delta.type) {
