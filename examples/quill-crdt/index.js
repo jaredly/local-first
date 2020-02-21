@@ -1,11 +1,13 @@
 // @flow
 import Quill from 'quill';
 import * as crdt from '../../packages/text-crdt/tree';
+import * as ncrdt from '../../packages/nested-object-crdt';
 import * as debug from '../../packages/text-crdt/debug';
 import * as hlc from '../../packages/hybrid-logical-clock';
 import {
     deltaToChange,
     changeToDelta,
+    type QuillDelta,
 } from '../../packages/text-crdt/quill-deltas';
 import QuillCursors from 'quill-cursors/dist/index.js';
 
@@ -13,9 +15,14 @@ Quill.register('modules/cursors', QuillCursors);
 
 const editors = {};
 
-// const hlc
+type QuillFormat = {
+    bold?: boolean,
+    underline?: boolean,
+    italic?: boolean,
+};
+type Format = ncrdt.MapCRDT;
 
-const noop = (a, b) => Object.assign({}, a, b);
+const mergeFormats = (one, two) => ncrdt.merge(one, two);
 // Need initialDelta to match whata Quill expects
 const initialDelta = {
     type: 'insert',
@@ -28,8 +35,18 @@ const initialDelta = {
 
 const columns = [document.createElement('div'), document.createElement('div')];
 if (document.body) {
-    columns.forEach(column => document.body.appendChild(column));
+    const body = document.body;
+    columns.forEach(column => body.appendChild(column));
 }
+
+/*
+How to deal with formatting?
+
+because the format CRDTs will be very many, and not necessarily consistent.
+But we want to reuse what we can.
+
+
+*/
 
 const addEditor = (name, broadcast, accept, subtitle, color) => {
     const container = document.createElement('div');
@@ -48,8 +65,10 @@ const addEditor = (name, broadcast, accept, subtitle, color) => {
     });
     container.appendChild(description);
     columns[Object.keys(editors).length % 2].appendChild(container);
+
+    const clock = hlc.init(name, Date.now());
     const state = crdt.init(name);
-    crdt.apply(state, initialDelta, noop);
+    crdt.apply(state, initialDelta, mergeFormats);
 
     const ui = new Quill(div, { theme: 'snow', modules: { cursors: true } });
     ui.setText(crdt.toString(state));
@@ -61,13 +80,24 @@ const addEditor = (name, broadcast, accept, subtitle, color) => {
         editors[id].cursors.createCursor(name, name, color);
     });
 
-    editors[name] = {
+    const editor = (editors[name] = {
+        clock,
         color,
         state,
         ui,
         cursors,
         broadcast,
         accept,
+    });
+
+    const getStamp = () => {
+        const next = hlc.inc(editor.clock, Date.now());
+        editor.clock = next;
+        return hlc.pack(next);
+    };
+    const recvStamp = stamp => {
+        const next = hlc.recv(editor.clock, hlc.unpack(stamp), Date.now());
+        editor.clock = next;
     };
 
     if (broadcast) {
@@ -85,34 +115,50 @@ const addEditor = (name, broadcast, accept, subtitle, color) => {
         });
     }
 
-    editors[name].ui.on('text-change', (delta, oldDelta, source) => {
-        if (source === 'crdt') {
-            return;
-        }
-        const changes = deltaToChange(editors[name].state, delta);
-        console.log('changes', JSON.stringify(changes));
-        const preRanges = calcCursorPositions(editors[name]);
-        changes.forEach(change => {
-            crdt.apply(editors[name].state, change, noop);
-        });
-        updateCursorPositions(editors[name], preRanges);
-        if (broadcast) {
+    editors[name].ui.on(
+        'text-change',
+        (delta: Array<QuillDelta<QuillFormat>>, oldDelta, source: string) => {
+            if (source === 'crdt') {
+                return;
+            }
+            const changes = deltaToChange(
+                editors[name].state,
+                delta,
+                // Sooo what I really want is: prev format & this format.
+                // So what are the things that are changing?
+                // But maybe this is fine? At least for now.
+                quillFormat => {
+                    return ncrdt.createValue(quillFormat, getStamp());
+                },
+            );
+            console.log('changes', JSON.stringify(changes));
+            const preRanges = calcCursorPositions(editors[name]);
             changes.forEach(change => {
-                Object.keys(editors).forEach(id => {
-                    const editor = editors[id];
-                    if (id !== name && editor.accept) {
-                        const preRanges = calcCursorPositions(editor);
-
-                        crdt.apply(editor.state, change, noop);
-                        const deltas = changeToDelta(editor.state, change);
-                        editor.ui.updateContents(deltas, 'crdt');
-                        console.log(crdt.toString(editor.state));
-                        updateCursorPositions(editor, preRanges);
-                    }
-                });
+                crdt.apply(editors[name].state, change, mergeFormats);
             });
-        }
-    });
+            updateCursorPositions(editors[name], preRanges);
+            if (broadcast) {
+                changes.forEach(change => {
+                    Object.keys(editors).forEach(id => {
+                        const editor = editors[id];
+                        if (id !== name && editor.accept) {
+                            const preRanges = calcCursorPositions(editor);
+
+                            crdt.apply(editor.state, change, mergeFormats);
+                            const deltas = changeToDelta(
+                                editor.state,
+                                change,
+                                format => ncrdt.value(format),
+                            );
+                            editor.ui.updateContents(deltas, 'crdt');
+                            console.log(crdt.toString(editor.state));
+                            updateCursorPositions(editor, preRanges);
+                        }
+                    });
+                });
+            }
+        },
+    );
 };
 
 const treeToQuillPos = (state, range) => {

@@ -4,14 +4,15 @@ import { locToPos } from './loc';
 import { spansToSelections } from './span';
 import type { CRDT, Node, Delta, Span } from './types';
 
-type QuillDelta<Format> =
+export type QuillDelta<Format> =
     | {| delete: number |}
     | {| insert: string, attributes?: ?Format |}
     | {| retain: number, attributes?: ?Format |};
 
-export const deltaToChange = function<Format>(
+export const deltaToChange = function<QuillFormat, Format>(
     state: CRDT<Format>,
-    delta: Array<QuillDelta<Format>>,
+    delta: Array<QuillDelta<QuillFormat>>,
+    transformFormat: QuillFormat => Format,
 ): Array<Delta<Format>> {
     const changes = [];
     let pos = 0;
@@ -20,10 +21,24 @@ export const deltaToChange = function<Format>(
             changes.push(localDelete(state, pos, op.delete));
             pos += op.delete;
         } else if (op.insert) {
-            changes.push(localInsert(state, pos, op.insert, op.attributes));
+            changes.push(
+                localInsert(
+                    state,
+                    pos,
+                    op.insert,
+                    op.attributes ? transformFormat(op.attributes) : null,
+                ),
+            );
         } else if (op.retain) {
             if (op.attributes) {
-                changes.push(localFormat(state, pos, op.retain, op.attributes));
+                changes.push(
+                    localFormat(
+                        state,
+                        pos,
+                        op.retain,
+                        transformFormat(op.attributes),
+                    ),
+                );
             }
             pos += op.retain;
         }
@@ -31,10 +46,11 @@ export const deltaToChange = function<Format>(
     return changes;
 };
 
-export const changeToDelta = function<Format>(
+export const changeToDelta = function<Format, QuillFormat>(
     state: CRDT<Format>,
     change: Delta<Format>,
-): Array<QuillDelta<Format>> {
+    convertFormat: Format => QuillFormat,
+): Array<QuillDelta<QuillFormat>> {
     switch (change.type) {
         case 'insert':
             const [id, site] = change.span.id;
@@ -47,13 +63,16 @@ export const changeToDelta = function<Format>(
                 { retain: pos },
                 {
                     insert: change.span.text,
-                    attributes: change.span.format,
+                    attributes: change.span.format
+                        ? convertFormat(change.span.format)
+                        : null,
                 },
             ];
         case 'format':
             const selections = spansToSelections(state, change.positions);
             let current = 0;
             const res = [];
+            const format = convertFormat(change.format);
             selections.forEach(selection => {
                 if (selection.start !== current) {
                     res.push({ retain: selection.start - current });
@@ -61,7 +80,7 @@ export const changeToDelta = function<Format>(
                 current += selection.end - selection.start;
                 res.push({
                     retain: selection.end - selection.start,
-                    attributes: change.format,
+                    attributes: format,
                 });
             });
             return res;
@@ -71,10 +90,10 @@ export const changeToDelta = function<Format>(
     throw new Error(`Unexpected delta type ${change.type}`);
 };
 
-const deleteToDeltas = function<Format>(
+const deleteToDeltas = function<Format, QuillFormat>(
     state: CRDT<Format>,
     positions: Array<Span>,
-): Array<QuillDelta<Format>> {
+): Array<QuillDelta<QuillFormat>> {
     const selections = spansToSelections(state, positions);
     let current = 0;
     const res = [];
