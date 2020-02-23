@@ -31,12 +31,36 @@ const initialDelta = {
     },
 };
 
+const sync = editor => {
+    if (editor.send && editor.other) {
+        editor.waiting.forEach(change => {
+            crdt.apply(editor.other.state, change, mergeFormats);
+            const deltas = changeToDelta(editor.other.state, change, format =>
+                ncrdt.value(format),
+            );
+            editor.other.ui.updateContents(deltas, 'crdt');
+        });
+        editor.other.render(editor.other.state);
+        editor.waiting = [];
+    }
+};
+
 const initQuill = (name, div, render: (crdt.CRDT<Format>) => void) => {
     const ui = new Quill(div, { theme: 'snow' });
     let clock = hlc.init(name, Date.now());
     const state: crdt.CRDT<Format> = crdt.init(name);
     crdt.apply(state, initialDelta, mergeFormats);
     ui.setText(crdt.toString(state));
+
+    const editor = {
+        div,
+        ui,
+        state,
+        send: false,
+        waiting: [],
+        other: null,
+        render,
+    };
 
     const getStamp = () => {
         const next = hlc.inc(clock, Date.now());
@@ -66,11 +90,13 @@ const initQuill = (name, div, render: (crdt.CRDT<Format>) => void) => {
             changes.forEach(change => {
                 crdt.apply(state, change, mergeFormats);
             });
+            editor.waiting.push(...changes);
+            sync(editor);
             render(state);
         },
     );
     render(state);
-    return { div, ui, state };
+    return editor;
 };
 
 if (document.body) {
@@ -88,10 +114,42 @@ if (document.body) {
     const chartB = createChart();
     containerB.appendChild(chartB.node);
 
-    body.appendChild(containerA);
-    body.appendChild(containerB);
-
     const a = initQuill('a', divA, chartA.render);
     const b = initQuill('b', divB, chartB.render);
+    a.other = b;
+    b.other = a;
+
+    const buttons = document.createElement('div');
+    [
+        {
+            title: '⬇️',
+            action: button => {
+                button.classList.toggle('active');
+                a.send = button.classList.contains('active');
+                sync(a);
+            },
+        },
+        {
+            title: '⬆️',
+            action: button => {
+                button.classList.toggle('active');
+                b.send = button.classList.contains('active');
+                sync(b);
+            },
+        },
+    ].forEach(button => {
+        const node = document.createElement('button');
+        node.textContent = button.title;
+        node.onclick = () => {
+            button.action(node);
+        };
+        node.style.border = 'none';
+        // node.style.background = 'transparent';
+        buttons.appendChild(node);
+    });
+
+    body.appendChild(containerA);
+    body.appendChild(buttons);
+    body.appendChild(containerB);
     // const chart = init(_data);
 }

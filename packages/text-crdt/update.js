@@ -119,6 +119,8 @@ export const insert = function<Format>(
     const parent = crdt.map[parentKey];
 
     // Auto-compaction!
+    // Ok, I think the bug is here.
+    // But how to reproduce?
     if (mergeable(parent, span)) {
         parent.text += span.text;
         parent.size += span.text.length;
@@ -222,7 +224,10 @@ const mergeable = function<Format>(
     child: Node<Format> | PreNode<Format>,
 ) {
     return (
-        parent.children.length <= 1 &&
+        // parent.children.length <= 1 &&
+        (parent.children.length > 0
+            ? keyCmp(parent.children[0].id, child.id) <= 0
+            : true) &&
         parent.id[1] === child.id[1] &&
         parent.id[0] + parent.text.length === child.id[0] &&
         parent.deleted == child.deleted &&
