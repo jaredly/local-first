@@ -26,18 +26,19 @@ const initialDelta = {
     span: {
         id: [0, '-initial-'],
         after: [0, crdt.rootSite],
-        text: 'Hello world! we did it.\n',
-        // text: '\n',
+        // text: 'Hello world! we did it.\n',
+        text: '\n',
     },
 };
 
 const sync = editor => {
     if (editor.send && editor.other) {
         editor.waiting.forEach(change => {
-            crdt.apply(editor.other.state, change, mergeFormats);
             const deltas = changeToDelta(editor.other.state, change, format =>
                 ncrdt.value(format),
             );
+            crdt.apply(editor.other.state, change, mergeFormats);
+            console.log('applying remote', change, deltas);
             editor.other.ui.updateContents(deltas, 'crdt');
         });
         editor.other.render(editor.other.state);
@@ -85,6 +86,7 @@ const initQuill = (name, div, render: (crdt.CRDT<Format>) => void) => {
                     return ncrdt.createDeepMap(quillFormat, getStamp());
                 },
             );
+            console.log('got local', delta, changes);
             // console.log('delta', delta);
             // console.log(changes);
             changes.forEach(change => {

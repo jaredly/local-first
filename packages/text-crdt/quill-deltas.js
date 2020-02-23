@@ -53,8 +53,8 @@ export const changeToDelta = function<Format, QuillFormat>(
 ): Array<QuillDelta<QuillFormat>> {
     switch (change.type) {
         case 'insert':
-            const [id, site] = change.span.id;
-            const pos = locToPos(state, { id, site, pre: false });
+            const [id, site] = change.span.after;
+            const pos = locToPos(state, { id, site, pre: true });
             console.log(id, site, pos);
             if (pos === 0) {
                 return [{ insert: change.span.text }];
@@ -77,7 +77,8 @@ export const changeToDelta = function<Format, QuillFormat>(
                 if (selection.start !== current) {
                     res.push({ retain: selection.start - current });
                 }
-                current += selection.end - selection.start;
+                // current += selection.end - selection.start;
+                current = selection.end;
                 res.push({
                     retain: selection.end - selection.start,
                     attributes: format,
@@ -95,16 +96,18 @@ const deleteToDeltas = function<Format, QuillFormat>(
     positions: Array<Span>,
 ): Array<QuillDelta<QuillFormat>> {
     const selections = spansToSelections(state, positions);
+    console.log('delete to deltas', positions, selections);
     let current = 0;
     const res = [];
     selections.forEach(selection => {
         if (selection.start !== current) {
             res.push({ retain: selection.start - current });
         }
-        current += selection.end - selection.start;
+        current = selection.end;
         res.push({
             delete: selection.end - selection.start,
         });
     });
+    console.log(res);
     return res;
 };

@@ -75,7 +75,7 @@ export const posToPreLoc = (
 };
 
 const posToPostLocForNode = (node, pos) => {
-    if (pos === 0) {
+    if (pos === 0 && !node.deleted) {
         return [node.id, 0];
     }
     if (pos >= node.size) {
