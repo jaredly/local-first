@@ -26,8 +26,8 @@ const initialDelta = {
     span: {
         id: [0, '-initial-'],
         after: [0, crdt.rootSite],
-        // text: 'Hello world! we did it.\n',
-        text: '\n',
+        text: 'Hello world! we did it.\n',
+        // text: '\n',
     },
 };
 
@@ -62,8 +62,8 @@ const initQuill = (div, render: (crdt.CRDT<Format>) => void) => {
                     return ncrdt.createDeepMap(quillFormat, getStamp());
                 },
             );
-            console.log('delta', delta);
-            console.log(changes);
+            // console.log('delta', delta);
+            // console.log(changes);
             changes.forEach(change => {
                 crdt.apply(state, change, mergeFormats);
             });
@@ -282,15 +282,38 @@ const createChart = data => {
             .attr('transform', d => `translate(${d.x},${d.y})`)
             .attr('fill-opacity', d => (d.data.deleted ? 0.5 : 1))
             .attr('stroke-opacity', 1);
-        nodeUpdate.selectAll('text').text((d, i) => {
-            if (i === 2) {
-                return crdt.toKey(d.data.id);
-            }
-            if (i === 3) {
-                return d.data.size;
-            }
-            return d.data.text;
-        });
+        nodeUpdate
+            .selectAll('text')
+            .attr('style', (d, i) => {
+                if (i < 2) {
+                    if (d.data.deleted) {
+                        return 'text-decoration: line-through';
+                    }
+                    const items = [];
+                    if (d.data.format) {
+                        const format = ncrdt.value(d.data.format);
+                        if (format.bold) {
+                            items.push('font-weight: bold');
+                        }
+                        if (format.underline) {
+                            items.push('text-decoration: underline');
+                        }
+                        if (format.italic) {
+                            items.push('font-style: italic');
+                        }
+                    }
+                    return items.join('; ');
+                }
+            })
+            .text((d, i) => {
+                if (i === 2) {
+                    return crdt.toKey(d.data.id);
+                }
+                if (i === 3) {
+                    return d.data.size;
+                }
+                return d.data.text;
+            });
 
         // Transition exiting nodes to the parent's new position.
         const nodeExit = node
