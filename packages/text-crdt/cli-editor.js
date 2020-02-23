@@ -96,14 +96,18 @@ const applyDelta = (state, delta) => {
 
 const DEBUG = !!process.env.DEBUG;
 
-const draw = (cli, state /*:State*/, pos, focused) => {
+const draw = (id, cli, state /*:State*/, pos, focused, editors) => {
     let text = '';
+
+    // TODO multicursor stuffs.
+
+    const c /*:crdt.CRDT<Format>*/ = crdt.inflate(
+        state.text.site,
+        clone(state.text.roots),
+    );
+
     if (state.mode === 'visual' || !focused) {
         const { at, count } = sortCursor(state.sel);
-        const c /*:crdt.CRDT<Format>*/ = crdt.inflate(
-            state.text.site,
-            clone(state.text.roots),
-        );
         const delta = crdt.localFormat(
             c,
             at,
@@ -352,7 +356,9 @@ const handleAction = (programState, editor, action) => {
         case 'sync':
             return sync(programState);
         case 'tab':
-            programState.focused = programState.focused === 'a' ? 'b' : 'a';
+            const ids = Object.keys(programState.editors);
+            const idx = ids.indexOf(programState.focused);
+            programState.focused = ids[(idx + 1) % ids.length];
             return;
         case 'mode':
             editor.mode = action.mode;
@@ -499,19 +505,11 @@ cli.on('keypress', function(ch, evt) {
         actions.forEach(action => handleAction(programState, editor, action));
         log(cleanState(programState));
 
-        // crdt.checkConsistency(editor.text);
-
-        debug(cli, editor, editor.pos + 5);
-        draw(cli, editor, editor.pos, programState.focused === editor.id);
-        const newEditor = programState.editors[programState.focused];
-
-        if (editor !== newEditor) {
-            debug(cli, newEditor, newEditor.pos + 5);
-            draw(cli, newEditor, newEditor.pos, true);
+        if (DEBUG) {
+            crdt.checkConsistency(editor.text);
         }
-        if (actions.some(a => a.type === 'sync')) {
-            fullRefresh();
-        }
+
+        fullRefresh();
     } catch (err) {
         cli.cursorShape('block');
         cli.normalBuffer();
@@ -522,12 +520,13 @@ cli.on('keypress', function(ch, evt) {
 
 const fullRefresh = () => {
     Object.keys(programState.editors).forEach(key => {
+        if (key === programState.focused) return;
         const editor = programState.editors[key];
         debug(cli, editor, editor.pos + 5);
-        draw(cli, editor, editor.pos, editor.id === programState.focused);
+        draw(key, cli, editor, editor.pos, false, programState.editors);
     });
     const editor = programState.editors[programState.focused];
-    draw(cli, editor, editor.pos, true);
+    draw(editor.id, cli, editor, editor.pos, true, programState.editors);
 };
 
 const [_, __, toLoad] = process.argv;
