@@ -1,6 +1,6 @@
 // @flow
 import type { Node, CRDT } from './types';
-import { toKey, length } from './utils';
+import { toKey, length, keyCmp } from './utils';
 
 export const rootSite = '-root-';
 export const rootParent = '0:-root-';
@@ -200,4 +200,49 @@ export const locToPos = function<Format>(crdt: CRDT<Format>, loc: Loc): number {
     // step 3: add 1 based on whether it's pre or post
     const offset = loc.id - node.id[0];
     return nodePos + offset + (loc.pre ? 1 : 0);
+};
+
+export const locToInsertionPos = function<Format>(
+    crdt: CRDT<Format>,
+    after: [number, string],
+    id: [number, string],
+): number {
+    if (after[1] === rootSite) {
+        let idx = crdt.roots.length;
+        let pos = 0;
+        for (let i = 0; i < crdt.roots.length; i++) {
+            if (keyCmp(crdt.roots[0].id, id) < 1) {
+                idx = i;
+                break;
+            }
+            pos += crdt.roots[i].size;
+        }
+        return pos;
+    }
+    // step 1: find the parent node
+    const node = nodeForKey(crdt, after);
+    if (!node) {
+        throw new Error(`Loc does not exist in tree ${JSON.stringify(after)}`);
+    }
+
+    // step 2: find the position-in-text for this node
+    let nodePos = charactersBeforeNode(crdt, node);
+
+    // We're at the end, in competition with other children
+    if (node.id[0] + node.text.length === after[0] + 1) {
+        nodePos += node.text.length;
+        let idx = node.children.length;
+        for (let i = 0; i < node.children.length; i++) {
+            if (keyCmp(node.children[i].id, id) < 1) {
+                idx = i;
+                break;
+            }
+            nodePos += node.children[i].size;
+        }
+        return nodePos; // - 1;
+    } else {
+        // no one here but us
+        const offset = after[0] - node.id[0];
+        return nodePos + offset + 1;
+    }
 };

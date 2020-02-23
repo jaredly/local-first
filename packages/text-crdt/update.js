@@ -96,7 +96,7 @@ export const insert = function<Format>(
         const { after, ...spanRest } = span;
         let idx = crdt.roots.length;
         for (let i = 0; i < crdt.roots.length; i++) {
-            if (keyCmp(crdt.roots[0].id, span.id) < 1) {
+            if (keyCmp(crdt.roots[i].id, span.id) < 1) {
                 idx = i;
                 break;
             }

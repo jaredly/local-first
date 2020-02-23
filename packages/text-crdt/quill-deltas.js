@@ -1,6 +1,6 @@
 // @flow
 import { localDelete, localInsert, localFormat } from './tree';
-import { locToPos } from './loc';
+import { locToPos, locToInsertionPos } from './loc';
 import { spansToSelections } from './span';
 import type { CRDT, Node, Delta, Span } from './types';
 
@@ -54,8 +54,11 @@ export const changeToDelta = function<Format, QuillFormat>(
     switch (change.type) {
         case 'insert':
             const [id, site] = change.span.after;
-            const pos = locToPos(state, { id, site, pre: true });
-            console.log(id, site, pos);
+            const pos = locToInsertionPos(
+                state,
+                change.span.after,
+                change.span.id,
+            );
             if (pos === 0) {
                 return [{ insert: change.span.text }];
             }
@@ -77,7 +80,6 @@ export const changeToDelta = function<Format, QuillFormat>(
                 if (selection.start !== current) {
                     res.push({ retain: selection.start - current });
                 }
-                // current += selection.end - selection.start;
                 current = selection.end;
                 res.push({
                     retain: selection.end - selection.start,
@@ -96,7 +98,6 @@ const deleteToDeltas = function<Format, QuillFormat>(
     positions: Array<Span>,
 ): Array<QuillDelta<QuillFormat>> {
     const selections = spansToSelections(state, positions);
-    console.log('delete to deltas', positions, selections);
     let current = 0;
     const res = [];
     selections.forEach(selection => {
