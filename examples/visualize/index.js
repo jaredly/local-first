@@ -61,7 +61,7 @@ const createChart = data => {
     const width = 1500;
 
     const dx = 20;
-    const dy = width / 6;
+    const dy = width / 20;
     const margin = { top: 10, right: 120, bottom: 10, left: 40 };
 
     const diagonal = d3
@@ -70,16 +70,6 @@ const createChart = data => {
         .y(d => d.x);
 
     const tree = d3.tree().nodeSize([dx, dy]);
-
-    const root = d3.hierarchy(data);
-
-    root.x0 = dy / 2;
-    root.y0 = 0;
-    root.descendants().forEach((d, i) => {
-        d.id = i;
-        d._children = d.children;
-        if (d.depth && d.data.name.length !== 7) d.children = null;
-    });
 
     const svg = d3
         .create('svg')
@@ -100,17 +90,60 @@ const createChart = data => {
         .attr('cursor', 'pointer')
         .attr('pointer-events', 'all');
 
-    const render = (data, source = { x: 0, y: 0, x0: 0, y0: 0 }) => {
+    let prevNodes = null;
+
+    const treeify = data => {
+        const lanes = [];
+        const maxDepth = node => {
+            return (
+                1 + (node.children ? Math.max(node.children.map(maxDepth)) : 0)
+            );
+        };
+        // depth-first-traveral folks
+        const place = (node, depth, at) => {
+            if (!lanes[depth]) {
+                lanes[depth] = 0;
+            }
+            node.x = Math.max(lanes[depth], at);
+            node.y = depth;
+            lanes[depth] = node.x + node.text.length + 2;
+            node.children.forEach(child => {
+                place(child, depth + 1, node.x);
+            });
+        };
+        place(data, 0, 0);
+    };
+
+    const render = data => {
+        const root = d3.hierarchy({
+            id: [0, '-root-'],
+            children: data.roots,
+            text: '',
+        });
+
+        const source_ = prevNodes;
+        prevNodes = {};
+
+        root.x0 = dy / 2;
+        root.y0 = 0;
+        root.descendants().forEach(d => {
+            d.id = crdt.toKey(d.data.id);
+        });
+
         const duration = 250;
         const nodes = root.descendants().reverse();
         const links = root.links();
 
         // Compute the new tree layout.
         tree(root);
+        window.root = root;
 
         let left = root;
         let right = root;
         root.eachBefore(node => {
+            if (prevNodes) {
+                prevNodes[node.id] = node;
+            }
             if (node.x < left.x) left = node;
             if (node.x > right.x) right = node;
         });
@@ -131,22 +164,23 @@ const createChart = data => {
         // Update the nodes…
         const node = gNode.selectAll('g').data(nodes, d => d.id);
 
+        const source = d => ({ x0: 0, y0: 0, x: 0, y: 0 });
+
         // Enter any new nodes at the parent's previous position.
         const nodeEnter = node
             .enter()
             .append('g')
-            .attr('transform', d => `translate(${source.y0},${source.x0})`)
+            .attr(
+                'transform',
+                d => `translate(${source(d).y0},${source(d).x0})`,
+            )
             .attr('fill-opacity', 0)
-            .attr('stroke-opacity', 0)
-            .on('click', d => {
-                d.children = d.children ? null : d._children;
-                // update(d);
-            });
+            .attr('stroke-opacity', 0);
 
         nodeEnter
             .append('circle')
             .attr('r', dx / 4)
-            .attr('fill', d => (d._children ? '#555' : '#999'))
+            .attr('fill', d => (d.children ? '#555' : '#999'))
             .attr('stroke-width', 1);
 
         nodeEnter
@@ -154,7 +188,7 @@ const createChart = data => {
             .attr('dy', '0.31em')
             .attr('x', d => (d.children ? -6 : 6))
             .attr('text-anchor', d => (d.children ? 'end' : 'start'))
-            .text(d => d.data.name)
+            .text(d => crdt.toKey(d.data.id) + ' ' + d.data.text)
             .clone(true)
             .lower()
             .attr('stroke-linejoin', 'round')
@@ -170,6 +204,7 @@ const createChart = data => {
             .attr('stroke-opacity', 1);
         nodeUpdate
             .selectAll('text')
+            .text(d => crdt.toKey(d.data.id) + ' ' + d.data.text)
             .attr('x', d => (d.children ? -6 : 6))
             .attr('text-anchor', d => (d.children ? 'end' : 'start'));
 
@@ -178,7 +213,7 @@ const createChart = data => {
             .exit()
             .transition(transition)
             .remove()
-            .attr('transform', d => `translate(${source.y},${source.x})`)
+            .attr('transform', d => `translate(${source(d).y},${source(d).x})`)
             .attr('fill-opacity', 0)
             .attr('stroke-opacity', 0);
 
@@ -190,7 +225,10 @@ const createChart = data => {
             .enter()
             .append('path')
             .attr('d', d => {
-                const o = { x: source.x0, y: source.y0 };
+                const o = {
+                    x: d.source.x0,
+                    y: d.source.y0,
+                };
                 return diagonal({ source: o, target: o });
             });
 
@@ -204,7 +242,10 @@ const createChart = data => {
             .transition(transition)
             .remove()
             .attr('d', d => {
-                const o = { x: source.x, y: source.y };
+                const o = {
+                    x: d.source.x,
+                    y: d.source.y,
+                };
                 return diagonal({ source: o, target: o });
             });
 
