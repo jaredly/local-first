@@ -21,6 +21,14 @@ describe('loc', () => {
         expect(toString(state)).toEqual('He1 world. Yes folks');
     });
 
+    it('should insert correctly with deletion', () => {
+        const state = init('a');
+        insert(state, 0, 'Hello world.');
+        del(state, 1, 1);
+        insert(state, 2, 'm');
+        expect(toString(state)).toEqual('Hlmlo world. Yes folks');
+    });
+
     it('should be bidirectional', () => {
         const state = init('a');
         insert(state, 0, 'Hello world.');

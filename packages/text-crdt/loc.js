@@ -30,7 +30,7 @@ yeah just 1 or 0 for the side, true or false.
 */
 
 const posToPreLocForNode = (node, pos): [[number, string], number] => {
-    if (pos === 1) {
+    if (pos === 1 && !node.deleted) {
         return [node.id, 0];
     }
     if (pos > node.size) {

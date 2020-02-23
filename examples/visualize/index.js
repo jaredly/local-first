@@ -26,7 +26,8 @@ const initialDelta = {
     span: {
         id: [0, '-initial-'],
         after: [0, crdt.rootSite],
-        text: 'Hello world! we did it.\n',
+        // text: 'Hello world! we did it.\n',
+        text: '\n',
     },
 };
 
@@ -61,6 +62,8 @@ const initQuill = (div, render: (crdt.CRDT<Format>) => void) => {
                     return ncrdt.createDeepMap(quillFormat, getStamp());
                 },
             );
+            console.log('delta', delta);
+            console.log(changes);
             changes.forEach(change => {
                 crdt.apply(state, change, mergeFormats);
             });

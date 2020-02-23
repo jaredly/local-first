@@ -56,6 +56,7 @@ type State = {|
     sync: Array<crdt.Delta<Format>>,
     sel: {anchor: number, cursor: number},
     mode: 'insert' | 'normal' | 'visual',
+    prefix: string,
     pos: number,
 |}
 
@@ -185,7 +186,25 @@ const moveSelRel = (state, diff, align = true) => {
     }
 };
 
-const handleKeyPress = (mode, length, sel, ch, evt) => {
+const findWord = (text, pos) => {
+    const rest = text.slice(pos);
+    const match = rest.match(/^\w*\W+/);
+    if (match) {
+        return match[0];
+    }
+    return null;
+};
+
+const findBack = (text, pos) => {
+    const rest = text.slice(0, pos);
+    const match = rest.match(/\w+\W*$/);
+    if (match) {
+        return match[0];
+    }
+    return null;
+};
+
+const handleKeyPress = (mode, prefix, text, sel, ch, evt) => {
     if (evt.full === 'tab') {
         return [{ type: 'tab' }];
     }
@@ -203,7 +222,7 @@ const handleKeyPress = (mode, length, sel, ch, evt) => {
             }
         }
         if (ch === 'l' || evt.full === 'right') {
-            if (sel.cursor < length) {
+            if (sel.cursor < text.length) {
                 return [{ type: 'selrel', rel: 1, keep: true }];
             }
         }
@@ -275,14 +294,80 @@ const handleKeyPress = (mode, length, sel, ch, evt) => {
             { type: 'selrel', rel: 1 },
         ];
     } else {
+        if (ch === 'c') {
+            return [{ type: 'prefix', prefix: 'c' }];
+        }
+        if (ch === 'd') {
+            return [{ type: 'prefix', prefix: 'd' }];
+        }
+        if (ch === 'b' || ch === 'B') {
+            const word = findBack(text, sel.cursor);
+            if (prefix === 'd') {
+                if (word) {
+                    return [
+                        {
+                            type: 'delete',
+                            at: sel.cursor - word.length,
+                            count: word.length,
+                        },
+                        { type: 'selrel', rel: -word.length },
+                        { type: 'prefix', prefix: '' },
+                    ];
+                }
+                return [{ type: 'prefix', prefix: '' }];
+            } else if (prefix === 'c') {
+                if (word) {
+                    return [
+                        {
+                            type: 'delete',
+                            at: sel.cursor - word.length,
+                            count: word.length,
+                        },
+                        { type: 'selrel', rel: -word.length },
+                        { type: 'prefix', prefix: '' },
+                        { type: 'mode', mode: 'insert' },
+                    ];
+                }
+                return [{ type: 'prefix', prefix: '' }];
+            } else {
+                if (word) {
+                    return [{ type: 'selrel', rel: -word.length }];
+                }
+            }
+        }
+        if (ch === 'w' || ch === 'W') {
+            const word = findWord(text, sel.cursor);
+            if (prefix === 'd') {
+                if (word) {
+                    return [
+                        { type: 'delete', at: sel.cursor, count: word.length },
+                        { type: 'prefix', prefix: '' },
+                    ];
+                }
+                return [{ type: 'prefix', prefix: '' }];
+            } else if (prefix === 'c') {
+                if (word) {
+                    return [
+                        { type: 'delete', at: sel.cursor, count: word.length },
+                        { type: 'prefix', prefix: '' },
+                        { type: 'mode', mode: 'insert' },
+                    ];
+                }
+                return [{ type: 'prefix', prefix: '' }];
+            } else {
+                if (word) {
+                    return [{ type: 'selrel', rel: word.length }];
+                }
+            }
+        }
         if (ch === 'A') {
             return [
-                { type: 'sel', sel: length },
+                { type: 'sel', sel: text.length },
                 { type: 'mode', mode: 'insert' },
             ];
         }
         if (ch === '$') {
-            return [{ type: 'sel', sel: length }];
+            return [{ type: 'sel', sel: text.length }];
         }
         if (ch === '0') {
             return [{ type: 'sel', sel: 0 }];
@@ -293,14 +378,14 @@ const handleKeyPress = (mode, length, sel, ch, evt) => {
             }
         }
         if (ch === 'l' || evt.full === 'right') {
-            if (sel.cursor < length) {
+            if (sel.cursor < text.length) {
                 return [{ type: 'selrel', rel: 1 }];
             }
         }
         if (ch === 'v') {
             const actions = [{ type: 'mode', mode: 'visual' }];
-            if (sel.cursor === length) {
-                actions.push({ type: 'sel', sel: length - 1 });
+            if (sel.cursor === text.length) {
+                actions.push({ type: 'sel', sel: text.length - 1 });
             }
             return actions;
         }
@@ -309,13 +394,13 @@ const handleKeyPress = (mode, length, sel, ch, evt) => {
         }
         if (ch === 'a') {
             const actions = [{ type: 'mode', mode: 'insert' }];
-            if (sel.cursor < length) {
+            if (sel.cursor < text.length) {
                 actions.push({ type: 'selrel', rel: 1 });
             }
             return actions;
         }
         if (ch === 'x') {
-            if (sel.cursor < length) {
+            if (sel.cursor < text.length) {
                 return [{ type: 'delete', at: sel.cursor, count: 1 }];
             }
         }
@@ -402,8 +487,11 @@ const handleAction = (programState, editor, action) => {
                 crdt.localInsert(editor.text, action.at, action.text),
             );
             return;
+        case 'prefix':
+            editor.prefix = action.prefix;
+            return;
         default:
-            throw new Error('done');
+            throw new Error('invalid action ' + action.type);
     }
 };
 
@@ -441,6 +529,7 @@ const log = data => {
 
 const stateA /*:State*/ = {
     id: 'a',
+    prefix: '',
     clock: hlc.init('a', Date.now()),
     text: crdt.init('a'),
     mode: 'normal',
@@ -461,6 +550,7 @@ crdt.apply(
 
 const stateB /*:State*/ = {
     id: 'b',
+    prefix: '',
     clock: hlc.init('b', Date.now()),
     text: crdt.inflate('b', clone(stateA.text.roots)),
     mode: 'normal',
@@ -496,7 +586,9 @@ cli.on('keypress', function(ch, evt) {
         const editor = programState.editors[programState.focused];
         const actions = handleKeyPress(
             editor.mode,
-            crdt.length(editor.text),
+            editor.prefix,
+            crdt.toString(editor.text),
+            // crdt.length(editor.text),
             editor.sel,
             ch,
             evt,
@@ -526,6 +618,7 @@ const fullRefresh = () => {
         draw(key, cli, editor, editor.pos, false, programState.editors);
     });
     const editor = programState.editors[programState.focused];
+    debug(cli, editor, editor.pos + 5);
     draw(editor.id, cli, editor, editor.pos, true, programState.editors);
 };
 
