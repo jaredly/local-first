@@ -84,7 +84,7 @@ export const selectionToSpans = function<Format>(
     const spans = [];
     let count = end - start;
     let node = crdt.map[toKey(id)];
-    while (count > 0) {
+    while (count > 0 && node) {
         count = collectSpans(crdt, node, offset, count, spans);
         if (!count) break;
         let next = nextSibling(crdt, node);
