@@ -3,7 +3,10 @@
         "d3": "^5.15.0",
         "parcel": "^1.12.4",
         "quill": "^1.3.7",
-        "quill-cursors": "https://github.com/jaredly/quill-cursors#quill-cursors-v3.0.2-gitpkg"
+        "quill-cursors": "https://github.com/jaredly/quill-cursors#quill-cursors-v3.0.2-gitpkg",
+        "y-protocols": "^0.2.0",
+        "y-quill": "^0.0.2",
+        "yjs": "^13.0.4"
     },
     "devDependencies": {
         "@babel/core": "^7.8.4",

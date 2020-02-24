@@ -9,6 +9,12 @@ import {
     changeToDelta,
     type QuillDelta,
 } from '../../packages/text-crdt/quill-deltas';
+import QuillCursors from 'quill-cursors/dist/index.js';
+
+Quill.register('modules/cursors', QuillCursors);
+
+import * as Y from 'yjs';
+import { QuillBinding } from 'y-quill';
 
 import { createChart } from './chart';
 
@@ -44,6 +50,40 @@ const sync = editor => {
         editor.other.render(editor.other.state);
         editor.waiting = [];
     }
+};
+
+const createYjs = (div, render) => {
+    const ydoc = new Y.Doc();
+    ydoc.clientID = 0;
+    //   const provider = new WebsocketProvider('wss://demos.yjs.dev', 'quill', ydoc)
+    const type = ydoc.getText('quill');
+    const editorContainer = document.createElement('div');
+    editorContainer.setAttribute('id', 'editor');
+    div.appendChild(editorContainer);
+
+    var editor = new Quill(editorContainer, {
+        modules: {
+            cursors: true,
+            toolbar: [
+                [{ header: [1, 2, false] }],
+                ['bold', 'italic', 'underline'],
+                ['image', 'code-block'],
+            ],
+            history: {
+                userOnly: true,
+            },
+        },
+        placeholder: 'Start collaborating...',
+        theme: 'snow', // or 'bubble'
+    });
+
+    editor.on('text-change', () => {
+        // console.log(type);
+        // console.log(Y.snapshot(ydoc));
+        render(type);
+    });
+
+    const binding = new QuillBinding(type, editor, null);
 };
 
 const initQuill = (name, div, render: (crdt.CRDT<Format>) => void) => {
@@ -121,6 +161,47 @@ if (document.body) {
     a.other = b;
     b.other = a;
 
+    const containerC = document.createElement('div');
+    const divC = document.createElement('div');
+    containerC.appendChild(divC);
+    // const chartC = createChart();
+    const chartC = { node: document.createElement('div') };
+    containerC.appendChild(chartC.node);
+    createYjs(containerC, type => {
+        chartC.node.innerHTML = '';
+        const items = [];
+        let current = type._start;
+        while (current) {
+            // console.log(type);
+            const {
+                id,
+                origin,
+                content,
+                countable,
+                keep,
+                deleted,
+                // redone,
+            } = current;
+            const node = document.createElement('div');
+            const data = {
+                id,
+                origin,
+                content,
+                countable,
+                keep,
+                deleted,
+                // redone,
+            };
+            node.textContent = JSON.stringify(data);
+            chartC.node.appendChild(node);
+            // items.push(data)
+            current = current.right;
+        }
+        // chartC.node = JSON.stringify(items, null, 2)
+    });
+    // const chartB = createChart();
+    // containerB.appendChild(chartB.node);
+
     const buttons = document.createElement('div');
     [
         {
@@ -153,5 +234,6 @@ if (document.body) {
     body.appendChild(containerA);
     body.appendChild(buttons);
     body.appendChild(containerB);
+    body.appendChild(containerC);
     // const chart = init(_data);
 }

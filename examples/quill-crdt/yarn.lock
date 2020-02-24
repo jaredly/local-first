@@ -2862,6 +2862,11 @@ isobject@^3.0.0, isobject@^3.0.1:
   resolved "https://registry.yarnpkg.com/isobject/-/isobject-3.0.1.tgz#4e431e92b11a9731636aa1f9c8d1ccbcfdab78df"
   integrity sha1-TkMekrEalzFjaqH5yNHMvP2reN8=
 
+isomorphic.js@^0.1.3:
+  version "0.1.3"
+  resolved "https://registry.yarnpkg.com/isomorphic.js/-/isomorphic.js-0.1.3.tgz#b2956e14be3bc10efb5fe80e6b5bebc16e1deeca"
+  integrity sha512-pabBRLDwYefSsNS+qCazJ97o7P5xDTrNoxSYFTM09JlZTxPrOEPGKekwqUy3/Np4C4PHnVUXHYsZPOix0jELsA==
+
 isstream@~0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/isstream/-/isstream-0.1.2.tgz#47e63f7af55afa6f92e1500e690eb8b8529c099a"
@@ -3014,6 +3019,18 @@ levn@~0.3.0:
   dependencies:
     prelude-ls "~1.1.2"
     type-check "~0.3.2"
+
+lib0@0.0.5:
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/lib0/-/lib0-0.0.5.tgz#a051a949212de7733122a9cac3cc6ba6ce095515"
+  integrity sha512-3ElV6/t5Lv0Eczlnh/05q+Uq3RxQ/Q0zdN6LVtaUERQIDDZsP/CUXEGLsV8KZTgZwVFNCPGXNWYE+3WTOo+SHw==
+
+lib0@^0.2.12:
+  version "0.2.16"
+  resolved "https://registry.yarnpkg.com/lib0/-/lib0-0.2.16.tgz#30eccca4efacca4666aa452de94762dae7fa2491"
+  integrity sha512-Gro/Si2QrIEzT9QAdXff4kJQMcoDZwJROI8hnUeVqq48xKHDVd61Spm1aoOzL6U4xSRxHgJMbpRhxkbXoEi2nQ==
+  dependencies:
+    isomorphic.js "^0.1.3"
 
 locate-path@^3.0.0:
   version "3.0.0"
@@ -5249,6 +5266,13 @@ xtend@^4.0.0, xtend@~4.0.1:
   resolved "https://registry.yarnpkg.com/xtend/-/xtend-4.0.2.tgz#bb72779f5fa465186b1f438f674fa347fdb5db54"
   integrity sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==
 
+y-quill@^0.0.2:
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/y-quill/-/y-quill-0.0.2.tgz#d7a381d229cd19a14b429f5e04870914e75c9ea1"
+  integrity sha512-U2Grzw5ZflRfmVhW8bDAWlyuaWH7RIi1HPdsKIgRUF2MBQT1Gstjt5b1ESYC5xSLyrOQ9EpIqduAevFcmzV2NQ==
+  dependencies:
+    lib0 "0.0.5"
+
 y18n@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/y18n/-/y18n-4.0.0.tgz#95ef94f85ecc81d007c264e190a120f0a3c8566b"
@@ -5278,3 +5302,10 @@ yargs@^14.0.0:
     which-module "^2.0.0"
     y18n "^4.0.0"
     yargs-parser "^15.0.0"
+
+yjs@^13.0.4:
+  version "13.0.4"
+  resolved "https://registry.yarnpkg.com/yjs/-/yjs-13.0.4.tgz#2c768ce94430a84d9801854826f2694d7665fc31"
+  integrity sha512-baMC0LCS1V1qYQimDmpfevaQNgClpGUM0D56L9R38o0nkhY50P2WQm54t3WVSt5sL8QMcRJUmHu+QXtyNHPziQ==
+  dependencies:
+    lib0 "^0.2.12"
