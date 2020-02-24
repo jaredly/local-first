@@ -17,6 +17,7 @@ import * as Y from 'yjs';
 import { QuillBinding } from 'y-quill';
 
 import { createChart } from './chart';
+import { createYChart } from './y-chart';
 
 type QuillFormat = {
     bold?: boolean,
@@ -25,7 +26,7 @@ type QuillFormat = {
 };
 type Format = ncrdt.MapCRDT;
 
-const mergeFormats = (one: Format, two: Format) => ncrdt.merge(one, two);
+const mergeFormats = (one: any, two: any): any => ncrdt.merge(one, two);
 
 const initialDelta = {
     type: 'insert',
@@ -55,7 +56,6 @@ const sync = editor => {
 const createYjs = (div, render) => {
     const ydoc = new Y.Doc();
     ydoc.clientID = 0;
-    //   const provider = new WebsocketProvider('wss://demos.yjs.dev', 'quill', ydoc)
     const type = ydoc.getText('quill');
     const editorContainer = document.createElement('div');
     editorContainer.setAttribute('id', 'editor');
@@ -64,22 +64,13 @@ const createYjs = (div, render) => {
     var editor = new Quill(editorContainer, {
         modules: {
             cursors: true,
-            toolbar: [
-                [{ header: [1, 2, false] }],
-                ['bold', 'italic', 'underline'],
-                ['image', 'code-block'],
-            ],
-            history: {
-                userOnly: true,
-            },
         },
-        placeholder: 'Start collaborating...',
-        theme: 'snow', // or 'bubble'
+        placeholder: 'Yjs editor',
+        theme: 'bubble',
     });
 
     editor.on('text-change', () => {
-        // console.log(type);
-        // console.log(Y.snapshot(ydoc));
+        console.log(type);
         render(type);
     });
 
@@ -87,7 +78,7 @@ const createYjs = (div, render) => {
 };
 
 const initQuill = (name, div, render: (crdt.CRDT<Format>) => void) => {
-    const ui = new Quill(div, { theme: 'snow' });
+    const ui = new Quill(div, { theme: 'bubble', placeholder: 'Quill editor' });
     let clock = hlc.init(name, Date.now());
     const state: crdt.CRDT<Format> = crdt.init(name);
     crdt.apply(state, initialDelta, mergeFormats);
@@ -99,7 +90,7 @@ const initQuill = (name, div, render: (crdt.CRDT<Format>) => void) => {
         state,
         send: false,
         waiting: [],
-        other: null,
+        other: (null: ?any),
         render,
     };
 
@@ -164,43 +155,10 @@ if (document.body) {
     const containerC = document.createElement('div');
     const divC = document.createElement('div');
     containerC.appendChild(divC);
-    // const chartC = createChart();
-    const chartC = { node: document.createElement('div') };
+    const chartC = createYChart();
+    // const chartC = { node: document.createElement('div') };
     containerC.appendChild(chartC.node);
-    createYjs(containerC, type => {
-        chartC.node.innerHTML = '';
-        const items = [];
-        let current = type._start;
-        while (current) {
-            // console.log(type);
-            const {
-                id,
-                origin,
-                content,
-                countable,
-                keep,
-                deleted,
-                // redone,
-            } = current;
-            const node = document.createElement('div');
-            const data = {
-                id,
-                origin,
-                content,
-                countable,
-                keep,
-                deleted,
-                // redone,
-            };
-            node.textContent = JSON.stringify(data);
-            chartC.node.appendChild(node);
-            // items.push(data)
-            current = current.right;
-        }
-        // chartC.node = JSON.stringify(items, null, 2)
-    });
-    // const chartB = createChart();
-    // containerB.appendChild(chartB.node);
+    createYjs(containerC, chartC.render);
 
     const buttons = document.createElement('div');
     [

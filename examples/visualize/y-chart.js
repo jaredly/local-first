@@ -1,14 +1,5 @@
 // @flow
-import * as crdt from '../../packages/text-crdt/tree';
-import * as ncrdt from '../../packages/nested-object-crdt';
-import * as hlc from '../../packages/hybrid-logical-clock';
-import {
-    deltaToChange,
-    changeToDelta,
-    type QuillDelta,
-} from '../../packages/text-crdt/quill-deltas';
 const d3 = require('d3');
-type Format = ncrdt.MapCRDT;
 
 const measureFont = font => {
     const c = document.createElement('canvas');
@@ -17,18 +8,45 @@ const measureFont = font => {
     return ctx.measureText('M');
 };
 
-export const createChart = () => {
+type YNode = {
+    id: { client: number, clock: number },
+    origin: ?{ client: number, clock: number },
+    content:
+        | {| str: string |}
+        | {| key: string, value: ?any |}
+        | {| len: number |},
+    countable: boolean,
+    length: number,
+    deleted: boolean,
+    left: ?YNode,
+    right: ?YNode,
+};
+
+const nodeText = (node: YNode) => {
+    if (node.content.str) {
+        return node.content.str;
+    }
+    if (node.content.key === 'bold') {
+        return 'B';
+    }
+    if (node.content.key === 'underline') {
+        return 'U';
+    }
+    return JSON.stringify(node.content);
+};
+
+export const createYChart = () => {
     const dx = 15;
     const measure = measureFont(`${dx}px monospace`);
     const dy = dx * 3;
     const margin = { top: 10, right: 120, bottom: 10, left: 40 };
 
     const diagonal = d3
-        .linkHorizontal()
-        .x(d => d.x)
-        .y(d => d.y);
+        .linkRadial()
+        .angle(d => d.x)
+        .radius(d => d.y);
 
-    const tree = d3.tree().nodeSize([dx, dy]);
+    // const tree = d3.tree().nodeSize([dx, dy]);
 
     const svg = d3
         .create('svg')
@@ -52,57 +70,72 @@ export const createChart = () => {
 
     let prevNodes = null;
 
-    const treeify = (data: crdt.Node<ncrdt.MapCRDT>, dx, dy) => {
+    const toKey = (id: { client: number, clock: number }) =>
+        `${id.clock}:${id.client}`;
+
+    const process = (data: Array<YNode>, dx, dy) => {
         const nodes = [];
         const links = [];
-        const lanes = [];
         const map = {};
-        const maxDepth = node => {
-            return (
-                1 + (node.children ? Math.max(node.children.map(maxDepth)) : 0)
-            );
-        };
-        // depth-first-traveral folks
-        const place = (node: crdt.Node<Format>, depth: number, at: number) => {
-            if (!lanes[depth]) {
-                lanes[depth] = 0;
-            }
-            const x = Math.max(lanes[depth], at);
-            const nnode = {
-                id: crdt.toKey(node.id),
+        let x = 0;
+        data.forEach(data => {
+            const node = {
+                id: toKey(data.id),
                 x0: x * dx,
-                y0: depth * dy,
+                y0: 0,
                 x: x * dx,
-                y: depth * dy,
-                data: node,
+                y: 0,
+                data,
             };
-            map[nnode.id] = nnode;
-            nodes.push(nnode);
-            lanes[depth] = x + node.text.length + 2;
-            node.children.forEach(child => {
-                links.push({
-                    source: nnode,
-                    target: place(child, depth + 1, x),
-                });
-            });
-            return nnode;
-        };
-        place(data, 0, 0);
-        return { nodes, links, map, lines: lanes };
+            let ln = nodeText(data).length;
+            x += ln + 2;
+            map[node.id] = node;
+            nodes.push(node);
+            if (data.origin) {
+                const target = map[toKey(data.origin)];
+                if (!target) {
+                    console.log('No target!');
+                    console.log(data.origin);
+                    console.log(map);
+                } else {
+                    links.push({
+                        source: node,
+                        target: target,
+                    });
+                }
+            }
+        });
+        return { nodes, links, map, width: x * dx };
     };
 
-    const render = (data: crdt.CRDT<Format>) => {
-        const { nodes, links, map, lines } = treeify(
-            {
-                id: [0, '-root-'],
-                parent: '',
-                size: 0,
-                children: data.roots,
-                text: '',
-            },
-            measure.width,
-            dy,
-        );
+    type YDoc = {
+        _start: YNode,
+    };
+
+    const collectNodes = (data: YDoc) => {
+        const items = [];
+        let current = data._start;
+        while (current) {
+            items.push(current);
+            current = current.right;
+        }
+        return items;
+    };
+
+    const render = (data: YDoc) => {
+        const ynodes = collectNodes(data);
+        const { nodes, links, map, width } = process(ynodes, measure.width, dy);
+        // const { nodes, links, map, lines } = treeify(
+        //     {
+        //         id: [0, '-root-'],
+        //         parent: '',
+        //         size: 0,
+        //         children: data.roots,
+        //         text: '',
+        //     },
+        //     measure.width,
+        //     dy,
+        // );
 
         const source_ = prevNodes;
         prevNodes = {};
@@ -110,15 +143,20 @@ export const createChart = () => {
         const duration = 250;
 
         const maxY = nodes.reduce((m, n) => Math.max(m, n.y), 0) + dy;
-        const width = lines.reduce((a, b) => Math.max(a, b), 0) * dx;
+        // const width = lines.reduce((a, b) => Math.max(a, b), 0) * dx;
         const height = maxY + margin.top + margin.bottom;
 
-        // gLink.attr('width', width);
+        gLink.attr('width', width);
 
         const transition = svg
             .transition()
             .duration(duration)
-            .attr('viewBox', [-margin.left, -margin.top, width, height])
+            .attr('viewBox', [
+                -margin.left,
+                -margin.top,
+                width + margin.right + margin.left,
+                height,
+            ])
             .tween(
                 'resize',
                 window.ResizeObserver
@@ -158,7 +196,7 @@ export const createChart = () => {
             .attr('dy', '0.31em')
             .attr('x', 6)
             .attr('text-anchor', 'start')
-            .text(d => d.data.text)
+            .text(d => nodeText(d.data))
             .clone(true)
             .lower()
             .attr('stroke-linejoin', 'round')
@@ -171,7 +209,7 @@ export const createChart = () => {
             .attr('x', 6)
             .attr('font-size', dx * 0.7)
             .attr('text-anchor', 'start')
-            .text(d => crdt.toKey(d.data.id));
+            .text(d => toKey(d.data.id));
 
         nodeEnter
             .append('text')
@@ -179,7 +217,7 @@ export const createChart = () => {
             .attr('x', 6)
             .attr('font-size', dx * 0.7)
             .attr('text-anchor', 'start')
-            .text(d => d.data.size.toString());
+            .text(d => d.data.length.toString());
 
         // Transition nodes to their new position.
         const nodeUpdate = node
@@ -196,29 +234,38 @@ export const createChart = () => {
                         return 'text-decoration: line-through';
                     }
                     const items = [];
-                    if (d.data.format) {
-                        const format = ncrdt.value(d.data.format);
-                        if (format.bold) {
-                            items.push('font-weight: bold');
-                        }
-                        if (format.underline) {
-                            items.push('text-decoration: underline');
-                        }
-                        if (format.italic) {
-                            items.push('font-style: italic');
-                        }
+                    if (d.data.content.key === 'bold') {
+                        items.push('font-weight: bold');
                     }
+                    if (d.data.content.key === 'underline') {
+                        items.push('text-decoration: underline');
+                    }
+                    if (d.data.content.key === 'italic') {
+                        items.push('font-style: italic');
+                    }
+                    // if (d.data.format) {
+                    //     const format = ncrdt.value(d.data.format);
+                    //     if (format.bold) {
+                    //         items.push('font-weight: bold');
+                    //     }
+                    //     if (format.underline) {
+                    //         items.push('text-decoration: underline');
+                    //     }
+                    //     if (format.italic) {
+                    //         items.push('font-style: italic');
+                    //     }
+                    // }
                     return items.join('; ');
                 }
             })
             .text((d, i) => {
                 if (i === 2) {
-                    return crdt.toKey(d.data.id);
+                    return toKey(d.data.id);
                 }
                 if (i === 3) {
-                    return d.data.size;
+                    return d.data.length;
                 }
-                return d.data.text;
+                return nodeText(d.data);
             });
 
         // Transition exiting nodes to the parent's new position.
