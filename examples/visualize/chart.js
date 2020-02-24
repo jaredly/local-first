@@ -79,6 +79,9 @@ export const createChart = () => {
             map[nnode.id] = nnode;
             nodes.push(nnode);
             lanes[depth] = x + node.text.length + 2;
+            for (let i = depth - 1; i >= 0; i--) {
+                lanes[i] = lanes[depth];
+            }
             node.children.forEach(child => {
                 links.push({
                     source: nnode,
@@ -158,7 +161,7 @@ export const createChart = () => {
             .attr('dy', '0.31em')
             .attr('x', 6)
             .attr('text-anchor', 'start')
-            .text(d => d.data.text)
+            .text(d => data.map[d.id].text)
             .clone(true)
             .lower()
             .attr('stroke-linejoin', 'round')
@@ -218,7 +221,7 @@ export const createChart = () => {
                 if (i === 3) {
                     return d.data.size;
                 }
-                return d.data.text;
+                return data.map[d.id].text;
             });
 
         // Transition exiting nodes to the parent's new position.

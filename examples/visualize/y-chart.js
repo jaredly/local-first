@@ -125,17 +125,6 @@ export const createYChart = () => {
     const render = (data: YDoc) => {
         const ynodes = collectNodes(data);
         const { nodes, links, map, width } = process(ynodes, measure.width, dy);
-        // const { nodes, links, map, lines } = treeify(
-        //     {
-        //         id: [0, '-root-'],
-        //         parent: '',
-        //         size: 0,
-        //         children: data.roots,
-        //         text: '',
-        //     },
-        //     measure.width,
-        //     dy,
-        // );
 
         const source_ = prevNodes;
         prevNodes = {};
@@ -143,7 +132,6 @@ export const createYChart = () => {
         const duration = 250;
 
         const maxY = nodes.reduce((m, n) => Math.max(m, n.y), 0) + dy;
-        // const width = lines.reduce((a, b) => Math.max(a, b), 0) * dx;
         const height = maxY + margin.top + margin.bottom;
 
         gLink.attr('width', width);
