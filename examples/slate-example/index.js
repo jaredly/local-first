@@ -39,7 +39,7 @@ const RichTextExample = () => {
         () => withLog(withHistory(withReact(createEditor()))),
         [],
     );
-    window.editor = editor
+    window.editor = editor;
 
     return (
         <Slate
