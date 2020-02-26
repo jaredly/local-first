@@ -26,7 +26,7 @@ describe('loc', () => {
         insert(state, 0, 'Hello world.');
         del(state, 1, 1);
         insert(state, 2, 'm');
-        expect(toString(state)).toEqual('Hlmlo world. Yes folks');
+        expect(toString(state)).toEqual('Hlmlo world.');
     });
 
     it('should be bidirectional', () => {
@@ -51,9 +51,9 @@ describe('loc', () => {
         insert(state, length(state), ' Yes folks');
         const spans = selectionToSpans(state, 0, 10);
         expect(spans).toEqual([
-            { id: 2, site: 'a', length: 6 },
-            { id: 14, length: 2, site: 'a' },
-            { id: 8, length: 2, site: 'a' },
+            { id: 1, site: 'a', length: 6 },
+            { id: 13, length: 2, site: 'a' },
+            { id: 7, length: 2, site: 'a' },
         ]);
         const back = spansToSelections(state, spans);
         expect(back).toEqual([{ start: 0, end: 10 }]);
