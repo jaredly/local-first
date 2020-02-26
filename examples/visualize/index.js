@@ -7,6 +7,7 @@ import * as hlc from '../../packages/hybrid-logical-clock';
 import {
     deltaToChange,
     changeToDelta,
+    initialDelta,
     type QuillDelta,
 } from '../../packages/text-crdt/quill-deltas';
 import QuillCursors from 'quill-cursors/dist/index.js';
@@ -27,16 +28,6 @@ type QuillFormat = {
 type Format = ncrdt.MapCRDT;
 
 const mergeFormats = (one: any, two: any): any => ncrdt.merge(one, two);
-
-const initialDelta = {
-    type: 'insert',
-    span: {
-        id: [0, '-initial-'],
-        after: [0, crdt.rootSite],
-        // text: 'Hello world! we did it.\n',
-        text: '\n',
-    },
-};
 
 const sync = editor => {
     if (editor.send && editor.other) {

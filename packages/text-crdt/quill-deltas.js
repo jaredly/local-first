@@ -1,5 +1,5 @@
 // @flow
-import { localDelete, localInsert, localFormat } from './tree';
+import { localDelete, localInsert, localFormat, rootSite } from './tree';
 import { locToPos, locToInsertionPos, formatAt } from './loc';
 import { spansToSelections } from './span';
 import type { CRDT, Node, Delta, Span } from './types';
@@ -8,6 +8,15 @@ export type QuillDelta<Format> =
     | {| delete: number |}
     | {| insert: string, attributes?: ?Format |}
     | {| retain: number, attributes?: ?Format |};
+
+export const initialDelta = {
+    type: 'insert',
+    span: {
+        id: [0, '-initial-'],
+        after: [0, rootSite],
+        text: '\n',
+    },
+};
 
 export const deltaToChange = function<QuillFormat, Format>(
     state: CRDT<Format>,
@@ -76,9 +85,9 @@ export const changeToDelta = function<Format, QuillFormat>(
                 { retain: pos },
                 {
                     insert: change.span.text,
-                    attributes: change.span.format
-                        ? convertFormat(change.span.format)
-                        : null,
+                    ...(change.span.format
+                        ? { attributes: convertFormat(change.span.format) }
+                        : null),
                 },
             ];
         case 'format':

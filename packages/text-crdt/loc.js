@@ -265,7 +265,7 @@ export const locToInsertionPos = function<Format>(
         let idx = crdt.roots.length;
         let pos = 0;
         for (let i = 0; i < crdt.roots.length; i++) {
-            if (keyCmp(crdt.roots[0].id, id) < 1) {
+            if (keyCmp(crdt.roots[i].id, id) < 1) {
                 idx = i;
                 break;
             }
