@@ -1,5 +1,6 @@
 {
     "dependencies": {
+        "automerge": "^0.13.0",
         "d3": "^5.15.0",
         "parcel": "^1.12.4",
         "prosemirror": "^0.11.1",

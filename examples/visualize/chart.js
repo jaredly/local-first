@@ -67,7 +67,11 @@ export const createChart = () => {
             if (!lanes[depth]) {
                 lanes[depth] = 0;
             }
-            const x = Math.max(lanes[depth], at);
+            let x = at;
+            for (let i = 0; i <= depth; i++) {
+                x = Math.max(x, lanes[depth]);
+            }
+            // const x = Math.max(lanes[depth], at);
             const nnode = {
                 id: crdt.toKey(node.id),
                 x0: x * dx,
@@ -78,9 +82,9 @@ export const createChart = () => {
             };
             map[nnode.id] = nnode;
             nodes.push(nnode);
-            lanes[depth] = x + node.text.length + 2;
+            lanes[depth] = x + JSON.stringify(node.text).length + 2;
             for (let i = depth - 1; i >= 0; i--) {
-                lanes[i] = lanes[depth];
+                lanes[i] = Math.max(lanes[i], lanes[depth]);
             }
             node.children.forEach(child => {
                 links.push({
@@ -106,6 +110,7 @@ export const createChart = () => {
             measure.width,
             dy,
         );
+        const rootId = `0:-root-`;
 
         const source_ = prevNodes;
         prevNodes = {};
@@ -139,6 +144,10 @@ export const createChart = () => {
             return { x: 0, y: 0, x0: 0, y0: 0 };
         };
 
+        const text = id => {
+            return id === rootId ? '' : JSON.stringify(data.map[id].text);
+        };
+
         // Enter any new nodes at the parent's previous position.
         const nodeEnter = node
             .enter()
@@ -161,7 +170,7 @@ export const createChart = () => {
             .attr('dy', '0.31em')
             .attr('x', 6)
             .attr('text-anchor', 'start')
-            .text(d => data.map[d.id].text)
+            .text(d => text(d.id))
             .clone(true)
             .lower()
             .attr('stroke-linejoin', 'round')
@@ -221,7 +230,7 @@ export const createChart = () => {
                 if (i === 3) {
                     return d.data.size;
                 }
-                return data.map[d.id].text;
+                return text(d.id);
             });
 
         // Transition exiting nodes to the parent's new position.

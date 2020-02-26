@@ -24,13 +24,22 @@ type YNode = {
 
 const nodeText = (node: YNode) => {
     if (node.content.str) {
-        return node.content.str;
+        return JSON.stringify(node.content.str);
     }
     if (node.content.key === 'bold') {
         return 'B';
     }
+    if (node.content.key === 'italic') {
+        return 'I';
+    }
     if (node.content.key === 'underline') {
         return 'U';
+    }
+    if (node.content.key) {
+        return (node.content.value ? '' : '/') + node.content.key;
+    }
+    if (node.content.len) {
+        return node.content.len.toString();
     }
     return JSON.stringify(node.content);
 };
@@ -56,7 +65,7 @@ export const createYChart = () => {
 
     const gLink = svg
         .attr('width', 800)
-        .attr('height', 200)
+        .attr('height', 100)
         .append('g')
         .attr('fill', 'none')
         .attr('stroke', '#555')

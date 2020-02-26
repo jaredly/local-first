@@ -116,6 +116,73 @@ This'll make the algorithm a little (rather) more complicated.
 But I think it's what's required.
 
 
+<div>
+    <h1 a>
+    hello folks
+    </h1 a>
+</div>
+
+<div>
+    <h1 a>
+    hello
+    </h1 a>
+    <h1 b>
+    folks
+    </h1 b>
+    <!-- </h1 a> -->
+</div>
+
+// ORR if you're splitting it, you can reuse the ID?
+// because we know they won't overlap
+
+<div>
+    <h1 a>
+    hello
+    </h1 a>
+    <h1 a>
+    folks
+    </h1 a>
+    <!-- </h1 a> -->
+</div>
+
+// One way
+
+<div>
+    <h1 a>
+    he
+    </h1 a>
+    <h1 c>
+    llo folks
+    </h1 c>
+</div>
+
+/// Merged
+
+<div>
+    <h1 a>
+    he
+    </h1 a>
+    <h1 c>
+    llo
+    </h1 a>
+    <h1 b>
+    folks
+    </h1 c>
+    </h1 b>
+    <!-- </h1 a> -->
+</div>
+
+// The other way
+
+<div>
+    <h1 a>
+    he
+    </h1 a>
+    <h1 a>
+    llo folks
+    </h1 a>
+</div>
+
 
 
 
