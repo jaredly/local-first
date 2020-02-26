@@ -6,33 +6,10 @@ import {
     charactersBeforeNode,
     nodeForKey,
     rootParent,
+    nextSibling,
     type Loc,
 } from './loc';
 import { toKey, length } from './utils';
-
-// Get the next sibling or parent's next sibling
-const nextSibling = function<Format>(
-    crdt: CRDT<Format>,
-    node: Node<Format>,
-): ?Node<Format> {
-    if (node.parent === rootParent) {
-        const idx = crdt.roots.indexOf(node);
-        if (idx === -1 || idx + 1 >= crdt.roots.length) {
-            return; // selection went too far
-        }
-        return crdt.roots[idx + 1];
-    } else {
-        const parent = crdt.map[node.parent];
-        const idx = parent.children.indexOf(node);
-        if (idx === -1) {
-            throw new Error(`Can't find node in parents`);
-        }
-        if (idx + 1 >= parent.children.length) {
-            return nextSibling(crdt, parent);
-        }
-        return parent.children[idx + 1];
-    }
-};
 
 // character offset + count, collect the spans
 // of node ids that correspond to it.

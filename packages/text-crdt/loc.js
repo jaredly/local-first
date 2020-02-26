@@ -29,6 +29,30 @@ yeah just 1 or 0 for the side, true or false.
 
 */
 
+// Get the next sibling or parent's next sibling
+export const nextSibling = function<Format>(
+    crdt: CRDT<Format>,
+    node: Node<Format>,
+): ?Node<Format> {
+    if (node.parent === rootParent) {
+        const idx = crdt.roots.indexOf(node);
+        if (idx === -1 || idx + 1 >= crdt.roots.length) {
+            return; // selection went too far
+        }
+        return crdt.roots[idx + 1];
+    } else {
+        const parent = crdt.map[node.parent];
+        const idx = parent.children.indexOf(node);
+        if (idx === -1) {
+            throw new Error(`Can't find node in parents`);
+        }
+        if (idx + 1 >= parent.children.length) {
+            return nextSibling(crdt, parent);
+        }
+        return parent.children[idx + 1];
+    }
+};
+
 const posToPreLocForNode = (node, pos): [[number, string], number] => {
     if (pos === 1 && !node.deleted) {
         return [node.id, 0];
@@ -120,6 +144,36 @@ export const posToPostLoc = (
 };
 
 export type Loc = { id: number, site: string, pre: boolean };
+
+export const formatAt = function<Format>(
+    crdt: CRDT<Format>,
+    pos: number,
+): ?Format {
+    try {
+        const [id, offset] = posToPostLoc(crdt, pos);
+        const node = nodeForKey(crdt, id);
+        return node ? node.format : null;
+    } catch {
+        return null;
+    }
+};
+
+export const idAfter = function<Format>(crdt: CRDT<Format>, loc: Loc): number {
+    const node = nodeForKey(crdt, [loc.id, loc.site]);
+    if (!loc.pre) {
+        return loc.id;
+    }
+    if (node && node.id[0] + node.text.length - 1 == loc.id) {
+        if (node.children.length) {
+            return node.children[0].id[0];
+        }
+        const next = nextSibling(crdt, node);
+        if (next) {
+            return next.id[0];
+        }
+    }
+    return 0;
+};
 
 export const posToLoc = function<Format>(
     crdt: CRDT<Format>,

@@ -6,7 +6,7 @@
 const deepEqual = require('@birchill/json-equalish').default;
 import type { Node, CRDT, Delta, Span, PreNode } from './types';
 import { toKey, length, keyCmp } from './utils';
-import { locToPos, posToLoc } from './loc';
+import { locToPos, posToLoc, idAfter } from './loc';
 import { selectionToSpans, spansToSelections } from './span';
 export * from './types';
 export * from './span';
@@ -51,8 +51,8 @@ export const localInsert = function<Format>(
     format: ?Format,
 ): Delta<Format> {
     const loc = posToLoc(crdt, at, true);
-    const rightLoc = posToLoc(crdt, at, false);
-    crdt.largestLocalId = Math.max(loc.id, rightLoc.id, crdt.largestLocalId);
+    const after = idAfter(crdt, loc);
+    crdt.largestLocalId = Math.max(loc.id, after, crdt.largestLocalId);
     const id = crdt.largestLocalId + 1;
     crdt.largestLocalId += text.length;
     return {
