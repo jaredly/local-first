@@ -11,6 +11,7 @@ import {
     type QuillDelta,
 } from '../../packages/text-crdt/quill-deltas';
 import QuillCursors from 'quill-cursors/dist/index.js';
+import deepEqual from 'fast-deep-equal';
 
 Quill.register('modules/cursors', QuillCursors);
 
@@ -68,6 +69,25 @@ const createYjs = (div, render) => {
     const binding = new QuillBinding(type, editor, null);
 };
 
+const matchesFormat = (format: Format, quill: QuillFormat) => {
+    return !Object.keys(quill).some(key => {
+        return (
+            !format.map[key] ||
+            !deepEqual(ncrdt.value(format.map[key]), quill[key])
+        );
+    });
+};
+
+const createQuillFormat = getStamp => (quillFormat, preFormat, postFormat) => {
+    if (preFormat && matchesFormat(preFormat, quillFormat)) {
+        return preFormat;
+    }
+    if (postFormat && matchesFormat(postFormat, quillFormat)) {
+        return postFormat;
+    }
+    return ncrdt.createDeepMap(quillFormat, getStamp());
+};
+
 const initQuill = (name, div, render: (crdt.CRDT<Format>) => void) => {
     const ui = new Quill(div, { theme: 'bubble', placeholder: 'Quill editor' });
     let clock = hlc.init(name, Date.now());
@@ -104,9 +124,7 @@ const initQuill = (name, div, render: (crdt.CRDT<Format>) => void) => {
             const changes = deltaToChange<QuillFormat, Format>(
                 state,
                 delta,
-                quillFormat => {
-                    return ncrdt.createDeepMap(quillFormat, getStamp());
-                },
+                createQuillFormat(getStamp),
             );
             console.log('got local', delta, changes);
             // console.log('delta', delta);

@@ -106,6 +106,16 @@ const matchesFormat = (format: Format, quill: QuillFormat) => {
     });
 };
 
+const createQuillFormat = getStamp => (quillFormat, preFormat, postFormat) => {
+    if (preFormat && matchesFormat(preFormat, quillFormat)) {
+        return preFormat;
+    }
+    if (postFormat && matchesFormat(postFormat, quillFormat)) {
+        return postFormat;
+    }
+    return ncrdt.createDeepMap(quillFormat, getStamp());
+};
+
 const initQuill = (name, ui, render: (crdt.CRDT<Format>) => void) => {
     let clock = hlc.init(name, Date.now());
     const state: crdt.CRDT<Format> = crdt.init(name);
@@ -140,15 +150,7 @@ const initQuill = (name, ui, render: (crdt.CRDT<Format>) => void) => {
             const changes = deltaToChange<QuillFormat, Format>(
                 state,
                 delta,
-                (quillFormat, preFormat, postFormat) => {
-                    if (preFormat && matchesFormat(preFormat, quillFormat)) {
-                        return preFormat;
-                    }
-                    if (postFormat && matchesFormat(postFormat, quillFormat)) {
-                        return postFormat;
-                    }
-                    return ncrdt.createDeepMap(quillFormat, getStamp());
-                },
+                createQuillFormat(getStamp),
             );
             changes.forEach(change => {
                 crdt.apply(state, change, mergeFormats);
