@@ -210,7 +210,10 @@ if (document.body) {
         node('h3', {}, [
             node(
                 'a',
-                { href: 'https://github.com/jaredly/local-first' },
+                {
+                    href:
+                        'https://github.com/jaredly/local-first/tree/master/packages/text-crdt',
+                },
                 'Mine',
             ),
         ]),
