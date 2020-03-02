@@ -1,7 +1,7 @@
 // @flow
 import type { Content, CRDT, Node, Delta, Loc } from './types';
 
-import { toKey, length, keyCmp } from './utils';
+import { toKey, length, keyCmp, contentLength } from './utils';
 
 export const rootSite = '-root-';
 export const rootParent = '0:-root-';
@@ -51,7 +51,11 @@ export const nextSibling = function(crdt: CRDT, node: Node): ?string {
     }
 };
 
-const posToPreLocForNode = (node: Node, pos): [[number, string], number] => {
+const posToPreLocForNode = (
+    state: CRDT,
+    node: Node,
+    pos: number,
+): [[number, string], number] => {
     if (pos === 1 && !node.deleted) {
         return [node.id, 0];
     }
@@ -59,16 +63,17 @@ const posToPreLocForNode = (node: Node, pos): [[number, string], number] => {
         throw new Error(`pos ${pos} not in node ${toKey(node.id)}`);
     }
     if (!node.deleted) {
-        if (pos <= node.text.length) {
+        const length = contentLength(node.content);
+        if (pos <= length) {
             return [node.id, pos - 1];
             // return [node.id[0] + pos - 1, node.id[1]];
         }
-        pos -= node.text.length;
+        pos -= length;
     }
     for (let i = 0; i < node.children.length; i++) {
-        const child = node.children[i];
+        const child = state.map[node.children[i]];
         if (pos <= child.size) {
-            return posToPreLocForNode(child, pos);
+            return posToPreLocForNode(state, child, pos);
         }
         pos -= child.size;
     }
@@ -88,10 +93,11 @@ export const posToPreLoc = (
         return [[0, rootSite], 0];
     }
     for (let i = 0; i < crdt.roots.length; i++) {
-        if (pos <= crdt.roots[i].size) {
-            return posToPreLocForNode(crdt.roots[i], pos);
+        const root = crdt.map[crdt.roots[i]];
+        if (pos <= root.size) {
+            return posToPreLocForNode(crdt, root, pos);
         }
-        pos -= crdt.roots[i].size;
+        pos -= root.size;
     }
     throw new Error(`Pos ${pos} is outside the bounds`);
 };
@@ -156,13 +162,13 @@ export const idAfter = function(crdt: CRDT, loc: Loc): number {
     if (!loc.pre) {
         return loc.id;
     }
-    if (node && node.id[0] + node.text.length - 1 == loc.id) {
+    if (node && node.id[0] + contentLength(node.content) - 1 == loc.id) {
         if (node.children.length) {
-            return node.children[0].id[0];
+            return crdt.map[node.children[0]].id[0];
         }
         const next = nextSibling(crdt, node);
         if (next) {
-            return next.id[0];
+            return crdt.map[next].id[0];
         }
     }
     return 0;
