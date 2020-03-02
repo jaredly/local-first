@@ -150,10 +150,11 @@ export const posToPostLoc = (
 
 type Format = { [key: string]: any };
 
-export const formatAt = function(crdt: CRDT, pos: number): ?Format {
+export const formatAt = function(crdt: CRDT, loc: Loc): Format {
     try {
-        const [id, offset] = posToPostLoc(crdt, pos);
-        const node = nodeForKey(crdt, id);
+        const node = nodeForKey(crdt, [loc.id, loc.site]);
+        // const [id, offset] = posToPostLoc(crdt, pos);
+        // const node = nodeForKey(crdt, id);
         const format = {};
         if (!node) {
             return format;
@@ -174,7 +175,7 @@ export const formatAt = function(crdt: CRDT, pos: number): ?Format {
         });
         return format;
     } catch {
-        return null;
+        return {};
     }
 };
 

@@ -2,7 +2,7 @@
 import deepEqual from 'fast-deep-equal';
 import type { Content, CRDT, Node, Delta } from './types';
 
-import { posToLoc, idAfter } from './loc';
+import { posToLoc, idAfter, formatAt } from './loc';
 
 // TODO should I accept a formatting thing?
 // Yes, because insertion point (e.g. before or after the start of
