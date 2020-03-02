@@ -1,3 +1,33 @@
+
+
+Ok is there a way to do Quill, with multi-line preservation as well?
+So like, you have "block tags", that get applied to any newlines
+that are in the way?
+
+hm that could get messy.
+Like, how do you override the block designations?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Tag-capable text crdt
 
 // the prosemirror way

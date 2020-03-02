@@ -1,0 +1,12 @@
+[ignore]
+
+[include]
+../../packages
+
+[libs]
+
+[lints]
+
+[options]
+
+[strict]
