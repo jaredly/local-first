@@ -26,9 +26,9 @@ module.exports = [
     //     { state: [text('e-i-llo')] },
     // ],
     // // Fmt
-    // [
-    //     insert(0, 'Hello'),
-    //     fmt(1, 2, 'bold', true),
-    //     { state: [text('H'), text('el', { bold: true }), text('lo')] },
-    // ],
+    [
+        insert(0, 'Hello'),
+        fmt(1, 2, 'bold', true),
+        { state: [text('H'), text('el', { bold: true }), text('lo')] },
+    ],
 ];

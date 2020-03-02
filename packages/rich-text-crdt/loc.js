@@ -1,7 +1,7 @@
 // @flow
 import type { Content, CRDT, Node, Delta, Loc } from './types';
 
-import { toKey, length, keyCmp, contentLength } from './utils';
+import { toKey, fromKey, length, keyCmp, contentLength } from './utils';
 
 export const rootSite = '-root-';
 export const rootParent = '0:-root-';
@@ -62,13 +62,11 @@ const posToPreLocForNode = (
     if (pos > node.size) {
         throw new Error(`pos ${pos} not in node ${toKey(node.id)}`);
     }
-    if (!node.deleted) {
-        const length = contentLength(node.content);
-        if (pos <= length) {
+    if (!node.deleted && node.content.type === 'text') {
+        if (pos <= node.content.text.length) {
             return [node.id, pos - 1];
-            // return [node.id[0] + pos - 1, node.id[1]];
         }
-        pos -= length;
+        pos -= node.content.text.length;
     }
     for (let i = 0; i < node.children.length; i++) {
         const child = state.map[node.children[i]];
@@ -88,6 +86,7 @@ const posToPreLocForNode = (
 export const posToPreLoc = (
     crdt: CRDT,
     pos: number,
+    format: ?{ [key: string]: any },
 ): [[number, string], number] => {
     if (pos === 0) {
         return [[0, rootSite], 0];
@@ -102,24 +101,24 @@ export const posToPreLoc = (
     throw new Error(`Pos ${pos} is outside the bounds`);
 };
 
-const posToPostLocForNode = (node, pos) => {
+const posToPostLocForNode = (state: CRDT, node: Node, pos: number) => {
     if (pos === 0 && !node.deleted) {
         return [node.id, 0];
     }
     if (pos >= node.size) {
         throw new Error(`post pos ${pos} not in node ${toKey(node.id)}`);
     }
-    if (!node.deleted) {
-        if (pos < node.text.length) {
+    if (!node.deleted && node.content.type === 'text') {
+        if (pos < node.content.text.length) {
             return [node.id, pos];
             // return [node.id[0] + pos, node.id[1]];
         }
-        pos -= node.text.length;
+        pos -= node.content.text.length;
     }
     for (let i = 0; i < node.children.length; i++) {
-        const child = node.children[i];
+        const child = state.map[node.children[i]];
         if (pos < child.size) {
-            return posToPostLocForNode(child, pos);
+            return posToPostLocForNode(state, child, pos);
         }
         pos -= child.size;
     }
@@ -134,12 +133,14 @@ const posToPostLocForNode = (node, pos) => {
 export const posToPostLoc = (
     crdt: CRDT,
     pos: number,
+    format: ?{ [key: string]: any },
 ): [[number, string], number] => {
     for (let i = 0; i < crdt.roots.length; i++) {
-        if (pos < crdt.roots[i].size) {
-            return posToPostLocForNode(crdt.roots[i], pos);
+        const root = crdt.map[crdt.roots[i]];
+        if (pos < root.size) {
+            return posToPostLocForNode(crdt, root, pos);
         }
-        pos -= crdt.roots[i].size;
+        pos -= root.size;
     }
     if (pos === 0) {
         return [[1, rootSite], 0];
@@ -147,11 +148,31 @@ export const posToPostLoc = (
     throw new Error(`Pos ${pos} is outside the bounds`);
 };
 
+type Format = { [key: string]: any };
+
 export const formatAt = function(crdt: CRDT, pos: number): ?Format {
     try {
         const [id, offset] = posToPostLoc(crdt, pos);
         const node = nodeForKey(crdt, id);
-        return node ? node.format : null;
+        const format = {};
+        if (!node) {
+            return format;
+        }
+        Object.keys(node.formats).forEach(key => {
+            // hmm whats the point of doing it by ID? yeah there is one, its ok
+            if (node.formats[key].length) {
+                const fmtNode = crdt.map[node.formats[key][0]];
+                if (fmtNode.content.type !== 'open') {
+                    throw new Error(
+                        `non-open node (${
+                            node.formats[key][0]
+                        }) found in a formats cache for ${toKey(node.id)}`,
+                    );
+                }
+                format[key] = fmtNode.content.value;
+            }
+        });
+        return format;
     } catch {
         return null;
     }
@@ -183,14 +204,15 @@ export const posToLoc = function(
     // Note that I don't currently support anchoring to the right
     // of the end of the string, but I probably could?
     // ok 1:root is the end, 0:root is the start. cool beans
+    format: ?{ [key: string]: any },
 ): Loc {
     const total = length(crdt);
     if (pos > total) {
         throw new Error(`Loc is outside of the bounds`);
     }
     const [[id, site], offset] = anchorToLocAtLeft
-        ? posToPreLoc(crdt, pos)
-        : posToPostLoc(crdt, pos);
+        ? posToPreLoc(crdt, pos, format)
+        : posToPostLoc(crdt, pos, format);
     return { id: id + offset, site, pre: anchorToLocAtLeft };
 };
 
@@ -215,18 +237,18 @@ export const charactersBeforeNode = function(crdt: CRDT, node: Node): number {
             throw new Error(
                 `node not found in parents children ${toKey(node.id)} ${
                     node.parent
-                } - ${siblings.map(s => toKey(s.id)).join(';')}`,
+                } - ${siblings.join(';')}`,
             );
         }
         for (let i = 0; i < idx; i++) {
-            total += siblings[i].size;
+            total += crdt.map[siblings[i]].size;
         }
         if (node.parent === rootParent) {
             break;
         } else {
             node = crdt.map[node.parent];
-            if (!node.deleted) {
-                total += node.text.length;
+            if (!node.deleted && node.content.type === 'text') {
+                total += node.content.text.length;
             }
         }
     }
@@ -258,11 +280,11 @@ export const locToInsertionPos = function(
         let idx = crdt.roots.length;
         let pos = 0;
         for (let i = 0; i < crdt.roots.length; i++) {
-            if (keyCmp(crdt.roots[i].id, id) < 1) {
+            if (keyCmp(fromKey(crdt.roots[i]), id) < 1) {
                 idx = i;
                 break;
             }
-            pos += crdt.roots[i].size;
+            pos += crdt.map[crdt.roots[i]].size;
         }
         return pos;
     }
@@ -276,15 +298,15 @@ export const locToInsertionPos = function(
     let nodePos = charactersBeforeNode(crdt, node);
 
     // We're at the end, in competition with other children
-    if (node.id[0] + node.text.length === after[0] + 1) {
-        nodePos += node.text.length;
+    if (node.id[0] + contentLength(node.content) === after[0] + 1) {
+        nodePos += contentLength(node.content);
         let idx = node.children.length;
         for (let i = 0; i < node.children.length; i++) {
-            if (keyCmp(node.children[i].id, id) < 1) {
+            if (keyCmp(fromKey(node.children[i]), id) < 1) {
                 idx = i;
                 break;
             }
-            nodePos += node.children[i].size;
+            nodePos += crdt.map[node.children[i]].size;
         }
         return nodePos; // - 1;
     } else {
