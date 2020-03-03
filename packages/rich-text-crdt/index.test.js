@@ -2,28 +2,7 @@
 import fixtures from './fixtures';
 import deepEqual from 'fast-deep-equal';
 
-import { apply, insert, del, format, init, inflate } from './';
-
-const walk = (state, fn) => {
-    const loop = id => {
-        const node = state.map[id];
-        if (!node) return console.error(`Missing node! ${id}`);
-        if (!node.deleted) {
-            fn(node);
-        }
-        state.map[id].children.forEach(child => loop(child));
-    };
-    state.roots.forEach(id => loop(id));
-};
-
-const fmtIdx = (fmt, content) => {
-    for (let i = 0; i < fmt.length; i++) {
-        if (fmt[i].stamp < content.stamp) {
-            return i;
-        }
-    }
-    return fmt.length;
-};
+import { apply, insert, del, format, init, inflate, walk, fmtIdx } from './';
 
 const walkWithFmt = (state, fn) => {
     const format = {};
@@ -88,7 +67,6 @@ const justContents = state => {
 };
 
 const testSerialize = state => {
-    // console.log(JSON.stringify(state.map));
     const res = [];
     walkWithFmt(state, (text, format) => {
         if (res.length && deepEqual(res[res.length - 1].fmt, format)) {
@@ -102,7 +80,7 @@ const testSerialize = state => {
 
 const actionToDelta = (state, action) => {
     if (action.type === 'insert') {
-        return insert(state, action.at, action.text);
+        return insert(state, action.at, action.text, action.format);
     } else if (action.type === 'delete') {
         return del(state, action.at, action.count);
     } else if (action.type === 'fmt') {

@@ -2,31 +2,30 @@
 import deepEqual from 'fast-deep-equal';
 import type { Content, CRDT, Node, TmpNode, Delta } from './types';
 
-import { posToLoc, idAfter, formatAt } from './loc';
+import { posToLoc, idAfter, formatAt, adjustForFormat } from './loc';
 
 export const insert = (
     state: CRDT,
     at: number,
     text: string,
-    // format: ?{ [key: string]: any } = null,
+    format: ?{ [key: string]: any } = null,
 ) => {
-    const loc = posToLoc(state, at, true, null);
+    const initialLoc = posToLoc(state, at, true);
+    const loc = format
+        ? adjustForFormat(state, initialLoc, format)
+        : initialLoc;
     const afterId = idAfter(state, loc);
 
     state.largestLocalId = Math.max(loc.id, afterId, state.largestLocalId);
     // If currentFormat is missing things, then add new tags.
     // first ID for starting tag, second ID for ending tag,
     // third ID for the text itself, so it's contiguous.
-    const nodes = [];
+    const nodes: Array<TmpNode> = [];
     let currentAfter = [loc.id, loc.site];
-    const addNode = (content: Content) => {
+    const addNode = (text: string) => {
         const id = state.largestLocalId + 1;
-        if (content.type === 'text') {
-            state.largestLocalId += content.text.length;
-        } else {
-            state.largestLocalId += 1;
-        }
-        nodes.push({ after: currentAfter, id: [id, state.site], content });
+        state.largestLocalId += text.length;
+        nodes.push({ after: currentAfter, id: [id, state.site], text });
         currentAfter = [id, state.site];
     };
 
@@ -85,7 +84,7 @@ export const insert = (
     // } else {
     //     addNode({ type: 'text', text });
     // }
-    addNode({ type: 'text', text });
+    addNode(text);
 
     // NOTE and interesting case, for posToLoc:
     // if we have <em>Hi</em><strong>folks</strong>
@@ -117,25 +116,24 @@ export const format = (
     value: any,
     stamp?: string,
 ): Delta => {
-    const nodes: Array<TmpNode> = [];
     stamp =
         stamp ??
         Date.now()
             .toString(36)
             .padStart(5, '0');
 
-    const loc = posToLoc(state, at, true, null);
+    const loc = posToLoc(state, at, true);
     const afterId = idAfter(state, loc);
     state.largestLocalId = Math.max(loc.id, afterId, state.largestLocalId);
     const id = state.largestLocalId + 1;
     state.largestLocalId += 1;
-    nodes.push({
+    const openNode = {
         after: [loc.id, loc.site],
         id: [id, state.site],
-        content: { type: 'open', key, value, stamp },
-    });
+        // content: { type: 'open', key, value, stamp },
+    };
 
-    const endLoc = posToLoc(state, at + length, true, null);
+    const endLoc = posToLoc(state, at + length, true);
     const endAfterId = idAfter(state, loc);
     state.largestLocalId = Math.max(
         endLoc.id,
@@ -144,11 +142,20 @@ export const format = (
     );
     const endId = state.largestLocalId + 1;
     state.largestLocalId += 1;
-    nodes.push({
+    const closeNode = {
         after: [endLoc.id, endLoc.site],
         id: [endId, state.site],
-        content: { type: 'close', key, value, stamp },
-    });
+        // content: { type: 'close', key, value, stamp },
+    };
+
+    return {
+        type: 'format',
+        open: openNode,
+        close: closeNode,
+        key,
+        value,
+        stamp,
+    };
 
     // currentAfter = [id, state.site];
     // Ok, need to determine what spans to format around, right?
@@ -218,8 +225,6 @@ export const format = (
 
 
     */
-    // TODO
-    return { type: 'update', insert: nodes };
 };
 
 /*

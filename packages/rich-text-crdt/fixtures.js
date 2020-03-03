@@ -1,6 +1,11 @@
 // @flow
 
-const insert = (at, text) => ({ type: 'insert', at, text });
+const insert = (at, text, format = {}) => ({
+    type: 'insert',
+    at,
+    text,
+    format,
+});
 const del = (at, count) => ({ type: 'delete', at, count });
 const fmt = (at, count, key, value, stamp = Date.now()) => ({
     type: 'fmt',
@@ -101,4 +106,18 @@ module.exports = [
             state: [text('a b', { bold: false }), text(' c d', { bold: true })],
         },
     ],
+    [
+        insert(0, 'a b c d'),
+        fmt(2, 3, 'bold', true),
+        insert(2, 'bold', { bold: true }),
+        { state: [text('a '), text('boldb c', { bold: true }), text(' d')] },
+    ],
+    // Umm. So now what?
+    // Maybe I write out the results?
+    // Or something?
+    // Or how bout I add some ... tests?
+    // Or deletion of things?
+    // Yeah I definitely need to add deletion.
+    // And then ...
+    // ... some way to
 ];

@@ -60,3 +60,7 @@ export const contentLength = (content: Content) => {
 export const keyCmp = ([a, b]: [number, string], [c, d]: [number, string]) => {
     return a < c ? -1 : a > c ? 1 : b < d ? -1 : b > d ? 1 : 0;
 };
+
+export const keyEq = ([a, b]: [number, string], [c, d]: [number, string]) => {
+    return a === c && b === d;
+};

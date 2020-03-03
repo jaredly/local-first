@@ -1,7 +1,14 @@
 // @flow
 import type { Content, CRDT, Node, Delta } from './types';
-import { toKey, fromKey, keyCmp, contentLength, contentChars } from './utils';
-import { rootParent } from './loc';
+import {
+    toKey,
+    fromKey,
+    keyCmp,
+    contentLength,
+    contentChars,
+    keyEq,
+} from './utils';
+import { rootParent, walkFrom } from './loc';
 
 const insertionPos = (ids, id) => {
     for (let i = 0; i < ids.length; i++) {
@@ -103,50 +110,110 @@ const insertId = (ids: Array<string>, id: string, idx: number) => {
     return [...ids.slice(0, idx), id, ...ids.slice(idx)];
 };
 
+const insertNode = (state: CRDT, id, after, content: Content) => {
+    const afterKey = toKey(after);
+    if (afterKey === rootParent) {
+        const idx = insertionPos(state.roots, id);
+        const key = toKey(id);
+        state.roots = insertId(state.roots, key, idx);
+        // hmmm should we be determining parent formats here?
+        // TODO get current formats list
+        const node = mkNode(id, afterKey, content, {});
+        state.map[key] = node;
+        return;
+    }
+    const parentKey = parentForAfter(state, after);
+    if (!parentKey) {
+        throw new Error(`Cannot find parent for ${toKey(after)}`);
+    }
+    const parent = state.map[parentKey];
+    // if (maybeMerge(parent, tmpNode, newState)) {
+    //     return newState;
+    // }
+
+    const idx = insertionPos(parent.children, id);
+    const key = toKey(id);
+    const node = mkNode(
+        id,
+        parentKey,
+        content,
+        // TODO really get formats
+        parent.formats,
+    );
+    state.map[parentKey] = {
+        ...parent,
+        children: insertId(parent.children, key, idx),
+    };
+    state.map[key] = node;
+};
+
+const insertIdx = (state: CRDT, formats: Array<string>, stamp: string) => {
+    for (let i = 0; i < formats.length; i++) {
+        const node = state.map[formats[i]];
+        if (node.content.type === 'open' && node.content.stamp < stamp) {
+            return i;
+        }
+    }
+    return formats.length;
+};
+
+const addFormat = (
+    state: CRDT,
+    formats: ?Array<string>,
+    stamp: string,
+    id: string,
+) => {
+    if (!formats) {
+        return [id];
+    }
+    const idx = insertIdx(state, formats, stamp);
+    return insertId(formats, id, idx);
+};
+
 export const apply = (state: CRDT, delta: Delta): CRDT => {
-    // console.log('applying', JSON.stringify(delta));
     state = { ...state, map: { ...state.map } };
-    if (delta.insert) {
-        delta.insert.forEach(tmpNode => {
-            // console.log('inserting', tmpNode);
-            const afterKey = toKey(tmpNode.after);
-            if (afterKey === rootParent) {
-                const idx = insertionPos(state.roots, tmpNode.id);
-                const key = toKey(tmpNode.id);
-                state.roots = insertId(state.roots, key, idx);
-                // hmmm should we be determining parent formats here?
-                // TODO get current formats list
-                const node = mkNode(tmpNode.id, afterKey, tmpNode.content, {});
-                state.map[key] = node;
-
-                // console.log('inserted at root');
-                return;
+    if (delta.type === 'update') {
+        if (delta.insert) {
+            delta.insert.forEach(tmpNode => {
+                insertNode(state, tmpNode.id, tmpNode.after, {
+                    type: 'text',
+                    text: tmpNode.text,
+                });
+            });
+        }
+    } else if (delta.type === 'format') {
+        const openKey = toKey(delta.open.id);
+        insertNode(state, delta.open.id, delta.open.after, {
+            type: 'open',
+            key: delta.key,
+            value: delta.value,
+            stamp: delta.stamp,
+        });
+        insertNode(state, delta.close.id, delta.close.after, {
+            type: 'close',
+            key: delta.key,
+            stamp: delta.stamp,
+        });
+        // now we go through each node between the start and end
+        // and update the formattings
+        walkFrom(state, toKey(delta.open.id), node => {
+            if (keyEq(node.id, delta.close.id)) {
+                return false;
             }
-            const parentKey = parentForAfter(state, tmpNode.after);
-            if (!parentKey) {
-                throw new Error(
-                    `Cannot find parent for ${toKey(tmpNode.after)}`,
-                );
-            }
-            const parent = state.map[parentKey];
-            // if (maybeMerge(parent, tmpNode, newState)) {
-            //     return newState;
-            // }
-
-            const idx = insertionPos(parent.children, tmpNode.id);
-            const key = toKey(tmpNode.id);
-            const node = mkNode(
-                tmpNode.id,
-                parentKey,
-                tmpNode.content,
-                // TODO really get formats
-                parent.formats,
-            );
-            state.map[parentKey] = {
-                ...parent,
-                children: insertId(parent.children, key, idx),
+            // yeah, adding in the formats
+            const key = toKey(node.id);
+            state.map[key] = {
+                ...node,
+                formats: {
+                    ...node.formats,
+                    [delta.key]: addFormat(
+                        state,
+                        node.formats[delta.key],
+                        delta.stamp,
+                        openKey,
+                    ),
+                },
             };
-            state.map[key] = node;
         });
     }
     return state;

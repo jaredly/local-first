@@ -30,6 +30,69 @@ yeah just 1 or 0 for the side, true or false.
 
 */
 
+const walkLoop = (state: CRDT, id: string, fn: Node => ?false) => {
+    const node = state.map[id];
+    if (!node) return console.error(`Missing node! ${id}`);
+    if (!node.deleted) {
+        if (fn(node) === false) {
+            return false;
+        }
+    }
+    if (
+        state.map[id].children.some(
+            child => walkLoop(state, child, fn) === false,
+        )
+    ) {
+        return false;
+    }
+};
+
+export const walkFrom = (state: CRDT, key: string, fn: Node => ?false) => {
+    if (walkLoop(state, key, fn) === false) {
+        return;
+    }
+    const walkUp = key => {
+        if (key === rootParent) {
+            return;
+        }
+        const node = state.map[key];
+        const siblings =
+            node.parent === rootParent
+                ? state.roots
+                : state.map[node.parent].children;
+        const idx = siblings.indexOf(key);
+        if (idx === -1) {
+            throw new Error(
+                `${key} not found in children of ${
+                    node.parent
+                } : ${siblings.join(', ')}`,
+            );
+        }
+        for (let i = idx + 1; i < siblings.length; i++) {
+            if (walkLoop(state, siblings[i], fn) === false) {
+                return;
+            }
+        }
+        return walkUp(node.parent);
+    };
+};
+
+export const walk = (state: CRDT, fn: Node => ?false) => {
+    state.roots.some(id => walkLoop(state, id, fn) === false);
+};
+
+export const fmtIdx = (
+    fmt: Array<{ stamp: string }>,
+    content: { stamp: string },
+) => {
+    for (let i = 0; i < fmt.length; i++) {
+        if (fmt[i].stamp < content.stamp) {
+            return i;
+        }
+    }
+    return fmt.length;
+};
+
 // Get the next sibling or parent's next sibling
 export const nextSibling = function(crdt: CRDT, node: Node): ?string {
     if (node.parent === rootParent) {
@@ -86,7 +149,6 @@ const posToPreLocForNode = (
 export const posToPreLoc = (
     crdt: CRDT,
     pos: number,
-    format: ?{ [key: string]: any },
 ): [[number, string], number] => {
     if (pos === 0) {
         return [[0, rootSite], 0];
@@ -133,7 +195,6 @@ const posToPostLocForNode = (state: CRDT, node: Node, pos: number) => {
 export const posToPostLoc = (
     crdt: CRDT,
     pos: number,
-    format: ?{ [key: string]: any },
 ): [[number, string], number] => {
     for (let i = 0; i < crdt.roots.length; i++) {
         const root = crdt.map[crdt.roots[i]];
@@ -149,6 +210,21 @@ export const posToPostLoc = (
 };
 
 type Format = { [key: string]: any };
+
+export const adjustForFormat = (state: CRDT, loc: Loc, format: Format): Loc => {
+    // if we're right next to some opens or closes, see
+    // if any of the adjacent spots already have the desired
+    // formatting.
+    const node = nodeForKey(state, [loc.id, loc.site]);
+    if (loc.pre) {
+        // maybe I want a generator, so I can step through
+        // the formatting nodes that face me?
+        return loc;
+    } else {
+        return loc; // TODO fix this
+    }
+    // do the nodes have formattings
+};
 
 export const formatAt = function(crdt: CRDT, loc: Loc): Format {
     try {
@@ -205,15 +281,14 @@ export const posToLoc = function(
     // Note that I don't currently support anchoring to the right
     // of the end of the string, but I probably could?
     // ok 1:root is the end, 0:root is the start. cool beans
-    format: ?{ [key: string]: any },
 ): Loc {
     const total = length(crdt);
     if (pos > total) {
         throw new Error(`Loc is outside of the bounds`);
     }
     const [[id, site], offset] = anchorToLocAtLeft
-        ? posToPreLoc(crdt, pos, format)
-        : posToPostLoc(crdt, pos, format);
+        ? posToPreLoc(crdt, pos)
+        : posToPostLoc(crdt, pos);
     return { id: id + offset, site, pre: anchorToLocAtLeft };
 };
 

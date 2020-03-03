@@ -4,7 +4,7 @@
 export type TmpNode = {
     id: [number, string],
     after: [number, string],
-    content: Content,
+    text: string,
 };
 
 export type Node = {
@@ -49,11 +49,26 @@ export type Loc = { id: number, site: string, pre: boolean };
 
 export type Span = { id: number, site: string, length: number };
 
-export type Delta = {
-    type: 'update',
-    // need to go through each span and delete the things
-    delete?: Array<Span>,
-    // These will be inserted in array order, and so are allowed
-    // to be dependent on previous items in the array
-    insert?: Array<TmpNode>,
-};
+export type Delta =
+    | {|
+          type: 'update',
+          // need to go through each span and delete the things
+          delete?: Array<Span>,
+          // These will be inserted in array order, and so are allowed
+          // to be dependent on previous items in the array
+          insert?: Array<TmpNode>,
+      |}
+    | {|
+          type: 'format',
+          open: {
+              id: [number, string],
+              after: [number, string],
+          },
+          close: {
+              id: [number, string],
+              after: [number, string],
+          },
+          key: string,
+          value: any,
+          stamp: string,
+      |};
