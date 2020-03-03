@@ -143,7 +143,21 @@ module.exports = [
         ],
     },
     {
-        title: 'insert with format',
+        title: 'Insert with format',
+        actions: [
+            insert(0, 'Hello world'),
+            insert(5, ' cruel', { bold: true }),
+            {
+                state: [
+                    text('Hello'),
+                    text(' cruel', { bold: true }),
+                    text(' world'),
+                ],
+            },
+        ],
+    },
+    {
+        title: 'Insert with format - connected',
         actions: [
             insert(0, 'a b c d'),
             fmt(2, 3, 'bold', true),
@@ -154,6 +168,9 @@ module.exports = [
                     text('boldb c', { bold: true }),
                     text(' d'),
                 ],
+            },
+            {
+                contents: ['text(a )', '>bold(true):_', '>'],
             },
         ],
     },

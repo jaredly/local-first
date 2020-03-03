@@ -9,7 +9,7 @@ export const insert = (
     at: number,
     text: string,
     format: ?{ [key: string]: any } = null,
-) => {
+): Array<Delta> => {
     const initialLoc = posToLoc(state, at, true);
     const loc = format
         ? adjustForFormat(state, initialLoc, format)
@@ -97,10 +97,12 @@ export const insert = (
     // Ok, so if we have multiple format things, does it matter
     // which is applied first? I'll assume no.
 
-    return {
-        type: 'update',
-        insert: nodes,
-    };
+    return [
+        {
+            type: 'update',
+            insert: nodes,
+        },
+    ];
 };
 
 export const del = (state: CRDT, at: number, length: number): Delta => {
@@ -130,11 +132,13 @@ export const format = (
     const openNode = {
         after: [loc.id, loc.site],
         id: [id, state.site],
-        // content: { type: 'open', key, value, stamp },
     };
 
-    const endLoc = posToLoc(state, at + length, true);
-    const endAfterId = idAfter(state, loc);
+    const endLoc =
+        length === 0
+            ? { id: openNode.id[0], site: openNode.id[1], pre: true }
+            : posToLoc(state, at + length, true);
+    const endAfterId = length === 0 ? afterId : idAfter(state, endLoc);
     state.largestLocalId = Math.max(
         endLoc.id,
         endAfterId,
@@ -145,7 +149,6 @@ export const format = (
     const closeNode = {
         after: [endLoc.id, endLoc.site],
         id: [endId, state.site],
-        // content: { type: 'close', key, value, stamp },
     };
 
     return {

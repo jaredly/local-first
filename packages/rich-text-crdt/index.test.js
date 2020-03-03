@@ -111,20 +111,22 @@ const testSerialize = state => {
     return res;
 };
 
-const actionToDelta = (state, action) => {
+const actionToDeltas = (state, action) => {
     if (action.type === 'insert') {
         return insert(state, action.at, action.text, action.format);
     } else if (action.type === 'delete') {
-        return del(state, action.at, action.count);
+        return [del(state, action.at, action.count)];
     } else if (action.type === 'fmt') {
-        return format(
-            state,
-            action.at,
-            action.count,
-            action.key,
-            action.value,
-            action.stamp,
-        );
+        return [
+            format(
+                state,
+                action.at,
+                action.count,
+                action.key,
+                action.value,
+                action.stamp,
+            ),
+        ];
     }
 };
 
@@ -164,15 +166,17 @@ describe('rich-text-crdt', () => {
                             };
                         }
                         action.parallel[site].forEach(subAction => {
-                            const delta = actionToDelta(
+                            const deltas = actionToDeltas(
                                 states[site].state,
                                 subAction,
                             );
-                            states[site].state = apply(
-                                states[site].state,
-                                delta,
-                            );
-                            states[site].deltas.push(delta);
+                            deltas.forEach(delta => {
+                                states[site].state = apply(
+                                    states[site].state,
+                                    delta,
+                                );
+                                states[site].deltas.push(delta);
+                            });
                         });
                     });
                     state = states.a.state;
@@ -184,8 +188,10 @@ describe('rich-text-crdt', () => {
                         }
                     });
                 } else {
-                    const delta = actionToDelta(state, action);
-                    state = apply(state, delta);
+                    const deltas = actionToDeltas(state, action);
+                    deltas.forEach(delta => {
+                        state = apply(state, delta);
+                    });
                 }
             });
         });
