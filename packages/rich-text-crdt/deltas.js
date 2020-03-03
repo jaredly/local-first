@@ -132,7 +132,7 @@ export const format = (
         content: { type: 'open', key, value, stamp },
     });
 
-    const endLoc = posToLoc(state, at, true, null);
+    const endLoc = posToLoc(state, at + length, true, null);
     const endAfterId = idAfter(state, loc);
     state.largestLocalId = Math.max(
         endLoc.id,

@@ -32,6 +32,9 @@ const walkWithFmt = (state, fn) => {
             fmt[node.content.key] = node.content.value;
         } else if (node.content.type === 'close') {
             const f = format[node.content.key];
+            if (f) {
+                console.log('nope at the close', f);
+            }
             // TODO this won't work for objects as format
             const idx = f.indexOf(node.content.value);
             if (idx !== -1) {
@@ -84,10 +87,10 @@ describe('rich-text-crdt', () => {
                             state,
                             format(
                                 state,
-                                state.at,
-                                state.count,
-                                state.key,
-                                state.value,
+                                action.at,
+                                action.count,
+                                action.key,
+                                action.value,
                             ),
                         );
                     }
