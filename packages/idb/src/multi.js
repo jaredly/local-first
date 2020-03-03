@@ -49,12 +49,11 @@ It won't be that much code, I can rewrite it all later.
 
 // @flow
 import { openDB } from 'idb';
-import * as hlc from '../../../packages/hybrid-logical-clock';
-import type { HLC } from '../../../packages/hybrid-logical-clock';
-import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
-import { type CursorType } from '../types';
+import * as hlc from '../../hybrid-logical-clock';
+import type { HLC } from '../../hybrid-logical-clock';
+import type { Delta, CRDT as Data } from '../../nested-object-crdt';
 import deepEqual from 'fast-deep-equal';
-import type { MultiPersistence } from '../types';
+import type { MultiPersistence, CursorType } from '../../core/src/types.js';
 
 const colName = name => name + ':nodes';
 const metaName = name => name + ':deltas-meta';

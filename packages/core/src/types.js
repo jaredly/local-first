@@ -1,7 +1,7 @@
 // @flow
-import type { HLC } from '../../../packages/hybrid-logical-clock';
+import type { HLC } from '../../hybrid-logical-clock';
 import { type ClientMessage, type ServerMessage } from './server';
-import { type Schema } from '../../../packages/nested-object-crdt/schema.js';
+import { type Schema } from '../../nested-object-crdt/src/schema';
 
 export type CursorType = number;
 export type PeerChange = { col: string, nodes: Array<string> };

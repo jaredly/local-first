@@ -10,7 +10,7 @@ import type {
     BlobNetworkCreator,
 } from '../types';
 import { peerTabAwareNetwork } from '../peer-tabs';
-import { type Schema } from '../../../packages/nested-object-crdt/schema.js';
+import { type Schema } from '../../../packages/nested-object-crdt/src/schema.js';
 import * as hlc from '../../../packages/hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';
 

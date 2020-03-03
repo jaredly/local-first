@@ -3,16 +3,16 @@
     "version": "1.0.0",
     "dependencies": {
         "@birchill/json-equalish": "^1.1.0",
-        "../../../packages/hybrid-logical-clock": "^1.0",
-        "../../../packages/nested-object-crdt": "^1.0",
-        "broadcast-channel": "^3.0.3"
+        "broadcast-channel": "^3.0.3",
+        "fast-deep-equal": "^3.1.1",
+        "idb": "^5.0.1"
     },
     "browserslist": [
         "last 1 Chrome versions"
     ],
     "devDependencies": {
-        "@babel/core": "^7.8.3",
         "@babel/cli": "^7.8.3",
+        "@babel/core": "^7.8.3",
         "flow-bin": "^0.116.1"
     }
 }

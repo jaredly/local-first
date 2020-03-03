@@ -5,7 +5,11 @@ import type { HLC } from '../../../packages/hybrid-logical-clock';
 import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
 import { type CursorType } from '../../../packages/core/src/types';
 import deepEqual from 'fast-deep-equal';
-import type { Persistence, FullPersistence, DeltaPersistence } from '../types';
+import type {
+    Persistence,
+    FullPersistence,
+    DeltaPersistence,
+} from '../../core/src/types';
 
 export const applyDeltas = async function<Delta, Data>(
     db: Promise<*>,

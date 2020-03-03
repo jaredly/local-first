@@ -15,5 +15,5 @@
         "test": "node -r @babel/register tests/test-full-fuzz.js",
         "prepublish": "babel index.js -d lib && cp index.js lib/index.js.flow"
     },
-    "main": "src/index.js"
+    "main": "index.js"
 }

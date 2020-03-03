@@ -4,7 +4,7 @@ import * as hlc from '../../../packages/hybrid-logical-clock';
 import type { HLC } from '../../../packages/hybrid-logical-clock';
 import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
 import deepEqual from '@birchill/json-equalish';
-import type { FullPersistence } from '../types';
+import type { FullPersistence } from '../../core/src/types';
 
 // export const
 

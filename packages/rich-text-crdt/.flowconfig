@@ -1,7 +1,7 @@
 [ignore]
 
 [include]
-../../packages
+../hybrid-logical-clock
 
 [libs]
 
