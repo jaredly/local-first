@@ -7,8 +7,6 @@ export const init = (site: string): CRDT => ({
     largestLocalId: 0,
     map: {},
     roots: [],
-    marks: {},
-    marksByStart: {},
 });
 
 export * from './deltas';

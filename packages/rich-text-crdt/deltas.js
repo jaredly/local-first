@@ -1,19 +1,16 @@
 // @flow
 import deepEqual from 'fast-deep-equal';
-import type { Content, CRDT, Node, Delta } from './types';
+import type { Content, CRDT, Node, TmpNode, Delta } from './types';
 
 import { posToLoc, idAfter, formatAt } from './loc';
 
-// TODO should I accept a formatting thing?
-// Yes, because insertion point (e.g. before or after the start of
-// a formatting tag) is dependent on what formats I want to exist.
 export const insert = (
     state: CRDT,
     at: number,
     text: string,
-    format: ?{ [key: string]: any } = null,
+    // format: ?{ [key: string]: any } = null,
 ) => {
-    const loc = posToLoc(state, at, true, format);
+    const loc = posToLoc(state, at, true, null);
     const afterId = idAfter(state, loc);
 
     state.largestLocalId = Math.max(loc.id, afterId, state.largestLocalId);
@@ -22,7 +19,7 @@ export const insert = (
     // third ID for the text itself, so it's contiguous.
     const nodes = [];
     let currentAfter = [loc.id, loc.site];
-    const addNode = content => {
+    const addNode = (content: Content) => {
         const id = state.largestLocalId + 1;
         if (content.type === 'text') {
             state.largestLocalId += content.text.length;
@@ -34,60 +31,61 @@ export const insert = (
     };
 
     // If no format map is provided, take the current format
-    if (format) {
-        const currentFormat = formatAt(state, loc);
-        // Ugh how do I... take care of things?
-        // like, actually inserting a closing tag
-        // is a bad idea, right?
-        // Or wait, maybe it's good?
-        // What's the difference between:
-        // <open:b:true>ho folks</close:b:true>
-        // -> v1
-        // <open:b:true>ho<open:b:false>yes</close:b:false> folks</close:b:true>
-        // -> v2
-        // <open:b:true>ho</close:b:true>yes<open:b:true> folks</close:b:true>
-        // Conceptually, I think the second is better.
-        // Ok but so what if there's a competing value?
-        // <open:h:goog>ho</close:h:goog><open:h:twit>yes</close:h:twit><open:b:goog> folks</close:b:goog>
-        // <open:h:goog>ho<open:h:twit>yes</close:h:twit> folks</close:b:goog>
-        // The second one is "simpler", includes fewer nodes.
-        // but requires resolution of overlapping formats.
-        // however, merging will require such resolution, so I'll have to build
-        // that anyway.
-        // Ok, so if it's a competing value (or a new value), we do a nested tag
-        // If it's a missing value, we do the "close & reopen" thing
-        Object.keys(currentFormat).forEach(key => {
-            if (!(key in format)) {
-                addNode({ type: 'close', key, value: currentFormat[key] });
-            }
-        });
-        Object.keys(format).forEach(key => {
-            if (!deepEqual(currentFormat[key], format[key])) {
-                addNode({ type: 'open', key, value: format[key] });
-            }
-        });
-        addNode({ type: 'text', text });
-        Object.keys(format).forEach(key => {
-            if (!deepEqual(currentFormat[key], format[key])) {
-                addNode({ type: 'close', key, value: format[key] });
-            }
-        });
-        Object.keys(currentFormat).forEach(key => {
-            if (!(key in format)) {
-                addNode({ type: 'open', key, value: currentFormat[key] });
-            }
-        });
-        // Ok, order of things
-        // </close></the></things></that>
-        // Ok, so we *should* close our tags in the
-        // same order as they're opened, right?
-        // Is that something that it makes sense
-        // to enforce though? Because we'll have to
-        // do some normalize on the flip side I believe.
-        // Because merges can easily break that invariant.
-    } else {
-        addNode({ type: 'text', text });
-    }
+    // if (format) {
+    //     const currentFormat = formatAt(state, loc);
+    //     // Ugh how do I... take care of things?
+    //     // like, actually inserting a closing tag
+    //     // is a bad idea, right?
+    //     // Or wait, maybe it's good?
+    //     // What's the difference between:
+    //     // <open:b:true>ho folks</close:b:true>
+    //     // -> v1
+    //     // <open:b:true>ho<open:b:false>yes</close:b:false> folks</close:b:true>
+    //     // -> v2
+    //     // <open:b:true>ho</close:b:true>yes<open:b:true> folks</close:b:true>
+    //     // Conceptually, I think the second is better.
+    //     // Ok but so what if there's a competing value?
+    //     // <open:h:goog>ho</close:h:goog><open:h:twit>yes</close:h:twit><open:b:goog> folks</close:b:goog>
+    //     // <open:h:goog>ho<open:h:twit>yes</close:h:twit> folks</close:b:goog>
+    //     // The second one is "simpler", includes fewer nodes.
+    //     // but requires resolution of overlapping formats.
+    //     // however, merging will require such resolution, so I'll have to build
+    //     // that anyway.
+    //     // Ok, so if it's a competing value (or a new value), we do a nested tag
+    //     // If it's a missing value, we do the "close & reopen" thing
+    //     // Object.keys(currentFormat).forEach(key => {
+    //     //     if (!(key in format)) {
+    //     //         addNode({ type: 'dot' });
+    //     //     }
+    //     // });
+    //     // Object.keys(format).forEach(key => {
+    //     //     if (!deepEqual(currentFormat[key], format[key])) {
+    //     //         addNode({ type: 'open', key, value: format[key] });
+    //     //     }
+    //     // });
+    //     addNode({ type: 'text', text });
+    //     // Object.keys(format).forEach(key => {
+    //     //     if (!deepEqual(currentFormat[key], format[key])) {
+    //     //         addNode({ type: 'close', key, value: format[key] });
+    //     //     }
+    //     // });
+    //     // Object.keys(currentFormat).forEach(key => {
+    //     //     if (!(key in format)) {
+    //     //         addNode({ type: 'open', key, value: currentFormat[key] });
+    //     //     }
+    //     // });
+    //     // Ok, order of things
+    //     // </close></the></things></that>
+    //     // Ok, so we *should* close our tags in the
+    //     // same order as they're opened, right?
+    //     // Is that something that it makes sense
+    //     // to enforce though? Because we'll have to
+    //     // do some normalize on the flip side I believe.
+    //     // Because merges can easily break that invariant.
+    // } else {
+    //     addNode({ type: 'text', text });
+    // }
+    addNode({ type: 'text', text });
 
     // NOTE and interesting case, for posToLoc:
     // if we have <em>Hi</em><strong>folks</strong>
@@ -113,12 +111,43 @@ export const del = (state: CRDT, at: number, length: number): Delta => {
 
 export const format = (
     state: CRDT,
-    at: string,
+    at: number,
     length: number,
     key: string,
     value: any,
 ): Delta => {
-    const nodes = [];
+    const nodes: Array<TmpNode> = [];
+    const stamp = Date.now()
+        .toString(36)
+        .padStart(5, '0');
+
+    const loc = posToLoc(state, at, true, null);
+    const afterId = idAfter(state, loc);
+    state.largestLocalId = Math.max(loc.id, afterId, state.largestLocalId);
+    const id = state.largestLocalId + 1;
+    state.largestLocalId += 1;
+    nodes.push({
+        after: [loc.id, loc.site],
+        id: [id, state.site],
+        content: { type: 'open', key, value, stamp },
+    });
+
+    const endLoc = posToLoc(state, at, true, null);
+    const endAfterId = idAfter(state, loc);
+    state.largestLocalId = Math.max(
+        endLoc.id,
+        endAfterId,
+        state.largestLocalId,
+    );
+    const endId = state.largestLocalId + 1;
+    state.largestLocalId += 1;
+    nodes.push({
+        after: [endLoc.id, endLoc.site],
+        id: [endId, state.site],
+        content: { type: 'close', key, value, stamp },
+    });
+
+    // currentAfter = [id, state.site];
     // Ok, need to determine what spans to format around, right?
     // Like, if you have "*Hello* world" and you select the whole
     // thing, and press "italic", should it merely extend the italic
@@ -300,4 +329,86 @@ ones though.
 
 
 
+I> a b c d
+A> i(a b c d)
+- sync -
+A> noi(b c)
+B> noi(a b c d)
+- sync -
+R> .a .b c. d.
+
+dangggg this results in " d" still be italicized.
+Which nobody wanted.
+
+Does that mean that a mark should have multiple spans?
+ugh that makes it even more complicated.
+
+Ok, so the other way to do it is, instead of deleting marks, we just overwrite them.
+
+That ... makes things rather simpler?
+Maybe.
+It's got a simplicity I like.
+
+
+
+
+
+Ummm then do we need the dots and marks?
+Like I think we probably don't, we can go back to open/close
+tags, and just ... never delete them? I guess if their contents get deleted, we can delete them too.
+Or if the full thing is selected and then deleted.
+
+So, those scenarios again, how would they fare?
+
+I> Hello world
+A> *Hello* world
+B> He---llo world
+--> *He---llo* world
+
+I> *Hello* world
+A> i(Hello world)
+B> noi(Hello)
+- sync -
+--> Hello* world*
+but tbh I think that's the right way to do it.
+
+I> *a b c* d
+A> noi(b c d)
+B> noi(a b c)
+- sync -
+
+
+ummm so there's a problem maybe?
+How do we know presedence?
+
+oh wait we can use our fancy causal ordering technique!
+yes, so when adding format nodes, use `largestGlobalId`,
+and when adding text nodes, use `largestLocalId`?
+hmmm maybe that makes things more complicated
+
+maybe add a timestamp?
+yeah, I could do an HLC if I wanted, but honestly it's probably
+not a big deal? Although, why not, right?
+
+Yes, let's do an HLC there. ... I think?
+Also do we need to make sure that.
+
+I> *a* b c *d* e *f*
+A> noi(a b c d) // umm no it'll really just be noi(a) noi(d)
+B> i(b c)
+
+<1>a <2>b c</2> d</1>
+<1>a <2>b c</1> d</1>
+
+Ok, so you got to know: 
+1) what takes precedence over what, and
+2) when something ends. So the start & stop have HLC timestamps that are the IDs.
+
+And I think that should preserve intent as well as may be?
+
+What would happen if I just straight up add things?
+And then go back later (as a treat) to remove some things?
+
+Ah ok so for the first pass I can ... umm ... do insert(text) and then format(that range)?
+If the formats don't exist.
 */
