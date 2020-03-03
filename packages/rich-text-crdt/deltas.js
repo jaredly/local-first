@@ -29,6 +29,15 @@ export const insert = (
         currentAfter = [id, state.site];
     };
 
+    addNode(text);
+
+    return [
+        {
+            type: 'update',
+            insert: nodes,
+        },
+    ];
+
     // If no format map is provided, take the current format
     // if (format) {
     //     const currentFormat = formatAt(state, loc);
@@ -84,7 +93,6 @@ export const insert = (
     // } else {
     //     addNode({ type: 'text', text });
     // }
-    addNode(text);
 
     // NOTE and interesting case, for posToLoc:
     // if we have <em>Hi</em><strong>folks</strong>
@@ -96,13 +104,6 @@ export const insert = (
 
     // Ok, so if we have multiple format things, does it matter
     // which is applied first? I'll assume no.
-
-    return [
-        {
-            type: 'update',
-            insert: nodes,
-        },
-    ];
 };
 
 export const del = (state: CRDT, at: number, length: number): Delta => {

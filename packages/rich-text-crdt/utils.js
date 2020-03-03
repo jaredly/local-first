@@ -64,3 +64,24 @@ export const keyCmp = ([a, b]: [number, string], [c, d]: [number, string]) => {
 export const keyEq = ([a, b]: [number, string], [c, d]: [number, string]) => {
     return a === c && b === d;
 };
+
+export const getFormatValues = (
+    state: CRDT,
+    formats: { [key: string]: Array<string> },
+) => {
+    const res = {};
+    Object.keys(formats).forEach(key => {
+        if (formats[key].length) {
+            const node = state.map[formats[key][0]];
+            if (node.content.type !== 'open') {
+                throw new Error(
+                    `A formats list had a non-open node in it ${toKey(
+                        node.id,
+                    )}`,
+                );
+            }
+            res[key] = node.content.value;
+        }
+    });
+    return res;
+};

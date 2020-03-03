@@ -32,3 +32,4 @@ export const inflate = (
 export * from './deltas';
 export * from './apply';
 export * from './loc';
+export * from './utils';

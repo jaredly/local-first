@@ -12,6 +12,7 @@ import {
     walk,
     fmtIdx,
     toKey,
+    getFormatValues,
 } from './';
 
 const walkWithFmt = (state, fn) => {
@@ -60,24 +61,6 @@ const showContents = contents => {
 const justContents = state => {
     const res = [];
     walk(state, node => res.push(showContents(node.content)));
-    return res;
-};
-
-const getFormatValues = (state, formats) => {
-    const res = {};
-    Object.keys(formats).forEach(key => {
-        if (formats[key].length) {
-            const node = state.map[formats[key][0]];
-            if (node.content.type !== 'open') {
-                throw new Error(
-                    `A formats list had a non-open node in it ${toKey(
-                        node.id,
-                    )}`,
-                );
-            }
-            res[key] = node.content.value;
-        }
-    });
     return res;
 };
 
@@ -134,7 +117,8 @@ describe('rich-text-crdt', () => {
     fixtures.forEach((test, i) => {
         const title = test.title ? test.title : 'should work ' + i;
         const actions = test.actions ? test.actions : test;
-        it(title, () => {
+        // const i = test.only ? it.only : it;
+        const body = () => {
             let state = init('a');
             actions.forEach(action => {
                 // console.log('action', action);
@@ -150,7 +134,7 @@ describe('rich-text-crdt', () => {
                     } catch (err) {
                         console.log(JSON.stringify(state));
                         console.log(JSON.stringify(ser));
-                        console.log(JSON.stringify(alt));
+                        // console.log(JSON.stringify(alt));
                         throw err;
                     }
                 } else if (action.contents) {
@@ -194,6 +178,12 @@ describe('rich-text-crdt', () => {
                     });
                 }
             });
-        });
+        };
+        if (test.only) {
+            it.only(title, body);
+        } else {
+            it(title, body);
+        }
+        // t(title, body);
     });
 });

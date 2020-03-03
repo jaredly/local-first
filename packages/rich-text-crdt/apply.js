@@ -221,5 +221,4 @@ export const apply = (state: CRDT, delta: Delta): CRDT => {
         });
     }
     return state;
-    // TODO
 };

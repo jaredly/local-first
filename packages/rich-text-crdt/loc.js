@@ -1,7 +1,15 @@
 // @flow
+import deepEqual from 'fast-deep-equal';
 import type { Content, CRDT, Node, Delta, Loc } from './types';
 
-import { toKey, fromKey, length, keyCmp, contentLength } from './utils';
+import {
+    toKey,
+    fromKey,
+    length,
+    keyCmp,
+    contentLength,
+    getFormatValues,
+} from './utils';
 
 export const rootSite = '-root-';
 export const rootParent = '0:-root-';
@@ -133,9 +141,14 @@ export const nextSibling = function(crdt: CRDT, node: Node): ?string {
         return crdt.roots[idx + 1];
     } else {
         const parent = crdt.map[node.parent];
-        const idx = parent.children.indexOf(node);
+        const key = toKey(node.id);
+        const idx = parent.children.indexOf(key);
         if (idx === -1) {
-            throw new Error(`Can't find node in parents`);
+            throw new Error(
+                `Can't find node ${key} in parents ${parent.children.join(
+                    ';',
+                )}`,
+            );
         }
         if (idx + 1 >= parent.children.length) {
             return nextSibling(crdt, parent);
@@ -241,15 +254,66 @@ export const posToPostLoc = (
 
 type Format = { [key: string]: any };
 
+const countDifferences = (one, two) => {
+    let differences = 0;
+    Object.keys(one).forEach(key => {
+        if (!deepEqual(one[key], two[key])) {
+            differences += 1;
+        }
+    });
+    Object.keys(two).forEach(key => {
+        if (!(key in one)) {
+            differences += 1;
+        }
+    });
+    return differences;
+};
+
 export const adjustForFormat = (state: CRDT, loc: Loc, format: Format): Loc => {
     // if we're right next to some opens or closes, see
     // if any of the adjacent spots already have the desired
     // formatting.
     const node = nodeForKey(state, [loc.id, loc.site]);
+    if (!node) {
+        return loc;
+    }
+    if (
+        node.content.type === 'text' &&
+        loc.id < node.id[0] + node.content.text.length - 1
+    ) {
+        // we're in the middle of a text node
+        return loc;
+    }
+    console.log('adjusting, at the end I guess', loc, node.id);
+    const nodeFormat = getFormatValues(state, node.formats);
+    if (deepEqual(format, nodeFormat)) {
+        return loc;
+    }
     if (loc.pre) {
+        const options = [
+            [countDifferences(format, nodeFormat), 0, loc, nodeFormat],
+        ];
+        const orig = node;
+        walkFrom(state, toKey(node.id), node => {
+            if (node.id === orig.id) {
+                return;
+            }
+            if (node.content.type === 'text') {
+                return false;
+            }
+            const fmt = getFormatValues(state, node.formats);
+            options.push([
+                countDifferences(format, fmt),
+                options.length,
+                { id: node.id[0], site: node.id[1], pre: true },
+                fmt,
+            ]);
+        });
+        options.sort((a, b) => (a[0] === b[0] ? a[1] - b[1] : a[0] - b[0]));
+        console.log('Options', JSON.stringify(options), format);
         // maybe I want a generator, so I can step through
         // the formatting nodes that face me?
-        return loc;
+        return options[0][2];
     } else {
         return loc; // TODO fix this
     }
@@ -314,7 +378,7 @@ export const posToLoc = function(
 ): Loc {
     const total = length(crdt);
     if (pos > total) {
-        throw new Error(`Loc is outside of the bounds`);
+        throw new Error(`Loc ${pos} is outside of the bounds ${total}`);
     }
     const [[id, site], offset] = anchorToLocAtLeft
         ? posToPreLoc(crdt, pos)
