@@ -115,11 +115,14 @@ export const format = (
     length: number,
     key: string,
     value: any,
+    stamp?: string,
 ): Delta => {
     const nodes: Array<TmpNode> = [];
-    const stamp = Date.now()
-        .toString(36)
-        .padStart(5, '0');
+    stamp =
+        stamp ??
+        Date.now()
+            .toString(36)
+            .padStart(5, '0');
 
     const loc = posToLoc(state, at, true, null);
     const afterId = idAfter(state, loc);

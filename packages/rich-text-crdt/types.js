@@ -32,7 +32,6 @@ export type Content =
     | {
           type: 'close',
           key: string,
-          value: any,
           stamp: string,
       };
 

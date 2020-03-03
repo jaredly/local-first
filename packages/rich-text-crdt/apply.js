@@ -1,6 +1,6 @@
 // @flow
 import type { Content, CRDT, Node, Delta } from './types';
-import { toKey, fromKey, keyCmp, contentLength } from './utils';
+import { toKey, fromKey, keyCmp, contentLength, contentChars } from './utils';
 import { rootParent } from './loc';
 
 const insertionPos = (ids, id) => {
@@ -16,7 +16,7 @@ const mkNode = (id, parent, content, formats = {}): Node => {
     return {
         id,
         parent,
-        size: contentLength(content),
+        size: contentChars(content),
         children: [],
         content,
         formats,

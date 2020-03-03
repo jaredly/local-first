@@ -33,6 +33,15 @@ export const length = function(state: CRDT) {
     return res;
 };
 
+export const contentChars = (content: Content) => {
+    switch (content.type) {
+        case 'text':
+            return content.text.length;
+        default:
+            return 0;
+    }
+};
+
 export const contentLength = (content: Content) => {
     switch (content.type) {
         case 'text':
