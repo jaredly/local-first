@@ -2,7 +2,17 @@
 import fixtures from './fixtures';
 import deepEqual from 'fast-deep-equal';
 
-import { apply, insert, del, format, init, inflate, walk, fmtIdx } from './';
+import {
+    apply,
+    insert,
+    del,
+    format,
+    init,
+    inflate,
+    walk,
+    fmtIdx,
+    toKey,
+} from './';
 
 const walkWithFmt = (state, fn) => {
     const format = {};
@@ -13,25 +23,17 @@ const walkWithFmt = (state, fn) => {
         } else if (node.content.type === 'open') {
             if (!format[node.content.key]) {
                 format[node.content.key] = [node.content];
-                // console.log(`New thing`, node.content);
             } else {
-                // not unshift...
                 const idx = fmtIdx(format[node.content.key], node.content);
-                // console.log(
-                //     `Adding in format ${node.content.key}=${node.content.value} (${node.content.stamp})`,
-                //     idx,
-                // );
                 // insert into sorted order.
                 format[node.content.key].splice(idx, 0, node.content);
             }
             fmt[node.content.key] = format[node.content.key][0].value;
-            // console.log(`Current value`, fmt[node.content.key]);
         } else if (node.content.type === 'close') {
             const f = format[node.content.key];
             if (!f) {
                 console.log('nope at the close', node.content);
             }
-            // TODO this won't work for objects as format
             const idx = f.findIndex(item => item.stamp === node.content.stamp);
             if (idx !== -1) {
                 f.splice(idx, 1);
@@ -41,11 +43,6 @@ const walkWithFmt = (state, fn) => {
             } else {
                 delete fmt[node.content.key];
             }
-            // console.log(
-            //     `Closed (${node.content.stamp}), new value ${
-            //         node.content.key
-            //     }=${fmt[node.content.key]}`,
-            // );
         }
     });
 };
@@ -63,6 +60,42 @@ const showContents = contents => {
 const justContents = state => {
     const res = [];
     walk(state, node => res.push(showContents(node.content)));
+    return res;
+};
+
+const getFormatValues = (state, formats) => {
+    const res = {};
+    Object.keys(formats).forEach(key => {
+        if (formats[key].length) {
+            const node = state.map[formats[key][0]];
+            if (node.content.type !== 'open') {
+                throw new Error(
+                    `A formats list had a non-open node in it ${toKey(
+                        node.id,
+                    )}`,
+                );
+            }
+            res[key] = node.content.value;
+        }
+    });
+    return res;
+};
+
+const testAltSerialize = state => {
+    const res = [];
+    walk(state, node => {
+        if (node.content.type === 'text') {
+            const fmt = getFormatValues(state, node.formats);
+            if (res.length && deepEqual(res[res.length - 1].fmt, fmt)) {
+                res[res.length - 1].text += node.content.text;
+            } else {
+                res.push({
+                    text: node.content.text,
+                    fmt,
+                });
+            }
+        }
+    });
     return res;
 };
 
@@ -96,16 +129,26 @@ const actionToDelta = (state, action) => {
 };
 
 describe('rich-text-crdt', () => {
-    fixtures.forEach((actions, i) => {
-        it('should work ' + i, () => {
+    fixtures.forEach((test, i) => {
+        const title = test.title ? test.title : 'should work ' + i;
+        const actions = test.actions ? test.actions : test;
+        it(title, () => {
             let state = init('a');
             actions.forEach(action => {
                 // console.log('action', action);
                 if (action.state) {
+                    const ser = testSerialize(state);
+                    const alt = testAltSerialize(state);
                     try {
-                        expect(testSerialize(state)).toEqual(action.state);
+                        expect(ser).toEqual(alt, 'format caches wrong');
+                        expect(ser).toEqual(
+                            action.state,
+                            'expected state wrong',
+                        );
                     } catch (err) {
                         console.log(JSON.stringify(state));
+                        console.log(JSON.stringify(ser));
+                        console.log(JSON.stringify(alt));
                         throw err;
                     }
                 } else if (action.contents) {

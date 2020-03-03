@@ -94,6 +94,35 @@ export const fmtIdx = (
     return fmt.length;
 };
 
+export const lastChild = (crdt: CRDT, id: string) => {
+    const node = crdt.map[id];
+    if (node.children.length) {
+        return lastChild(crdt, node.children[node.children.length - 1]);
+    } else {
+        return id;
+    }
+};
+
+export const prevSibling = (crdt: CRDT, node: Node): ?string => {
+    if (node.parent === rootParent) {
+        const idx = crdt.roots.indexOf(node);
+        if (idx === -1 || idx === 0) {
+            return; // selection went too far
+        }
+        return lastChild(crdt, crdt.roots[idx - 1]);
+    } else {
+        const parent = crdt.map[node.parent];
+        const idx = parent.children.indexOf(node);
+        if (idx === -1) {
+            throw new Error(`Can't find node in parents`);
+        }
+        if (idx === 0) {
+            return prevSibling(crdt, parent);
+        }
+        return parent.children[idx + 1];
+    }
+};
+
 // Get the next sibling or parent's next sibling
 export const nextSibling = function(crdt: CRDT, node: Node): ?string {
     if (node.parent === rootParent) {

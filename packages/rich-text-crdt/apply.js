@@ -8,7 +8,7 @@ import {
     contentChars,
     keyEq,
 } from './utils';
-import { rootParent, walkFrom } from './loc';
+import { rootParent, walkFrom, lastChild } from './loc';
 
 const insertionPos = (ids, id) => {
     for (let i = 0; i < ids.length; i++) {
@@ -114,11 +114,13 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
     const afterKey = toKey(after);
     if (afterKey === rootParent) {
         const idx = insertionPos(state.roots, id);
+        const currentFormats =
+            idx === 0
+                ? {}
+                : state.map[lastChild(state, state.roots[idx - 1])].formats;
         const key = toKey(id);
         state.roots = insertId(state.roots, key, idx);
-        // hmmm should we be determining parent formats here?
-        // TODO get current formats list
-        const node = mkNode(id, afterKey, content, {});
+        const node = mkNode(id, afterKey, content, currentFormats);
         state.map[key] = node;
         return;
     }
@@ -132,14 +134,12 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
     // }
 
     const idx = insertionPos(parent.children, id);
+    const currentFormats =
+        idx === 0
+            ? parent.formats
+            : state.map[lastChild(state, parent.children[idx])].formats;
     const key = toKey(id);
-    const node = mkNode(
-        id,
-        parentKey,
-        content,
-        // TODO really get formats
-        parent.formats,
-    );
+    const node = mkNode(id, parentKey, content, currentFormats);
     state.map[parentKey] = {
         ...parent,
         children: insertId(parent.children, key, idx),
