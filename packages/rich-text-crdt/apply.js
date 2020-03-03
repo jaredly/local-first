@@ -24,9 +24,9 @@ const mkNode = (id, parent, content, formats = {}): Node => {
         id,
         parent,
         size: contentChars(content),
-        children: [],
         content,
         formats,
+        children: [],
     };
 };
 
@@ -39,11 +39,11 @@ const split = (state: CRDT, key: string, splitPoint: number) => {
     const text = node.content.text;
     const newNode: Node = {
         id: [node.id[0] + splitPoint, node.id[1]],
-        content: { type: 'text', text: text.slice(splitPoint) },
         parent: toKey(node.id),
+        size: node.size - splitPoint,
+        content: { type: 'text', text: text.slice(splitPoint) },
         deleted: node.deleted,
         formats: node.formats,
-        size: node.size - splitPoint,
         children: node.children,
     };
     const newKey = toKey(newNode.id);
@@ -199,6 +199,10 @@ export const apply = (state: CRDT, delta: Delta): CRDT => {
         walkFrom(state, toKey(delta.open.id), node => {
             if (keyEq(node.id, delta.close.id)) {
                 return false;
+            }
+            if (keyEq(node.id, delta.open.id)) {
+                // TODO does the open tag need a self-reference?
+                // we could early return here
             }
             // yeah, adding in the formats
             const key = toKey(node.id);

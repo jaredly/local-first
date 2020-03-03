@@ -75,6 +75,7 @@ export const walkFrom = (state: CRDT, key: string, fn: Node => ?false) => {
         }
         return walkUp(node.parent);
     };
+    walkUp(key);
 };
 
 export const walk = (state: CRDT, fn: Node => ?false) => {
