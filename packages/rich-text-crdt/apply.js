@@ -141,11 +141,25 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
             : state.map[lastChild(state, parent.children[idx])].formats;
     const key = toKey(id);
     const node = mkNode(id, parentKey, content, currentFormats);
+    const size = contentChars(content);
     state.map[parentKey] = {
         ...parent,
         children: insertId(parent.children, key, idx),
+        size: parent.size + size,
     };
     state.map[key] = node;
+
+    if (size) {
+        let cp = parent.parent;
+        while (cp !== rootParent) {
+            const node = state.map[cp];
+            state.map[cp] = {
+                ...node,
+                size: node.size + size,
+            };
+            cp = node.parent;
+        }
+    }
 };
 
 const insertIdx = (state: CRDT, formats: Array<string>, stamp: string) => {
