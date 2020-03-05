@@ -48,19 +48,9 @@ const walkWithFmt = (state, fn) => {
     });
 };
 
-const showContents = contents => {
-    if (contents.type === 'text') {
-        return `text(${contents.text})`;
-    } else if (contents.type === 'open') {
-        return `>${contents.key}(${contents.value}):${contents.stamp}`;
-    } else {
-        return `<${contents.key}:${contents.stamp}`;
-    }
-};
-
 const justContents = state => {
     const res = [];
-    walk(state, node => res.push(showContents(node.content)));
+    walk(state, node => res.push(node.content));
     return res;
 };
 
@@ -134,11 +124,16 @@ describe('rich-text-crdt', () => {
                     } catch (err) {
                         console.log(JSON.stringify(state));
                         console.log(JSON.stringify(ser));
-                        // console.log(JSON.stringify(alt));
                         throw err;
                     }
                 } else if (action.contents) {
-                    expect(justContents(state)).toEqual(action.contents);
+                    const contents = justContents(state);
+                    expect(contents.length).toEqual(action.contents.length);
+                    contents.forEach((c, i) => {
+                        expect(c).toEqual(
+                            expect.objectContaining(action.contents[i]),
+                        );
+                    });
                 } else if (action.parallel) {
                     let pre = { ...state };
                     const states = { a: { deltas: [], state } };

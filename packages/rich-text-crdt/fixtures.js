@@ -18,6 +18,16 @@ const fmt = (at, count, key, value, stamp = Date.now()) => ({
 
 const text = (text, fmt = {}) => ({ text, fmt });
 
+// Content
+const bold = (value, stamp?) => ({
+    type: 'open',
+    key: 'bold',
+    value,
+    ...(stamp ? { stamp } : {}),
+});
+const ctext = text => ({ type: 'text', text });
+const close = stamp => ({ type: 'close', ...(stamp ? { stamp } : {}) });
+
 module.exports = [
     // Insertions
     {
@@ -34,8 +44,14 @@ module.exports = [
         ],
     },
     // // Deletions
-    // [insert(0, 'Hello'), del(0, 2), { state: [text('llo')] }],
-    // [insert(0, 'Hello'), del(1, 2), { state: [text('Hlo')] }],
+    {
+        title: 'Delete at start',
+        actions: [insert(0, 'Hello'), del(0, 2), { state: [text('llo')] }],
+    },
+    {
+        title: 'Delete in middle',
+        actions: [insert(0, 'Hello'), del(1, 2), { state: [text('Hlo')] }],
+    },
     // // Insert and delete
     // [
     //     insert(0, 'Hello'),
@@ -60,12 +76,12 @@ module.exports = [
             fmt(0, 3, 'bold', false, '1'),
             {
                 contents: [
-                    '>bold(false):1',
-                    '>bold(true):0',
-                    'text(a b)',
-                    '<bold:1',
-                    'text( c d)',
-                    '<bold:0',
+                    bold(false, '1'),
+                    bold(true, '0'),
+                    ctext('a b'),
+                    close('1'),
+                    ctext(' c d'),
+                    close('0'),
                 ],
             },
             {
@@ -100,16 +116,27 @@ module.exports = [
             },
             {
                 contents: [
-                    '>bold(false):1',
-                    '>bold(true):0',
-                    'text(a )',
-                    '>bold(true):2',
-                    'text(b)',
-                    '<bold:1',
-                    'text( c)',
-                    '<bold:2',
-                    'text( d)',
-                    '<bold:0',
+                    bold(false, '1'),
+                    bold(true, '0'),
+                    ctext('a '),
+                    bold(true, '2'),
+                    ctext('b'),
+                    close('1'),
+                    ctext(' c'),
+                    close('2'),
+                    ctext(' d'),
+                    close('0'),
+                    // {type: 'open', key: 'bold', value: false, stamp: '1'},
+                    // '>bold(false):1',
+                    // '>bold(true):0',
+                    // 'text(a )',
+                    // '>bold(true):2',
+                    // 'text(b)',
+                    // '<bold:1',
+                    // 'text( c)',
+                    // '<bold:2',
+                    // 'text( d)',
+                    // '<bold:0',
                 ],
             },
             {
@@ -157,7 +184,8 @@ module.exports = [
         ],
     },
     {
-        title: 'Insert with format - connected',
+        title:
+            'Insert with format - connected - should reuse existing format tag',
         actions: [
             insert(0, 'a b c d'),
             fmt(2, 3, 'bold', true),
@@ -167,6 +195,16 @@ module.exports = [
                     text('a '),
                     text('boldb c', { bold: true }),
                     text(' d'),
+                ],
+            },
+            {
+                contents: [
+                    ctext('a '),
+                    bold(true),
+                    ctext('bold'),
+                    ctext('b c'),
+                    close(),
+                    ctext(' d'),
                 ],
             },
             // {

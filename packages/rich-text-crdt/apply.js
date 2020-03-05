@@ -1,5 +1,5 @@
 // @flow
-import type { Content, CRDT, Node, Delta } from './types';
+import type { Content, CRDT, Node, Delta, Span } from './types';
 import {
     toKey,
     fromKey,
@@ -8,7 +8,7 @@ import {
     contentChars,
     keyEq,
 } from './utils';
-import { rootParent, walkFrom, lastChild } from './loc';
+import { rootParent, walkFrom, lastChild, nodeForKey } from './loc';
 
 const insertionPos = (ids, id) => {
     for (let i = 0; i < ids.length; i++) {
@@ -129,6 +129,7 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
         throw new Error(`Cannot find parent for ${toKey(after)}`);
     }
     const parent = state.map[parentKey];
+
     // if (maybeMerge(parent, tmpNode, newState)) {
     //     return newState;
     // }
@@ -170,6 +171,32 @@ const addFormat = (
     return insertId(formats, id, idx);
 };
 
+const deleteSpan = (state: CRDT, span: Span) => {
+    if (!ensureNodeAt(state, [span.id, span.site])) {
+        throw new Error(`Failed to ensure node at ${span.id}:${span.site}`);
+    }
+    const key = toKey([span.id, span.site]);
+    const node = state.map[key];
+    if (node.content.type !== 'text') {
+        throw new Error(`Not a text node, cannot delete a non-text node`);
+    }
+    const text = node.content.text;
+    if (text.length < span.length) {
+        deleteSpan(state, {
+            id: span.id + text.length,
+            site: span.site,
+            length: span.length - text.length,
+        });
+    } else if (text.length > span.length) {
+        // This splits it
+        ensureNodeAt(state, [span.id + span.length, span.site]);
+    }
+    state.map[key] = {
+        ...state.map[key],
+        deleted: true,
+    };
+};
+
 export const apply = (state: CRDT, delta: Delta): CRDT => {
     state = { ...state, map: { ...state.map } };
     if (delta.type === 'update') {
@@ -179,6 +206,11 @@ export const apply = (state: CRDT, delta: Delta): CRDT => {
                     type: 'text',
                     text: tmpNode.text,
                 });
+            });
+        }
+        if (delta.delete) {
+            delta.delete.forEach(span => {
+                deleteSpan(state, span);
             });
         }
     } else if (delta.type === 'format') {

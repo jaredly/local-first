@@ -2,6 +2,7 @@
 import deepEqual from 'fast-deep-equal';
 import type { Content, CRDT, Node, TmpNode, Delta } from './types';
 
+import { selectionToSpans } from './span';
 import { getFormatValues } from './utils';
 import {
     posToLoc,
@@ -174,8 +175,9 @@ export const insert = (
 };
 
 export const del = (state: CRDT, at: number, length: number): Delta => {
-    // TODO
-    return { type: 'update', delete: [] };
+    const spans = selectionToSpans(state, at, at + length);
+    // TODO if there are any covered format pairs, then remove them as well
+    return { type: 'update', delete: spans };
 };
 
 export const format = (
