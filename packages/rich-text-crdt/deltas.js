@@ -2,41 +2,108 @@
 import deepEqual from 'fast-deep-equal';
 import type { Content, CRDT, Node, TmpNode, Delta } from './types';
 
-import { posToLoc, idAfter, formatAt, adjustForFormat } from './loc';
+import { getFormatValues } from './utils';
+import {
+    posToLoc,
+    idAfter,
+    formatAt,
+    adjustForFormat,
+    nodeForKey,
+} from './loc';
 
 export const insert = (
     state: CRDT,
     at: number,
     text: string,
-    format: ?{ [key: string]: any } = null,
+    newFormat: ?{ [key: string]: any } = null,
+    genStamp: ?() => string,
 ): Array<Delta> => {
     const initialLoc = posToLoc(state, at, true);
-    const loc = format
-        ? adjustForFormat(state, initialLoc, format)
+    const loc = newFormat
+        ? adjustForFormat(state, initialLoc, newFormat)
         : initialLoc;
     const afterId = idAfter(state, loc);
 
     state.largestLocalId = Math.max(loc.id, afterId, state.largestLocalId);
+
+    const deltas = [];
+    let nextId = state.largestLocalId + 1;
+    let nextAfter = [loc.id, loc.site];
+    if (newFormat) {
+        const node = nodeForKey(state, [loc.id, loc.site]);
+        const current = node ? getFormatValues(state, node.formats) : {};
+
+        const addFormat = (key, value) => {
+            const openNode = {
+                after: nextAfter,
+                id: [nextId, state.site],
+            };
+            nextId += 1;
+            const closeNode = {
+                after: openNode.id,
+                id: [nextId, state.site],
+            };
+            nextId += 1;
+            nextAfter = openNode.id;
+            deltas.push({
+                type: 'format',
+                open: openNode,
+                close: closeNode,
+                key,
+                value,
+                stamp: genStamp
+                    ? genStamp()
+                    : Date.now()
+                          .toString(36)
+                          .padStart(5, '0'),
+            });
+        };
+
+        Object.keys(newFormat).forEach(key => {
+            if (!deepEqual(newFormat[key], current[key])) {
+                addFormat(key, newFormat[key]);
+            }
+        });
+        Object.keys(current).forEach(key => {
+            if (!(key in newFormat)) {
+                addFormat(key, null);
+            }
+        });
+    }
+    deltas.push({
+        type: 'update',
+        insert: [
+            {
+                after: nextAfter,
+                id: [nextId, state.site],
+                text,
+            },
+        ],
+    });
+    state.largestLocalId = nextId + text.length - 1;
+
+    return deltas;
+
     // If currentFormat is missing things, then add new tags.
     // first ID for starting tag, second ID for ending tag,
     // third ID for the text itself, so it's contiguous.
-    const nodes: Array<TmpNode> = [];
-    let currentAfter = [loc.id, loc.site];
-    const addNode = (text: string) => {
-        const id = state.largestLocalId + 1;
-        state.largestLocalId += text.length;
-        nodes.push({ after: currentAfter, id: [id, state.site], text });
-        currentAfter = [id, state.site];
-    };
+    // const nodes: Array<TmpNode> = [];
+    // let currentAfter = [loc.id, loc.site];
+    // const addNode = (text: string) => {
+    //     const id = state.largestLocalId + 1;
+    //     state.largestLocalId += text.length;
+    //     nodes.push({ after: currentAfter, id: [id, state.site], text });
+    //     currentAfter = [id, state.site];
+    // };
 
-    addNode(text);
+    // addNode(text);
 
-    return [
-        {
-            type: 'update',
-            insert: nodes,
-        },
-    ];
+    // return [
+    //     {
+    //         type: 'update',
+    //         insert: nodes,
+    //     },
+    // ];
 
     // If no format map is provided, take the current format
     // if (format) {

@@ -284,7 +284,7 @@ export const adjustForFormat = (state: CRDT, loc: Loc, format: Format): Loc => {
         // we're in the middle of a text node
         return loc;
     }
-    console.log('adjusting, at the end I guess', loc, node.id);
+    // console.log('adjusting, at the end I guess', loc, node.id);
     const nodeFormat = getFormatValues(state, node.formats);
     if (deepEqual(format, nodeFormat)) {
         return loc;
@@ -310,7 +310,7 @@ export const adjustForFormat = (state: CRDT, loc: Loc, format: Format): Loc => {
             ]);
         });
         options.sort((a, b) => (a[0] === b[0] ? a[1] - b[1] : a[0] - b[0]));
-        console.log('Options', JSON.stringify(options), format);
+        // console.log('Options', JSON.stringify(options), format);
         // maybe I want a generator, so I can step through
         // the formatting nodes that face me?
         return options[0][2];

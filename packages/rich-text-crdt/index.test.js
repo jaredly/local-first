@@ -174,6 +174,7 @@ describe('rich-text-crdt', () => {
                 } else {
                     const deltas = actionToDeltas(state, action);
                     deltas.forEach(delta => {
+                        // console.log('delta', JSON.stringify(delta));
                         state = apply(state, delta);
                     });
                 }
