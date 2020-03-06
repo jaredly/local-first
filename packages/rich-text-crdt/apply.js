@@ -130,9 +130,31 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
     }
     const parent = state.map[parentKey];
 
-    // if (maybeMerge(parent, tmpNode, newState)) {
-    //     return newState;
-    // }
+    if (
+        parent.content.type === 'text' &&
+        content.type === 'text' &&
+        parent.id[1] === id[1] &&
+        parent.id[0] + parent.content.text.length === id[0] &&
+        (parent.children.length === 0 ||
+            state.map[parent.children[0]].id[0] < id[0])
+    ) {
+        const size = content.text.length;
+        state.map[parentKey] = {
+            ...parent,
+            content: { type: 'text', text: parent.content.text + content.text },
+            size: parent.size + size,
+        };
+        let cp = parent.parent;
+        while (cp !== rootParent) {
+            const node = state.map[cp];
+            state.map[cp] = {
+                ...node,
+                size: node.size + size,
+            };
+            cp = node.parent;
+        }
+        return;
+    }
 
     const idx = insertionPos(parent.children, id);
     const currentFormats =
