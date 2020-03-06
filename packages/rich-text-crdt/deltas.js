@@ -30,6 +30,7 @@ export const insert = (
     const deltas = [];
     let nextId = state.largestLocalId + 1;
     let nextAfter = [loc.id, loc.site];
+    // console.log('Insert', initialLoc, loc, nextId);
     if (newFormat) {
         const node = nodeForKey(state, [loc.id, loc.site]);
         const current = node ? getFormatValues(state, node.formats) : {};

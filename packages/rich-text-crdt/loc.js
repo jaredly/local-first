@@ -162,7 +162,8 @@ const posToPreLocForNode = (
     node: Node,
     pos: number,
 ): [[number, string], number] => {
-    if (pos === 1 && !node.deleted) {
+    // Only text nodes should be pre-locs
+    if (pos === 1 && !node.deleted && node.content.type === 'text') {
         return [node.id, 0];
     }
     if (pos > node.size) {

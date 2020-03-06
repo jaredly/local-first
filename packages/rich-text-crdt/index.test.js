@@ -110,6 +110,9 @@ const runQuillTest = (deltas, result) => {
         const deltas = quillDeltasToDeltas(state, quillDelta.ops, () =>
             Date.now().toString(36),
         );
+        // console.log('quill', JSON.stringify(quillDelta));
+        // console.log('state', JSON.stringify(state));
+        // console.log('deltas', JSON.stringify(deltas));
         state = apply(state, deltas);
     });
     const contents = stateToQuillContents(state);

@@ -1,5 +1,6 @@
 // @flow
 
+import deepEqual from 'fast-deep-equal';
 import type { CRDT, Node, Delta, Span } from './types';
 import { insert, del, format } from './deltas';
 import { walkWithFmt } from './debug';
@@ -20,7 +21,18 @@ export const stateToQuillContents = (state: CRDT) => {
                 attributes[key] = fmt[key];
             }
         });
-        ops.push({ insert: text, attributes });
+        const op: { insert: string, attributes?: Format } = { insert: text };
+        if (Object.keys(attributes).length) {
+            op.attributes = attributes;
+        }
+        if (
+            ops.length &&
+            deepEqual(op.attributes, ops[ops.length - 1].attributes)
+        ) {
+            ops[ops.length - 1].insert += text;
+        } else {
+            ops.push(op);
+        }
     });
     return { ops };
 };
@@ -39,7 +51,7 @@ export const quillDeltasToDeltas = (
                     state,
                     at,
                     quillDelta.insert,
-                    quillDelta.attributes,
+                    quillDelta.attributes || {},
                     genStamp,
                 ),
             );
