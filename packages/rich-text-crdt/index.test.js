@@ -106,9 +106,10 @@ const actionToDeltas = (state, action) => {
 
 const runQuillTest = (deltas, result) => {
     let state = init('a');
+    let i = 0;
     deltas.forEach(quillDelta => {
         const deltas = quillDeltasToDeltas(state, quillDelta.ops, () =>
-            Date.now().toString(36),
+            (i++).toString(36).padStart(5, '0'),
         );
         // console.log('quill', JSON.stringify(quillDelta));
         // console.log('state', JSON.stringify(state));

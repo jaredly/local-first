@@ -29,7 +29,7 @@ const ctext = text => ({ type: 'text', text });
 const close = stamp => ({ type: 'close', ...(stamp ? { stamp } : {}) });
 
 module.exports = [
-    // Insertions
+    // // Insertions
     {
         title: 'Basic insertion',
         actions: [insert(0, 'Hi'), { state: [text('Hi')] }],
@@ -54,7 +54,6 @@ module.exports = [
     },
     {
         title: 'Delete multiple',
-        // only: true,
         actions: [
             insert(0, 'Hello'),
             del(1, 2),
@@ -62,14 +61,15 @@ module.exports = [
             { state: [text('Hl')] },
         ],
     },
-    // // Insert and delete
-    // [
-    //     insert(0, 'Hello'),
-    //     insert(2, '-i-'),
-    //     del(0, 1),
-    //     { state: [text('e-i-llo')] },
-    // ],
-    // // Fmt
+    {
+        title: 'Insert and delete',
+        actions: [
+            insert(0, 'Hello'),
+            insert(2, '-i-'),
+            del(0, 1),
+            { state: [text('e-i-llo')] },
+        ],
+    },
     {
         title: 'Basic fmt',
         actions: [
@@ -136,17 +136,6 @@ module.exports = [
                     close('2'),
                     ctext(' d'),
                     close('0'),
-                    // {type: 'open', key: 'bold', value: false, stamp: '1'},
-                    // '>bold(false):1',
-                    // '>bold(true):0',
-                    // 'text(a )',
-                    // '>bold(true):2',
-                    // 'text(b)',
-                    // '<bold:1',
-                    // 'text( c)',
-                    // '<bold:2',
-                    // 'text( d)',
-                    // '<bold:0',
                 ],
             },
             {
@@ -217,9 +206,6 @@ module.exports = [
                     ctext(' d'),
                 ],
             },
-            // {
-            //     contents: ['text(a )', '>bold(true):_', '>'],
-            // },
         ],
     },
     {
