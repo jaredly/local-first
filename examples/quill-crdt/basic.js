@@ -43,6 +43,39 @@ const ui = new Quill(div, {
 });
 
 let state = crdt.init('a');
+state = crdt.apply(state, crdt.insert(state, 0, '\n'));
+
+const toNode = item => {
+    let inner = document.createTextNode(item.text);
+    Object.keys(item.fmt).forEach(key => {
+        if (item.fmt[key] == null) {
+            return;
+        }
+        const node = document.createElement(
+            {
+                bold: 'strong',
+                italic: 'em',
+                link: 'a',
+            }[key],
+        );
+        if (key === 'link') {
+            node.href = item.fmt[key];
+        }
+        node.appendChild(inner);
+        inner = node;
+    });
+    return inner;
+};
+
+const toDom = (div, state) => {
+    div.innerHTML = '';
+    testSerialize(state, true).forEach(item => {
+        div.appendChild(toNode(item));
+    });
+};
+
+const output = document.createElement('div');
+document.body.appendChild(output);
 
 ui.on(
     'text-change',
@@ -53,5 +86,6 @@ ui.on(
         const deltas = quillDeltasToDeltas(state, delta, genStamp);
         deltas.forEach(delta => (state = crdt.apply(state, delta)));
         console.log(testSerialize(state));
+        toDom(output, state);
     },
 );

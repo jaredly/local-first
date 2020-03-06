@@ -211,7 +211,11 @@ const deleteSpan = (state: CRDT, span: Span) => {
     };
 };
 
-export const apply = (state: CRDT, delta: Delta): CRDT => {
+export const apply = (state: CRDT, delta: Delta | Array<Delta>): CRDT => {
+    if (Array.isArray(delta)) {
+        delta.forEach(delta => (state = apply(state, delta)));
+        return state;
+    }
     state = { ...state, map: { ...state.map } };
     if (delta.type === 'update') {
         if (delta.insert) {
