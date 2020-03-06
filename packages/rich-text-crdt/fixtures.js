@@ -54,7 +54,7 @@ module.exports = [
     },
     {
         title: 'Delete multiple',
-        only: true,
+        // only: true,
         actions: [
             insert(0, 'Hello'),
             del(1, 2),
