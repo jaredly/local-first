@@ -52,6 +52,15 @@ module.exports = [
         title: 'Delete in middle',
         actions: [insert(0, 'Hello'), del(1, 2), { state: [text('Hlo')] }],
     },
+    {
+        title: 'Delete multiple',
+        actions: [
+            insert(0, 'Hello'),
+            del(1, 2),
+            del(2, 1),
+            { state: [text('Hl')] },
+        ],
+    },
     // // Insert and delete
     // [
     //     insert(0, 'Hello'),
@@ -211,6 +220,35 @@ module.exports = [
             //     contents: ['text(a )', '>bold(true):_', '>'],
             // },
         ],
+    },
+    {
+        title: '',
+        only: true,
+        quillDeltas: [
+            { ops: [{ insert: 'Hello\n' }] },
+            {
+                ops: [
+                    { retain: 5 },
+                    { retain: 1, attributes: { list: 'bullet' } },
+                ],
+            },
+            {
+                ops: [
+                    { retain: 5 },
+                    { insert: '\n', attributes: { list: 'bullet' } },
+                ],
+            },
+            { ops: [{ retain: 6 }, { insert: 'Y' }] },
+            { ops: [{ retain: 7 }, { insert: 'e' }] },
+        ],
+        quillResult: {
+            ops: [
+                { insert: 'Hello' },
+                { attributes: { list: 'bullet' }, insert: '\n' },
+                { insert: 'Ye' },
+                { attributes: { list: 'bullet' }, insert: '\n' },
+            ],
+        },
     },
     // Umm. So now what?
     // Maybe I write out the results?

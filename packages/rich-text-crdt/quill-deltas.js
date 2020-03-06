@@ -2,6 +2,7 @@
 
 import type { CRDT, Node, Delta, Span } from './types';
 import { insert, del, format } from './deltas';
+import { walkWithFmt } from './debug';
 
 type Format = { [key: string]: any };
 
@@ -9,6 +10,20 @@ export type QuillDelta =
     | {| delete: number |}
     | {| insert: string, attributes?: ?Format |}
     | {| retain: number, attributes?: ?Format |};
+
+export const stateToQuillContents = (state: CRDT) => {
+    const ops = [];
+    walkWithFmt(state, (text, fmt) => {
+        const attributes = {};
+        Object.keys(fmt).forEach(key => {
+            if (fmt[key]) {
+                attributes[key] = fmt[key];
+            }
+        });
+        ops.push({ insert: text, attributes });
+    });
+    return { ops };
+};
 
 export const quillDeltasToDeltas = (
     state: CRDT,

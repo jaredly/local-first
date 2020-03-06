@@ -43,7 +43,12 @@ const ui = new Quill(div, {
 });
 
 let state = crdt.init('a');
-state = crdt.apply(state, crdt.insert(state, 0, '\n'));
+const initialText = 'Hello\n';
+state = crdt.apply(state, crdt.insert(state, 0, initialText));
+ui.setText(initialText);
+
+const allDeltas = [];
+allDeltas.push({ ops: [{ insert: initialText }] });
 
 const toNode = item => {
     let inner = document.createTextNode(item.text);
@@ -77,15 +82,22 @@ const toDom = (div, state) => {
 const output = document.createElement('div');
 document.body.appendChild(output);
 
+const textarea = document.createElement('textarea');
+document.body.appendChild(textarea);
+
 ui.on(
     'text-change',
     (delta: Array<QuillDelta<QuillFormat>>, oldDelta, source: string) => {
         if (source === 'crdt') {
             return;
         }
+        allDeltas.push(delta);
         const deltas = quillDeltasToDeltas(state, delta, genStamp);
         deltas.forEach(delta => (state = crdt.apply(state, delta)));
         console.log(testSerialize(state));
         toDom(output, state);
+        textarea.value = `{\n  title: "",\n  quillDeltas: ${JSON.stringify(
+            allDeltas,
+        )},\n  quillResult: ${JSON.stringify(ui.getContents())}\n}`;
     },
 );
