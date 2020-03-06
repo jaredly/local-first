@@ -207,8 +207,22 @@ const deleteSpan = (state: CRDT, span: Span) => {
     }
     state.map[key] = {
         ...state.map[key],
+        size: state.map[key].size - text.length,
         deleted: true,
     };
+
+    // if (size) {
+    // Remove the length of this text from all parent's sizes.
+    let cp = node.parent;
+    while (cp !== rootParent) {
+        const node = state.map[cp];
+        state.map[cp] = {
+            ...node,
+            size: node.size - text.length,
+        };
+        cp = node.parent;
+    }
+    // }
 };
 
 export const apply = (state: CRDT, delta: Delta | Array<Delta>): CRDT => {

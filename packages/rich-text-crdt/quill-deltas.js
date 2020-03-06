@@ -59,6 +59,8 @@ export const quillDeltasToDeltas = (
         }
         if (quillDelta.retain) {
             // TODO need to be able to delete formatting
+            // Or actually quill does this by setting it to null
+            // so I think we're fine.
             if (quillDelta.attributes) {
                 const attrs = quillDelta.attributes;
                 Object.keys(attrs).forEach(key => {

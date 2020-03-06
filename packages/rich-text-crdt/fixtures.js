@@ -222,8 +222,7 @@ module.exports = [
         ],
     },
     {
-        title: '',
-        only: true,
+        title: 'Bullet then insert',
         quillDeltas: [
             { ops: [{ insert: 'Hello\n' }] },
             {
@@ -250,6 +249,38 @@ module.exports = [
             ],
         },
     },
+    {
+        title: 'bullet delete then indent',
+        only: true,
+        quillDeltas: [
+            { ops: [{ insert: 'Hello\n' }] },
+            {
+                ops: [
+                    { retain: 5 },
+                    { retain: 1, attributes: { list: 'bullet' } },
+                ],
+            },
+            {
+                ops: [
+                    { retain: 5 },
+                    { insert: '\n', attributes: { list: 'bullet' } },
+                ],
+            },
+            { ops: [{ retain: 6 }, { insert: 'k' }] },
+            { ops: [{ retain: 7 }, { insert: '\t' }] },
+            { ops: [{ retain: 7 }, { delete: 1 }] },
+            { ops: [{ retain: 7 }, { retain: 1, attributes: { indent: 1 } }] },
+        ],
+        quillResult: {
+            ops: [
+                { insert: 'Hello' },
+                { attributes: { list: 'bullet' }, insert: '\n' },
+                { insert: 'k' },
+                { attributes: { indent: 1, list: 'bullet' }, insert: '\n' },
+            ],
+        },
+    },
+
     // Umm. So now what?
     // Maybe I write out the results?
     // Or something?

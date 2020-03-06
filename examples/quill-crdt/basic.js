@@ -4,6 +4,7 @@ import * as crdt from '../../packages/rich-text-crdt';
 import * as hlc from '../../packages/hybrid-logical-clock';
 import {
     quillDeltasToDeltas,
+    stateToQuillContents,
     type QuillDelta,
 } from '../../packages/rich-text-crdt/quill-deltas';
 import { testSerialize } from '../../packages/rich-text-crdt/debug';
@@ -85,19 +86,25 @@ document.body.appendChild(output);
 const textarea = document.createElement('textarea');
 document.body.appendChild(textarea);
 
+const backToQuill = document.createElement('textarea');
+document.body.appendChild(backToQuill);
+
 ui.on(
     'text-change',
     (delta: Array<QuillDelta<QuillFormat>>, oldDelta, source: string) => {
         if (source === 'crdt') {
             return;
         }
+
         allDeltas.push(delta);
+        textarea.value = `{\n  title: "",\n  quillDeltas: ${JSON.stringify(
+            allDeltas,
+        )},\n  quillResult: ${JSON.stringify(ui.getContents())}\n}`;
+
         const deltas = quillDeltasToDeltas(state, delta, genStamp);
         deltas.forEach(delta => (state = crdt.apply(state, delta)));
         console.log(testSerialize(state));
         toDom(output, state);
-        textarea.value = `{\n  title: "",\n  quillDeltas: ${JSON.stringify(
-            allDeltas,
-        )},\n  quillResult: ${JSON.stringify(ui.getContents())}\n}`;
+        backToQuill.value = JSON.stringify(stateToQuillContents(state));
     },
 );
