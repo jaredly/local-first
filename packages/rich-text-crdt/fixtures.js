@@ -54,6 +54,7 @@ module.exports = [
     },
     {
         title: 'Delete multiple',
+        only: true,
         actions: [
             insert(0, 'Hello'),
             del(1, 2),
@@ -251,7 +252,7 @@ module.exports = [
     },
     {
         title: 'bullet delete then indent',
-        only: true,
+        // only: true,
         quillDeltas: [
             { ops: [{ insert: 'Hello\n' }] },
             {

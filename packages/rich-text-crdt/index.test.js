@@ -170,6 +170,7 @@ const runActionsTest = actions => {
                 }
             });
         } else {
+            // console.log('for state', JSON.stringify(state));
             const deltas = actionToDeltas(state, action);
             deltas.forEach(delta => {
                 // console.log('delta', JSON.stringify(delta));

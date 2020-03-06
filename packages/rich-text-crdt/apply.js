@@ -205,9 +205,10 @@ const deleteSpan = (state: CRDT, span: Span) => {
         // This splits it
         ensureNodeAt(state, [span.id + span.length, span.site]);
     }
+    const deletedLength = text.length > span.length ? span.length : text.length;
     state.map[key] = {
         ...state.map[key],
-        size: state.map[key].size - text.length,
+        size: state.map[key].size - deletedLength,
         deleted: true,
     };
 
@@ -218,7 +219,7 @@ const deleteSpan = (state: CRDT, span: Span) => {
         const node = state.map[cp];
         state.map[cp] = {
             ...node,
-            size: node.size - text.length,
+            size: node.size - deletedLength,
         };
         cp = node.parent;
     }
