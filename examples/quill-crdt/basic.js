@@ -104,6 +104,7 @@ ui.on(
         const deltas = quillDeltasToDeltas(state, delta, genStamp);
         deltas.forEach(delta => (state = crdt.apply(state, delta)));
         console.log(testSerialize(state));
+        console.log(state);
         toDom(output, state);
         backToQuill.value = JSON.stringify(stateToQuillContents(state));
     },

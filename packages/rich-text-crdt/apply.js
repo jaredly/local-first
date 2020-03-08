@@ -234,7 +234,6 @@ const deleteSpan = (state: CRDT, span: Span) => {
         deleted: true,
     };
 
-    // if (size) {
     // Remove the length of this text from all parent's sizes.
     let cp = node.parent;
     while (cp !== rootParent) {
@@ -245,7 +244,50 @@ const deleteSpan = (state: CRDT, span: Span) => {
         };
         cp = node.parent;
     }
-    // }
+
+    maybeMergeUp(state, key);
+    if (state.map[key].children.length === 1) {
+        maybeMergeUp(state, state.map[key].children[0]);
+    }
+};
+
+const maybeMergeUp = (state, key) => {
+    const node = state.map[key];
+    if (node.content.type !== 'text') {
+        return;
+    }
+    const text = node.content.text;
+    if (node.parent === rootParent) {
+        return;
+    }
+    const parent = state.map[node.parent];
+    if (
+        parent.children.length !== 1 ||
+        parent.content.type !== 'text' ||
+        parent.deleted !== node.deleted
+    ) {
+        return;
+    }
+    const parentText = parent.content.text;
+    if (
+        parent.id[1] !== node.id[1] ||
+        node.id[0] !== parent.id[0] + parentText.length
+    ) {
+        return;
+    }
+    // Ok we're merging
+    state.map[node.parent] = {
+        ...parent,
+        content: { type: 'text', text: parentText + text },
+        children: node.children,
+    };
+    node.children.forEach(child => {
+        state.map[child] = {
+            ...state.map[child],
+            parent: node.parent,
+        };
+    });
+    delete state.map[key];
 };
 
 export const apply = (state: CRDT, delta: Delta | Array<Delta>): CRDT => {
