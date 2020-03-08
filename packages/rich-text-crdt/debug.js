@@ -69,10 +69,14 @@ export const testSerialize = (state: CRDT, compact: boolean = false) => {
     return res;
 };
 
-export const justContents = (state: CRDT) => {
+export const justContents = (state: CRDT, includeDeleted: boolean = false) => {
     const res: Array<Content> = [];
-    walk(state, node => {
-        res.push(node.content);
-    });
+    walk(
+        state,
+        node => {
+            res.push(node.content);
+        },
+        includeDeleted,
+    );
     return res;
 };

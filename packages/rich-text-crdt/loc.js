@@ -38,25 +38,35 @@ yeah just 1 or 0 for the side, true or false.
 
 */
 
-const walkLoop = (state: CRDT, id: string, fn: Node => ?false) => {
+const walkLoop = (
+    state: CRDT,
+    id: string,
+    fn: Node => ?false,
+    all: boolean = false,
+) => {
     const node = state.map[id];
     if (!node) return console.error(`Missing node! ${id}`);
-    if (!node.deleted) {
+    if (!node.deleted || all) {
         if (fn(node) === false) {
             return false;
         }
     }
     if (
         state.map[id].children.some(
-            child => walkLoop(state, child, fn) === false,
+            child => walkLoop(state, child, fn, all) === false,
         )
     ) {
         return false;
     }
 };
 
-export const walkFrom = (state: CRDT, key: string, fn: Node => ?false) => {
-    if (walkLoop(state, key, fn) === false) {
+export const walkFrom = (
+    state: CRDT,
+    key: string,
+    fn: Node => ?false,
+    all: boolean = false,
+) => {
+    if (walkLoop(state, key, fn, all) === false) {
         return;
     }
     const walkUp = key => {
@@ -77,7 +87,7 @@ export const walkFrom = (state: CRDT, key: string, fn: Node => ?false) => {
             );
         }
         for (let i = idx + 1; i < siblings.length; i++) {
-            if (walkLoop(state, siblings[i], fn) === false) {
+            if (walkLoop(state, siblings[i], fn, all) === false) {
                 return;
             }
         }
@@ -86,8 +96,8 @@ export const walkFrom = (state: CRDT, key: string, fn: Node => ?false) => {
     walkUp(key);
 };
 
-export const walk = (state: CRDT, fn: Node => ?false) => {
-    state.roots.some(id => walkLoop(state, id, fn) === false);
+export const walk = (state: CRDT, fn: Node => ?false, all: boolean = false) => {
+    state.roots.some(id => walkLoop(state, id, fn, all) === false);
 };
 
 export const fmtIdx = (

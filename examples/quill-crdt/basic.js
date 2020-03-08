@@ -7,7 +7,10 @@ import {
     stateToQuillContents,
     type QuillDelta,
 } from '../../packages/rich-text-crdt/quill-deltas';
-import { testSerialize } from '../../packages/rich-text-crdt/debug';
+import {
+    testSerialize,
+    justContents,
+} from '../../packages/rich-text-crdt/debug';
 import QuillCursors from 'quill-cursors/dist/index.js';
 
 const toolbarOptions = [
@@ -78,6 +81,34 @@ const toDom = (div, state) => {
     testSerialize(state, true).forEach(item => {
         div.appendChild(toNode(item));
     });
+    const m = document.createElement('div');
+    const all = [];
+    crdt.walk(state, node => all.push(node), true);
+    all.forEach(node => {
+        const d = document.createElement('span');
+        if (node.content.type === 'text') {
+            d.textContent = node.content.text;
+        } else if (node.content.type === 'open') {
+            d.textContent = `${node.content.key}=${JSON.stringify(
+                node.content.value,
+            )}`;
+            d.style.fontSize = '80%';
+            d.style.display = 'inline-block';
+            d.style.padding = '4px';
+        } else {
+            d.textContent = `/${node.content.key}`;
+            d.style.fontSize = '80%';
+            d.style.display = 'inline-block';
+            d.style.padding = '4px';
+        }
+        if (node.deleted) {
+            d.style.textStyle = 'italic';
+            d.style.color = '#aaa';
+        }
+        m.appendChild(d);
+    });
+    // m.textContent = JSON.stringify(all);
+    div.appendChild(m);
 };
 
 const output = document.createElement('div');
