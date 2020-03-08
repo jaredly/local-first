@@ -267,6 +267,18 @@ module.exports = [
             ],
         },
     },
+    {
+        title: 'Format then delete format',
+        only: true,
+        actions: [
+            insert(0, 'Hello'),
+            fmt(0, 5, 'bold', true, '0'),
+            fmt(0, 5, 'bold', null, '1'),
+            {
+                state: [text('Hello', { bold: null })],
+            },
+        ],
+    },
 
     // Umm. So now what?
     // Maybe I write out the results?
