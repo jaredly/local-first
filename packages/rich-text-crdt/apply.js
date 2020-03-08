@@ -290,6 +290,46 @@ const maybeMergeUp = (state, key) => {
     delete state.map[key];
 };
 
+const deleteFormat = (state, stamp, open, close) => {
+    // Ok
+    const openKey = toKey(open);
+    const closeKey = toKey(close);
+    const openNode = state.map[openKey];
+    const closeNode = state.map[closeKey];
+    if (
+        openNode.content.type !== 'open' ||
+        closeNode.content.type !== 'close' ||
+        openNode.content.stamp !== stamp ||
+        closeNode.content.stamp !== stamp
+    ) {
+        throw new Error(`Invalid "delete-format" delta`);
+    }
+    const key = openNode.content.key;
+    state.map[openKey] = {
+        ...openNode,
+        deleted: true,
+    };
+    state.map[closeKey] = {
+        ...closeNode,
+        deleted: true,
+    };
+    walkFrom(state, openKey, node => {
+        const nkey = toKey(node.id);
+        if (nkey === closeKey) {
+            return false; // we're done
+        }
+        if (node.formats[key].includes(openKey)) {
+            state.map[toKey(node.id)] = {
+                ...node,
+                formats: {
+                    ...node.formats,
+                    [key]: node.formats[key].filter(k => k !== openKey),
+                },
+            };
+        }
+    });
+};
+
 export const apply = (state: CRDT, delta: Delta | Array<Delta>): CRDT => {
     if (Array.isArray(delta)) {
         delta.forEach(delta => (state = apply(state, delta)));
@@ -310,6 +350,8 @@ export const apply = (state: CRDT, delta: Delta | Array<Delta>): CRDT => {
                 deleteSpan(state, span);
             });
         }
+    } else if (delta.type === 'delete-format') {
+        deleteFormat(state, delta.stamp, delta.open, delta.close);
     } else if (delta.type === 'format') {
         const openKey = toKey(delta.open.id);
         insertNode(state, delta.open.id, delta.open.after, {

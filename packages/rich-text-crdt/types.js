@@ -59,6 +59,12 @@ export type Delta =
           insert?: Array<TmpNode>,
       |}
     | {|
+          type: 'delete-format',
+          stamp: string,
+          open: [number, string],
+          close: [number, string],
+      |}
+    | {|
           type: 'format',
           open: {
               id: [number, string],
