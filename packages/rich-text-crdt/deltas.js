@@ -121,19 +121,19 @@ const maybeDeleteFormats = (
     if (start) {
         if (start.id[0] !== openNode.after[0]) {
             // we're in the middle of a text node
-            return;
+            return console.log('in the middle', start.id, openNode.after);
         }
     } else if (!keyEq(openNode.after, [0, rootSite])) {
         throw new Error(`no node ${openNode.after}`);
     }
     const startNext = start ? nextSibling(state, start) : state.roots[0];
     if (!startNext) {
-        return;
+        return console.log('no next');
     }
     const startNextNode = state.map[startNext];
     if (startNextNode.content.type === 'text') {
         // Not right next to the start of a format
-        return;
+        return console.log('next is text', startNextNode.content);
     }
     const end = nodeForKey(state, [endLoc.id, endLoc.site]);
     if (!end) {
@@ -141,7 +141,7 @@ const maybeDeleteFormats = (
     }
     if (end.id[0] !== endLoc.id) {
         // we're ending in the middle of a text node
-        return;
+        return console.log(end, endLoc);
     }
     let endId = [endLoc.id, endLoc.site];
     let current = end;
