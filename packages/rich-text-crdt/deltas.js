@@ -184,6 +184,7 @@ const maybeDeleteFormats = (
             node.formats[key].forEach(startId => (usedFormats[startId] = true));
         }
         if (keyEq(node.id, endId)) {
+            // console.log('end', endId, node.content, end.content);
             return false;
         }
     });

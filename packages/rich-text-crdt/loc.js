@@ -149,7 +149,7 @@ export const prevSibling = (crdt: CRDT, node: Node): ?string => {
 };
 
 export const nextNode = (crdt: CRDT, node: Node): ?string => {
-    if (node.children) {
+    if (node.children.length) {
         return node.children[0];
     }
     return nextSibling(crdt, node);
@@ -157,9 +157,11 @@ export const nextNode = (crdt: CRDT, node: Node): ?string => {
 
 // Get the next sibling or parent's next sibling
 export const nextSibling = function(crdt: CRDT, node: Node): ?string {
+    // console.log('sib', node);
     if (node.parent === rootParent) {
         const idx = crdt.roots.indexOf(node);
         if (idx === -1 || idx + 1 >= crdt.roots.length) {
+            // console.log('root out');
             return; // selection went too far
         }
         return crdt.roots[idx + 1];
