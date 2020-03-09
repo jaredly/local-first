@@ -14,6 +14,13 @@ import {
 export const rootSite = '-root-';
 export const rootParent = '0:-root-';
 
+export const lastId = (node: Node) => {
+    if (node.content.type === 'text') {
+        return [node.id[0] + node.content.text.length - 1, node.id[1]];
+    }
+    return node.id;
+};
+
 // Ok I actually need a better plan
 // char-space -> crdt-space
 // and back.

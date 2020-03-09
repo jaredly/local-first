@@ -14,6 +14,7 @@ import {
     nextSibling,
     prevSibling,
     rootSite,
+    lastId,
 } from './loc';
 
 export const insert = (
@@ -119,7 +120,7 @@ const maybeDeleteFormats = (
 ): ?Array<Delta> => {
     const start = nodeForKey(state, openNode.after);
     if (start) {
-        if (start.id[0] !== openNode.after[0]) {
+        if (lastId(start)[0] !== openNode.after[0]) {
             // we're in the middle of a text node
             return console.log('in the middle', start.id, openNode.after);
         }
@@ -139,9 +140,9 @@ const maybeDeleteFormats = (
     if (!end) {
         throw new Error(`no end node`);
     }
-    if (end.id[0] !== endLoc.id) {
+    if (lastId(end)[0] !== endLoc.id) {
         // we're ending in the middle of a text node
-        return console.log(end, endLoc);
+        return console.log('end middle', end.id, endLoc);
     }
     let endId = [endLoc.id, endLoc.site];
     let current = end;

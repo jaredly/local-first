@@ -269,21 +269,21 @@ module.exports = [
     },
     {
         title: 'Format then delete format',
-        only: true,
+        // only: true,
         actions: [
             insert(0, 'Hello'),
             fmt(0, 5, 'bold', true, '0'),
             fmt(0, 5, 'bold', null, '1'),
             {
-                state: [text('Hello', { bold: null })],
+                state: [text('Hello', {})],
             },
             {
                 contents: [
-                    bold(null, '1'),
-                    bold(true, '0'),
+                    // bold(null, '1'),
+                    // bold(true, '0'),
                     ctext('Hello'),
-                    close('1'),
-                    close('0'),
+                    // close('1'),
+                    // close('0'),
                 ],
             },
         ],
