@@ -298,6 +298,23 @@ module.exports = [
         ],
     },
 
+    {
+        title: 'Format nested then delete - within',
+        // only: true,
+        actions: [
+            insert(0, 'Hello'),
+            fmt(1, 3, 'bold', true, '0'),
+            fmt(0, 5, 'bold', true, '1'),
+            fmt(0, 5, 'bold', null, '2'),
+            {
+                state: [text('Hello', {})],
+            },
+            {
+                contents: [ctext('H'), ctext('ell'), ctext('o')],
+            },
+        ],
+    },
+
     // Umm. So now what?
     // Maybe I write out the results?
     // Or something?

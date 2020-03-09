@@ -68,8 +68,7 @@ export const insert = (
 
         Object.keys(newFormat).forEach(key => {
             if (
-                newFormat[key] &&
-                current[key] &&
+                newFormat[key] != current[key] &&
                 !deepEqual(newFormat[key], current[key])
             ) {
                 addFormat(key, newFormat[key]);
@@ -126,19 +125,19 @@ const maybeDeleteFormats = (
     if (start) {
         if (lastId(start)[0] !== openNode.after[0]) {
             // we're in the middle of a text node
-            return console.log('in the middle', start.id, openNode.after);
+            return;
         }
     } else if (!keyEq(openNode.after, [0, rootSite])) {
-        throw new Error(`no node ${openNode.after}`);
+        throw new Error(`no node ${toKey(openNode.after)}`);
     }
     const startNext = start ? nextNode(state, start) : state.roots[0];
     if (!startNext) {
-        return console.log('no next', start);
+        return;
     }
     const startNextNode = state.map[startNext];
     if (startNextNode.content.type === 'text') {
         // Not right next to the start of a format
-        return console.log('next is text', startNextNode.content);
+        return;
     }
     const end = nodeForKey(state, [endLoc.id, endLoc.site]);
     if (!end) {
@@ -146,7 +145,7 @@ const maybeDeleteFormats = (
     }
     if (lastId(end)[0] !== endLoc.id) {
         // we're ending in the middle of a text node
-        return console.log('end middle', end.id, endLoc);
+        return;
     }
     let endId = [endLoc.id, endLoc.site];
     let current = end;
@@ -156,11 +155,11 @@ const maybeDeleteFormats = (
             break;
         }
         current = state.map[nextKey];
-        if (end.content.type === 'text') {
+        if (current.content.type === 'text') {
             break;
         }
-        if (end.content.type === 'close') {
-            endId = end.id;
+        if (current.content.type === 'close') {
+            endId = current.id;
         }
     }
 
@@ -194,10 +193,12 @@ const maybeDeleteFormats = (
         )
     ) {
         // a format was used that isn't fully contained
+        // console.log('more used', usedFormats, startToClose);
         return;
     }
     if (Object.keys(startToClose).some(k => startToClose[k].close == null)) {
         // a format was started, but maybe not used? Unusual probably
+        // console.log('not closed', startToClose);
         return;
     }
 
