@@ -1,15 +1,19 @@
 // @flow
 import deepEqual from 'fast-deep-equal';
-import type { Content, CRDT, Node, TmpNode, Delta } from './types';
+import type { Content, CRDT, Node, TmpNode, Delta, Loc } from './types';
 
 import { selectionToSpans } from './span';
-import { getFormatValues } from './utils';
+import { getFormatValues, toKey, keyEq } from './utils';
 import {
     posToLoc,
     idAfter,
     formatAt,
     adjustForFormat,
     nodeForKey,
+    walkFrom,
+    nextSibling,
+    prevSibling,
+    rootSite,
 } from './loc';
 
 export const insert = (
@@ -86,83 +90,6 @@ export const insert = (
 
     return deltas;
 
-    // If currentFormat is missing things, then add new tags.
-    // first ID for starting tag, second ID for ending tag,
-    // third ID for the text itself, so it's contiguous.
-    // const nodes: Array<TmpNode> = [];
-    // let currentAfter = [loc.id, loc.site];
-    // const addNode = (text: string) => {
-    //     const id = state.largestLocalId + 1;
-    //     state.largestLocalId += text.length;
-    //     nodes.push({ after: currentAfter, id: [id, state.site], text });
-    //     currentAfter = [id, state.site];
-    // };
-
-    // addNode(text);
-
-    // return [
-    //     {
-    //         type: 'update',
-    //         insert: nodes,
-    //     },
-    // ];
-
-    // If no format map is provided, take the current format
-    // if (format) {
-    //     const currentFormat = formatAt(state, loc);
-    //     // Ugh how do I... take care of things?
-    //     // like, actually inserting a closing tag
-    //     // is a bad idea, right?
-    //     // Or wait, maybe it's good?
-    //     // What's the difference between:
-    //     // <open:b:true>ho folks</close:b:true>
-    //     // -> v1
-    //     // <open:b:true>ho<open:b:false>yes</close:b:false> folks</close:b:true>
-    //     // -> v2
-    //     // <open:b:true>ho</close:b:true>yes<open:b:true> folks</close:b:true>
-    //     // Conceptually, I think the second is better.
-    //     // Ok but so what if there's a competing value?
-    //     // <open:h:goog>ho</close:h:goog><open:h:twit>yes</close:h:twit><open:b:goog> folks</close:b:goog>
-    //     // <open:h:goog>ho<open:h:twit>yes</close:h:twit> folks</close:b:goog>
-    //     // The second one is "simpler", includes fewer nodes.
-    //     // but requires resolution of overlapping formats.
-    //     // however, merging will require such resolution, so I'll have to build
-    //     // that anyway.
-    //     // Ok, so if it's a competing value (or a new value), we do a nested tag
-    //     // If it's a missing value, we do the "close & reopen" thing
-    //     // Object.keys(currentFormat).forEach(key => {
-    //     //     if (!(key in format)) {
-    //     //         addNode({ type: 'dot' });
-    //     //     }
-    //     // });
-    //     // Object.keys(format).forEach(key => {
-    //     //     if (!deepEqual(currentFormat[key], format[key])) {
-    //     //         addNode({ type: 'open', key, value: format[key] });
-    //     //     }
-    //     // });
-    //     addNode({ type: 'text', text });
-    //     // Object.keys(format).forEach(key => {
-    //     //     if (!deepEqual(currentFormat[key], format[key])) {
-    //     //         addNode({ type: 'close', key, value: format[key] });
-    //     //     }
-    //     // });
-    //     // Object.keys(currentFormat).forEach(key => {
-    //     //     if (!(key in format)) {
-    //     //         addNode({ type: 'open', key, value: currentFormat[key] });
-    //     //     }
-    //     // });
-    //     // Ok, order of things
-    //     // </close></the></things></that>
-    //     // Ok, so we *should* close our tags in the
-    //     // same order as they're opened, right?
-    //     // Is that something that it makes sense
-    //     // to enforce though? Because we'll have to
-    //     // do some normalize on the flip side I believe.
-    //     // Because merges can easily break that invariant.
-    // } else {
-    //     addNode({ type: 'text', text });
-    // }
-
     // NOTE and interesting case, for posToLoc:
     // if we have <em>Hi</em><strong>folks</strong>
     // at = 2, format = {em: true, strong: true}
@@ -170,15 +97,111 @@ export const insert = (
     // add a strong, or we could be within the strong and
     // add an <em>. I'll decide to bias left, and go with
     // the former.
-
-    // Ok, so if we have multiple format things, does it matter
-    // which is applied first? I'll assume no.
 };
 
 export const del = (state: CRDT, at: number, length: number): Delta => {
     const spans = selectionToSpans(state, at, at + length);
     // TODO if there are any covered format pairs, then remove them as well
     return { type: 'update', delete: spans };
+};
+
+// ✅ If the node "right after" this node is a text node, then bail
+// ✅ if the node "right after" the end node is a text node, also bail
+// move the end node along to the last "format close" node
+// then collect all "full" formats, and all referenced formats.
+// If there are more referenced formats than full, then bail
+// Otherwise delete all the formats.
+const maybeDeleteFormats = (
+    state: CRDT,
+    key: string,
+    openNode,
+    endLoc: Loc,
+): ?Array<Delta> => {
+    const start = nodeForKey(state, openNode.after);
+    if (start) {
+        if (start.id[0] !== openNode.after[0]) {
+            // we're in the middle of a text node
+            return;
+        }
+    } else if (!keyEq(openNode.after, [0, rootSite])) {
+        throw new Error(`no node ${openNode.after}`);
+    }
+    const startNext = start ? nextSibling(state, start) : state.roots[0];
+    if (!startNext) {
+        return;
+    }
+    const startNextNode = state.map[startNext];
+    if (startNextNode.content.type === 'text') {
+        // Not right next to the start of a format
+        return;
+    }
+    const end = nodeForKey(state, [endLoc.id, endLoc.site]);
+    if (!end) {
+        throw new Error(`no end node`);
+    }
+    if (end.id[0] !== endLoc.id) {
+        // we're ending in the middle of a text node
+        return;
+    }
+    let endId = [endLoc.id, endLoc.site];
+    let current = end;
+    while (true) {
+        const nextKey = nextSibling(state, current);
+        if (!nextKey) {
+            break;
+        }
+        current = state.map[nextKey];
+        if (end.content.type === 'text') {
+            break;
+        }
+        if (end.content.type === 'close') {
+            endId = end.id;
+        }
+    }
+
+    // if we're halfway in the middle of a node, forget about it.
+    const stampToStart = {};
+    const startToClose = {};
+    const usedFormats = {};
+    walkFrom(state, toKey(startNextNode.id), node => {
+        const nodeKey = toKey(node.id);
+        if (node.content.type === 'open' && node.content.key === key) {
+            const stamp = node.content.stamp;
+            stampToStart[stamp] = nodeKey;
+            startToClose[nodeKey] = { stamp, open: node.id, close: null };
+        }
+        if (node.content.type === 'close' && node.content.key === key) {
+            const start = stampToStart[node.content.stamp];
+            if (startToClose[start]) {
+                startToClose[start].close = node.id;
+            }
+        }
+        if (node.formats[key]) {
+            node.formats[key].forEach(startId => (usedFormats[startId] = true));
+        }
+        if (keyEq(node.id, endId)) {
+            return false;
+        }
+    });
+    if (
+        Object.keys(usedFormats).some(
+            k => !startToClose[k] || startToClose[k].close == null,
+        )
+    ) {
+        // a format was used that isn't fully contained
+        return;
+    }
+    if (Object.keys(startToClose).some(k => startToClose[k].close == null)) {
+        // a format was started, but maybe not used? Unusual probably
+        return;
+    }
+
+    return Object.keys(startToClose).map(k => ({
+        type: 'delete-format',
+        stamp: startToClose[k].stamp,
+        open: startToClose[k].open,
+        close: startToClose[k].close,
+    }));
 };
 
 export const format = (
@@ -188,7 +211,7 @@ export const format = (
     key: string,
     value: any,
     stamp?: string,
-): Delta => {
+): Array<Delta> => {
     stamp =
         stamp ??
         Date.now()
@@ -209,6 +232,49 @@ export const format = (
         length === 0
             ? { id: openNode.id[0], site: openNode.id[1], pre: true }
             : posToLoc(state, at + length, true);
+
+    // Iff the full contents
+
+    // Cases:
+    // - the start is the middle of a word
+    // - the dominant format is covering up another format:bold,
+    //   such that deleting one layer would reveal the other.
+    // - ugh this is feeling complicated.
+    // - should I just do "if the span covered is literally an
+    //   existing format (that is the "latest" format across the
+    //   whole span), then nix it?"
+    // - maybe that's the simplest thing that would work?
+    // - oh wait, but then there's the "unbold could reveal a
+    //   previously covered-up bold"
+    // - so a simpler thing -- if the span covered completely
+    //   matches an existing format, and the contents don't have
+    //   any other formats for that key, then delete the format.
+    // What's an elegant way to fuzz the start & end?
+    // for the end, maybe do walkFrom(`idAfter`)? Seems like that
+    // would work. Same with `start` tbh.
+    //
+    // We're removing a format
+
+    if (value == null) {
+        const deleteFormats = maybeDeleteFormats(state, key, openNode, endLoc);
+        if (deleteFormats) {
+            return deleteFormats;
+        }
+    }
+    // collect all format spans that are encompassed by this range
+    // go through each text node in the interim, and find out what
+    // allegiences they have (format nodes that impact them)
+    // if there are any which aren't fully covered
+
+    // I want to be *after* any other "end"s
+    // let end = endLoc;
+    // walkFrom(state, toKey([endLoc.id, endLoc.site]), node => {
+    //     if (node.content.type !== 'end') {
+    //         return false;
+    //     }
+    //     // endLoc.id = node.id[0];
+    //     // endLoc.site = node.id[1];
+    // });
     const endAfterId = length === 0 ? afterId : idAfter(state, endLoc);
     state.largestLocalId = Math.max(
         endLoc.id,
@@ -222,14 +288,16 @@ export const format = (
         id: [endId, state.site],
     };
 
-    return {
-        type: 'format',
-        open: openNode,
-        close: closeNode,
-        key,
-        value,
-        stamp,
-    };
+    return [
+        {
+            type: 'format',
+            open: openNode,
+            close: closeNode,
+            key,
+            value,
+            stamp,
+        },
+    ];
 
     // currentAfter = [id, state.site];
     // Ok, need to determine what spans to format around, right?

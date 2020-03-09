@@ -277,6 +277,15 @@ module.exports = [
             {
                 state: [text('Hello', { bold: null })],
             },
+            {
+                contents: [
+                    bold(null, '1'),
+                    bold(true, '0'),
+                    ctext('Hello'),
+                    close('1'),
+                    close('0'),
+                ],
+            },
         ],
     },
 
