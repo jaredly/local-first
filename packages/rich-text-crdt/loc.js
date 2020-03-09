@@ -14,6 +14,13 @@ import {
 export const rootSite = '-root-';
 export const rootParent = '0:-root-';
 
+export const lastId = (node: Node) => {
+    if (node.content.type === 'text') {
+        return [node.id[0] + node.content.text.length - 1, node.id[1]];
+    }
+    return node.id;
+};
+
 // Ok I actually need a better plan
 // char-space -> crdt-space
 // and back.
@@ -139,6 +146,13 @@ export const prevSibling = (crdt: CRDT, node: Node): ?string => {
         }
         return parent.children[idx + 1];
     }
+};
+
+export const nextNode = (crdt: CRDT, node: Node): ?string => {
+    if (node.children) {
+        return node.children[0];
+    }
+    return nextSibling(crdt, node);
 };
 
 // Get the next sibling or parent's next sibling

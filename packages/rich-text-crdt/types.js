@@ -19,21 +19,21 @@ export type Node = {
 };
 
 export type Content =
-    | {
+    | {|
           type: 'text',
           text: string,
-      }
-    | {
+      |}
+    | {|
           type: 'open',
           key: string,
           value: any,
           stamp: string,
-      }
-    | {
+      |}
+    | {|
           type: 'close',
           key: string,
           stamp: string,
-      };
+      |};
 
 export const rootSite = '0:-root-';
 export const rootSiteRight = '1:-root-';
