@@ -137,10 +137,10 @@ const runActionsTest = actions => {
             }
         } else if (action.contents) {
             const contents = justContents(state);
-            expect(contents.length).toEqual(action.contents.length);
             contents.forEach((c, i) => {
                 expect(c).toEqual(expect.objectContaining(action.contents[i]));
             });
+            expect(contents.length).toEqual(action.contents.length);
         } else if (action.parallel) {
             let pre = { ...state };
             const states = { a: { deltas: [], state } };

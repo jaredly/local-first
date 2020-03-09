@@ -148,6 +148,13 @@ export const prevSibling = (crdt: CRDT, node: Node): ?string => {
     }
 };
 
+export const nextNode = (crdt: CRDT, node: Node): ?string => {
+    if (node.children) {
+        return node.children[0];
+    }
+    return nextSibling(crdt, node);
+};
+
 // Get the next sibling or parent's next sibling
 export const nextSibling = function(crdt: CRDT, node: Node): ?string {
     if (node.parent === rootParent) {

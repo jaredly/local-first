@@ -278,13 +278,22 @@ module.exports = [
                 state: [text('Hello', {})],
             },
             {
-                contents: [
-                    // bold(null, '1'),
-                    // bold(true, '0'),
-                    ctext('Hello'),
-                    // close('1'),
-                    // close('0'),
-                ],
+                contents: [ctext('Hello')],
+            },
+        ],
+    },
+    {
+        title: 'Format then delete - within',
+        // only: true,
+        actions: [
+            insert(0, 'Hello'),
+            fmt(1, 3, 'bold', true, '0'),
+            fmt(1, 3, 'bold', null, '1'),
+            {
+                state: [text('Hello', {})],
+            },
+            {
+                contents: [ctext('H'), ctext('ell'), ctext('o')],
             },
         ],
     },

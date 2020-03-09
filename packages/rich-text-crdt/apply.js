@@ -318,7 +318,7 @@ const deleteFormat = (state, stamp, open, close) => {
         if (nkey === closeKey) {
             return false; // we're done
         }
-        if (node.formats[key].includes(openKey)) {
+        if (node.formats[key] && node.formats[key].includes(openKey)) {
             state.map[toKey(node.id)] = {
                 ...node,
                 formats: {

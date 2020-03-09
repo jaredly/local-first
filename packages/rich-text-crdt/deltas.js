@@ -11,7 +11,7 @@ import {
     adjustForFormat,
     nodeForKey,
     walkFrom,
-    nextSibling,
+    nextNode,
     prevSibling,
     rootSite,
     lastId,
@@ -67,12 +67,16 @@ export const insert = (
         };
 
         Object.keys(newFormat).forEach(key => {
-            if (!deepEqual(newFormat[key], current[key])) {
+            if (
+                newFormat[key] &&
+                current[key] &&
+                !deepEqual(newFormat[key], current[key])
+            ) {
                 addFormat(key, newFormat[key]);
             }
         });
         Object.keys(current).forEach(key => {
-            if (!(key in newFormat)) {
+            if (current[key] && !(key in newFormat)) {
                 addFormat(key, null);
             }
         });
@@ -127,9 +131,9 @@ const maybeDeleteFormats = (
     } else if (!keyEq(openNode.after, [0, rootSite])) {
         throw new Error(`no node ${openNode.after}`);
     }
-    const startNext = start ? nextSibling(state, start) : state.roots[0];
+    const startNext = start ? nextNode(state, start) : state.roots[0];
     if (!startNext) {
-        return console.log('no next');
+        return console.log('no next', start);
     }
     const startNextNode = state.map[startNext];
     if (startNextNode.content.type === 'text') {
@@ -147,7 +151,7 @@ const maybeDeleteFormats = (
     let endId = [endLoc.id, endLoc.site];
     let current = end;
     while (true) {
-        const nextKey = nextSibling(state, current);
+        const nextKey = nextNode(state, current);
         if (!nextKey) {
             break;
         }
