@@ -346,9 +346,9 @@ export const adjustForFormat = (state: CRDT, loc: Loc, format: Format): Loc => {
     // do the nodes have formattings
 };
 
-export const formatAt = function(crdt: CRDT, loc: Loc): Format {
+export const formatAt = function(crdt: CRDT, pos: [number, string]): Format {
     try {
-        const node = nodeForKey(crdt, [loc.id, loc.site]);
+        const node = nodeForKey(crdt, pos);
         // const [id, offset] = posToPostLoc(crdt, pos);
         // const node = nodeForKey(crdt, id);
         const format = {};

@@ -336,20 +336,15 @@ export const apply = (state: CRDT, delta: Delta | Array<Delta>): CRDT => {
         return state;
     }
     state = { ...state, map: { ...state.map } };
-    if (delta.type === 'update') {
-        if (delta.insert) {
-            delta.insert.forEach(tmpNode => {
-                insertNode(state, tmpNode.id, tmpNode.after, {
-                    type: 'text',
-                    text: tmpNode.text,
-                });
-            });
-        }
-        if (delta.delete) {
-            delta.delete.forEach(span => {
-                deleteSpan(state, span);
-            });
-        }
+    if (delta.type === 'insert') {
+        insertNode(state, delta.id, delta.after, {
+            type: 'text',
+            text: delta.text,
+        });
+    } else if (delta.type === 'delete') {
+        delta.spans.forEach(span => {
+            deleteSpan(state, span);
+        });
     } else if (delta.type === 'delete-format') {
         deleteFormat(state, delta.stamp, delta.open, delta.close);
     } else if (delta.type === 'format') {

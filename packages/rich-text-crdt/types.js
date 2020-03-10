@@ -51,13 +51,20 @@ export type Span = { id: number, site: string, length: number };
 
 export type Delta =
     | {|
-          type: 'update',
-          // need to go through each span and delete the things
-          delete?: Array<Span>,
-          // These will be inserted in array order, and so are allowed
-          // to be dependent on previous items in the array
-          insert?: Array<TmpNode>,
+          type: 'insert',
+          id: [number, string],
+          after: [number, string],
+          text: string,
       |}
+    | {| type: 'delete', spans: Array<Span> |}
+    // | {|
+    //       type: 'update',
+    //       // need to go through each span and delete the things
+    //       delete?: Array<Span>,
+    //       // These will be inserted in array order, and so are allowed
+    //       // to be dependent on previous items in the array
+    //       insert?: Array<TmpNode>,
+    //   |}
     | {|
           type: 'delete-format',
           stamp: string,

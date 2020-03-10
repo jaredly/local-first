@@ -79,7 +79,14 @@ export const changeToDelta = function<Format, QuillFormat>(
                 change.span.id,
             );
             if (pos === 0) {
-                return [{ insert: change.span.text }];
+                return [
+                    {
+                        insert: change.span.text,
+                        ...(change.span.format
+                            ? { attributes: convertFormat(change.span.format) }
+                            : null),
+                    },
+                ];
             }
             return [
                 { retain: pos },

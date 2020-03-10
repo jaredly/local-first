@@ -81,14 +81,10 @@ export const insert = (
         });
     }
     deltas.push({
-        type: 'update',
-        insert: [
-            {
-                after: nextAfter,
-                id: [nextId, state.site],
-                text,
-            },
-        ],
+        type: 'insert',
+        after: nextAfter,
+        id: [nextId, state.site],
+        text,
     });
     state.largestLocalId = nextId + text.length - 1;
 
@@ -106,7 +102,7 @@ export const insert = (
 export const del = (state: CRDT, at: number, length: number): Delta => {
     const spans = selectionToSpans(state, at, at + length);
     // TODO if there are any covered format pairs, then remove them as well
-    return { type: 'update', delete: spans };
+    return { type: 'delete', spans: spans };
 };
 
 // ✅ If the node "right after" this node is a text node, then bail
