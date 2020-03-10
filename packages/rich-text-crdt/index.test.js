@@ -170,7 +170,9 @@ const runActionsTest = actions => {
         } else {
             const deltas = actionToDeltas(state, action);
             deltas.forEach(delta => {
+                // const qd = deltaToQuillDeltas(state, delta)
                 state = apply(state, delta);
+                // const back = quillDeltasToDeltas(state, qd, genStamp)
             });
         }
     });

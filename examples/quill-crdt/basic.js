@@ -127,6 +127,9 @@ const toDom = (div, state) => {
 const output = document.createElement('div');
 document.body.appendChild(output);
 
+const altOutput = document.createElement('div');
+document.body.appendChild(altOutput);
+
 const textarea = document.createElement('textarea');
 document.body.appendChild(textarea);
 
@@ -158,8 +161,11 @@ ui.on(
             deltas,
         );
         console.log('transformed deltas', deltas, quillDeltas);
-        altState = newState;
-        altUi.updateContents(quillDeltas, 'crdt');
+        window.altState = altState = newState;
+        quillDeltas.forEach(delta => {
+            altUi.updateContents(delta, 'crdt');
+        });
+        toDom(altOutput, altState);
     },
 );
 
@@ -168,5 +174,7 @@ altUi.on('text-change', (delta, _, source) => {
         return;
     }
     const deltas = quillDeltasToDeltas(altState, delta, genStamp);
-    altState = crdt.apply(altState, deltas);
+    console.log('alt', deltas);
+    window.altState = altState = crdt.apply(altState, deltas);
+    toDom(altOutput, altState);
 });

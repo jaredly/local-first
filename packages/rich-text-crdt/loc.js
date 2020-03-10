@@ -9,6 +9,7 @@ import {
     keyCmp,
     contentLength,
     getFormatValues,
+    keyEq,
 } from './utils';
 
 export const rootSite = '-root-';
@@ -376,10 +377,17 @@ export const formatAt = function(crdt: CRDT, pos: [number, string]): Format {
 };
 
 export const idAfter = function(crdt: CRDT, loc: Loc): number {
-    const node = nodeForKey(crdt, [loc.id, loc.site]);
     if (!loc.pre) {
         return loc.id;
     }
+    if (keyEq([loc.id, loc.site], [0, rootSite])) {
+        const key = crdt.roots[0];
+        if (key) {
+            return crdt.map[key].id[0];
+        }
+        return 0;
+    }
+    const node = nodeForKey(crdt, [loc.id, loc.site]);
     if (node && node.id[0] + contentLength(node.content) - 1 == loc.id) {
         if (node.children.length) {
             return crdt.map[node.children[0]].id[0];
@@ -388,7 +396,9 @@ export const idAfter = function(crdt: CRDT, loc: Loc): number {
         if (next) {
             return crdt.map[next].id[0];
         }
+        console.log('no next sibling');
     }
+    console.log('no id after', node, loc);
     return 0;
 };
 
@@ -464,7 +474,7 @@ export const locToPos = function(crdt: CRDT, loc: Loc): number {
     const nodePos = charactersBeforeNode(crdt, node);
     // step 3: add 1 based on whether it's pre or post
     const offset = loc.id - node.id[0];
-    return nodePos + offset + (loc.pre ? 1 : 0);
+    return nodePos + offset + (loc.pre && node.content.type === 'text' ? 1 : 0);
 };
 
 export const locToInsertionPos = function(

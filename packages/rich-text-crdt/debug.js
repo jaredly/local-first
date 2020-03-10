@@ -39,6 +39,7 @@ export const walkWithFmt = (state: CRDT, fn: (string, Format) => void) => {
             const f = format[content.key];
             if (!f) {
                 console.log('nope at the close', content);
+                return;
             }
             const idx = f.findIndex(item => item.stamp === content.stamp);
             if (idx !== -1) {
