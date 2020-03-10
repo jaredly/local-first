@@ -43,12 +43,18 @@ export const stateToQuillContents = (state: CRDT) => {
 
 export const deltasToQuillDeltas = (
     state: CRDT,
-    deltas: Array<Delta>,
+    deltas: Array<Delta | Array<Delta>>,
 ): { state: CRDT, quillDeltas: Array<QuillDelta> } => {
     const res = [];
     deltas.forEach(delta => {
-        res.push(...deltaToQuillDeltas(state, delta));
-        state = apply(state, delta);
+        if (Array.isArray(delta)) {
+            const inner = deltasToQuillDeltas(state, (delta: any));
+            state = inner.state;
+            res.push(...inner.quillDeltas);
+        } else {
+            res.push(...deltaToQuillDeltas(state, delta));
+            state = apply(state, delta);
+        }
     });
     return { state, quillDeltas: res };
 };

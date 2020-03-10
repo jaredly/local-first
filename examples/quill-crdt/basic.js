@@ -4,6 +4,7 @@ import * as crdt from '../../packages/rich-text-crdt';
 import * as hlc from '../../packages/hybrid-logical-clock';
 import {
     quillDeltasToDeltas,
+    deltasToQuillDeltas,
     stateToQuillContents,
     type QuillDelta,
 } from '../../packages/rich-text-crdt/quill-deltas';
@@ -46,10 +47,22 @@ const ui = new Quill(div, {
     // modules: { cursors: true, toolbar: toolbarOptions },
 });
 
+const div2 = document.createElement('div');
+document.body.appendChild(div2);
+const altUi = new Quill(div2, {
+    theme: 'snow',
+    // modules: { cursors: true, toolbar: toolbarOptions },
+});
+
 let state = crdt.init('a');
 const initialText = 'Hello\n';
-state = crdt.apply(state, crdt.insert(state, 0, initialText));
+const initialDelta = crdt.insert(state, 0, initialText);
+state = crdt.apply(state, initialDelta);
 ui.setText(initialText);
+
+let altState = crdt.init('b');
+altState = crdt.apply(altState, initialDelta);
+altUi.setText(initialText);
 
 const allDeltas = [];
 allDeltas.push({ ops: [{ insert: initialText }] });
@@ -133,10 +146,27 @@ ui.on(
         )},\n  quillResult: ${JSON.stringify(ui.getContents())}\n}`;
 
         const deltas = quillDeltasToDeltas(state, delta, genStamp);
-        deltas.forEach(delta => (state = crdt.apply(state, delta)));
-        console.log(testSerialize(state));
-        console.log(state);
+        state = crdt.apply(state, deltas);
+        // deltas.forEach(delta => (state = crdt.apply(state, delta)));
+        // console.log(testSerialize(state));
+        // console.log(state);
         toDom(output, state);
         backToQuill.value = JSON.stringify(stateToQuillContents(state));
+
+        const { state: newState, quillDeltas } = deltasToQuillDeltas(
+            altState,
+            deltas,
+        );
+        console.log('transformed deltas', deltas, quillDeltas);
+        altState = newState;
+        altUi.updateContents(quillDeltas, 'crdt');
     },
 );
+
+altUi.on('text-change', (delta, _, source) => {
+    if (source === 'crdt') {
+        return;
+    }
+    const deltas = quillDeltasToDeltas(altState, delta, genStamp);
+    altState = crdt.apply(altState, deltas);
+});

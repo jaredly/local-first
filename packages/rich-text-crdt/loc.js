@@ -428,7 +428,7 @@ export const charactersBeforeNode = function(crdt: CRDT, node: Node): number {
             node.parent === rootParent
                 ? crdt.roots
                 : crdt.map[node.parent].children;
-        const idx = siblings.indexOf(node);
+        const idx = siblings.indexOf(toKey(node.id));
         if (idx === -1) {
             throw new Error(
                 `node not found in parents children ${toKey(node.id)} ${
