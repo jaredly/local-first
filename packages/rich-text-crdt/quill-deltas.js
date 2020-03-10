@@ -7,7 +7,7 @@ import { walkWithFmt } from './debug';
 import { apply } from './apply';
 import { spansToSelections } from './span';
 import { locToPos, locToInsertionPos, formatAt } from './loc';
-import { toKey } from './utils';
+import { toKey, keyEq } from './utils';
 
 type Format = { [key: string]: any };
 
@@ -82,15 +82,14 @@ export const deltaToQuillDeltas = (
     state: CRDT,
     delta: Delta,
 ): Array<QuillDelta> => {
-    const res = [];
+    console.log('to quill', state, delta);
     if (delta.type === 'insert') {
         const pos = locToInsertionPos(state, delta.after, delta.id);
         const fmt = formatAt(state, delta.after);
-        const spread = fmt ? { attributes: fmt } : null;
         if (pos === 0) {
-            return [{ insert: delta.text, ...spread }];
+            return [{ insert: delta.text, attributes: fmt }];
         }
-        return [{ retain: pos }, { insert: delta.text, ...spread }];
+        return [{ retain: pos }, { insert: delta.text, attributes: fmt }];
     } else if (delta.type === 'delete') {
         return deleteToDeltas(state, delta.spans);
     } else if (delta.type === 'format') {
@@ -99,6 +98,10 @@ export const deltaToQuillDeltas = (
             id: delta.open.after[0],
             site: delta.open.after[1],
         });
+        // Nothing going on here
+        if (keyEq(delta.close.after, delta.open.id)) {
+            return [];
+        }
         const endPos = locToPos(state, {
             pre: true,
             id: delta.close.after[0],
@@ -143,7 +146,7 @@ export const deltaToQuillDeltas = (
             { retain: endPos - startPos, attributes },
         ];
     }
-    return res;
+    throw new Error(`Unexpected delta type ${delta.type}`);
 };
 
 export const quillDeltasToDeltas = (

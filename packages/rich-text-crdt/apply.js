@@ -313,21 +313,26 @@ const deleteFormat = (state, stamp, open, close) => {
         ...closeNode,
         deleted: true,
     };
-    walkFrom(state, openKey, node => {
-        const nkey = toKey(node.id);
-        if (nkey === closeKey) {
-            return false; // we're done
-        }
-        if (node.formats[key] && node.formats[key].includes(openKey)) {
-            state.map[toKey(node.id)] = {
-                ...node,
-                formats: {
-                    ...node.formats,
-                    [key]: node.formats[key].filter(k => k !== openKey),
-                },
-            };
-        }
-    });
+    walkFrom(
+        state,
+        openKey,
+        node => {
+            const nkey = toKey(node.id);
+            if (nkey === closeKey) {
+                return false; // we're done
+            }
+            if (node.formats[key] && node.formats[key].includes(openKey)) {
+                state.map[toKey(node.id)] = {
+                    ...node,
+                    formats: {
+                        ...node.formats,
+                        [key]: node.formats[key].filter(k => k !== openKey),
+                    },
+                };
+            }
+        },
+        true,
+    );
 };
 
 export const apply = (state: CRDT, delta: Delta | Array<Delta>): CRDT => {
@@ -362,29 +367,30 @@ export const apply = (state: CRDT, delta: Delta | Array<Delta>): CRDT => {
         });
         // now we go through each node between the start and end
         // and update the formattings
-        walkFrom(state, toKey(delta.open.id), node => {
-            if (keyEq(node.id, delta.close.id)) {
-                return false;
-            }
-            if (keyEq(node.id, delta.open.id)) {
-                // TODO does the open tag need a self-reference?
-                // we could early return here
-            }
-            // yeah, adding in the formats
-            const key = toKey(node.id);
-            state.map[key] = {
-                ...node,
-                formats: {
-                    ...node.formats,
-                    [delta.key]: addFormat(
-                        state,
-                        node.formats[delta.key],
-                        delta.stamp,
-                        openKey,
-                    ),
-                },
-            };
-        });
+        walkFrom(
+            state,
+            toKey(delta.open.id),
+            node => {
+                if (keyEq(node.id, delta.close.id)) {
+                    return false;
+                }
+                // yeah, adding in the formats
+                const key = toKey(node.id);
+                state.map[key] = {
+                    ...node,
+                    formats: {
+                        ...node.formats,
+                        [delta.key]: addFormat(
+                            state,
+                            node.formats[delta.key],
+                            delta.stamp,
+                            openKey,
+                        ),
+                    },
+                };
+            },
+            true,
+        );
     }
     return state;
 };

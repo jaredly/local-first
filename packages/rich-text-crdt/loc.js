@@ -10,6 +10,7 @@ import {
     contentLength,
     getFormatValues,
     keyEq,
+    contentChars,
 } from './utils';
 
 export const rootSite = '-root-';
@@ -350,6 +351,7 @@ export const adjustForFormat = (state: CRDT, loc: Loc, format: Format): Loc => {
 export const formatAt = function(crdt: CRDT, pos: [number, string]): Format {
     try {
         const node = nodeForKey(crdt, pos);
+        // console.log('format at', pos, node.formats)
         // const [id, offset] = posToPostLoc(crdt, pos);
         // const node = nodeForKey(crdt, id);
         const format = {};
@@ -396,9 +398,7 @@ export const idAfter = function(crdt: CRDT, loc: Loc): number {
         if (next) {
             return crdt.map[next].id[0];
         }
-        console.log('no next sibling');
     }
-    console.log('no id after', node, loc);
     return 0;
 };
 
@@ -505,7 +505,7 @@ export const locToInsertionPos = function(
 
     // We're at the end, in competition with other children
     if (node.id[0] + contentLength(node.content) === after[0] + 1) {
-        nodePos += contentLength(node.content);
+        nodePos += contentChars(node.content);
         let idx = node.children.length;
         for (let i = 0; i < node.children.length; i++) {
             if (keyCmp(fromKey(node.children[i]), id) < 1) {
@@ -514,10 +514,12 @@ export const locToInsertionPos = function(
             }
             nodePos += crdt.map[node.children[i]].size;
         }
+        // console.log('at the end', node.content, node.id, after);
         return nodePos; // - 1;
     } else {
+        // console.log('ok', after, node.id, node.content.type, nodePos);
         // no one here but us
         const offset = after[0] - node.id[0];
-        return nodePos + offset + 1;
+        return nodePos + offset + 1; // TODO??? (node.content.type === 'text' ? 1 : 0);
     }
 };

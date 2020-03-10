@@ -43,6 +43,26 @@ module.exports = [
             { state: [text('H1e2llo')] },
         ],
     },
+    {
+        title: 'Insert + merge',
+        actions: [
+            insert(0, 'A'),
+            insert(1, 'B'),
+            insert(2, 'C'),
+            { contents: [ctext('ABC')] },
+        ],
+    },
+    // TODO test deletion merging
+    // {
+    //     title: 'Delete + merge',
+    //     actions: [
+    //         insert(0, 'ABCD'),
+    //         del(3, 1),
+    //         del(2, 1),
+    //         del(1, 1),
+    //         {contents: [ctext('A')]}
+    //     ]
+    // }
     // // Deletions
     {
         title: 'Delete at start',
