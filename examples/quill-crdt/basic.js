@@ -1,7 +1,6 @@
 // @flow
 import Quill from 'quill';
 import * as crdt from '../../packages/rich-text-crdt';
-import * as hlc from '../../packages/hybrid-logical-clock';
 import {
     quillDeltasToDeltas,
     deltasToQuillDeltas,
@@ -40,15 +39,20 @@ const genStamp = () => {
     return last.toString(36).padStart(5, '0');
 };
 
+const body = document.body;
+if (!body) {
+    throw new Error('Must load after body');
+}
+
 const div = document.createElement('div');
-document.body.appendChild(div);
+body.appendChild(div);
 const ui = new Quill(div, {
     theme: 'snow',
     // modules: { cursors: true, toolbar: toolbarOptions },
 });
 
 const div2 = document.createElement('div');
-document.body.appendChild(div2);
+body.appendChild(div2);
 const altUi = new Quill(div2, {
     theme: 'snow',
     // modules: { cursors: true, toolbar: toolbarOptions },
@@ -96,7 +100,13 @@ const toDom = (div, state) => {
     });
     const m = document.createElement('div');
     const all = [];
-    crdt.walk(state, node => all.push(node), true);
+    crdt.walk(
+        state,
+        node => {
+            all.push(node);
+        },
+        true,
+    );
     all.forEach(node => {
         const d = document.createElement('span');
         if (node.content.type === 'text') {
@@ -115,7 +125,7 @@ const toDom = (div, state) => {
             d.style.padding = '4px';
         }
         if (node.deleted) {
-            d.style.textStyle = 'italic';
+            d.style.fontStyle = 'italic';
             d.style.color = '#aaa';
         }
         m.appendChild(d);
@@ -125,49 +135,46 @@ const toDom = (div, state) => {
 };
 
 const output = document.createElement('div');
-document.body.appendChild(output);
+body.appendChild(output);
 
 const altOutput = document.createElement('div');
-document.body.appendChild(altOutput);
+body.appendChild(altOutput);
 
 const textarea = document.createElement('textarea');
-document.body.appendChild(textarea);
+body.appendChild(textarea);
 
 const backToQuill = document.createElement('textarea');
-document.body.appendChild(backToQuill);
+body.appendChild(backToQuill);
 
-ui.on(
-    'text-change',
-    (delta: Array<QuillDelta<QuillFormat>>, oldDelta, source: string) => {
-        if (source === 'crdt') {
-            return;
-        }
+ui.on('text-change', (delta: Array<QuillDelta>, oldDelta, source: string) => {
+    if (source === 'crdt') {
+        return;
+    }
 
-        allDeltas.push(delta);
-        textarea.value = `{\n  title: "",\n  quillDeltas: ${JSON.stringify(
-            allDeltas,
-        )},\n  quillResult: ${JSON.stringify(ui.getContents())}\n}`;
+    allDeltas.push(delta);
+    textarea.value = `{\n  title: "",\n  quillDeltas: ${JSON.stringify(
+        allDeltas,
+    )},\n  quillResult: ${JSON.stringify(ui.getContents())}\n}`;
 
-        const deltas = quillDeltasToDeltas(state, delta, genStamp);
-        state = crdt.apply(state, deltas);
-        // deltas.forEach(delta => (state = crdt.apply(state, delta)));
-        // console.log(testSerialize(state));
-        // console.log(state);
-        toDom(output, state);
-        backToQuill.value = JSON.stringify(stateToQuillContents(state));
+    const deltas = quillDeltasToDeltas(state, delta, genStamp);
+    state = crdt.apply(state, deltas);
+    // deltas.forEach(delta => (state = crdt.apply(state, delta)));
+    // console.log(testSerialize(state));
+    // console.log(state);
+    toDom(output, state);
+    backToQuill.value = JSON.stringify(stateToQuillContents(state));
 
-        const { state: newState, quillDeltas } = deltasToQuillDeltas(
-            altState,
-            deltas,
-        );
-        console.log('transformed deltas', deltas, quillDeltas);
-        window.altState = altState = newState;
-        quillDeltas.forEach(delta => {
-            altUi.updateContents(delta, 'crdt');
-        });
-        toDom(altOutput, altState);
-    },
-);
+    const { state: newState, quillDeltas } = deltasToQuillDeltas(
+        altState,
+        deltas,
+    );
+    console.log('transformed deltas', deltas, quillDeltas);
+    window.altState = altState = newState;
+    quillDeltas.forEach(delta => {
+        altUi.updateContents(delta, 'crdt');
+    });
+    toDom(altOutput, altState);
+});
 
 altUi.on('text-change', (delta, _, source) => {
     if (source === 'crdt') {

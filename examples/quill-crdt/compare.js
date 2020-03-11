@@ -24,7 +24,14 @@ const toggleSync = () => {
     }
 };
 
-const make = (name, crdt) => {
+const make = function<T, Change>(
+    name,
+    crdt: {
+        init: string => T,
+        applyChanges: (Array<Change>, T, Quill) => void,
+        connect: (T, Quill, (Change) => void) => void,
+    },
+): { ui1: Quill, ui2: Quill, sync: () => void } {
     const ui1div = div();
     const ui2div = div();
     const button = node('button', { onclick: toggleSync }, ['Disconnected']);
@@ -60,19 +67,6 @@ const make = (name, crdt) => {
 
 const all = [];
 
-const yjs = make('Yjs', {
-    init: id => new Y.Doc(),
-    connect: (doc, quill, onChange) => {
-        const type = doc.getText('quill');
-        const binding = new QuillBinding(type, quill, null);
-        doc.on('update', update => onChange(update));
-    },
-    applyChanges: (changes, doc, quill) => {
-        changes.forEach(change => Y.applyUpdate(doc, change));
-    },
-});
-all.push(yjs);
-
 import * as ocrdt from '../../packages/text-crdt/tree';
 import * as ncrdt from '../../packages/nested-object-crdt';
 import {
@@ -86,13 +80,6 @@ import deepEqual from 'fast-deep-equal';
 
 const mergeFormats = (one: any, two: any): any => ncrdt.merge(one, two);
 
-let clock = hlc.init(name, Date.now());
-const getStamp = () => {
-    const next = hlc.inc(clock, Date.now());
-    clock = next;
-    return hlc.pack(next);
-};
-
 const createQuillFormat = getStamp => (quillFormat, preFormat, postFormat) => {
     if (preFormat && matchesFormat(preFormat, quillFormat)) {
         return preFormat;
@@ -103,7 +90,7 @@ const createQuillFormat = getStamp => (quillFormat, preFormat, postFormat) => {
     return ncrdt.createDeepMap(quillFormat, getStamp());
 };
 
-const matchesFormat = (format: Format, quill: QuillFormat) => {
+const matchesFormat = (format, quill) => {
     return !Object.keys(quill).some(key => {
         return (
             !format.map[key] ||
@@ -112,50 +99,116 @@ const matchesFormat = (format: Format, quill: QuillFormat) => {
     });
 };
 
-const old = make('Mine (old)', {
-    init: id => {
-        const state = ocrdt.init(id);
-        ocrdt.apply(state, initialDelta, mergeFormats);
-        return state;
-    },
-    connect: (state, quill, onChange) => {
-        quill.on(
-            'text-change',
-            (
-                delta: Array<QuillDelta<QuillFormat>>,
-                oldDelta,
-                source: string,
-            ) => {
+import * as crdt from '../../packages/rich-text-crdt';
+import {
+    quillDeltasToDeltas,
+    deltasToQuillDeltas,
+    stateToQuillContents,
+    initialQuillDelta,
+} from '../../packages/rich-text-crdt/quill-deltas';
+
+all.push(
+    make('Mine (new)', {
+        init: id => {
+            let state = crdt.init(id);
+            state = crdt.apply(state, initialQuillDelta);
+            let clock = hlc.init(id, Date.now());
+            const getStamp = () => {
+                const next = hlc.inc(clock, Date.now());
+                clock = next;
+                return hlc.pack(next);
+            };
+
+            return { state, getStamp };
+        },
+        connect: (state, quill, onChange) => {
+            quill.on('text-change', (delta, oldDelta, source) => {
                 if (source === 'crdt') {
                     return;
                 }
-                const changes = deltaToChange<QuillFormat, Format>(
-                    state,
+                const changes = quillDeltasToDeltas(
+                    state.state,
                     delta,
-                    createQuillFormat(getStamp),
+                    state.getStamp,
+                );
+                console.log('got local', delta, changes);
+                changes.forEach(change => {
+                    state.state = crdt.apply(state.state, change);
+                });
+                onChange(changes);
+            });
+        },
+        applyChanges: (changes, doc, quill) => {
+            const { state, quillDeltas } = deltasToQuillDeltas(
+                doc.state,
+                changes,
+            );
+            quillDeltas.forEach(delta => {
+                quill.updateContents(delta, 'crdt');
+            });
+            doc.state = state;
+        },
+    }),
+);
+
+all.push(
+    make('Mine (old)', {
+        init: id => {
+            const state = ocrdt.init(id);
+            ocrdt.apply(state, initialDelta, mergeFormats);
+            let clock = hlc.init(id, Date.now());
+            const getStamp = () => {
+                const next = hlc.inc(clock, Date.now());
+                clock = next;
+                return hlc.pack(next);
+            };
+
+            return { state, getStamp };
+        },
+        connect: (state, quill, onChange) => {
+            quill.on('text-change', (delta, oldDelta, source) => {
+                if (source === 'crdt') {
+                    return;
+                }
+                const changes = deltaToChange(
+                    state.state,
+                    delta,
+                    createQuillFormat(state.getStamp),
                 );
                 console.log('got local', delta, changes);
                 // console.log('delta', delta);
                 // console.log(changes);
                 changes.forEach(change => {
-                    ocrdt.apply(state, change, mergeFormats);
+                    ocrdt.apply(state.state, change, mergeFormats);
                 });
                 onChange(changes);
-            },
-        );
-    },
-    applyChanges: (changes, doc, quill) => {
-        [].concat(...changes).forEach(change => {
-            const deltas = changeToDelta(doc, change, format =>
-                ncrdt.value(format),
-            );
-            ocrdt.apply(doc, change, mergeFormats);
-            quill.updateContents(deltas, 'crdt');
-        });
-    },
-});
+            });
+        },
+        applyChanges: (changes, doc, quill) => {
+            [].concat(...changes).forEach(change => {
+                const deltas = changeToDelta(doc.state, change, format =>
+                    ncrdt.value(format),
+                );
+                ocrdt.apply(doc.state, change, mergeFormats);
+                quill.updateContents(deltas, 'crdt');
+            });
+        },
+    }),
+);
 
-all.push(old);
+all.push(
+    make('Yjs', {
+        init: id => new Y.Doc(),
+        connect: (doc, quill, onChange) => {
+            const type = doc.getText('quill');
+            const binding = new QuillBinding(type, quill, null);
+            doc.on('update', update => onChange(update));
+        },
+        applyChanges: (changes, doc, quill) => {
+            changes.forEach(change => Y.applyUpdate(doc, change));
+        },
+    }),
+);
 
 all.forEach((editors, i) => {
     editors.ui1.on('text-change', (delta, _, source) => {

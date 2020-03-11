@@ -1,0 +1,15 @@
+[ignore]
+
+[include]
+../../packages/text-crdt
+../../packages/rich-text-crdt
+../../packages/hybrid-logical-clock
+../../packages/nested-object-crdt
+
+[libs]
+
+[lints]
+
+[options]
+
+[strict]

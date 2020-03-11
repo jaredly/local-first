@@ -6,7 +6,7 @@ import { insert, del, format } from './deltas';
 import { walkWithFmt } from './debug';
 import { apply } from './apply';
 import { spansToSelections } from './span';
-import { locToPos, locToInsertionPos, formatAt } from './loc';
+import { locToPos, locToInsertionPos, formatAt, rootSite } from './loc';
 import { toKey, keyEq } from './utils';
 
 type Format = { [key: string]: any };
@@ -15,6 +15,13 @@ export type QuillDelta =
     | {| delete: number |}
     | {| insert: string, attributes?: ?Format |}
     | {| retain: number, attributes?: ?Format |};
+
+export const initialQuillDelta = {
+    type: 'insert',
+    id: [2, rootSite],
+    after: [0, rootSite],
+    text: '\n',
+};
 
 export const stateToQuillContents = (state: CRDT) => {
     const ops = [];
