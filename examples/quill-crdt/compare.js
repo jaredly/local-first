@@ -126,15 +126,16 @@ all.push(
                 if (source === 'crdt') {
                     return;
                 }
-                const changes = quillDeltasToDeltas(
+                const { state: nw, deltas: changes } = quillDeltasToDeltas(
                     state.state,
                     delta,
                     state.getStamp,
                 );
                 console.log('got local', delta, changes);
-                changes.forEach(change => {
-                    state.state = crdt.apply(state.state, change);
-                });
+                state.state = nw;
+                // changes.forEach(change => {
+                //     state.state = crdt.apply(state.state, change);
+                // });
                 onChange(changes);
             });
         },

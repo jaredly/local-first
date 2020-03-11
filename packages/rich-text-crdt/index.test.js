@@ -108,10 +108,13 @@ const runQuillTest = (deltas, result) => {
     let state = init('a');
     let i = 0;
     deltas.forEach(quillDelta => {
-        const deltas = quillDeltasToDeltas(state, quillDelta.ops, () =>
-            (i++).toString(36).padStart(5, '0'),
+        const { state: nw, deltas } = quillDeltasToDeltas(
+            state,
+            quillDelta.ops,
+            () => (i++).toString(36).padStart(5, '0'),
         );
-        state = apply(state, deltas);
+        state = nw;
+        // state = apply(state, deltas);
     });
     const contents = stateToQuillContents(state);
     expect(contents).toEqual(result);

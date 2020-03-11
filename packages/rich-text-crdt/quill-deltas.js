@@ -160,21 +160,21 @@ export const quillDeltasToDeltas = (
     state: CRDT,
     quillDeltas: Array<QuillDelta>,
     genStamp: () => string,
-) => {
+): { deltas: Array<Delta>, state: CRDT } => {
     const result = [];
     let at = 0;
     quillDeltas.forEach(quillDelta => {
         if (quillDelta.insert) {
-            result.push(
-                ...insert(
-                    state,
-                    at,
-                    quillDelta.insert,
-                    quillDelta.attributes || {},
-                    genStamp,
-                ),
+            const changes = insert(
+                state,
+                at,
+                quillDelta.insert,
+                quillDelta.attributes || {},
+                genStamp,
             );
-            // at += quillDelta.insert.length
+            state = apply(state, changes);
+            result.push(...changes);
+            at += quillDelta.insert.length;
         }
         if (quillDelta.retain) {
             // TODO need to be able to delete formatting
@@ -183,24 +183,26 @@ export const quillDeltasToDeltas = (
             if (quillDelta.attributes) {
                 const attrs = quillDelta.attributes;
                 Object.keys(attrs).forEach(key => {
-                    result.push(
-                        format(
-                            state,
-                            at,
-                            quillDelta.retain,
-                            key,
-                            attrs[key],
-                            genStamp(),
-                        ),
+                    const change = format(
+                        state,
+                        at,
+                        quillDelta.retain,
+                        key,
+                        attrs[key],
+                        genStamp(),
                     );
+                    state = apply(state, change);
+                    result.push(...change);
                 });
             }
             at += quillDelta.retain;
         }
         if (quillDelta.delete) {
-            result.push(del(state, at, quillDelta.delete));
-            at += quillDelta.delete;
+            const change = del(state, at, quillDelta.delete);
+            state = apply(state, change);
+            result.push(change);
+            // at += quillDelta.delete;
         }
     });
-    return result;
+    return { state, deltas: result };
 };

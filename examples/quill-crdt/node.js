@@ -30,8 +30,12 @@ export const div = (attrs, children) => node('div', attrs, children);
 export const span = (attrs, children) => node('span', attrs, children);
 
 export const addDiv = (attrs, children) => {
-    const node = div(attrs, children);
-    // $FlowFixMe
-    document.body.appendChild(node);
+    return add(div(attrs, children));
+};
+
+export const add = node => {
+    if (document.body) {
+        document.body.appendChild(node);
+    }
     return node;
 };

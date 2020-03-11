@@ -1,6 +1,7 @@
 // @flow
 import Quill from 'quill';
 import * as crdt from '../../packages/rich-text-crdt';
+import { div, addDiv, node, add } from './node';
 import {
     quillDeltasToDeltas,
     deltasToQuillDeltas,
@@ -44,16 +45,12 @@ if (!body) {
     throw new Error('Must load after body');
 }
 
-const div = document.createElement('div');
-body.appendChild(div);
-const ui = new Quill(div, {
+const ui = new Quill(addDiv(), {
     theme: 'snow',
     // modules: { cursors: true, toolbar: toolbarOptions },
 });
 
-const div2 = document.createElement('div');
-body.appendChild(div2);
-const altUi = new Quill(div2, {
+const altUi = new Quill(addDiv(), {
     theme: 'snow',
     // modules: { cursors: true, toolbar: toolbarOptions },
 });
@@ -110,7 +107,7 @@ const toDom = (div, state) => {
     all.forEach(node => {
         const d = document.createElement('span');
         if (node.content.type === 'text') {
-            d.textContent = node.content.text;
+            d.textContent = JSON.stringify(node.content.text);
         } else if (node.content.type === 'open') {
             d.textContent = `${node.content.key}=${JSON.stringify(
                 node.content.value,
@@ -134,17 +131,26 @@ const toDom = (div, state) => {
     div.appendChild(m);
 };
 
-const output = document.createElement('div');
-body.appendChild(output);
+// const allDeltas = []
+const allCRDTDeltas = [];
 
-const altOutput = document.createElement('div');
-body.appendChild(altOutput);
+const output = addDiv();
+const altOutput = addDiv();
+const textarea = add(node('textarea'));
+const backToQuill = add(node('textarea'));
+const cdeltas = addDiv({ style: { whiteSpace: 'pre' } });
 
-const textarea = document.createElement('textarea');
-body.appendChild(textarea);
-
-const backToQuill = document.createElement('textarea');
-body.appendChild(backToQuill);
+const renderCRDTDeltas = deltas => {
+    return div(
+        { style: { padding: '4px', borderLeft: '2px solid #ccc' } },
+        deltas.map(delta => {
+            if (Array.isArray(delta)) {
+                return renderCRDTDeltas(delta);
+            }
+            return div({ style: { whiteSpace: 'pre' } }, JSON.stringify(delta));
+        }),
+    );
+};
 
 ui.on('text-change', (delta: Array<QuillDelta>, oldDelta, source: string) => {
     if (source === 'crdt') {
@@ -156,20 +162,28 @@ ui.on('text-change', (delta: Array<QuillDelta>, oldDelta, source: string) => {
         allDeltas,
     )},\n  quillResult: ${JSON.stringify(ui.getContents())}\n}`;
 
-    const deltas = quillDeltasToDeltas(state, delta, genStamp);
-    state = crdt.apply(state, deltas);
+    const { state: newState, deltas } = quillDeltasToDeltas(
+        state,
+        delta,
+        genStamp,
+    );
+    allCRDTDeltas.push(deltas);
+    cdeltas.innerHTML = '';
+    cdeltas.appendChild(renderCRDTDeltas(allCRDTDeltas));
+    // state = crdt.apply(state, deltas);
+    state = newState;
     // deltas.forEach(delta => (state = crdt.apply(state, delta)));
     // console.log(testSerialize(state));
     // console.log(state);
     toDom(output, state);
     backToQuill.value = JSON.stringify(stateToQuillContents(state));
 
-    const { state: newState, quillDeltas } = deltasToQuillDeltas(
+    const { state: newState2, quillDeltas } = deltasToQuillDeltas(
         altState,
         deltas,
     );
     console.log('transformed deltas', deltas, quillDeltas);
-    window.altState = altState = newState;
+    window.altState = altState = newState2;
     quillDeltas.forEach(delta => {
         altUi.updateContents(delta, 'crdt');
     });
@@ -180,8 +194,8 @@ altUi.on('text-change', (delta, _, source) => {
     if (source === 'crdt') {
         return;
     }
-    const deltas = quillDeltasToDeltas(altState, delta, genStamp);
+    const { state, deltas } = quillDeltasToDeltas(altState, delta, genStamp);
     console.log('alt', deltas);
-    window.altState = altState = crdt.apply(altState, deltas);
+    window.altState = altState = state;
     toDom(altOutput, altState);
 });
