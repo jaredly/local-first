@@ -1,4 +1,3 @@
-// @flow
 export const node = (tag, attrs, children) => {
     const node = document.createElement(tag);
     if (attrs) {

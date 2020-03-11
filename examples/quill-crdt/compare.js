@@ -6,26 +6,29 @@ import * as Y from 'yjs';
 Quill.register('modules/cursors', QuillCursors);
 import { QuillBinding } from 'y-quill';
 
+let syncing = false;
+const syncButtons = [];
+const toggleSync = () => {
+    syncButtons.forEach(button => {
+        if (syncing) {
+            button.textContent = 'Disconnected';
+        } else {
+            button.textContent = 'Connected';
+        }
+    });
+    if (syncing) {
+        syncing = false;
+    } else {
+        syncing = true;
+        all.forEach(ed => ed.sync());
+    }
+};
+
 const make = (name, crdt) => {
     const ui1div = div();
     const ui2div = div();
-    let syncing = false;
-    const button = node(
-        'button',
-        {
-            onclick: () => {
-                if (syncing) {
-                    button.textContent = 'Disconnected';
-                    syncing = false;
-                } else {
-                    button.textContent = 'Connected';
-                    syncing = true;
-                    sync();
-                }
-            },
-        },
-        ['Disconnected'],
-    );
+    const button = node('button', { onclick: toggleSync }, ['Disconnected']);
+    syncButtons.push(button);
     addDiv({}, [node('h2', {}, [name]), ui1div, button, ui2div]);
     const ui1 = new Quill(ui1div, { theme: 'snow' });
     const ui2 = new Quill(ui2div, { theme: 'snow' });
@@ -52,7 +55,7 @@ const make = (name, crdt) => {
         waiting1.push(change);
         sync();
     });
-    return { ui1, ui2 };
+    return { ui1, ui2, sync };
 };
 
 const all = [];
@@ -79,6 +82,7 @@ import {
     type QuillDelta,
 } from '../../packages/text-crdt/quill-deltas';
 import * as hlc from '../../packages/hybrid-logical-clock';
+import deepEqual from 'fast-deep-equal';
 
 const mergeFormats = (one: any, two: any): any => ncrdt.merge(one, two);
 

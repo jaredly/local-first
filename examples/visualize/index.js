@@ -105,6 +105,7 @@ const initQuill = (name, div, render: (crdt.CRDT<Format>) => void) => {
         render,
     };
 
+    let clock = hlc.init(name, Date.now());
     const getStamp = () => {
         const next = hlc.inc(clock, Date.now());
         clock = next;
