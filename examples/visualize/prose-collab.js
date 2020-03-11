@@ -18,6 +18,7 @@ function collabEditor(place) {
             view.updateState(newState);
             let sendable = collab.sendableSteps(newState);
             if (sendable) console.log(sendable);
+            console.log('state', newState);
             // authority.receiveSteps(sendable.version, sendable.steps,
             //                        sendable.clientID)
         },

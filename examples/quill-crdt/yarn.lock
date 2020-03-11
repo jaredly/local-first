@@ -3032,6 +3032,13 @@ lib0@^0.2.12:
   dependencies:
     isomorphic.js "^0.1.3"
 
+lib0@^0.2.3:
+  version "0.2.18"
+  resolved "https://registry.yarnpkg.com/lib0/-/lib0-0.2.18.tgz#1ce844062cae9bbca9a412efdde5253e227a376b"
+  integrity sha512-Lkp4dyBcoBzde52d86G3ZkNAVBAXOq2zEBl5oSxdv4bl2caZ5AwITPEe7QpAgbG3fNX7kQe1D/sUVJjvlf3N6A==
+  dependencies:
+    isomorphic.js "^0.1.3"
+
 locate-path@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/locate-path/-/locate-path-3.0.0.tgz#dbec3b3ab759758071b58fe59fc41871af21400e"
@@ -5265,6 +5272,13 @@ xtend@^4.0.0, xtend@~4.0.1:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/xtend/-/xtend-4.0.2.tgz#bb72779f5fa465186b1f438f674fa347fdb5db54"
   integrity sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==
+
+y-protocols@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/y-protocols/-/y-protocols-0.2.0.tgz#48b9ff14f9a1f4334fce826f47effc4e60c8576e"
+  integrity sha512-B9MCxMqLZCziLmQFlrXVN7MbIhXzF9bdwePcHzlVFIEHxnEvYIqAQYj4FHS376LBgfcjTUs7T614D+w0bpcJLA==
+  dependencies:
+    lib0 "^0.2.3"
 
 y-quill@^0.0.2:
   version "0.0.2"
