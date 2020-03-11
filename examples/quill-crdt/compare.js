@@ -52,9 +52,12 @@ const make = (name, crdt) => {
         waiting1.push(change);
         sync();
     });
+    return { ui1, ui2 };
 };
 
-make('Yjs', {
+const all = [];
+
+const yjs = make('Yjs', {
     init: id => new Y.Doc(),
     connect: (doc, quill, onChange) => {
         const type = doc.getText('quill');
@@ -65,42 +68,108 @@ make('Yjs', {
         changes.forEach(change => Y.applyUpdate(doc, change));
     },
 });
+all.push(yjs);
 
-// make('Mine (old)', {
-//     init: id => ocrdt.init(id),
-//     connect: (doc, quill, onChange) => {
-//         quill.on(
-//             'text-change',
-//             (
-//                 delta: Array<QuillDelta<QuillFormat>>,
-//                 oldDelta,
-//                 source: string,
-//             ) => {
-//                 if (source === 'crdt') {
-//                     return;
-//                 }
-//                 const changes = ocrdt.deltaToChange<QuillFormat, Format>(
-//                     state,
-//                     delta,
-//                     ocrdt.createQuillFormat(getStamp),
-//                 );
-//                 console.log('got local', delta, changes);
-//                 // console.log('delta', delta);
-//                 // console.log(changes);
-//                 changes.forEach(change => {
-//                     ocrdt.apply(state, change, mergeFormats);
-//                 });
-//                 onChange(changes);
-//             },
-//         );
-//     },
-//     applyChanges: (changes, doc, quill) => {
-//         changes.forEach(change => {
-//             const deltas = ocrdt.changeToDelta(doc, change, format =>
-//                 ncrdt.value(format),
-//             );
-//             ocrdt.apply(doc, change, mergeFormats);
-//             quill.updateContents(deltas, 'crdt');
-//         });
-//     },
-// });
+import * as ocrdt from '../../packages/text-crdt/tree';
+import * as ncrdt from '../../packages/nested-object-crdt';
+import {
+    deltaToChange,
+    changeToDelta,
+    initialDelta,
+    type QuillDelta,
+} from '../../packages/text-crdt/quill-deltas';
+import * as hlc from '../../packages/hybrid-logical-clock';
+
+const mergeFormats = (one: any, two: any): any => ncrdt.merge(one, two);
+
+let clock = hlc.init(name, Date.now());
+const getStamp = () => {
+    const next = hlc.inc(clock, Date.now());
+    clock = next;
+    return hlc.pack(next);
+};
+
+const createQuillFormat = getStamp => (quillFormat, preFormat, postFormat) => {
+    if (preFormat && matchesFormat(preFormat, quillFormat)) {
+        return preFormat;
+    }
+    if (postFormat && matchesFormat(postFormat, quillFormat)) {
+        return postFormat;
+    }
+    return ncrdt.createDeepMap(quillFormat, getStamp());
+};
+
+const matchesFormat = (format: Format, quill: QuillFormat) => {
+    return !Object.keys(quill).some(key => {
+        return (
+            !format.map[key] ||
+            !deepEqual(ncrdt.value(format.map[key]), quill[key])
+        );
+    });
+};
+
+const old = make('Mine (old)', {
+    init: id => {
+        const state = ocrdt.init(id);
+        ocrdt.apply(state, initialDelta, mergeFormats);
+        return state;
+    },
+    connect: (state, quill, onChange) => {
+        quill.on(
+            'text-change',
+            (
+                delta: Array<QuillDelta<QuillFormat>>,
+                oldDelta,
+                source: string,
+            ) => {
+                if (source === 'crdt') {
+                    return;
+                }
+                const changes = deltaToChange<QuillFormat, Format>(
+                    state,
+                    delta,
+                    createQuillFormat(getStamp),
+                );
+                console.log('got local', delta, changes);
+                // console.log('delta', delta);
+                // console.log(changes);
+                changes.forEach(change => {
+                    ocrdt.apply(state, change, mergeFormats);
+                });
+                onChange(changes);
+            },
+        );
+    },
+    applyChanges: (changes, doc, quill) => {
+        [].concat(...changes).forEach(change => {
+            const deltas = changeToDelta(doc, change, format =>
+                ncrdt.value(format),
+            );
+            ocrdt.apply(doc, change, mergeFormats);
+            quill.updateContents(deltas, 'crdt');
+        });
+    },
+});
+
+all.push(old);
+
+all.forEach((editors, i) => {
+    editors.ui1.on('text-change', (delta, _, source) => {
+        if (source !== 'yjs' && source !== 'crdt' && source !== 'api') {
+            all.forEach((e, i2) => {
+                if (i !== i2) {
+                    e.ui1.updateContents(delta, 'api');
+                }
+            });
+        }
+    });
+    editors.ui2.on('text-change', (delta, _, source) => {
+        if (source !== 'yjs' && source !== 'crdt' && source !== 'api') {
+            all.forEach((e, i2) => {
+                if (i !== i2) {
+                    e.ui2.updateContents(delta, 'api');
+                }
+            });
+        }
+    });
+});
