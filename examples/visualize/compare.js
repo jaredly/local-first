@@ -1,6 +1,8 @@
 // @flow
 import Quill from 'quill';
 import * as crdt from '../../packages/text-crdt/tree';
+import * as rcrdt from '../../packages/rich-text-crdt';
+import * as rcrdtq from '../../packages/rich-text-crdt/quill-deltas';
 import * as ncrdt from '../../packages/nested-object-crdt';
 import * as debug from '../../packages/text-crdt/debug';
 import * as hlc from '../../packages/hybrid-logical-clock';
@@ -21,6 +23,7 @@ import * as Y from 'yjs';
 import { QuillBinding } from 'y-quill';
 
 import { createChart } from './chart';
+import { createChart as createNewChart } from './new-chart';
 import { createYChart } from './y-chart';
 
 type QuillFormat = {
@@ -70,6 +73,7 @@ const createAutomerge = (editor, render) => {
         doc = automerge.change(doc, doc => {
             applyDeltaToText(doc.text, delta);
         });
+        window.autodoc = doc;
         render(
             automerge.Frontend.getBackendState(doc)
                 .getIn(['opSet', 'history'])
@@ -116,7 +120,52 @@ const createQuillFormat = getStamp => (quillFormat, preFormat, postFormat) => {
     return ncrdt.createDeepMap(quillFormat, getStamp());
 };
 
-const initQuill = (name, ui, render: (crdt.CRDT<Format>) => void) => {
+const initMineNew = (name, ui, render: rcrdt.CRDT => void) => {
+    let clock = hlc.init(name, Date.now());
+    let state: rcrdt.CRDT = rcrdt.init(name);
+    state = rcrdt.apply(state, rcrdtq.initialQuillDelta);
+    // ui.setText(rcrdt.toString(state));
+
+    const editor = {
+        ui,
+        state,
+        send: false,
+        waiting: [],
+        other: (null: ?any),
+        render,
+    };
+
+    const getStamp = () => {
+        const next = hlc.inc(clock, Date.now());
+        clock = next;
+        return hlc.pack(next);
+    };
+    const recvStamp = stamp => {
+        const next = hlc.recv(clock, hlc.unpack(stamp), Date.now());
+        clock = next;
+    };
+
+    ui.on(
+        'text-change',
+        (delta: Array<rcrdt.QuillDelta>, oldDelta, source: string) => {
+            if (source === 'crdt') {
+                return;
+            }
+            const result = rcrdtq.quillDeltasToDeltas(
+                editor.state,
+                delta,
+                getStamp,
+            );
+            editor.state = result.state;
+            console.log('rendering');
+            render(editor.state);
+        },
+    );
+    render(editor.state);
+    return editor;
+};
+
+const initMineOld = (name, ui, render: (crdt.CRDT<Format>) => void) => {
     let clock = hlc.init(name, Date.now());
     const state: crdt.CRDT<Format> = crdt.init(name);
     crdt.apply(state, initialDelta, mergeFormats);
@@ -230,9 +279,27 @@ if (document.body) {
                 'a',
                 {
                     href:
+                        'https://github.com/jaredly/local-first/tree/master/packages/rich-text-crdt',
+                },
+                'Mine (new)',
+            ),
+        ]),
+    );
+
+    const myNewChart = createNewChart();
+    const myNewNode = addDiv();
+    myNewNode.appendChild(myNewChart.node);
+    initMineNew('a', editor, myNewChart.render);
+
+    body.appendChild(
+        node('h3', {}, [
+            node(
+                'a',
+                {
+                    href:
                         'https://github.com/jaredly/local-first/tree/master/packages/text-crdt',
                 },
-                'Mine',
+                'Mine (old)',
             ),
         ]),
     );
@@ -240,7 +307,7 @@ if (document.body) {
     const myChart = createChart();
     const myNode = addDiv();
     myNode.appendChild(myChart.node);
-    initQuill('a', editor, myChart.render);
+    initMineOld('a', editor, myChart.render);
 
     body.appendChild(
         node('h3', {}, [

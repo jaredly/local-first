@@ -26,18 +26,24 @@ const nodeText = (node: YNode) => {
     if (node.content.str) {
         return JSON.stringify(node.content.str);
     }
-    if (node.content.key === 'bold') {
-        return 'B';
-    }
-    if (node.content.key === 'italic') {
-        return 'I';
-    }
-    if (node.content.key === 'underline') {
-        return 'U';
-    }
     if (node.content.key) {
-        return (node.content.value ? '' : '/') + node.content.key;
+        if (node.content.value) {
+            return `${node.content.key}=${node.content.value}`;
+        }
+        return `/${node.content.value}`;
     }
+    // if (node.content.key === 'bold') {
+    //     return 'B';
+    // }
+    // if (node.content.key === 'italic') {
+    //     return 'I';
+    // }
+    // if (node.content.key === 'underline') {
+    //     return 'U';
+    // }
+    // if (node.content.key) {
+    //     return (node.content.value ? '' : '/') + node.content.key;
+    // }
     if (node.content.len) {
         return node.content.len.toString();
     }
