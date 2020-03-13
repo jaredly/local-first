@@ -1,24 +1,32 @@
 // @flow
 import Quill from 'quill';
-import * as crdt from '../../packages/text-crdt/tree';
-import * as ncrdt from '../../packages/nested-object-crdt';
+// import * as crdt from '../../packages/text-crdt/tree';
+// import * as ncrdt from '../../packages/nested-object-crdt';
 import * as debug from '../../packages/text-crdt/debug';
 import * as hlc from '../../packages/hybrid-logical-clock';
-import {
-    deltaToChange,
-    changeToDelta,
-    initialDelta,
-    type QuillDelta,
-} from '../../packages/text-crdt/quill-deltas';
+// import {
+//     deltaToChange,
+//     changeToDelta,
+//     initialDelta,
+//     type QuillDelta,
+// } from '../../packages/text-crdt/quill-deltas';
 import QuillCursors from 'quill-cursors/dist/index.js';
 import deepEqual from 'fast-deep-equal';
+
+import * as crdt from '../../packages/rich-text-crdt';
+import {
+    quillDeltasToDeltas,
+    deltasToQuillDeltas,
+    stateToQuillContents,
+    initialQuillDelta,
+} from '../../packages/rich-text-crdt/quill-deltas';
 
 Quill.register('modules/cursors', QuillCursors);
 
 import * as Y from 'yjs';
 import { QuillBinding } from 'y-quill';
 
-import { createChart } from './chart';
+import { createChart } from './new-chart';
 import { createYChart } from './y-chart';
 
 type QuillFormat = {
@@ -33,12 +41,13 @@ const mergeFormats = (one: any, two: any): any => ncrdt.merge(one, two);
 const sync = editor => {
     if (editor.send && editor.other) {
         editor.waiting.forEach(change => {
-            const deltas = changeToDelta(editor.other.state, change, format =>
-                ncrdt.value(format),
-            );
-            crdt.apply(editor.other.state, change, mergeFormats);
-            console.log('applying remote', change, deltas);
-            editor.other.ui.updateContents(deltas, 'crdt');
+            const result = deltasToQuillDeltas(editor.other.state, change);
+            editor.other.state = result.state;
+            // crdt.apply(editor.other.state, change, mergeFormats);
+            console.log('applying remote', change, result.quillDeltas);
+            result.quillDeltas.forEach(deltas => {
+                editor.other.ui.updateContents(deltas, 'crdt');
+            });
         });
         editor.other.render(editor.other.state);
         editor.waiting = [];
@@ -88,12 +97,12 @@ const createQuillFormat = getStamp => (quillFormat, preFormat, postFormat) => {
     return ncrdt.createDeepMap(quillFormat, getStamp());
 };
 
-const initQuill = (name, div, render: (crdt.CRDT<Format>) => void) => {
+const initQuill = (name, div, render: crdt.CRDT => void) => {
     const ui = new Quill(div, { theme: 'bubble', placeholder: 'Quill editor' });
     let clock = hlc.init(name, Date.now());
-    const state: crdt.CRDT<Format> = crdt.init(name);
-    crdt.apply(state, initialDelta, mergeFormats);
-    ui.setText(crdt.toString(state));
+    let state: crdt.CRDT = crdt.init(name);
+    state = crdt.apply(state, initialQuillDelta);
+    // ui.setText(crdt.toString(state));
 
     const editor = {
         div,
@@ -118,27 +127,24 @@ const initQuill = (name, div, render: (crdt.CRDT<Format>) => void) => {
 
     ui.on(
         'text-change',
-        (delta: Array<QuillDelta<QuillFormat>>, oldDelta, source: string) => {
+        (delta: Array<QuillDelta>, oldDelta, source: string) => {
             if (source === 'crdt') {
                 return;
             }
-            const changes = deltaToChange<QuillFormat, Format>(
-                state,
-                delta,
-                createQuillFormat(getStamp),
-            );
-            console.log('got local', delta, changes);
+            const res = quillDeltasToDeltas(editor.state, delta, getStamp);
+            editor.state = res.state;
+            console.log('got local', delta, res.deltas);
             // console.log('delta', delta);
             // console.log(changes);
-            changes.forEach(change => {
-                crdt.apply(state, change, mergeFormats);
-            });
-            editor.waiting.push(...changes);
+            // changes.forEach(change => {
+            //     crdt.apply(state, change, mergeFormats);
+            // });
+            editor.waiting.push(res.deltas);
             sync(editor);
-            render(state);
+            render(editor.state);
         },
     );
-    render(state);
+    render(editor.state);
     return editor;
 };
 
