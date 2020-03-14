@@ -7,7 +7,7 @@ import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
 import makeClient from '../simple/simple-ws';
 import { getCollection, type ClientState } from '../simple/client';
 import { ItemSchema } from '../shared/schema.js';
-import { type Schema } from '../../../packages/nested-object-crdt/schema.js';
+import { type Schema } from '../../../packages/nested-object-crdt/src/schema.js';
 
 const genId = () =>
     Math.random()

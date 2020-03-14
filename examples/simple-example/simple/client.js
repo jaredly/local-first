@@ -7,7 +7,7 @@ import {
     type Schema,
     validate,
     validateSet,
-} from '../../../packages/nested-object-crdt/schema.js';
+} from '../../../packages/nested-object-crdt/src/schema.js';
 
 export type CRDTImpl<Delta, Data> = {
     createEmpty: () => Data,

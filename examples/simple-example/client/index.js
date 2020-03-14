@@ -8,14 +8,14 @@ import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
 import { ItemSchema } from '../shared/schema.js';
 
 import createDeltaClient from '../../../packages/core/src/delta/create-client';
-import makeDeltaPersistence from '../../../packages/core/src/delta/idb-persistence';
+import makeDeltaPersistence from '../../../packages/idb/src/delta';
 import createPollingNetwork from '../../../packages/core/src/delta/polling-network';
 import createWebSocketNetwork from '../../../packages/core/src/delta/websocket-network';
 
 import createBlobClient from '../../../packages/core/src/blob/create-client';
-import makeBlobPersistence from '../../../packages/core/src/blob/idb-persistence';
+import makeBlobPersistence from '../../../packages/idb/src/blob';
 import createBasicBlobNetwork from '../../../packages/core/src/blob/basic-network';
-import PersistentClock from './persistent-clock';
+import { PersistentClock } from './persistent-clock';
 
 const clockPersist = (key: string) => ({
     get(init) {

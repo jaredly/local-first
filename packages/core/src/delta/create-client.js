@@ -5,7 +5,7 @@ import type {
     Persistence,
     OldNetwork,
     Network,
-    ClockPersist,
+    PersistentClock,
     DeltaPersistence,
     FullPersistence,
     NetworkCreator,
@@ -148,29 +148,12 @@ export const handleMessages = async function<Delta, Data>(
 function createClient<Delta, Data, SyncStatus>(
     crdt: CRDTImpl<Delta, Data>,
     schemas: { [colid: string]: Schema },
-    clockPersist: ClockPersist,
+    clock: PersistentClock,
     persistence: DeltaPersistence,
     createNetwork: NetworkCreator<Delta, Data, SyncStatus>,
 ): Client<SyncStatus> {
-    let clock = clockPersist.get(() => hlc.init(genId(), Date.now()));
     const state: { [key: string]: CollectionState<Data, any> } = {};
     persistence.collections.forEach(id => (state[id] = newCollection()));
-
-    const getStamp = () => {
-        clock = hlc.inc(clock, Date.now());
-        clockPersist.set(clock);
-        return hlc.pack(clock);
-    };
-
-    const setClock = (newClock: HLC) => {
-        clock = newClock;
-        clockPersist.set(clock);
-    };
-
-    const recvClock = (newClock: HLC) => {
-        clock = hlc.recv(clock, newClock, Date.now());
-        clockPersist.set(clock);
-    };
 
     const network = peerTabAwareNetwork(
         (msg: PeerChange) => {
@@ -183,7 +166,7 @@ function createClient<Delta, Data, SyncStatus>(
             );
         },
         createNetwork(
-            clock.node,
+            clock.now.node,
             fresh => getMessages(persistence, fresh),
             (messages, sendCrossTabChanges) =>
                 handleMessages(
@@ -191,15 +174,15 @@ function createClient<Delta, Data, SyncStatus>(
                     persistence,
                     messages,
                     state,
-                    recvClock,
+                    clock.recv,
                     sendCrossTabChanges,
                 ),
         ),
     );
 
     return {
-        sessionId: clock.node,
-        getStamp,
+        sessionId: clock.now.node,
+        getStamp: clock.get,
         setDirty: network.setDirty,
         getCollection<T>(colid: string) {
             return getCollection(
@@ -207,7 +190,7 @@ function createClient<Delta, Data, SyncStatus>(
                 crdt,
                 persistence,
                 state[colid],
-                getStamp,
+                clock.get,
                 network.setDirty,
                 network.sendCrossTabChanges,
                 schemas[colid],
