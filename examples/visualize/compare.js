@@ -373,7 +373,6 @@ if (document.body) {
                         if (op.action === 'makeText') {
                             return `makeText(${op.obj.slice(0, 5)}...)`;
                         }
-                        // if (op.action === 'del')
                         return JSON.stringify(op);
                     })
                     .map(text =>

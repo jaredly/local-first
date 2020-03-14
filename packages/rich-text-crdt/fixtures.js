@@ -52,6 +52,17 @@ module.exports = [
             { contents: [ctext('ABC')] },
         ],
     },
+    {
+        title: 'Insert + delete merge',
+        actions: [
+            insert(0, 'ABCD'),
+            del(3),
+            del(2),
+            del(1),
+            { contents: [ctext('A')] },
+            { contents: [ctext('A'), ctext('BCD')], all: true },
+        ],
+    },
     // TODO test deletion merging
     // {
     //     title: 'Delete + merge',

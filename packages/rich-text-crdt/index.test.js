@@ -49,9 +49,9 @@ const walkWithFmt = (state, fn) => {
     });
 };
 
-const justContents = state => {
+const justContents = (state, all) => {
     const res = [];
-    walk(state, node => res.push(node.content));
+    walk(state, node => res.push(node.content), all);
     return res;
 };
 
@@ -136,7 +136,7 @@ const runActionsTest = actions => {
                 throw err;
             }
         } else if (action.contents) {
-            const contents = justContents(state);
+            const contents = justContents(state, action.all);
             contents.forEach((c, i) => {
                 expect(c).toEqual(expect.objectContaining(action.contents[i]));
             });
