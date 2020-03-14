@@ -68,23 +68,24 @@ const createAutomerge = (editor, render) => {
             }
         });
     }
+    const getObject = (doc, key) => {
+        const data = automerge.Frontend.getBackendState(doc).toJS();
+        const baseID = '00000000-0000-0000-0000-000000000000';
+        const base = data.opSet.byObject[baseID];
+        return {
+            text: data.opSet.byObject[base._keys[key][0].value],
+            history: data.opSet.history,
+        };
+    };
     window.automerge = automerge;
     editor.on('text-change', delta => {
         doc = automerge.change(doc, doc => {
             applyDeltaToText(doc.text, delta);
         });
         window.autodoc = doc;
-        render(
-            automerge.Frontend.getBackendState(doc)
-                .getIn(['opSet', 'history'])
-                .toJSON(),
-        );
+        render(getObject(doc, 'text'));
     });
-    render(
-        automerge.Frontend.getBackendState(doc)
-            .getIn(['opSet', 'history'])
-            .toJSON(),
-    );
+    render(getObject(doc, 'text'));
 };
 
 const createYjs = (editor, render) => {
@@ -169,7 +170,7 @@ const initMineOld = (name, ui, render: (crdt.CRDT<Format>) => void) => {
     let clock = hlc.init(name, Date.now());
     const state: crdt.CRDT<Format> = crdt.init(name);
     crdt.apply(state, initialDelta, mergeFormats);
-    ui.setText(crdt.toString(state));
+    // ui.setText(crdt.toString(state));
 
     const editor = {
         ui,
@@ -319,12 +320,32 @@ if (document.body) {
         ]),
     );
 
-    const autoDiv = addDiv({ style: { maxHeight: '400px', overflow: 'auto' } });
+    const autoDiv = addDiv();
 
-    const auto = createAutomerge(editor, text => {
-        console.log('automerge', text);
+    const auto = createAutomerge(editor, ({ history, text }) => {
+        console.log('automerge', history, text);
+        // const initial = `${text._init.actor}:${text._init.seq}`;
+        const tree = {};
+        const map = {};
+        const follow = id => {
+            const children = text._following[id].map(
+                ins => `${ins.actor}:${ins.seq}`,
+            );
+            map[id] = {
+                id,
+                text: text._keys[id] ? text._keys[id][0].value : '',
+                children,
+            };
+        };
+        follow('_head');
+        // return;
+
         autoDiv.innerHTML = '';
-        text.forEach(item => {
+        const historyDiv = div({
+            style: { maxHeight: '400px', overflow: 'auto' },
+        });
+        autoDiv.appendChild(historyDiv);
+        history.forEach(item => {
             const node = div({}, [
                 span({ style: { fontWeight: 'bold' } }, [
                     `${item.seq}:${item.actor}`,
@@ -367,9 +388,9 @@ if (document.body) {
                         ),
                     ),
             ]);
-            autoDiv.appendChild(node);
+            historyDiv.appendChild(node);
         });
-        autoDiv.scrollTop = autoDiv.scrollHeight;
+        historyDiv.scrollTop = historyDiv.scrollHeight;
         window.text = text;
         // window.last = automerge.save(text);
     });
