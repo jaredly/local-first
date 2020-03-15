@@ -1,5 +1,5 @@
 // @flow
-import * as hlc from '../../../packages/hybrid-logical-clock';
+import * as hlc from '../../hybrid-logical-clock';
 import {
     type Schema,
     validate,

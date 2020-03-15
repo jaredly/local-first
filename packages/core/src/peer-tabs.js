@@ -8,8 +8,8 @@ import type {
     DeltaPersistence,
     FullPersistence,
 } from './types';
-import type { HLC } from '../../../packages/hybrid-logical-clock';
-import * as hlc from '../../../packages/hybrid-logical-clock';
+import type { HLC } from '../../hybrid-logical-clock';
+import * as hlc from '../../hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';
 import { type PeerChange } from './types';
 

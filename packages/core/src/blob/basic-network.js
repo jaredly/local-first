@@ -241,6 +241,7 @@ const makeSync = <Delta, Data>(
                         updateMeta,
                     ).then(
                         () => {
+                            console.log('connected, love it');
                             updateSyncStatus({ status: 'connected' });
                             res();
                             return true;
@@ -249,6 +250,7 @@ const makeSync = <Delta, Data>(
                             console.error('Failed to sync blob ' + err.message);
                             console.error(err.message);
                             console.error(err.stack);
+                            console.log('definitely not connected');
                             updateSyncStatus({
                                 status: 'disconnected',
                             });
