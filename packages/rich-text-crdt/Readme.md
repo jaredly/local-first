@@ -68,5 +68,18 @@ hmm idk???
 
 
 
+But a split node is nothing other than a '\n'. Right?
+except it would be nice to also have a way to indicate a 'soft-newline'.
+
+<blockquote>
+Hello
+<list>
+Folks
+</list>
+Here</blockquote>
+
+Yeah I think I can just treat it as a normal thing?
+oh wait, what about the "join"?
+yeah I don't have a way to do that erghhhh
 
 
