@@ -54,6 +54,7 @@ import type { HLC } from '../../hybrid-logical-clock';
 import type { Delta, CRDT as Data } from '../../nested-object-crdt';
 import deepEqual from 'fast-deep-equal';
 import type { MultiPersistence, CursorType } from '../../core/src/types.js';
+import type { DB, Transaction } from './types';
 
 const colName = name => name + ':nodes';
 const metaName = name => name + ':deltas-meta';
@@ -66,7 +67,7 @@ const itemMap = items => {
 };
 
 export const applyDeltas = async function<Delta, Data>(
-    db: Promise<*>,
+    db: Promise<DB>,
     collection: string,
     deltas: Array<{ node: string, delta: Delta, stamp: string }>,
     serverCursor: ?CursorType,
@@ -149,8 +150,8 @@ const makeDb = async (
     deltaServer,
     deltaCreate,
     blobServerIds,
-) => {
-    const db = await openDB(name, 1, {
+): Promise<DB> => {
+    const db: DB = await openDB(name, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
             console.log('Setting up database');
             collections.forEach(name => {
@@ -237,7 +238,7 @@ const makePersistence = (
         id: string,
     ) => { node: string, delta: Delta, stamp: string },
 ): MultiPersistence => {
-    const db = makeDb(
+    const db: Promise<DB> = makeDb(
         name,
         collections,
         deltaServer,

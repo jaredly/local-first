@@ -229,7 +229,7 @@ function createClient<Delta, Data, SyncStatus>(
             async (full, etag, sendCrossTabChanges) => {
                 const max = fullMaxStamp(crdt, full);
                 if (max) {
-                    clock.recv(max);
+                    clock.recv(hlc.unpack(max));
                 }
                 const result = await persistence.mergeFull<Delta, Data>(
                     serverId,

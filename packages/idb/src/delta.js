@@ -10,9 +10,10 @@ import type {
     FullPersistence,
     DeltaPersistence,
 } from '../../core/src/types';
+import type { DB, Transaction } from './types';
 
 export const applyDeltas = async function<Delta, Data>(
-    db: Promise<*>,
+    db: Promise<DB>,
     collection: string,
     deltas: Array<{ node: string, delta: Delta, stamp: string }>,
     serverCursor: ?CursorType,
@@ -58,7 +59,7 @@ const makePersistence = (
     collections: Array<string>,
 ): DeltaPersistence => {
     // console.log('Persistence with name', name);
-    const db = openDB(name, 1, {
+    const db: Promise<DB> = openDB(name, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
             collections.forEach(name => {
                 db.createObjectStore(name + ':deltas', {

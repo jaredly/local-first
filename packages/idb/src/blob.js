@@ -5,6 +5,7 @@ import type { HLC } from '../../../packages/hybrid-logical-clock';
 import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
 import deepEqual from '@birchill/json-equalish';
 import type { FullPersistence } from '../../core/src/types';
+import type { DB, Transaction } from './types';
 
 // export const
 
@@ -19,7 +20,7 @@ export const makePersistence = function(
     collections: Array<string>,
 ): FullPersistence {
     const colName = name => name + ':nodes';
-    const db = openDB(name, 1, {
+    const db: Promise<DB> = openDB(name, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
             collections.forEach(name =>
                 db.createObjectStore(colName(name), { keyPath: 'id' }),
