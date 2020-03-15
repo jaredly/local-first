@@ -38,7 +38,7 @@ const setupBlob = () => {
         { tasks: ItemSchema },
         new PersistentClock(clockPersist('local-first')),
         makeBlobPersistence('local-first', ['tasks']),
-        createBasicBlobNetwork('http://localhost:9900/blob'),
+        createBasicBlobNetwork('http://localhost:9900/blob/awesome.blob'),
     );
 };
 

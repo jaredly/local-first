@@ -94,9 +94,13 @@ const syncFetch = async function<Data>(
 ) {
     const { local, serverEtag } = await getLocal();
     let dirtyStamp = local ? local.stamp : null;
-    console.log(`[blob]`, dirtyStamp ? 'local changes!' : 'no local changes');
+    console.log(
+        `[blob]`,
+        dirtyStamp ? 'local changes!' + dirtyStamp : 'no local changes',
+    );
     const remote = await getRemote(serverEtag);
     if (!local && !remote) {
+        console.log('bail');
         return; // no changes
     }
     let toSend = local ? local.blob : null;
@@ -127,6 +131,7 @@ const syncFetch = async function<Data>(
         newServerEtag = await putRemote(toSend);
     }
     if (newServerEtag || dirtyStamp) {
+        console.log('clearing dirty stamp');
         await updateMeta(newServerEtag, dirtyStamp);
     }
 };

@@ -32,7 +32,7 @@ export const newCollection = () => ({
 
 export type CRDTImpl<Delta, Data> = {
     merge(?Data, Data): Data,
-    maxStamp(Data): ?string,
+    latestStamp(Data): ?string,
     value<T>(Data): T,
     deltas: {
         diff(?Data, Data): Delta,

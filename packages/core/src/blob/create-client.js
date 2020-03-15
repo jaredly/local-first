@@ -32,11 +32,11 @@ import { type ClientMessage, type ServerMessage } from '../server';
 export const fullMaxStamp = function<Delta, Data>(
     crdt: CRDTImpl<Delta, Data>,
     full: Blob<Data>,
-) {
+): ?string {
     let maxStamp = null;
     Object.keys(full).forEach(colid => {
         Object.keys(full[colid]).forEach(key => {
-            const latest = crdt.maxStamp(full[colid][key]);
+            const latest = crdt.latestStamp(full[colid][key]);
             if (latest && (!maxStamp || latest > maxStamp)) {
                 maxStamp = latest;
             }
@@ -116,7 +116,7 @@ function createClient<Delta, Data, SyncStatus>(
             async (full, etag, sendCrossTabChanges) => {
                 const max = fullMaxStamp(crdt, full);
                 if (max) {
-                    clock.recv(max);
+                    clock.recv(hlc.unpack(max));
                 }
                 const result = await persistence.mergeFull<Data>(
                     full,

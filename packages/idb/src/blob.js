@@ -44,9 +44,15 @@ export const makePersistence = function(
                 tx.store.put(serverEtag, 'serverEtag');
             }
             if (dirtyStampToClear) {
-                const current = tx.store.get('dirty');
+                const current = await tx.store.get('dirty');
                 if (current === dirtyStampToClear) {
                     tx.store.put(null, 'dirty');
+                } else {
+                    console.log(
+                        'not clearing dirty',
+                        current,
+                        dirtyStampToClear,
+                    );
                 }
             }
         },
