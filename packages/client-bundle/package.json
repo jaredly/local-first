@@ -1,0 +1,6 @@
+{
+    "name": "@local-first/client-bundle",
+    "dependencies": {
+        "regenerator-runtime": "*"
+    }
+}

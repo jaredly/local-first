@@ -1,0 +1,11 @@
+{
+    "name": "@local-first/server-bundle",
+    "dependencies": {
+        "better-sqlite3": "^6.0.1",
+        "cors": "^2.8.5",
+        "express": "^4.17.1",
+        "express-ws": "^4.0.0",
+        "leveldown": "^5.5.1",
+        "levelup": "^4.3.2"
+    }
+}

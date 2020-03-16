@@ -18,6 +18,12 @@ const pack = require('./packages/monorepo-pack');
 
 pack({
     name: 'example',
+    entry: 'packages/server-bundle/index.js',
+    dest: 'public/server-bundle',
+});
+
+pack({
+    name: 'example',
     entry: 'packages/client-bundle/index.js',
     dest: 'public/client-bundle',
 });
