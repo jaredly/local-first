@@ -11,10 +11,22 @@ const pack = require('./packages/monorepo-pack');
 // };
 
 pack({
-    name: 'hybrid-logical-clock',
-    entry: 'packages/hybrid-logical-clock/src/index.js',
-    dest: 'public/hybrid-logical-clock',
+    name: 'example',
+    entry: 'examples/simple-example/server/index.js',
+    dest: 'public/example',
 });
+
+// pack({
+//     name: 'rich-text-crdt',
+//     entry: 'packages/rich-text-crdt/index.js',
+//     dest: 'public/rich-text-crdt',
+// });
+
+// pack({
+//     name: 'hybrid-logical-clock',
+//     entry: 'packages/hybrid-logical-clock/src/index.js',
+//     dest: 'public/hybrid-logical-clock',
+// });
 
 // pack({
 //     name: 'local-first-bundle',
