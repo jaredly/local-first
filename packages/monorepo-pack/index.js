@@ -23,14 +23,8 @@ const requireRewriter = (currentPath, config, onInternalFile) => babel => {
                 return ext;
             }
             onInternalFile(full);
-            if (full.length > preres.length) {
-                const diff = path.relative(preres, full);
-                // console.log('>>>', diff);
-                const newRel = path.join(name, diff);
-                // console.log('<<<', name, newRel);
-                return newRel.startsWith('.') ? newRel : './' + newRel;
-            }
-            // TODO if there's a
+            const newRel = path.relative(path.dirname(currentPath), full);
+            return newRel.startsWith('.') ? newRel : './' + newRel;
         }
     };
 
