@@ -10,10 +10,16 @@ const pack = require('./packages/monorepo-pack');
 //     },
 // };
 
+// pack({
+//     name: 'example',
+//     entry: 'examples/simple-example/server/index.js',
+//     dest: 'public/example-server',
+// });
+
 pack({
     name: 'example',
-    entry: 'examples/simple-example/server/index.js',
-    dest: 'public/example',
+    entry: 'packages/client-bundle/index.js',
+    dest: 'public/client-bundle',
 });
 
 // pack({
