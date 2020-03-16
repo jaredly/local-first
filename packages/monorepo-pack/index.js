@@ -3,7 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 const parser = require('@babel/parser');
-const { transformFromAst, transform } = require('@babel/core');
+const babel = require('@babel/core');
+const { transformFromAst, transform } = babel;
 const traverse = require('@babel/traverse');
 const generate = require('@babel/generator');
 
@@ -37,6 +38,14 @@ const requireRewriter = (currentPath, config, onInternalFile) => babel => {
                     path.node.source.value = repl;
                 }
             },
+            ExportNamedDeclaration(path, state) {
+                if (path.node.source) {
+                    const repl = checkImport(path.node.source.value);
+                    if (repl) {
+                        path.node.source.value = repl;
+                    }
+                }
+            },
             CallExpression(path, state) {
                 if (
                     path.node.callee.type === 'Identifier' &&
@@ -57,16 +66,20 @@ const requireRewriter = (currentPath, config, onInternalFile) => babel => {
 const processFile = (path, config, addFile) => {
     const code = fs.readFileSync(path, 'utf8');
 
-    // TODO translate the paths
-    const res = transform(code, {
-        plugins: [requireRewriter(path, config, addFile)],
+    const plugin = requireRewriter(path, config, addFile);
+    const { code: es5 } = transform(code, {
+        plugins: [plugin],
         presets: [
             require.resolve('@babel/preset-env'),
             require.resolve('@babel/preset-flow'),
         ],
     });
 
-    return res.code;
+    const ast = parser.parse(code, { sourceType: 'module', plugins: ['flow'] });
+    traverse.default(ast, plugin(babel).visitor);
+    const { code: flow } = generate.default(ast);
+
+    return { es5, flow };
 };
 
 const mkdirp = dir => {
@@ -174,7 +187,8 @@ module.exports = config => {
         const rel = path.relative(base, file);
         const full = path.join(config.dest, rel);
         mkdirp(path.dirname(full));
-        fs.writeFileSync(full, files[file], 'utf8');
+        fs.writeFileSync(full, files[file].es5, 'utf8');
+        fs.writeFileSync(full + '.flow', files[file].flow, 'utf8');
     });
     packageJson.main = path.relative(base, config.entry);
     fs.writeFileSync(
