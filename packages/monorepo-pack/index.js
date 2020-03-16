@@ -108,9 +108,29 @@ const basePath = files => {
     return base;
 };
 
+const packageJsonsFor = file => {
+    const found = [];
+    while (file.length && file !== '/' && file !== '.') {
+        file = path.dirname(file);
+        const pjp = path.join(file, 'package.json');
+        if (fs.existsSync(pjp)) {
+            found.push(pjp);
+        }
+        // console.log(file);
+    }
+    return found;
+};
+
+const collectPackageJsons = files => {
+    const all = {};
+    Object.keys(files).forEach(name => {
+        packageJsonsFor(name).forEach(p => (all[p] = true));
+    });
+    return Object.keys(all);
+};
+
 module.exports = config => {
     const files = {};
-    const packageJsons = {};
     const toProcess = [path.resolve(config.entry)];
     mkdirp(config.dest);
 
@@ -129,10 +149,43 @@ module.exports = config => {
     console.log(Object.keys(files));
     const base = basePath(Object.keys(files));
     console.log(base);
+
+    const packageJsons = collectPackageJsons(files);
+    const main = packageJsonsFor(config.entry)[0];
+    const packageJson = require(path.resolve(main));
+    if (!packageJson.dependencies) {
+        packageJson.dependencies = {};
+    }
+    packageJsons.forEach(cpath => {
+        if (cpath !== main) {
+            const data = require(path.resolve(cpath));
+            console.log('json', cpath); //, Object.keys(data.dependencies))
+            if (data.dependencies) {
+                Object.keys(data.dependencies).forEach(k => {
+                    if (
+                        packageJson.dependencies[k] &&
+                        packageJson.dependencies[k] !== data.dependencies[k]
+                    ) {
+                        throw new Error(
+                            `Incompatible dependency: ${data.dependencies[k]} (from ${cpath}) vs ${packageJson.dependencies[k]}`,
+                        );
+                    }
+                    packageJson.dependencies[k] = data.dependencies[k];
+                });
+            }
+        }
+    });
+
     Object.keys(files).forEach(file => {
         const rel = path.relative(base, file);
         const full = path.join(config.dest, rel);
         mkdirp(path.dirname(full));
         fs.writeFileSync(full, files[file], 'utf8');
     });
+    packageJson.main = path.relative(base, config.entry);
+    fs.writeFileSync(
+        path.join(config.dest, 'package.json'),
+        JSON.stringify(packageJson, null, 2),
+        'utf8',
+    );
 };
