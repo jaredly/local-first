@@ -2,6 +2,8 @@
 
 export const MIN_STAMP = '';
 
+export type KeyPath = Array<{ stamp: string, key: string }>;
+
 export type MapMeta<Other> = {|
     type: 'map',
     map: { [key: string]: Meta<Other> },
@@ -76,10 +78,7 @@ const deltas = {
     ): string {
         return latestStamp(delta.value, otherStamp);
     },
-    set<T, Other>(
-        path: Array<string>,
-        value: CRDT<T, Other>,
-    ): HostDelta<T, Other> {
+    set<T, Other>(path: KeyPath, value: CRDT<T, Other>): HostDelta<T, Other> {
         return {
             type: 'set',
             path,
@@ -113,7 +112,7 @@ const deltas = {
 
 export type HostDelta<T, Other> = {
     type: 'set',
-    path: Array<string>,
+    path: KeyPath,
     value: CRDT<T, Other>,
 };
 
@@ -121,7 +120,7 @@ export type Delta<T, Other, OtherDelta> =
     | HostDelta<T, Other>
     | {
           type: 'other',
-          path: Array<string>,
+          path: KeyPath,
           delta: OtherDelta,
       };
 
@@ -143,7 +142,7 @@ const applyDelta = function<T, Other, OtherDelta>(
                 );
                 return genericize(value, meta);
             }
-            return set(crdt, delta.path, delta.value);
+            return set(crdt, delta.path, delta.value, mergeOther);
     }
     throw new Error('unknown delta type' + JSON.stringify(delta));
 };
@@ -161,16 +160,16 @@ const remove = function<T, Other>(
 };
 
 const removeAt = function<T, Other>(
-    map: CRDT<T, Other>,
-    key: Array<string>,
+    map: CRDT<?T, Other>,
+    key: KeyPath,
     hlcStamp: string,
-): CRDT<T, Other> {
-    return set(map, key, create(null, hlcStamp));
+    mergeOther: OtherMerge<Other>,
+): CRDT<?T, Other> {
+    const { value, meta } = create(null, hlcStamp);
+    return set(map, key, genericize(value, meta), mergeOther);
 };
 
 const setInner = () => {};
-
-type KeyPath = Array<{ stamp: string, key: string }>;
 
 const set = function<T, Other>(
     crdt: CRDT<T, Other>,
