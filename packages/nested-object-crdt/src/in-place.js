@@ -1,5 +1,7 @@
 // @flow
 
+export const MIN_STAMP = '';
+
 export type MapMeta<Other> = {|
     type: 'map',
     map: { [key: string]: Meta<Other> },
@@ -17,11 +19,19 @@ export type PlainMeta<Other> = {|
     hlcStamp: string,
 |};
 
+const genericize = function<T, Other>(
+    value: T,
+    meta: MapMeta<Other> | PlainMeta<Other> | OtherMeta<Other>,
+): CRDT<T, Other> {
+    const gmeta: Meta<Other> = meta;
+    return { value, meta: gmeta };
+};
+
 export type Meta<Other> = MapMeta<Other> | PlainMeta<Other> | OtherMeta<Other>;
 
 export type CRDT<T, Other> = {|
     value: T,
-    meta: MapMeta<Other>,
+    meta: Meta<Other>,
 |};
 
 const latestMetaStamp = function<Other>(
@@ -116,7 +126,7 @@ const applyDelta = function<T, Other, OtherDelta>(
     switch (delta.type) {
         case 'set':
             if (delta.path.length === 0) {
-                return merge(crdt, delta.value);
+                return merge(crdt, delta.value, mergeDeltas);
             }
             return set(crdt, delta.path, delta.value);
     }
@@ -130,8 +140,9 @@ const value = function<T, Other>(crdt: CRDT<T, Other>): T {
 const remove = function<T, Other>(
     crdt: CRDT<T, Other>,
     ts: string,
-): CRDT<T, Other> {
-    return create(null, ts);
+): CRDT<null, Other> {
+    const { value, meta } = create(null, ts);
+    return genericize(value, meta);
 };
 
 const removeAt = function<T, Other>(
@@ -312,53 +323,107 @@ const mergeMaps = function<T: {}, Other>(
 };
 
 const merge = function<A, B, Other>(
-    v1: A,
-    m1: Meta<Other>,
-    v2: B,
-    m2: Meta<Other>,
+    v1: ?CRDT<A, Meta<Other>>,
+    v2: CRDT<B, Meta<Other>>,
+    // v1: A,
+    // m1: Meta<Other>,
+    // v2: B,
+    // m2: Meta<Other>,
     mergeOther: OtherMerge<Other>,
-): {
-    value: A | B,
-    meta: Meta<Other>,
-} {
-    if (!v2) {
-        return { value: v1, meta: m1 };
+): CRDT<A, Meta<Other>> | CRDT<B, Meta<Other>> {
+    if (!v1) {
+        return v2;
     }
-    if (m1.type !== m2.type) {
-        if (m1.hlcStamp === m2.hlcStamp) {
+    if (v1.meta.type !== v2.meta.type) {
+        if (v1.meta.hlcStamp === v2.meta.hlcStamp) {
             throw new Error(
-                `Stamps are the same, but types are different ${m1.hlcStamp} : ${m1.type} vs ${m2.hlcStamp} : ${m2.type}`,
+                `Stamps are the same, but types are different ${v1.meta.hlcStamp} : ${v1.meta.type} vs ${v2.meta.hlcStamp} : ${v2.meta.type}`,
             );
         }
-        return m1.hlcStamp > m2.hlcStamp
-            ? { value: v1, meta: m1 }
-            : { value: m2, meta: m2 };
+        return v1.meta.hlcStamp > v2.meta.hlcStamp ? v1 : v2;
     }
-    if (m1.type === 'map' && m2.type === 'map') {
-        if (m1.hlcStamp !== m2.hlcStamp) {
-            return m1.hlcStamp > m2.hlcStamp
-                ? { value: v1, meta: m1 }
-                : { value: v2, meta: m2 };
+    if (v1.meta.type === 'map' && v2.meta.type === 'map') {
+        if (v1.meta.hlcStamp !== v2.meta.hlcStamp) {
+            return v1.meta.hlcStamp > v2.meta.hlcStamp ? v1 : v2;
         }
         // $FlowFixMe
-        const { value, meta } = mergeMaps(v1, m1, v2, m2); //
+        const { value, meta } = mergeMaps(v1, v1.meta, v2, v2.meta); //
         // $FlowFixMe
         return { value, meta };
     }
-    if (m1.type === 'plain' && m2.type === 'plain') {
+    if (v1.meta.type === 'plain' && v2.meta.type === 'plain') {
         // TODO maybe inlude a debug assert that v1 and v2 are equal?
-        return m1.hlcStamp > m2.hlcStamp
-            ? { value: v1, meta: m1 }
-            : { value: v2, meta: m2 };
+        return v1.meta.hlcStamp > v2.meta.hlcStamp ? v1 : v2;
     }
-    if (m1.type === 'other' && m2.type === 'other') {
-        if (m1.hlcStamp === m2.hlcStamp) {
-            const { value, meta } = mergeOther(v1, m1.meta, v2, m2.meta);
-            return { value, meta: { ...m1, meta } };
+    if (v1.meta.type === 'other' && v2.meta.type === 'other') {
+        if (v1.meta.hlcStamp === v2.meta.hlcStamp) {
+            const { value, meta } = mergeOther(
+                v1.value,
+                v1.meta.meta,
+                v2.value,
+                v2.meta.meta,
+            );
+            return { value, meta: { ...v1.meta, meta } };
         }
-        return m1.hlcStamp > m2.hlcStamp
-            ? { value: v1, meta: m1 }
-            : { value: v2, meta: m2 };
+        return v1.meta.hlcStamp > v2.meta.hlcStamp ? v1 : v2;
     }
-    throw new Error(`Unexpected types ${m1.type} : ${m2.type}`);
+    throw new Error(`Unexpected types ${v1.meta.type} : ${v2.meta.type}`);
+};
+
+const createDeepMap = function<T: {}, Other>(
+    value: T,
+    hlcStamp: string,
+): {|
+    value: T,
+    meta: MapMeta<Other>,
+|} {
+    const meta: MapMeta<Other> = {
+        type: 'map',
+        map: {},
+        hlcStamp,
+    };
+    Object.keys(value).forEach(k => {
+        if (value[k] && typeof value[k] === 'object') {
+            meta[k] = createDeepMap(value[k], hlcStamp);
+        } else {
+            meta[k] = create(value[k], hlcStamp);
+        }
+    });
+    return { value, meta };
+};
+
+const createValue = function<T, Other>(
+    value: T,
+    hlcStamp: string,
+): CRDT<T, Other> {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const res = createDeepMap(value, hlcStamp);
+        return genericize(res.value, res.meta);
+    } else {
+        const res = create(value, hlcStamp);
+        return genericize(res.value, res.meta);
+    }
+};
+
+const createMap = function<T: {}, Other>(
+    value: T,
+    hlcStamp,
+): {| value: T, meta: MapMeta<Other> |} {
+    const meta = { type: 'map', map: {}, hlcStamp };
+    Object.keys(value).forEach(k => {
+        meta[k] = create(value[k], hlcStamp);
+    });
+    return { value, meta };
+};
+
+const create = function<T, Other>(
+    value: T,
+    hlcStamp: string,
+): {| value: T, meta: PlainMeta<Other> |} {
+    return { value, meta: { type: 'plain', hlcStamp } };
+};
+
+const createEmpty = function<T, Other>(): CRDT<?T, Other> {
+    const { value, meta } = create(null, MIN_STAMP);
+    return genericize(value, meta);
 };
