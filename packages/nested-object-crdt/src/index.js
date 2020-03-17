@@ -25,7 +25,6 @@ export type Delta = {
     type: 'set',
     path: Array<string>,
     value: CRDT,
-    // hlcStamp: string,
 };
 
 // This is used as a filler for when we need to create a
