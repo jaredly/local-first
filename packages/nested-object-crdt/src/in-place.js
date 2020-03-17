@@ -97,10 +97,17 @@ const deltas = {
         value: create(null, hlcStamp),
     }),
     apply<T, Other, OtherDelta>(
-        data: ?CRDT<T, Other>,
-        delta: Delta<T, Other, OtherDelta>,
+        data: ?CRDT<?T, Other>,
+        delta: Delta<?T, Other, OtherDelta>,
+        applyOtherDelta: (any, Other, OtherDelta) => Other,
+        mergeOther: OtherMerge<Other>,
     ) {
-        return applyDelta(data ? data : createEmpty(), delta);
+        return applyDelta(
+            data ? data : createEmpty(),
+            delta,
+            applyOtherDelta,
+            mergeOther,
+        );
     },
 };
 
@@ -122,11 +129,19 @@ const applyDelta = function<T, Other, OtherDelta>(
     crdt: CRDT<T, Other>,
     delta: Delta<T, Other, OtherDelta>,
     applyOtherDelta: (any, Other, OtherDelta) => Other,
+    mergeOther: OtherMerge<Other>,
 ): CRDT<T, Other> {
     switch (delta.type) {
         case 'set':
             if (delta.path.length === 0) {
-                return merge(crdt, delta.value, mergeDeltas);
+                const { value, meta } = merge(
+                    crdt.value,
+                    crdt.meta,
+                    delta.value.value,
+                    delta.value.meta,
+                    mergeOther,
+                );
+                return genericize(value, meta);
             }
             return set(crdt, delta.path, delta.value);
     }
@@ -323,51 +338,55 @@ const mergeMaps = function<T: {}, Other>(
 };
 
 const merge = function<A, B, Other>(
-    v1: ?CRDT<A, Meta<Other>>,
-    v2: CRDT<B, Meta<Other>>,
-    // v1: A,
-    // m1: Meta<Other>,
-    // v2: B,
-    // m2: Meta<Other>,
+    v1: A,
+    m1: Meta<Other>,
+    v2: B,
+    m2: Meta<Other>,
     mergeOther: OtherMerge<Other>,
-): CRDT<A, Meta<Other>> | CRDT<B, Meta<Other>> {
-    if (!v1) {
-        return v2;
+): {
+    value: A | B,
+    meta: Meta<Other>,
+} {
+    if (!v2) {
+        return { value: v1, meta: m1 };
     }
-    if (v1.meta.type !== v2.meta.type) {
-        if (v1.meta.hlcStamp === v2.meta.hlcStamp) {
+    if (m1.type !== m2.type) {
+        if (m1.hlcStamp === m2.hlcStamp) {
             throw new Error(
-                `Stamps are the same, but types are different ${v1.meta.hlcStamp} : ${v1.meta.type} vs ${v2.meta.hlcStamp} : ${v2.meta.type}`,
+                `Stamps are the same, but types are different ${m1.hlcStamp} : ${m1.type} vs ${m2.hlcStamp} : ${m2.type}`,
             );
         }
-        return v1.meta.hlcStamp > v2.meta.hlcStamp ? v1 : v2;
+        return m1.hlcStamp > m2.hlcStamp
+            ? { value: v1, meta: m1 }
+            : { value: m2, meta: m2 };
     }
-    if (v1.meta.type === 'map' && v2.meta.type === 'map') {
-        if (v1.meta.hlcStamp !== v2.meta.hlcStamp) {
-            return v1.meta.hlcStamp > v2.meta.hlcStamp ? v1 : v2;
+    if (m1.type === 'map' && m2.type === 'map') {
+        if (m1.hlcStamp !== m2.hlcStamp) {
+            return m1.hlcStamp > m2.hlcStamp
+                ? { value: v1, meta: m1 }
+                : { value: v2, meta: m2 };
         }
         // $FlowFixMe
-        const { value, meta } = mergeMaps(v1, v1.meta, v2, v2.meta); //
+        const { value, meta } = mergeMaps(v1, m1, v2, m2); //
         // $FlowFixMe
         return { value, meta };
     }
-    if (v1.meta.type === 'plain' && v2.meta.type === 'plain') {
+    if (m1.type === 'plain' && m2.type === 'plain') {
         // TODO maybe inlude a debug assert that v1 and v2 are equal?
-        return v1.meta.hlcStamp > v2.meta.hlcStamp ? v1 : v2;
+        return m1.hlcStamp > m2.hlcStamp
+            ? { value: v1, meta: m1 }
+            : { value: v2, meta: m2 };
     }
-    if (v1.meta.type === 'other' && v2.meta.type === 'other') {
-        if (v1.meta.hlcStamp === v2.meta.hlcStamp) {
-            const { value, meta } = mergeOther(
-                v1.value,
-                v1.meta.meta,
-                v2.value,
-                v2.meta.meta,
-            );
-            return { value, meta: { ...v1.meta, meta } };
+    if (m1.type === 'other' && m2.type === 'other') {
+        if (m1.hlcStamp === m2.hlcStamp) {
+            const { value, meta } = mergeOther(v1, m1.meta, v2, m2.meta);
+            return { value, meta: { ...m1, meta } };
         }
-        return v1.meta.hlcStamp > v2.meta.hlcStamp ? v1 : v2;
+        return m1.hlcStamp > m2.hlcStamp
+            ? { value: v1, meta: m1 }
+            : { value: v2, meta: m2 };
     }
-    throw new Error(`Unexpected types ${v1.meta.type} : ${v2.meta.type}`);
+    throw new Error(`Unexpected types ${m1.type} : ${m2.type}`);
 };
 
 const createDeepMap = function<T: {}, Other>(
