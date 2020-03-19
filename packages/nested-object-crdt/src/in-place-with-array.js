@@ -38,6 +38,35 @@ export type PlainMeta = {|
     hlcStamp: string,
 |};
 
+export type HostDelta<T, Other> =
+    | {|
+          type: 'set',
+          path: KeyPath,
+          value: CRDT<T, Other>,
+      |}
+    | {|
+          type: 'insert',
+          path: KeyPath,
+          idx: number,
+          value: CRDT<T, Other>,
+          stamp: string,
+      |}
+    | {|
+          type: 'reorder',
+          path: KeyPath,
+          idx: number,
+          newIdx: number,
+          stamp: string,
+      |};
+
+export type Delta<T, Other, OtherDelta> =
+    | HostDelta<T, Other>
+    | {
+          type: 'other',
+          path: KeyPath,
+          delta: OtherDelta,
+      };
+
 const genericize = function<T, Other>(
     value: T,
     meta: MapMeta<Other> | PlainMeta | OtherMeta<Other> | ArrayMeta<Other>,
@@ -145,7 +174,9 @@ const deltas = {
         delta: HostDelta<T, Other>,
         otherStamp: Other => ?string,
     ): string {
-        return latestStamp(delta.value, otherStamp);
+        return delta.type === 'set'
+            ? latestStamp(delta.value, otherStamp)
+            : delta.stamp;
     },
     set<T, Other>(
         current: CRDT<T, Other>,
@@ -158,6 +189,36 @@ const deltas = {
             value,
         };
     },
+    insert<T, Other>(
+        current: CRDT<T, Other>,
+        path: Array<string | number>,
+        idx: number,
+        value: CRDT<T, Other>,
+        stamp: string,
+    ): HostDelta<T, Other> {
+        return {
+            type: 'insert',
+            path: makeKeyPath(current.meta, path),
+            idx,
+            value,
+            stamp,
+        };
+    },
+    reorder<T, Other>(
+        current: CRDT<T, Other>,
+        path: Array<string | number>,
+        idx: number,
+        newIdx: number,
+        stamp: string,
+    ): HostDelta<T, Other> {
+        return {
+            type: 'reorder',
+            path: makeKeyPath(current.meta, path),
+            idx,
+            newIdx,
+            stamp,
+        };
+    },
     remove: (hlcStamp: string) => ({
         type: 'set',
         path: [],
@@ -168,6 +229,8 @@ const deltas = {
         path: Array<string | number>,
         hlcStamp: string,
     ) {
+        // TODO if the last item is a number, use an 'arrayRemove'? Or does that even make sense?
+        // No I guess I still need tombstones...
         return {
             type: 'set',
             path: makeKeyPath(current.meta, path),
@@ -189,23 +252,9 @@ const deltas = {
     },
 };
 
-export type HostDelta<T, Other> = {
-    type: 'set',
-    path: KeyPath,
-    value: CRDT<T, Other>,
-};
-
-export type Delta<T, Other, OtherDelta> =
-    | HostDelta<T, Other>
-    | {
-          type: 'other',
-          path: KeyPath,
-          delta: OtherDelta,
-      };
-
-const applyDelta = function<T, Other, OtherDelta>(
+const applyDelta = function<T, O, Other, OtherDelta>(
     crdt: CRDT<T, Other>,
-    delta: Delta<T, Other, OtherDelta>,
+    delta: Delta<O, Other, OtherDelta>,
     applyOtherDelta: (any, Other, OtherDelta) => Other,
     mergeOther: OtherMerge<Other>,
 ): CRDT<T, Other> {
@@ -222,6 +271,10 @@ const applyDelta = function<T, Other, OtherDelta>(
                 return genericize(value, meta);
             }
             return set(crdt, delta.path, delta.value, mergeOther);
+        case 'insert':
+            return reorder(crdt, delta.path, delta.idx, delta.value);
+        case 'reorder':
+            return reorder(crdt, delta.path, delta.idx, delta.newIdx);
     }
     throw new Error('unknown delta type' + JSON.stringify(delta));
 };
@@ -248,10 +301,31 @@ const removeAt = function<T, Other>(
     return set(map, key, genericize(value, meta), mergeOther);
 };
 
-const set = function<T, Other>(
+// STOPSHIP TODO HERE"S THE ONE
+const insert = function<T, O, Other>(
+    crdt: CRDT<T, Other>,
+    path: KeyPath,
+    idx: number,
+    value: CRDT<O, Other>,
+): CRDT<T, Other> {
+    //
+    throw new Error('WIP');
+};
+
+const reorder = function<T, Other>(
+    crdt: CRDT<T, Other>,
+    path: KeyPath,
+    idx: number,
+    newIdx: number,
+): CRDT<T, Other> {
+    //
+    throw new Error('WIP');
+};
+
+const set = function<T, O, Other>(
     crdt: CRDT<T, Other>,
     key: KeyPath,
-    value: CRDT<T, Other>,
+    value: CRDT<O, Other>,
     mergeOther: OtherMerge<Other>,
 ): CRDT<T, Other> {
     if (key.length === 0) {
