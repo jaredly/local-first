@@ -1,5 +1,7 @@
 // @flow
 
+import * as sortedArray from './sorted-array';
+
 export const MIN_STAMP = '';
 
 export type KeyPath = Array<{ stamp: string, key: string }>;
@@ -8,7 +10,12 @@ export type Sort = Array<number>;
 
 export type ArrayMeta<Other> = {|
     type: 'array',
-    items: { [key: string]: { sort: Sort, meta: Meta<Other> } },
+    items: {
+        [key: string]: {
+            sort: { stamp: string, idx: Sort },
+            meta: Meta<Other>,
+        },
+    },
     // This is just a cache
     idsInOrder: Array<string>,
     hlcStamp: string,
@@ -384,6 +391,57 @@ const mergeMaps = function<T: {}, Other>(
     return { value, meta };
 };
 
+const mergeArrays = function<T, Other>(
+    v1: Array<T>,
+    m1: ArrayMeta<Other>,
+    v2: Array<T>,
+    m2: ArrayMeta<Other>,
+    mergeOther: OtherMerge<Other>,
+): {
+    value: Array<T>,
+    meta: Meta<Other>,
+} {
+    // const value =
+    const fullMap = {};
+    m1.idsInOrder.forEach((id, i) => {
+        fullMap[id] = { value: v1[i], meta: m1.items[id] };
+    });
+    m2.idsInOrder.forEach((id, i) => {
+        if (fullMap[id]) {
+            const res = merge(
+                fullMap[id].value,
+                fullMap[id].meta.meta,
+                v2[i],
+                m2.items[id].meta,
+                mergeOther,
+            );
+            const sort =
+                fullMap[id].meta.sort.stamp > m2.items[id].sort.stamp
+                    ? fullMap[id].meta.sort
+                    : m2.items[id].sort;
+            fullMap[id] = { value: res.value, meta: { meta: res.meta, sort } };
+        } else {
+            fullMap[id] = { value: v2[i], meta: m2.items[id] };
+        }
+    });
+    const allIds = Object.keys(fullMap);
+    allIds.sort((a, b) =>
+        sortedArray.compare(fullMap[a].meta.sort.idx, fullMap[b].meta.sort.idx),
+    );
+    const items = {};
+    allIds.forEach(id => {
+        items[id] = fullMap[id].meta;
+    });
+    return {
+        value: allIds.map(id => fullMap[id].value),
+        meta: {
+            ...m1,
+            idsInOrder: allIds,
+            items,
+        },
+    };
+};
+
 const merge = function<A, B, Other>(
     v1: A,
     m1: Meta<Other>,
@@ -415,7 +473,20 @@ const merge = function<A, B, Other>(
         }
         // $FlowFixMe
         const { value, meta } = mergeMaps(v1, m1, v2, m2); //
+        return { value, meta };
+    }
+    if (m1.type === 'array' && m2.type === 'array') {
+        if (m1.hlcStamp !== m2.hlcStamp) {
+            return m1.hlcStamp > m2.hlcStamp
+                ? { value: v1, meta: m1 }
+                : { value: v2, meta: m2 };
+        }
+
+        if (!Array.isArray(v1) || !Array.isArray(v2)) {
+            throw new Error(`Meta type is array, but values are not`);
+        }
         // $FlowFixMe
+        const { value, meta } = mergeArrays(v1, m2, v2, m2, mergeOther);
         return { value, meta };
     }
     if (m1.type === 'plain' && m2.type === 'plain') {
