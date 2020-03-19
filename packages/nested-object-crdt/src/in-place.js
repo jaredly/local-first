@@ -169,8 +169,6 @@ const removeAt = function<T, Other>(
     return set(map, key, genericize(value, meta), mergeOther);
 };
 
-const setInner = () => {};
-
 const set = function<T, Other>(
     crdt: CRDT<T, Other>,
     key: KeyPath,
@@ -227,86 +225,11 @@ const set = function<T, Other>(
             };
         }
     } else if (crdt.meta.type === 'plain') {
-        throw new Error(
-            `Invalid delta - plain stamp ${crdt.meta.hlcStamp} is older than key path stamp (${key[0].stamp})`,
-        );
+        throw new Error(`Invalid delta - cannot set inside of a plain value`);
     } else if (crdt.meta.type === 'other') {
+        throw new Error(`Invalid delta - cannot set inside of an 'other'`);
     }
-    throw new Error('aa');
-
-    // if (crdt.meta.type === 'map') {
-    //     const k = key[0];
-    //     let v = crdt.map[k];
-    //     if (key.length === 1) {
-    //         const nv = merge(v, value);
-    //         return {
-    //             ...crdt,
-    //             map: { ...crdt.map, [k]: nv },
-    //             hlcStamp:
-    //                 nv.hlcStamp < crdt.hlcStamp ? nv.hlcStamp : crdt.hlcStamp,
-    //         };
-    //     }
-    //     if (!v) {
-    //         // v = createEmpty();
-    //         // maybe here I make a `null` plain & set the attrs accordingly?
-    //         throw new Error('setting a key that doesnt yet exist');
-    //     }
-    //     const nv = set(v, key.slice(1), value);
-    //     return {
-    //         ...crdt,
-    //         map: { ...crdt.map, [k]: nv },
-    //         hlcStamp: nv.hlcStamp < crdt.hlcStamp ? nv.hlcStamp : crdt.hlcStamp,
-    //     };
-    // } else {
-    //     if (value.type === 'plain') {
-    //         if (value.hlcStamp > crdt.hlcStamp) {
-    //             const mapValues = { ...crdt.mapValues };
-    //             if (key.length === 1) {
-    //                 mapValues[key[0]] = merge(mapValues[key[0]], value);
-    //             } else {
-    //                 mapValues[key[0]] = merge(
-    //                     mapValues[key[0]],
-    //                     set(
-    //                         {
-    //                             type: 'map',
-    //                             map: {},
-    //                             hlcStamp: MIN_STAMP,
-    //                         },
-    //                         key.slice(1),
-    //                         value,
-    //                     ),
-    //                 );
-    //             }
-    //             return { ...crdt, mapValues };
-    //         }
-    //     } else {
-    //         const map = prune(value.map, crdt.hlcStamp);
-    //         if (map) {
-    //             const mapValues = { ...crdt.mapValues };
-    //             if (key.length === 1) {
-    //                 mapValues[key[0]] = merge(mapValues[key[0]], {
-    //                     ...value,
-    //                     map,
-    //                 });
-    //             } else {
-    //                 mapValues[key[0]] = merge(
-    //                     mapValues[key[0]],
-    //                     set(
-    //                         {
-    //                             type: 'map',
-    //                             map: {},
-    //                             hlcStamp: MIN_STAMP,
-    //                         },
-    //                         key.slice(1),
-    //                         { ...value, map },
-    //                     ),
-    //                 );
-    //             }
-    //             return { ...crdt, mapValues };
-    //         }
-    //     }
-    //     return crdt;
-    // }
+    throw new Error(`Unexpected meta type ${crdt.meta.type}`);
 };
 
 type OtherMerge<Other> = (
