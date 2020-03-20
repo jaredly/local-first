@@ -1,6 +1,6 @@
 // @-flow
 
-import * as crdt from './in-place-with-array';
+import * as crdt from './new';
 
 const baseData = {
     person: {
@@ -80,7 +80,6 @@ describe('it', () => {
     it('should reorder an array', () => {
         const delta = crdt.deltas.reorder(base, ['instructions'], 0, 1, '2');
         const changed = apply(base, delta);
-        console.log(JSON.stringify([delta, base, changed]));
         expect(changed.value.instructions).toEqual([
             { text: 'go right' },
             { text: 'go left' },
