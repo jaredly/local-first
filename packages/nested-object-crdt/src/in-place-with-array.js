@@ -97,6 +97,13 @@ export type CRDT<T, Other> = {|
     meta: Meta<Other>,
 |};
 
+export type OtherMerge<Other> = (
+    v1: any,
+    m1: Other,
+    v2: any,
+    m2: Other,
+) => { value: any, meta: Other };
+
 const latestMetaStamp = function<Other>(
     meta: Meta<Other>,
     otherStamp: Other => ?string,
@@ -171,7 +178,7 @@ const makeKeyPath = function<T, Other>(
     });
 };
 
-const deltas = {
+export const deltas = {
     diff<T, Other>(one: ?CRDT<T, Other>, two: CRDT<T, Other>) {
         if (!one) {
             // return deltas.set([], two);
@@ -248,11 +255,12 @@ const deltas = {
             stamp,
         };
     },
-    remove: (hlcStamp: string) => ({
-        type: 'set',
-        path: [],
-        value: create(null, hlcStamp),
-    }),
+    remove<T, Other>(hlcStamp: string): HostDelta<?T, Other> {
+        return {
+            type: 'replace',
+            value: { value: null, meta: { type: 't', hlcStamp } },
+        };
+    },
     removeAt<T, Other>(
         current: CRDT<T, Other>,
         path: Array<string | number>,
@@ -274,12 +282,12 @@ const deltas = {
             value,
         };
     },
-    apply<T, Other, OtherDelta>(
+    apply<T, O, Other, OtherDelta>(
         data: ?CRDT<?T, Other>,
-        delta: Delta<?T, Other, OtherDelta>,
+        delta: Delta<?O, Other, OtherDelta>,
         applyOtherDelta: (any, Other, OtherDelta) => Other,
         mergeOther: OtherMerge<Other>,
-    ) {
+    ): CRDT<T, Other> {
         return applyDelta(
             data ? data : createEmpty(),
             delta,
@@ -289,7 +297,7 @@ const deltas = {
     },
 };
 
-const applyDelta = function<T, O, Other, OtherDelta>(
+export const applyDelta = function<T, O, Other, OtherDelta>(
     crdt: CRDT<T, Other>,
     delta: Delta<O, Other, OtherDelta>,
     applyOtherDelta: (any, Other, OtherDelta) => Other,
@@ -329,11 +337,11 @@ const applyDelta = function<T, O, Other, OtherDelta>(
     throw new Error('unknown delta type' + JSON.stringify(delta));
 };
 
-const value = function<T, Other>(crdt: CRDT<T, Other>): T {
+export const value = function<T, Other>(crdt: CRDT<T, Other>): T {
     return crdt.value;
 };
 
-const remove = function<T, Other>(
+export const remove = function<T, Other>(
     crdt: CRDT<T, Other>,
     ts: string,
 ): CRDT<null, Other> {
@@ -341,7 +349,7 @@ const remove = function<T, Other>(
     return genericize(value, meta);
 };
 
-const removeAt = function<T, O, Other>(
+export const removeAt = function<T, O, Other>(
     map: CRDT<?T, Other>,
     path: KeyPath,
     key: string,
@@ -446,6 +454,9 @@ export const insert = function<T, O, Other>(
     stamp: string,
 ): CRDT<T, Other> {
     return applyInner(crdt, key, inner => {
+        if (!inner) {
+            throw new Error(`No array at path`);
+        }
         if (inner.meta.type !== 'array' || !Array.isArray(inner.value)) {
             throw new Error(`Cannot insert into a ${inner.meta.type}`);
         }
@@ -454,7 +465,7 @@ export const insert = function<T, O, Other>(
     });
 };
 
-const reorder = function<T, Other>(
+export const reorder = function<T, Other>(
     crdt: CRDT<T, Other>,
     path: KeyPath,
     idx: number,
@@ -462,6 +473,9 @@ const reorder = function<T, Other>(
     stamp: string,
 ): CRDT<T, Other> {
     return applyInner(crdt, path, inner => {
+        if (!inner) {
+            throw new Error(`No array at path`);
+        }
         if (inner.meta.type !== 'array' || !Array.isArray(inner.value)) {
             throw new Error(`Cannot insert into a ${inner.meta.type}`);
         }
@@ -470,7 +484,7 @@ const reorder = function<T, Other>(
     });
 };
 
-const set = function<T, O, Other>(
+export const set = function<T, O, Other>(
     crdt: CRDT<T, Other>,
     path: KeyPath,
     key: string,
@@ -478,6 +492,12 @@ const set = function<T, O, Other>(
     mergeOther: OtherMerge<Other>,
 ): CRDT<T, Other> {
     return applyInner(crdt, path, inner => {
+        if (!inner) {
+            return value;
+        }
+        if (!inner.meta) {
+            console.log(inner);
+        }
         if (inner.meta.type === 'map') {
             if (
                 !inner.value ||
@@ -631,14 +651,7 @@ const applyInner = function<T, O, Other, R>(
     throw new Error(`Unexpected meta type ${crdt.meta.type}`);
 };
 
-type OtherMerge<Other> = (
-    v1: any,
-    m1: Other,
-    v2: any,
-    m2: Other,
-) => { value: any, meta: Other };
-
-const mergeMaps = function<T: {}, Other>(
+export const mergeMaps = function<T: {}, Other>(
     v1: T,
     m1: MapMeta<Other>,
     v2: T,
@@ -658,7 +671,7 @@ const mergeMaps = function<T: {}, Other>(
     return { value, meta };
 };
 
-const mergeArrays = function<T, Other>(
+export const mergeArrays = function<T, Other>(
     v1: Array<T>,
     m1: ArrayMeta<Other>,
     v2: Array<T>,
@@ -709,7 +722,7 @@ const mergeArrays = function<T, Other>(
     };
 };
 
-const merge = function<A, B, Other>(
+export const merge = function<A, B, Other>(
     v1: A,
     m1: Meta<Other>,
     v2: B,
@@ -759,13 +772,57 @@ const merge = function<A, B, Other>(
     throw new Error(`Unexpected types ${m1.type} : ${m2.type}`);
 };
 
-const createDeepMap = function<T: {}, Other>(
+export const createDeepMeta = function<T, Other>(
     value: T,
     hlcStamp: string,
-): {|
+): Meta<Other> {
+    if (!value || typeof value !== 'object') {
+        return { type: 'plain', hlcStamp };
+    }
+    if (Array.isArray(value)) {
+        return createDeepArrayMeta(value, hlcStamp);
+    }
+    return createDeepMapMeta(value, hlcStamp);
+};
+
+export const createDeep = function<T, Other>(
     value: T,
-    meta: MapMeta<Other>,
-|} {
+    hlcStamp: string,
+): CRDT<T, Other> {
+    return { value, meta: createDeepMeta(value, hlcStamp) };
+};
+
+export const createDeepArrayMeta = function<T, Other>(
+    value: Array<T>,
+    hlcStamp: string,
+): ArrayMeta<Other> {
+    const meta = {
+        type: 'array',
+        idsInOrder: [],
+        items: {},
+        hlcStamp,
+    };
+    let last = null;
+    value.forEach(item => {
+        const id = Math.random()
+            .toString(36)
+            .slice(2);
+        const innerMeta = createDeepMeta(item, hlcStamp);
+        const sort = sortedArray.between(last, null);
+        last = sort;
+        meta.items[id] = {
+            meta: innerMeta,
+            sort: { idx: sort, stamp: hlcStamp },
+        };
+        meta.idsInOrder.push(id);
+    });
+    return meta;
+};
+
+export const createDeepMapMeta = function<T: {}, Other>(
+    value: T,
+    hlcStamp: string,
+): MapMeta<Other> {
     const meta: MapMeta<Other> = {
         type: 'map',
         map: {},
@@ -773,15 +830,26 @@ const createDeepMap = function<T: {}, Other>(
     };
     Object.keys(value).forEach(k => {
         if (value[k] && typeof value[k] === 'object') {
-            meta[k] = createDeepMap(value[k], hlcStamp);
+            if (Array.isArray(value[k])) {
+                meta.map[k] = createDeepArrayMeta(value[k], hlcStamp);
+            } else {
+                meta.map[k] = createDeepMapMeta(value[k], hlcStamp);
+            }
         } else {
-            meta[k] = create(value[k], hlcStamp);
+            meta.map[k] = { type: 'plain', hlcStamp };
         }
     });
-    return { value, meta };
+    return meta;
 };
 
-const createValue = function<T, Other>(
+export const createDeepMap = function<T: {}, Other>(
+    value: T,
+    hlcStamp: string,
+): CRDT<T, Other> {
+    return { value, meta: createDeepMapMeta(value, hlcStamp) };
+};
+
+export const createValue = function<T, Other>(
     value: T,
     hlcStamp: string,
 ): CRDT<T, Other> {
@@ -794,25 +862,25 @@ const createValue = function<T, Other>(
     }
 };
 
-const createMap = function<T: {}, Other>(
+export const createMap = function<T: {}, Other>(
     value: T,
-    hlcStamp,
+    hlcStamp: string,
 ): {| value: T, meta: MapMeta<Other> |} {
     const meta = { type: 'map', map: {}, hlcStamp };
     Object.keys(value).forEach(k => {
-        meta[k] = create(value[k], hlcStamp);
+        meta.map[k] = { type: 'plain', hlcStamp };
     });
     return { value, meta };
 };
 
-const create = function<T, Other>(
+export const create = function<T, Other>(
     value: T,
     hlcStamp: string,
 ): {| value: T, meta: PlainMeta |} {
     return { value, meta: { type: 'plain', hlcStamp } };
 };
 
-const createEmpty = function<T, Other>(): CRDT<?T, Other> {
+export const createEmpty = function<T, Other>(): CRDT<?T, Other> {
     const { value, meta } = create(null, MIN_STAMP);
     return genericize(value, meta);
 };
