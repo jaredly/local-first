@@ -85,11 +85,9 @@ const makeKeyPath = function<T, Other>(
 export const deltas = {
     diff<T, Other>(one: ?CRDT<T, Other>, two: CRDT<T, Other>) {
         if (!one) {
-            // return deltas.set([], two);
             return { type: 'set', path: [], value: two };
         }
         // TODO something a little more intelligent probably?
-        // return deltas.set([], two);
         return { type: 'set', path: [], value: one };
     },
     stamp<T, Other>(
@@ -99,9 +97,6 @@ export const deltas = {
         return delta.type === 'set'
             ? latestStamp(delta.value, otherStamp)
             : delta.sort.stamp;
-    },
-    replace<T, Other>(value: CRDT<T, Other>): HostDelta<T, Other> {
-        return { type: 'set', value, path: [] };
     },
     set<T, Other>(
         current: CRDT<T, Other>,

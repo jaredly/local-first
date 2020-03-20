@@ -228,4 +228,19 @@ describe('it', () => {
         const b = apply(a, delta);
         expect(b.value.person).toEqual({ name: 'Yo' });
     });
+    it('insert into a nested array', () => {
+        const base = crdt.createDeep([{ numbers: [4, 5, 6] }], '1');
+        const a = apply(
+            base,
+            crdt.deltas.insert(
+                base,
+                [0, 'numbers'],
+                2,
+                'zz',
+                crdt.create(9, '2'),
+                '2',
+            ),
+        );
+        expect(a.value[0].numbers).toEqual([4, 5, 9, 6]);
+    });
 });
