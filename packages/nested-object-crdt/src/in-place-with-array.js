@@ -13,7 +13,3 @@ import type {
     MapMeta,
     OtherMerge,
 } from './types';
-
-export const value = function<T, Other>(crdt: CRDT<T, Other>): T {
-    return crdt.value;
-};

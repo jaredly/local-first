@@ -1,6 +1,7 @@
 // @-flow
 
 import * as crdt from './new';
+import { checkConsistency } from './debug';
 
 const baseData = {
     person: {
@@ -16,7 +17,7 @@ const apply = (base, delta) => {
     const res = crdt.applyDelta(base, delta, (_, __, ___) => {
         throw new Error('no other');
     });
-    crdt.checkConsistency(res);
+    checkConsistency(res);
     return res;
 };
 
@@ -30,7 +31,7 @@ describe('tombstones', () => {
             { text: 'go left' },
             { stop: true },
         ]);
-        crdt.checkConsistency(changed);
+        checkConsistency(changed);
     });
     it('should shorten an array, and then restore it', () => {
         const a = apply(
@@ -48,7 +49,7 @@ describe('tombstones', () => {
             { text: 'oooh' },
             { stop: true },
         ]);
-        crdt.checkConsistency(b);
+        checkConsistency(b);
     });
 });
 
@@ -63,7 +64,7 @@ describe('it', () => {
             ),
         );
         expect(changed.value.person.name).toEqual('Awesome');
-        crdt.checkConsistency(changed);
+        checkConsistency(changed);
     });
     it('should set inside an array', () => {
         const changed = apply(
@@ -75,7 +76,7 @@ describe('it', () => {
             ),
         );
         expect(changed.value.instructions[1].text).toEqual('go back');
-        crdt.checkConsistency(changed);
+        checkConsistency(changed);
     });
     it('should reorder an array', () => {
         const delta = crdt.deltas.reorder(base, ['instructions'], 0, 1, '2');
@@ -85,7 +86,7 @@ describe('it', () => {
             { text: 'go left' },
             { stop: true },
         ]);
-        crdt.checkConsistency(changed);
+        checkConsistency(changed);
     });
     it('should add and remove an object attribute', () => {
         const delta = crdt.deltas.set(
