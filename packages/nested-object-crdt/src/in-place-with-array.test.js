@@ -1,4 +1,4 @@
-// @flow
+// @-flow
 
 import * as crdt from './in-place-with-array';
 // import * as hlc from '../../hybrid-logical-clock';
@@ -17,6 +17,7 @@ const apply = (base, delta) =>
         throw new Error('no other');
     });
 
+console.log(JSON.stringify(base));
 describe('it', () => {
     it('should do something', () => {
         const changed = apply(
@@ -28,6 +29,7 @@ describe('it', () => {
             ),
         );
         expect(changed.value.person.name).toEqual('Awesome');
+        crdt.checkConsistency(changed);
     });
     it('should set inside an array', () => {
         const changed = apply(
@@ -39,5 +41,18 @@ describe('it', () => {
             ),
         );
         expect(changed.value.instructions[1].text).toEqual('go back');
+        crdt.checkConsistency(changed);
+    });
+    it('should reorder an array', () => {
+        const changed = apply(
+            base,
+            crdt.deltas.reorder(base, ['instructions'], 0, 1, '2'),
+        );
+        expect(changed.value.instructions).toEqual([
+            { text: 'go right' },
+            { text: 'go left' },
+            { stop: true },
+        ]);
+        crdt.checkConsistency(changed);
     });
 });

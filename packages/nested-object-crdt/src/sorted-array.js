@@ -112,8 +112,8 @@ export const between = (
     two: ?Array<number>,
 ): Array<number> => {
     if (!one || !two) {
-        if (one) return [one[0] - 1];
-        if (two) return [two[0] + 1];
+        if (one) return [one[0] + 1];
+        if (two) return [two[0] - 1];
         return [0];
     }
     let i = 0;

@@ -1,6 +1,7 @@
 // @flow
 
 import * as sortedArray from './sorted-array';
+import deepEqual from 'fast-deep-equal';
 
 export const MIN_STAMP = '';
 
@@ -103,6 +104,70 @@ export type OtherMerge<Other> = (
     v2: any,
     m2: Other,
 ) => { value: any, meta: Other };
+
+export const checkConsistency = function<T, Other>(
+    crdt: CRDT<T, Other>,
+): ?Array<string> {
+    if (crdt.meta.type === 'plain') {
+        return null;
+    }
+    if (crdt.meta.type === 't') {
+        if (crdt.value != null) {
+            throw new Error('expected tombstone value to be null');
+        }
+        return;
+    }
+    if (crdt.meta.type === 'other') {
+        return;
+    }
+    if (crdt.meta.type === 'map') {
+        if (
+            !crdt.value ||
+            Array.isArray(crdt.value) ||
+            typeof crdt.value !== 'object'
+        ) {
+            throw new Error(`Meta is map, but value doesn't match`);
+        }
+        for (let id in crdt.meta.map) {
+            checkConsistency({
+                value: crdt.value[id],
+                meta: crdt.meta.map[id],
+            });
+        }
+        return;
+    }
+    if (crdt.meta.type === 'array') {
+        if (!crdt.value || !Array.isArray(crdt.value)) {
+            throw new Error(`meta is 'array' but value doesn't match`);
+        }
+        const ids = Object.keys(crdt.meta.items)
+            .filter(key => crdt.meta.items[key].meta.type !== 't')
+            .sort((a, b) =>
+                sortedArray.compare(
+                    crdt.meta.items[a].sort.idx,
+                    crdt.meta.items[b].sort.idx,
+                ),
+            );
+        if (!deepEqual(ids, crdt.meta.idsInOrder)) {
+            throw new Error(
+                `idsInOrder mismatch! ${ids.join(
+                    ',',
+                )} vs cached ${crdt.meta.idsInOrder.join(',')}`,
+            );
+        }
+        if (crdt.value.length !== ids.length) {
+            throw new Error(
+                `Value has a different length than non-tombstone IDs`,
+            );
+        }
+        crdt.meta.idsInOrder.forEach((id, i) => {
+            checkConsistency({
+                value: crdt.value[i],
+                meta: crdt.meta.items[id].meta,
+            });
+        });
+    }
+};
 
 const latestMetaStamp = function<Other>(
     meta: Meta<Other>,
@@ -287,7 +352,7 @@ export const deltas = {
         delta: Delta<?O, Other, OtherDelta>,
         applyOtherDelta: (any, Other, OtherDelta) => Other,
         mergeOther: OtherMerge<Other>,
-    ): CRDT<T, Other> {
+    ): CRDT<?T, Other> {
         return applyDelta(
             data ? data : createEmpty(),
             delta,
