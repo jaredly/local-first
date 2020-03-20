@@ -121,12 +121,10 @@ export const between = (
     // console.log('between', one, two);
     for (; i < one.length && i < two.length; i++) {
         if (two[i] - one[i] > epsilon * 2) {
-            // console.log('between', two[i] - one[i]);
             // does this mean that this is the smallest possible difference between two things?
             // I don't know actually. Probably possible to construct scenarios that... hmm.. maybe not
             // though.
             parts.push(one[i] + (two[i] - one[i]) / 2);
-            console.log(one[i], two[i], parts);
             return parts;
         }
         parts.push(one[i]);
