@@ -325,9 +325,10 @@ export const deltas = {
             idx: sortedArray.sortForInsertion(
                 without,
                 id => meta.items[id].sort.idx,
-                idx,
+                newIdx,
             ),
         };
+        // console.log(without, )
         return {
             type: 'reorder',
             path: makeKeyPath(current.meta, path.concat([id])),

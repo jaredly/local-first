@@ -78,10 +78,9 @@ describe('it', () => {
         crdt.checkConsistency(changed);
     });
     it('should reorder an array', () => {
-        const changed = apply(
-            base,
-            crdt.deltas.reorder(base, ['instructions'], 0, 1, '2'),
-        );
+        const delta = crdt.deltas.reorder(base, ['instructions'], 0, 1, '2');
+        const changed = apply(base, delta);
+        console.log(JSON.stringify([delta, base, changed]));
         expect(changed.value.instructions).toEqual([
             { text: 'go right' },
             { text: 'go left' },
