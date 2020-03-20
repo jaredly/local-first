@@ -1,7 +1,6 @@
 // @-flow
 
 import * as crdt from './in-place-with-array';
-// import * as hlc from '../../hybrid-logical-clock';
 
 const baseData = {
     person: {
@@ -173,5 +172,56 @@ describe('it', () => {
             'blue',
             'yellow',
         ]);
+    });
+    it('should handle array merges', () => {
+        const colors = crdt.get(base, ['colors']);
+        const a = apply(
+            base,
+            crdt.deltas.insert(
+                base,
+                ['colors'],
+                1,
+                crdt.create('orange', '2'),
+                '2',
+            ),
+        );
+        const b = apply(
+            base,
+            crdt.deltas.insert(
+                base,
+                ['colors'],
+                1,
+                crdt.create('yellow', '3'),
+                '3',
+            ),
+        );
+        // console.log(JSON.stringify([a, b]));
+        const final = crdt.mergeTwo(a, b, () => {});
+        // console.log(JSON.stringify(final));kk
+        expect(final.value.colors).toEqual([
+            'red',
+            'orange',
+            'yellow',
+            'green',
+            'blue',
+        ]);
+    });
+    it('update an object that has been replaced', () => {
+        const delta = crdt.deltas.set(
+            base,
+            ['person', 'name'],
+            crdt.create('Awesome', 10),
+        );
+        const a = apply(
+            base,
+            crdt.deltas.set(
+                base,
+                ['person'],
+                crdt.createDeepMap({ name: 'Yo' }, 3),
+            ),
+        );
+        console.log(JSON.stringify([delta, a]));
+        const b = apply(a, delta);
+        expect(b.value.person).toEqual({ name: 'Yo' });
     });
 });

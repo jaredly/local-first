@@ -7,7 +7,7 @@ const epsilon = Math.pow(2, -10);
 export const insertionIndex = (
     ids: Array<string>,
     sortForId: string => Sort,
-    newSort,
+    newSort: Sort,
 ) => {
     for (let i = 0; i < ids.length; i++) {
         if (compare(sortForId(ids[i]), newSort) > 0) {

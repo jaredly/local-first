@@ -432,6 +432,7 @@ const insertIntoArray = function<T, Other>(
     };
     const ids = meta.idsInOrder.slice();
     ids.splice(idx, 0, id);
+    // console.log('added id', ids, meta.idsInOrder);
     const newMeta = {
         ...meta,
         items,
@@ -531,9 +532,9 @@ export const set = function<T, O, Other>(
         if (!inner) {
             return value;
         }
-        if (!inner.meta) {
-            console.log(inner);
-        }
+        // if (!inner.meta) {
+        //     console.log(inner);
+        // }
         if (inner.meta.type === 'map') {
             if (
                 !inner.value ||
@@ -663,6 +664,7 @@ const applyInner = function<T, O, Other, R>(
     if (!crdt) {
         throw new Error('No crdt ' + JSON.stringify(key));
     }
+    console.log('inner', crdt.meta.hlcStamp, key);
     if (crdt.meta.hlcStamp > key[0].stamp) {
         return crdt;
     }
@@ -737,9 +739,20 @@ export const mergeMaps = function<T: {}, Other>(
     const value = { ...v1 };
     const meta = { ...m1, map: { ...m1.map } };
     Object.keys(v2).forEach(k => {
-        const res = merge(value[k], meta.map[k], v2[k], m2.map[k], mergeOther);
-        value[k] = res.value;
-        meta.map[k] = res.meta;
+        if (meta.map[k]) {
+            const res = merge(
+                value[k],
+                meta.map[k],
+                v2[k],
+                m2.map[k],
+                mergeOther,
+            );
+            value[k] = res.value;
+            meta.map[k] = res.meta;
+        } else {
+            value[k] = v2[k];
+            meta.map[k] = m2.map[k];
+        }
     });
     return { value, meta };
 };
@@ -754,11 +767,11 @@ export const mergeArrays = function<T, Other>(
     value: Array<T>,
     meta: Meta<Other>,
 } {
-    // const value =
     const fullMap = {};
     m1.idsInOrder.forEach((id, i) => {
         fullMap[id] = { value: v1[i], meta: m1.items[id] };
     });
+    // STOPSHIP account for tombstones!!!
     m2.idsInOrder.forEach((id, i) => {
         if (fullMap[id]) {
             const res = merge(
@@ -778,6 +791,14 @@ export const mergeArrays = function<T, Other>(
         }
     });
     const allIds = Object.keys(fullMap);
+    // console.log(
+    //     allIds,
+    //     v1,
+    //     v2,
+    //     m1.idsInOrder,
+    //     m2.idsInOrder,
+    //     m2.idsInOrder === m1.idsInOrder,
+    // );
     allIds.sort((a, b) =>
         sortedArray.compare(fullMap[a].meta.sort.idx, fullMap[b].meta.sort.idx),
     );
@@ -793,6 +814,14 @@ export const mergeArrays = function<T, Other>(
             items,
         },
     };
+};
+
+export const mergeTwo = function<A, Other>(
+    one: CRDT<A, Other>,
+    two: CRDT<A, Other>,
+    mergeOther: OtherMerge<Other>,
+) {
+    return merge(one.value, one.meta, two.value, two.meta, mergeOther);
 };
 
 export const merge = function<A, B, Other>(
@@ -828,7 +857,7 @@ export const merge = function<A, B, Other>(
             throw new Error(`Meta type is array, but values are not`);
         }
         // $FlowFixMe
-        const { value, meta } = mergeArrays(v1, m2, v2, m2, mergeOther);
+        const { value, meta } = mergeArrays(v1, m1, v2, m2, mergeOther);
         return { value, meta };
     }
     if (m1.type === 'plain' && m2.type === 'plain') {
