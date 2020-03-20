@@ -38,10 +38,20 @@ export type PlainMeta = {|
     hlcStamp: string,
 |};
 
+export type TombstoneMeta = {|
+    type: 't',
+    hlcStamp: string,
+|};
+
 export type HostDelta<T, Other> =
+    | {|
+          type: 'replace',
+          value: CRDT<T, Other>,
+      |}
     | {|
           type: 'set',
           path: KeyPath,
+          key: string,
           value: CRDT<T, Other>,
       |}
     | {|
@@ -69,7 +79,7 @@ export type Delta<T, Other, OtherDelta> =
 
 const genericize = function<T, Other>(
     value: T,
-    meta: MapMeta<Other> | PlainMeta | OtherMeta<Other> | ArrayMeta<Other>,
+    meta: Meta<Other>,
 ): CRDT<T, Other> {
     const gmeta: Meta<Other> = meta;
     return { value, meta: gmeta };
@@ -78,6 +88,7 @@ const genericize = function<T, Other>(
 export type Meta<Other> =
     | MapMeta<Other>
     | PlainMeta
+    | TombstoneMeta
     | OtherMeta<Other>
     | ArrayMeta<Other>;
 
@@ -99,7 +110,7 @@ const latestMetaStamp = function<Other>(
             }
         });
         return max;
-    } else if (meta.type === 'plain') {
+    } else if (meta.type === 'plain' || meta.type === 't') {
         return meta.hlcStamp;
     } else if (meta.type === 'array') {
         let max = meta.hlcStamp;
@@ -129,7 +140,15 @@ const makeKeyPath = function<T, Other>(
     current: Meta<Other>,
     path: Array<string | number>,
 ) {
-    return path.map(item => {
+    return path.map((item, i) => {
+        if (!current) {
+            if (i === path.length - 1 && typeof item === 'string') {
+                return { key: item, stamp: '' };
+            }
+            throw new Error(
+                `Invalid key path - doesn't represent the current state of things.`,
+            );
+        }
         const stamp = current.hlcStamp;
         if (typeof item === 'number') {
             if (current.type !== 'array') {
@@ -174,18 +193,28 @@ const deltas = {
         delta: HostDelta<T, Other>,
         otherStamp: Other => ?string,
     ): string {
-        return delta.type === 'set'
+        return delta.type === 'set' || delta.type === 'replace'
             ? latestStamp(delta.value, otherStamp)
             : delta.stamp;
+    },
+    replace<T, Other>(value: CRDT<T, Other>): HostDelta<T, Other> {
+        return { type: 'replace', value };
     },
     set<T, Other>(
         current: CRDT<T, Other>,
         path: Array<string | number>,
         value: CRDT<T, Other>,
     ): HostDelta<T, Other> {
+        if (path.length === 0) {
+            return { type: 'replace', value };
+        }
+        const keyPath = makeKeyPath(current.meta, path);
+        const last = keyPath.pop();
+        // The last item -- if it's ... been set before me, then ... hm yeah I think the last 'stamp' is just the stamp of the last item, right? Yeah.
         return {
             type: 'set',
-            path: makeKeyPath(current.meta, path),
+            path: keyPath,
+            key: last.key,
             value,
         };
     },
@@ -228,13 +257,21 @@ const deltas = {
         current: CRDT<T, Other>,
         path: Array<string | number>,
         hlcStamp: string,
-    ) {
-        // TODO if the last item is a number, use an 'arrayRemove'? Or does that even make sense?
-        // No I guess I still need tombstones...
+    ): HostDelta<?T, Other> {
+        const value: CRDT<?T, Other> = {
+            value: null,
+            meta: { type: 't', hlcStamp },
+        };
+        if (path.length === 0) {
+            return { type: 'replace', value };
+        }
+        const keyPath = makeKeyPath(current.meta, path);
+        const last = keyPath.pop();
         return {
             type: 'set',
-            path: makeKeyPath(current.meta, path),
-            value: create(null, hlcStamp),
+            path: keyPath,
+            key: last.key,
+            value,
         };
     },
     apply<T, Other, OtherDelta>(
@@ -268,13 +305,26 @@ const applyDelta = function<T, O, Other, OtherDelta>(
                     delta.value.meta,
                     mergeOther,
                 );
+                // $FlowFixMe
                 return genericize(value, meta);
             }
-            return set(crdt, delta.path, delta.value, mergeOther);
+            return set(crdt, delta.path, delta.key, delta.value, mergeOther);
         case 'insert':
-            return reorder(crdt, delta.path, delta.idx, delta.value);
+            return insert(
+                crdt,
+                delta.path,
+                delta.idx,
+                delta.value,
+                delta.stamp,
+            );
         case 'reorder':
-            return reorder(crdt, delta.path, delta.idx, delta.newIdx);
+            return reorder(
+                crdt,
+                delta.path,
+                delta.idx,
+                delta.newIdx,
+                delta.stamp,
+            );
     }
     throw new Error('unknown delta type' + JSON.stringify(delta));
 };
@@ -291,25 +341,117 @@ const remove = function<T, Other>(
     return genericize(value, meta);
 };
 
-const removeAt = function<T, Other>(
+const removeAt = function<T, O, Other>(
     map: CRDT<?T, Other>,
-    key: KeyPath,
+    path: KeyPath,
+    key: string,
     hlcStamp: string,
     mergeOther: OtherMerge<Other>,
 ): CRDT<?T, Other> {
-    const { value, meta } = create(null, hlcStamp);
-    return set(map, key, genericize(value, meta), mergeOther);
+    return set<?T, ?O, Other>(
+        map,
+        path,
+        key,
+        {
+            value: null,
+            meta: { type: 't', hlcStamp },
+        },
+        mergeOther,
+    );
 };
 
-// STOPSHIP TODO HERE"S THE ONE
-const insert = function<T, O, Other>(
+const insertIntoArray = function<T, Other>(
+    array: $ReadOnlyArray<T>,
+    meta: ArrayMeta<Other>,
+    idx: number,
+    value: CRDT<T, Other>,
+    stamp: string,
+): CRDT<Array<T>, Other> {
+    if (value.meta.type === 't') {
+        throw new Error(`Cannot insert a tombstone into an array`);
+    }
+    const newValue = array.slice();
+    newValue.splice(idx, 0, value.value);
+    const pre =
+        idx === 0 ? null : meta.items[meta.idsInOrder[idx - 1]].sort.idx;
+    const post =
+        idx >= meta.idsInOrder.length
+            ? null
+            : meta.items[meta.idsInOrder[idx]].sort.idx;
+    const id = Math.random()
+        .toString(36)
+        .slice(2); // STOPSHIP create a new ID
+    const sort = sortedArray.between(pre, post);
+    const items = {
+        ...meta.items,
+        [id]: { meta: value.meta, sort: { idx: sort, stamp } },
+    };
+    const ids = meta.idsInOrder.slice();
+    ids.splice(idx, 0, id);
+    const newMeta = {
+        ...meta,
+        items,
+        idsInOrder: ids,
+    };
+    return { meta: newMeta, value: newValue };
+};
+
+const reorderArray = function<T, Other>(
+    array: $ReadOnlyArray<T>,
+    meta: ArrayMeta<Other>,
+    idx: number,
+    newIdx: number, // this is a post-removal idx btw
+    stamp: string,
+): CRDT<Array<T>, Other> {
+    if (
+        idx === newIdx ||
+        meta.items[meta.idsInOrder[idx]].sort.stamp >= stamp
+    ) {
+        // $FlowFixMe
+        return { value: array, meta };
+    }
+    const newValue = array.slice();
+    const [curValue] = newValue.splice(idx, 1);
+    newValue.splice(newIdx, 0, curValue);
+
+    const pre =
+        newIdx === 0 ? null : meta.items[meta.idsInOrder[newIdx - 1]].sort.idx;
+    const post =
+        newIdx >= meta.idsInOrder.length
+            ? null
+            : meta.items[meta.idsInOrder[newIdx]].sort.idx;
+
+    const idsInOrder = meta.idsInOrder.slice();
+    const [id] = idsInOrder.splice(idx, 1);
+    idsInOrder.splice(newIdx, 0, id);
+
+    const sort = sortedArray.between(pre, post);
+    const items = {
+        ...meta.items,
+        [id]: { ...meta.items[id], sort: { idx: sort, stamp } },
+    };
+    const newMeta = {
+        ...meta,
+        items,
+        idsInOrder,
+    };
+    return { meta: newMeta, value: newValue };
+};
+
+export const insert = function<T, O, Other>(
     crdt: CRDT<T, Other>,
-    path: KeyPath,
+    key: KeyPath,
     idx: number,
     value: CRDT<O, Other>,
+    stamp: string,
 ): CRDT<T, Other> {
-    //
-    throw new Error('WIP');
+    return applyInner(crdt, key, inner => {
+        if (inner.meta.type !== 'array' || !Array.isArray(inner.value)) {
+            throw new Error(`Cannot insert into a ${inner.meta.type}`);
+        }
+
+        return insertIntoArray(inner.value, inner.meta, idx, value, stamp);
+    });
 };
 
 const reorder = function<T, Other>(
@@ -317,30 +459,118 @@ const reorder = function<T, Other>(
     path: KeyPath,
     idx: number,
     newIdx: number,
+    stamp: string,
 ): CRDT<T, Other> {
-    //
-    throw new Error('WIP');
+    return applyInner(crdt, path, inner => {
+        if (inner.meta.type !== 'array' || !Array.isArray(inner.value)) {
+            throw new Error(`Cannot insert into a ${inner.meta.type}`);
+        }
+
+        return reorderArray(inner.value, inner.meta, idx, newIdx, stamp);
+    });
 };
 
 const set = function<T, O, Other>(
     crdt: CRDT<T, Other>,
-    key: KeyPath,
+    path: KeyPath,
+    key: string,
     value: CRDT<O, Other>,
     mergeOther: OtherMerge<Other>,
 ): CRDT<T, Other> {
-    if (key.length === 0) {
-        if (value.meta.hlcStamp === crdt.meta.hlcStamp) {
-            const result = merge(
+    return applyInner(crdt, path, inner => {
+        if (inner.meta.type === 'map') {
+            if (
+                !inner.value ||
+                typeof inner !== 'object' ||
+                Array.isArray(inner)
+            ) {
+                throw new Error(`Invalid value, doesn't match meta type 'map'`);
+            }
+            const res = inner.meta.map[key]
+                ? merge(
+                      inner.value[key],
+                      inner.meta.map[key],
+                      value.value,
+                      value.meta,
+                      mergeOther,
+                  )
+                : value;
+            const newv = { ...inner.value };
+            if (res.meta.type === 't') {
+                delete newv[key];
+            } else {
+                newv[key] = res.value;
+            }
+            return {
+                value: newv,
+                meta: {
+                    ...inner.meta,
+                    map: {
+                        ...inner.meta.map,
+                        [key]: res.meta,
+                    },
+                },
+            };
+        } else if (inner.meta.type === 'array') {
+            if (!Array.isArray(inner.value)) {
+                throw new Error(`Not an array`);
+            }
+            const meta = inner.meta;
+            const idx = meta.idsInOrder.indexOf(key);
+            const merged = merge(
+                // if it's not in there, we're dealing with a tombstone
+                idx === -1 ? null : inner.value[idx],
+                meta.items[key].meta,
                 value.value,
                 value.meta,
-                crdt.value,
-                crdt.meta,
                 mergeOther,
             );
-            // $FlowFixMe
-            return { value: result.value, meta: result.meta };
+            const res = inner.value.slice();
+            let idsInOrder = meta.idsInOrder;
+            if (merged.meta.type === 't' && meta.items[key].meta.type !== 't') {
+                res.splice(idx, 1);
+                idsInOrder = idsInOrder.slice();
+                idsInOrder.splice(idx, 1);
+            } else if (
+                meta.items[key].meta.type === 't' &&
+                merged.meta.type !== 't'
+            ) {
+                const idx = sortedArray.insertionIndex(
+                    idsInOrder,
+                    id => meta.items[id].sort.idx,
+                    meta.items[key].sort.idx,
+                );
+                res.splice(idx, 0, merged.value);
+                idsInOrder = idsInOrder.slice();
+                idsInOrder.splice(idx, 0, key);
+            } else {
+                res[idx] = merged.value;
+            }
+            return {
+                value: res,
+                meta: {
+                    ...meta,
+                    idsInOrder,
+                    items: {
+                        ...meta.items,
+                        [key]: merged.meta,
+                    },
+                },
+            };
+        } else {
+            throw new Error(`Cannot 'set' into a ${inner.meta.type}`);
         }
-        return value.meta.hlcStamp > crdt.meta.hlcStamp ? value : crdt;
+    });
+};
+
+const applyInner = function<T, O, Other, R>(
+    crdt: CRDT<T, Other>,
+    key: KeyPath,
+    fn: (CRDT<O, Other>) => CRDT<O, Other>,
+): CRDT<T, Other> {
+    if (key.length === 0) {
+        // $FlowFixMe
+        return fn(crdt);
     }
     if (crdt.meta.hlcStamp > key[0].stamp) {
         return crdt;
@@ -351,7 +581,6 @@ const set = function<T, O, Other>(
             `Invalid delta, cannot apply - ${crdt.meta.type} stamp (${crdt.meta.hlcStamp}) is older than key path stamp (${key[0].stamp})`,
         );
     }
-
     if (crdt.meta.type === 'map') {
         const k = key[0].key;
         if (
@@ -364,36 +593,17 @@ const set = function<T, O, Other>(
         const v = crdt.value[k];
         const meta = crdt.meta.map[k];
 
-        if (key.length === 1) {
-            const res = merge(v, meta, value.value, value.meta, mergeOther);
-            return {
-                value: {
-                    ...crdt.value,
-                    [k]: res.value,
-                },
-                meta: {
-                    ...crdt.meta,
-                    [k]: res.meta,
-                },
-            };
-        } else {
-            const res = set(
-                { meta, value: v },
-                key.slice(1),
-                value,
-                mergeOther,
-            );
-            return {
-                value: {
-                    ...crdt.value,
-                    [k]: res.value,
-                },
-                meta: {
-                    ...crdt.meta,
-                    [k]: res.meta,
-                },
-            };
-        }
+        const res = applyInner({ meta, value: v }, key.slice(1), fn);
+        return {
+            value: {
+                ...crdt.value,
+                [k]: res.value,
+            },
+            meta: {
+                ...crdt.meta,
+                [k]: res.meta,
+            },
+        };
     } else if (crdt.meta.type === 'array') {
         const k = key[0].key;
         const meta = crdt.meta.items[k].meta;
@@ -404,32 +614,15 @@ const set = function<T, O, Other>(
         const arr = crdt.value.slice();
         const v = arr[idx];
 
-        if (key.length === 1) {
-            const res = merge(v, meta, value.value, value.meta, mergeOther);
-            arr[idx] = res.value;
-            return {
-                value: arr,
-                meta: {
-                    ...crdt.meta,
-                    [k]: res.meta,
-                },
-            };
-        } else {
-            const res = set(
-                { meta, value: v },
-                key.slice(1),
-                value,
-                mergeOther,
-            );
-            arr[idx] = res.value;
-            return {
-                value: arr,
-                meta: {
-                    ...crdt.meta,
-                    [k]: res.meta,
-                },
-            };
-        }
+        const res = applyInner({ meta, value: v }, key.slice(1), fn);
+        arr[idx] = res.value;
+        return {
+            value: arr,
+            meta: {
+                ...crdt.meta,
+                [k]: res.meta,
+            },
+        };
     } else if (crdt.meta.type === 'plain') {
         throw new Error(`Invalid delta - cannot set inside of a plain value`);
     } else if (crdt.meta.type === 'other') {
@@ -529,33 +722,25 @@ const merge = function<A, B, Other>(
     if (!v2) {
         return { value: v1, meta: m1 };
     }
+    if (m1.hlcStamp > m2.hlcStamp) {
+        return { value: v1, meta: m1 };
+    }
+    if (m1.hlcStamp < m2.hlcStamp) {
+        return { value: v2, meta: m2 };
+    }
     if (m1.type !== m2.type) {
         if (m1.hlcStamp === m2.hlcStamp) {
             throw new Error(
                 `Stamps are the same, but types are different ${m1.hlcStamp} : ${m1.type} vs ${m2.hlcStamp} : ${m2.type}`,
             );
         }
-        return m1.hlcStamp > m2.hlcStamp
-            ? { value: v1, meta: m1 }
-            : { value: m2, meta: m2 };
     }
     if (m1.type === 'map' && m2.type === 'map') {
-        if (m1.hlcStamp !== m2.hlcStamp) {
-            return m1.hlcStamp > m2.hlcStamp
-                ? { value: v1, meta: m1 }
-                : { value: v2, meta: m2 };
-        }
         // $FlowFixMe
-        const { value, meta } = mergeMaps(v1, m1, v2, m2); //
+        const { value, meta } = mergeMaps(v1, m1, v2, m2);
         return { value, meta };
     }
     if (m1.type === 'array' && m2.type === 'array') {
-        if (m1.hlcStamp !== m2.hlcStamp) {
-            return m1.hlcStamp > m2.hlcStamp
-                ? { value: v1, meta: m1 }
-                : { value: v2, meta: m2 };
-        }
-
         if (!Array.isArray(v1) || !Array.isArray(v2)) {
             throw new Error(`Meta type is array, but values are not`);
         }
@@ -565,18 +750,11 @@ const merge = function<A, B, Other>(
     }
     if (m1.type === 'plain' && m2.type === 'plain') {
         // TODO maybe inlude a debug assert that v1 and v2 are equal?
-        return m1.hlcStamp > m2.hlcStamp
-            ? { value: v1, meta: m1 }
-            : { value: v2, meta: m2 };
+        return { value: v1, meta: m1 };
     }
     if (m1.type === 'other' && m2.type === 'other') {
-        if (m1.hlcStamp === m2.hlcStamp) {
-            const { value, meta } = mergeOther(v1, m1.meta, v2, m2.meta);
-            return { value, meta: { ...m1, meta } };
-        }
-        return m1.hlcStamp > m2.hlcStamp
-            ? { value: v1, meta: m1 }
-            : { value: v2, meta: m2 };
+        const { value, meta } = mergeOther(v1, m1.meta, v2, m2.meta);
+        return { value, meta: { ...m1, meta } };
     }
     throw new Error(`Unexpected types ${m1.type} : ${m2.type}`);
 };

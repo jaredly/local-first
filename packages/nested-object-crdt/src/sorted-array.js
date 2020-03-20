@@ -78,6 +78,19 @@ const epsilon = Math.pow(2, -10);
 
 // 0, 0 is sorted *after* 0
 
+export const insertionIndex = (
+    ids: Array<string>,
+    sortForId: string => Sort,
+    newSort,
+) => {
+    for (let i = 0; i < ids.length; i++) {
+        if (compare(sortForId(ids[i]), newSort) > 0) {
+            return i;
+        }
+    }
+    return ids.length;
+};
+
 export const compare = (one: Array<number>, two: Array<number>) => {
     let i = 0;
     for (; i < one.length && i < two.length; i++) {
