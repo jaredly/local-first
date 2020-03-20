@@ -1,6 +1,6 @@
 // @flow
 
-import * as sortedArray from './sorted-array';
+import * as sortedArray from './array-utils';
 import deepEqual from 'fast-deep-equal';
 
 export const MIN_STAMP = '';
@@ -78,14 +78,6 @@ export type Delta<T, Other, OtherDelta> =
           delta: OtherDelta,
       };
 
-const genericize = function<T, Other>(
-    value: T,
-    meta: Meta<Other>,
-): CRDT<T, Other> {
-    const gmeta: Meta<Other> = meta;
-    return { value, meta: gmeta };
-};
-
 export type Meta<Other> =
     | MapMeta<Other>
     | PlainMeta
@@ -140,30 +132,31 @@ export const checkConsistency = function<T, Other>(
         if (!crdt.value || !Array.isArray(crdt.value)) {
             throw new Error(`meta is 'array' but value doesn't match`);
         }
-        const ids = Object.keys(crdt.meta.items)
-            .filter(key => crdt.meta.items[key].meta.type !== 't')
+        const { value, meta } = crdt;
+        const ids = Object.keys(meta.items)
+            .filter(key => meta.items[key].meta.type !== 't')
             .sort((a, b) =>
                 sortedArray.compare(
-                    crdt.meta.items[a].sort.idx,
-                    crdt.meta.items[b].sort.idx,
+                    meta.items[a].sort.idx,
+                    meta.items[b].sort.idx,
                 ),
             );
-        if (!deepEqual(ids, crdt.meta.idsInOrder)) {
+        if (!deepEqual(ids, meta.idsInOrder)) {
             throw new Error(
                 `idsInOrder mismatch! ${ids.join(
                     ',',
-                )} vs cached ${crdt.meta.idsInOrder.join(',')}`,
+                )} vs cached ${meta.idsInOrder.join(',')}`,
             );
         }
-        if (crdt.value.length !== ids.length) {
+        if (value.length !== ids.length) {
             throw new Error(
                 `Value has a different length than non-tombstone IDs`,
             );
         }
-        crdt.meta.idsInOrder.forEach((id, i) => {
+        meta.idsInOrder.forEach((id, i) => {
             checkConsistency({
-                value: crdt.value[i],
-                meta: crdt.meta.items[id].meta,
+                value: value[i],
+                meta: meta.items[id].meta,
             });
         });
     }
@@ -389,8 +382,7 @@ export const remove = function<T, Other>(
     crdt: CRDT<T, Other>,
     ts: string,
 ): CRDT<null, Other> {
-    const { value, meta } = create(null, ts);
-    return genericize(value, meta);
+    return { value: null, meta: { type: 't', hlcStamp: ts } };
 };
 
 export const removeAt = function<T, O, Other>(
@@ -728,12 +720,8 @@ const applyInner = function<T, O, Other, R>(
                 },
             },
         };
-    } else if (crdt.meta.type === 'plain') {
-        throw new Error(`Invalid delta - cannot set inside of a plain value`);
-    } else if (crdt.meta.type === 'other') {
-        throw new Error(`Invalid delta - cannot set inside of an 'other'`);
     }
-    throw new Error(`Unexpected meta type ${crdt.meta.type}`);
+    throw new Error(`Cannot set inside of a ${crdt.meta.type}`);
 };
 
 export const mergeMaps = function<T: {}, Other>(
@@ -931,6 +919,5 @@ export const create = function<T, Other>(
 };
 
 export const createEmpty = function<T, Other>(): CRDT<?T, Other> {
-    const { value, meta } = create(null, MIN_STAMP);
-    return genericize(value, meta);
+    return { value: null, meta: { type: 't', hlcStamp: MIN_STAMP } };
 };

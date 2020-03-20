@@ -142,6 +142,7 @@ describe('it', () => {
         );
         const a = apply(base, crdt.deltas.set(base, ['person'], newPerson));
         expect(a.value.person).toEqual({ name: 'Yes', age: 2 });
+        expect(crdt.latestStamp(a)).toEqual('2');
     });
     it('should handle insert to start & end', () => {
         const a = apply(
