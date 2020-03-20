@@ -69,7 +69,6 @@ describe('it', () => {
             { text: 'go left' },
             { stop: true },
         ]);
-        console.log(JSON.stringify([base, changed]));
         crdt.checkConsistency(changed);
     });
 });

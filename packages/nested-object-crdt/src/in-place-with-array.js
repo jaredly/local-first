@@ -496,7 +496,6 @@ const reorderArray = function<T, Other>(
             ? null
             : meta.items[idsInOrder[newIdx]].sort.idx;
 
-    console.log(idsInOrder, newIdx, pre, post);
     idsInOrder.splice(newIdx, 0, id);
 
     const sort = sortedArray.between(pre, post);
