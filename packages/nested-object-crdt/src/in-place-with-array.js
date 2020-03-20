@@ -214,9 +214,6 @@ const makeKeyPath = function<T, Other>(
 ) {
     return path.map((item, i) => {
         if (!current) {
-            if (i === path.length - 1 && typeof item === 'string') {
-                return { key: item, stamp: '' };
-            }
             throw new Error(
                 `Invalid key path - doesn't represent the current state of things.`,
             );
@@ -230,7 +227,7 @@ const makeKeyPath = function<T, Other>(
             }
             const key = current.idsInOrder[item];
             current = current.items[key].meta;
-            return { stamp, key };
+            return { stamp: current.hlcStamp, key };
         } else {
             if (current.type !== 'map') {
                 throw new Error(
@@ -238,7 +235,7 @@ const makeKeyPath = function<T, Other>(
                 );
             }
             current = current.map[item];
-            return { stamp, key: item };
+            return { stamp: current ? current.hlcStamp : '', key: item };
         }
     });
 };
@@ -281,6 +278,7 @@ export const deltas = {
             return { type: 'replace', value };
         }
         const keyPath = makeKeyPath(current.meta, path);
+        // console.log('full path', keyPath, current.meta);
         const last = keyPath.pop();
         // The last item -- if it's ... been set before me, then ... hm yeah I think the last 'stamp' is just the stamp of the last item, right? Yeah.
         return {
@@ -631,7 +629,6 @@ export const set = function<T, O, Other>(
             } else {
                 res[idx] = merged.value;
             }
-            console.log('OK', merged, inner, value);
             return {
                 value: res,
                 meta: {

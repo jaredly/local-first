@@ -26,7 +26,7 @@ describe('tombstones', () => {
             base,
             crdt.deltas.removeAt(base, ['instructions', 1], '2'),
         );
-        console.log(JSON.stringify([changed, base]));
+        // console.log(JSON.stringify([changed, base]));
         expect(changed.value.instructions).toEqual([
             { text: 'go left' },
             { stop: true },
@@ -73,14 +73,13 @@ describe('it', () => {
         crdt.checkConsistency(changed);
     });
     it('should add and remove an object attribute', () => {
-        const a = apply(
+        const delta = crdt.deltas.set(
             base,
-            crdt.deltas.set(
-                base,
-                ['person', 'color'],
-                crdt.create('green', '2'),
-            ),
+            ['person', 'color'],
+            crdt.create('green', '2'),
         );
+        // console.log(delta);
+        const a = apply(base, delta);
         expect(a.value.person).toEqual({
             name: 'local',
             age: 2,
