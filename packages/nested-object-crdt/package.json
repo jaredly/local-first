@@ -3,7 +3,8 @@
     "main": "src/index.js",
     "version": "1.0.0",
     "scripts": {
-        "test": "node -r @babel/register tests/test-full-fuzz.js",
+        "test_old": "node -r @babel/register tests/test-full-fuzz.js",
+        "test": "jest",
         "prepublish": "make"
     },
     "devDependencies": {

@@ -4,6 +4,16 @@ export type Sort = Array<number>;
 
 const epsilon = Math.pow(2, -10);
 
+export const sortForInsertion = (
+    ids: Array<string>,
+    sortForId: string => Sort,
+    idx: number,
+) => {
+    const pre = idx === 0 ? null : sortForId(ids[idx - 1]);
+    const post = idx >= ids.length ? null : sortForId(ids[idx]);
+    return between(pre, post);
+};
+
 export const insertionIndex = (
     ids: Array<string>,
     sortForId: string => Sort,

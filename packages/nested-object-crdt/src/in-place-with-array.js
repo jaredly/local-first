@@ -46,28 +46,21 @@ export type TombstoneMeta = {|
 
 export type HostDelta<T, Other> =
     | {|
-          type: 'replace',
-          value: CRDT<T, Other>,
-      |}
-    | {|
           type: 'set',
           path: KeyPath,
-          key: string,
           value: CRDT<T, Other>,
       |}
     | {|
           type: 'insert',
           path: KeyPath,
-          idx: number,
+          // The last ID is the ID to add here folks
+          sort: { idx: Sort, stamp: string },
           value: CRDT<T, Other>,
-          stamp: string,
       |}
     | {|
           type: 'reorder',
           path: KeyPath,
-          idx: number,
-          newIdx: number,
-          stamp: string,
+          sort: { idx: Sort, stamp: string },
       |};
 
 export type Delta<T, Other, OtherDelta> =
@@ -212,23 +205,38 @@ const makeKeyPath = function<T, Other>(
             );
         }
         const stamp = current.hlcStamp;
-        if (typeof item === 'number') {
-            if (current.type !== 'array') {
-                throw new Error(
-                    `Cannot get a number ${item} of a ${current.type}`,
-                );
+        if (current.type === 'array') {
+            if (typeof item === 'number') {
+                if (current.type !== 'array') {
+                    throw new Error(
+                        `Cannot get a number ${item} of a ${current.type}`,
+                    );
+                }
+                const key = current.idsInOrder[item];
+                if (!key) {
+                    throw new Error(`Invalid index ${item}`);
+                }
+                current = current.items[key].meta;
+                return { stamp, key };
+            } else {
+                if (current.items[item]) {
+                    // throw new Error(`Invalid array id ${item}`);
+                    current = current.items[item].meta;
+                } else {
+                    current = null;
+                }
+                return { stamp, key: item };
             }
-            const key = current.idsInOrder[item];
-            current = current.items[key].meta;
-            return { stamp: current.hlcStamp, key };
-        } else {
-            if (current.type !== 'map') {
-                throw new Error(
-                    `Cannot get a sub-item ${item} of a ${current.type}`,
-                );
+        } else if (current.type === 'map') {
+            if (typeof item === 'number') {
+                throw new Error(`Cannot get a numeric index ${item} of a map`);
             }
             current = current.map[item];
-            return { stamp: current ? current.hlcStamp : '', key: item };
+            return { stamp, key: item };
+        } else {
+            throw new Error(
+                `Can't get a sub-item ${item} of a ${current.type}`,
+            );
         }
     });
 };
@@ -247,29 +255,22 @@ export const deltas = {
         delta: HostDelta<T, Other>,
         otherStamp: Other => ?string,
     ): string {
-        return delta.type === 'set' || delta.type === 'replace'
+        return delta.type === 'set'
             ? latestStamp(delta.value, otherStamp)
-            : delta.stamp;
+            : delta.sort.stamp;
     },
     replace<T, Other>(value: CRDT<T, Other>): HostDelta<T, Other> {
-        return { type: 'replace', value };
+        return { type: 'set', value, path: [] };
     },
     set<T, Other>(
         current: CRDT<T, Other>,
         path: Array<string | number>,
         value: CRDT<T, Other>,
     ): HostDelta<T, Other> {
-        if (path.length === 0) {
-            return { type: 'replace', value };
-        }
         const keyPath = makeKeyPath(current.meta, path);
-        // console.log('full path', keyPath, current.meta);
-        const last = keyPath.pop();
-        // The last item -- if it's ... been set before me, then ... hm yeah I think the last 'stamp' is just the stamp of the last item, right? Yeah.
         return {
             type: 'set',
             path: keyPath,
-            key: last.key,
             value,
         };
     },
@@ -277,15 +278,30 @@ export const deltas = {
         current: CRDT<T, Other>,
         path: Array<string | number>,
         idx: number,
+        id: string,
         value: CRDT<T, Other>,
         stamp: string,
     ): HostDelta<T, Other> {
+        const array = get(current, path);
+        if (array.meta.type !== 'array') {
+            throw new Error(
+                `Can only insert into an array, not a ${array.meta.type}`,
+            );
+        }
+        const meta = array.meta;
+        const sort = {
+            stamp,
+            idx: sortedArray.sortForInsertion(
+                meta.idsInOrder,
+                id => meta.items[id].sort.idx,
+                idx,
+            ),
+        };
         return {
             type: 'insert',
-            path: makeKeyPath(current.meta, path),
-            idx,
+            path: makeKeyPath(current.meta, path.concat([id])),
+            sort,
             value,
-            stamp,
         };
     },
     reorder<T, Other>(
@@ -295,17 +311,33 @@ export const deltas = {
         newIdx: number,
         stamp: string,
     ): HostDelta<T, Other> {
+        const array = get(current, path);
+        if (array.meta.type !== 'array') {
+            throw new Error(
+                `Can only insert into an array, not a ${array.meta.type}`,
+            );
+        }
+        const meta = array.meta;
+        const without = meta.idsInOrder.slice();
+        const [id] = without.splice(idx, 1);
+        const sort = {
+            stamp,
+            idx: sortedArray.sortForInsertion(
+                without,
+                id => meta.items[id].sort.idx,
+                idx,
+            ),
+        };
         return {
             type: 'reorder',
-            path: makeKeyPath(current.meta, path),
-            idx,
-            newIdx,
-            stamp,
+            path: makeKeyPath(current.meta, path.concat([id])),
+            sort,
         };
     },
     remove<T, Other>(hlcStamp: string): HostDelta<?T, Other> {
         return {
-            type: 'replace',
+            type: 'set',
+            path: [],
             value: { value: null, meta: { type: 't', hlcStamp } },
         };
     },
@@ -318,15 +350,10 @@ export const deltas = {
             value: null,
             meta: { type: 't', hlcStamp },
         };
-        if (path.length === 0) {
-            return { type: 'replace', value };
-        }
         const keyPath = makeKeyPath(current.meta, path);
-        const last = keyPath.pop();
         return {
             type: 'set',
             path: keyPath,
-            key: last.key,
             value,
         };
     },
@@ -353,23 +380,11 @@ export const applyDelta = function<T, O, Other, OtherDelta>(
 ): CRDT<T, Other> {
     switch (delta.type) {
         case 'set':
-            return set(crdt, delta.path, delta.key, delta.value, mergeOther);
+            return set(crdt, delta.path, delta.value, mergeOther);
         case 'insert':
-            return insert(
-                crdt,
-                delta.path,
-                delta.idx,
-                delta.value,
-                delta.stamp,
-            );
+            return insert(crdt, delta.path, delta.sort, delta.value);
         case 'reorder':
-            return reorder(
-                crdt,
-                delta.path,
-                delta.idx,
-                delta.newIdx,
-                delta.stamp,
-            );
+            return reorder(crdt, delta.path, delta.sort);
     }
     throw new Error('unknown delta type' + JSON.stringify(delta));
 };
@@ -388,14 +403,12 @@ export const remove = function<T, Other>(
 export const removeAt = function<T, O, Other>(
     map: CRDT<?T, Other>,
     path: KeyPath,
-    key: string,
     hlcStamp: string,
     mergeOther: OtherMerge<Other>,
 ): CRDT<?T, Other> {
     return set<?T, ?O, Other>(
         map,
         path,
-        key,
         {
             value: null,
             meta: { type: 't', hlcStamp },
@@ -407,32 +420,26 @@ export const removeAt = function<T, O, Other>(
 const insertIntoArray = function<T, Other>(
     array: $ReadOnlyArray<T>,
     meta: ArrayMeta<Other>,
-    idx: number,
+    id: string,
+    sort: { idx: Sort, stamp: string },
     value: CRDT<T, Other>,
-    stamp: string,
 ): CRDT<Array<T>, Other> {
     if (value.meta.type === 't') {
         throw new Error(`Cannot insert a tombstone into an array`);
     }
     const newValue = array.slice();
+    const idx = sortedArray.insertionIndex(
+        meta.idsInOrder,
+        id => meta.items[id].sort.idx,
+        sort.idx,
+    );
     newValue.splice(idx, 0, value.value);
-    const pre =
-        idx === 0 ? null : meta.items[meta.idsInOrder[idx - 1]].sort.idx;
-    const post =
-        idx >= meta.idsInOrder.length
-            ? null
-            : meta.items[meta.idsInOrder[idx]].sort.idx;
-    const id = Math.random()
-        .toString(36)
-        .slice(2); // STOPSHIP create a new ID
-    const sort = sortedArray.between(pre, post);
     const items = {
         ...meta.items,
-        [id]: { meta: value.meta, sort: { idx: sort, stamp } },
+        [id]: { meta: value.meta, sort },
     };
     const ids = meta.idsInOrder.slice();
     ids.splice(idx, 0, id);
-    // console.log('added id', ids, meta.idsInOrder);
     const newMeta = {
         ...meta,
         items,
@@ -444,38 +451,34 @@ const insertIntoArray = function<T, Other>(
 const reorderArray = function<T, Other>(
     array: $ReadOnlyArray<T>,
     meta: ArrayMeta<Other>,
-    idx: number,
-    newIdx: number, // this is a post-removal idx btw
-    stamp: string,
-): CRDT<Array<T>, Other> {
-    if (
-        idx === newIdx ||
-        meta.items[meta.idsInOrder[idx]].sort.stamp >= stamp
-    ) {
-        // $FlowFixMe
+    id: string,
+    sort: { idx: Sort, stamp: string },
+): CRDT<$ReadOnlyArray<T>, Other> {
+    const newValue = array.slice();
+    const idx = meta.idsInOrder.indexOf(id);
+    if (sort.stamp <= meta.items[id].sort.stamp) {
         return { value: array, meta };
     }
-    const newValue = array.slice();
-    const [curValue] = newValue.splice(idx, 1);
-    newValue.splice(newIdx, 0, curValue);
     const idsInOrder = meta.idsInOrder.slice();
-    const [id] = idsInOrder.splice(idx, 1);
+    // if not there, it's a tombstoned item, don't need to modify stuff
+    if (idx !== -1) {
+        const [curValue] = newValue.splice(idx, 1);
+        idsInOrder.splice(idx, 1);
+        const newIdx = sortedArray.insertionIndex(
+            idsInOrder,
+            id => meta.items[id].sort.idx,
+            sort.idx,
+        );
 
-    const pre =
-        newIdx === 0 ? null : meta.items[idsInOrder[newIdx - 1]].sort.idx;
-    const post =
-        newIdx >= idsInOrder.length
-            ? null
-            : meta.items[idsInOrder[newIdx]].sort.idx;
+        newValue.splice(newIdx, 0, curValue);
+        idsInOrder.splice(newIdx, 0, id);
+    }
 
-    idsInOrder.splice(newIdx, 0, id);
-
-    const sort = sortedArray.between(pre, post);
     const items = {
         ...meta.items,
-        [id]: { ...meta.items[id], sort: { idx: sort, stamp } },
+        [id]: { ...meta.items[id], sort },
     };
-    const newMeta = {
+    const newMeta: ArrayMeta<Other> = {
         ...meta,
         items,
         idsInOrder,
@@ -486,11 +489,10 @@ const reorderArray = function<T, Other>(
 export const insert = function<T, O, Other>(
     crdt: CRDT<T, Other>,
     key: KeyPath,
-    idx: number,
+    sort: { idx: Sort, stamp: string },
     value: CRDT<O, Other>,
-    stamp: string,
 ): CRDT<T, Other> {
-    return applyInner(crdt, key, inner => {
+    return applyInner(crdt, key, (inner, id) => {
         if (!inner) {
             throw new Error(`No array at path`);
         }
@@ -498,48 +500,53 @@ export const insert = function<T, O, Other>(
             throw new Error(`Cannot insert into a ${inner.meta.type}`);
         }
 
-        return insertIntoArray(inner.value, inner.meta, idx, value, stamp);
+        return insertIntoArray(inner.value, inner.meta, id, sort, value);
     });
 };
 
 export const reorder = function<T, Other>(
     crdt: CRDT<T, Other>,
     path: KeyPath,
-    idx: number,
-    newIdx: number,
-    stamp: string,
+    sort: { idx: Sort, stamp: string },
 ): CRDT<T, Other> {
-    return applyInner(crdt, path, inner => {
+    return applyInner(crdt, path, (inner, id) => {
         if (!inner) {
             throw new Error(`No array at path`);
         }
         if (inner.meta.type !== 'array' || !Array.isArray(inner.value)) {
-            throw new Error(`Cannot insert into a ${inner.meta.type}`);
+            console.log('a', JSON.stringify(inner), path);
+            throw new Error(`Cannot insert ${id} into a ${inner.meta.type}`);
         }
 
-        return reorderArray(inner.value, inner.meta, idx, newIdx, stamp);
+        return reorderArray(inner.value, inner.meta, id, sort);
     });
 };
 
 export const set = function<T, O, Other>(
     crdt: CRDT<T, Other>,
     path: KeyPath,
-    key: string,
     value: CRDT<O, Other>,
     mergeOther: OtherMerge<Other>,
 ): CRDT<T, Other> {
-    return applyInner(crdt, path, inner => {
+    if (!path.length) {
+        // $FlowFixMe
+        return merge(
+            crdt.value,
+            crdt.meta,
+            value.value,
+            value.meta,
+            mergeOther,
+        );
+    }
+    return applyInner(crdt, path, (inner, key) => {
         if (!inner) {
             return value;
         }
-        // if (!inner.meta) {
-        //     console.log(inner);
-        // }
         if (inner.meta.type === 'map') {
             if (
                 !inner.value ||
-                typeof inner !== 'object' ||
-                Array.isArray(inner)
+                typeof inner.value !== 'object' ||
+                Array.isArray(inner.value)
             ) {
                 throw new Error(`Invalid value, doesn't match meta type 'map'`);
             }
@@ -572,17 +579,18 @@ export const set = function<T, O, Other>(
             if (!Array.isArray(inner.value)) {
                 throw new Error(`Not an array`);
             }
+            const array = inner.value;
             const meta = inner.meta;
             const idx = meta.idsInOrder.indexOf(key);
             const merged = merge(
                 // if it's not in there, we're dealing with a tombstone
-                idx === -1 ? null : inner.value[idx],
+                idx === -1 ? null : array[idx],
                 meta.items[key].meta,
                 value.value,
                 value.meta,
                 mergeOther,
             );
-            const res = inner.value.slice();
+            const res = array.slice();
             let idsInOrder = meta.idsInOrder;
             if (merged.meta.type === 't' && meta.items[key].meta.type !== 't') {
                 res.splice(idx, 1);
@@ -633,6 +641,7 @@ export const get = function<T, O, Other>(
     const key = path[0];
     if (crdt.meta.type === 'map') {
         return get(
+            // $FlowFixMe
             { value: crdt.value[key], meta: crdt.meta.map[key] },
             path.slice(1),
         );
@@ -643,6 +652,7 @@ export const get = function<T, O, Other>(
         }
         return get(
             {
+                // $FlowFixMe
                 value: crdt.value[key],
                 meta: crdt.meta.items[crdt.meta.idsInOrder[key]].meta,
             },
@@ -655,16 +665,12 @@ export const get = function<T, O, Other>(
 const applyInner = function<T, O, Other, R>(
     crdt: CRDT<T, Other>,
     key: KeyPath,
-    fn: (CRDT<O, Other>) => CRDT<O, Other>,
+    fn: (CRDT<O, Other>, string) => CRDT<O, Other>,
 ): CRDT<T, Other> {
-    if (key.length === 0) {
-        // $FlowFixMe
-        return fn(crdt);
-    }
     if (!crdt) {
         throw new Error('No crdt ' + JSON.stringify(key));
     }
-    console.log('inner', crdt.meta.hlcStamp, key);
+    // console.log('inner', crdt.meta.hlcStamp, key);
     if (crdt.meta.hlcStamp > key[0].stamp) {
         return crdt;
     }
@@ -673,6 +679,10 @@ const applyInner = function<T, O, Other, R>(
         throw new Error(
             `Invalid delta, cannot apply - ${crdt.meta.type} stamp (${crdt.meta.hlcStamp}) is older than key path stamp (${key[0].stamp})`,
         );
+    }
+    if (key.length === 1) {
+        // $FlowFixMe
+        return fn(crdt, key[0].key);
     }
     if (crdt.meta.type === 'map') {
         const k = key[0].key;
