@@ -486,16 +486,17 @@ const reorderArray = function<T, Other>(
     const newValue = array.slice();
     const [curValue] = newValue.splice(idx, 1);
     newValue.splice(newIdx, 0, curValue);
-
-    const pre =
-        newIdx === 0 ? null : meta.items[meta.idsInOrder[newIdx - 1]].sort.idx;
-    const post =
-        newIdx >= meta.idsInOrder.length
-            ? null
-            : meta.items[meta.idsInOrder[newIdx]].sort.idx;
-
     const idsInOrder = meta.idsInOrder.slice();
     const [id] = idsInOrder.splice(idx, 1);
+
+    const pre =
+        newIdx === 0 ? null : meta.items[idsInOrder[newIdx - 1]].sort.idx;
+    const post =
+        newIdx >= idsInOrder.length
+            ? null
+            : meta.items[idsInOrder[newIdx]].sort.idx;
+
+    console.log(idsInOrder, newIdx, pre, post);
     idsInOrder.splice(newIdx, 0, id);
 
     const sort = sortedArray.between(pre, post);
@@ -631,6 +632,7 @@ export const set = function<T, O, Other>(
             } else {
                 res[idx] = merged.value;
             }
+            console.log('OK', merged, inner, value);
             return {
                 value: res,
                 meta: {
@@ -638,7 +640,10 @@ export const set = function<T, O, Other>(
                     idsInOrder,
                     items: {
                         ...meta.items,
-                        [key]: merged.meta,
+                        [key]: {
+                            meta: merged.meta,
+                            sort: meta.items[key].sort,
+                        },
                     },
                 },
             };
@@ -686,7 +691,10 @@ const applyInner = function<T, O, Other, R>(
             },
             meta: {
                 ...crdt.meta,
-                [k]: res.meta,
+                map: {
+                    ...crdt.meta.map,
+                    [k]: res.meta,
+                },
             },
         };
     } else if (crdt.meta.type === 'array') {
@@ -705,7 +713,10 @@ const applyInner = function<T, O, Other, R>(
             value: arr,
             meta: {
                 ...crdt.meta,
-                [k]: res.meta,
+                items: {
+                    ...crdt.meta.items,
+                    [k]: { ...crdt.meta.items[k], meta: res.meta },
+                },
             },
         };
     } else if (crdt.meta.type === 'plain') {
@@ -797,9 +808,6 @@ export const merge = function<A, B, Other>(
     value: A | B,
     meta: Meta<Other>,
 } {
-    if (!v2) {
-        return { value: v1, meta: m1 };
-    }
     if (m1.hlcStamp > m2.hlcStamp) {
         return { value: v1, meta: m1 };
     }

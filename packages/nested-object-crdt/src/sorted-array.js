@@ -111,6 +111,7 @@ export const between = (
     one: ?Array<number>,
     two: ?Array<number>,
 ): Array<number> => {
+    console.log('Between', one, two);
     if (!one || !two) {
         if (one) return [one[0] + 1];
         if (two) return [two[0] - 1];
@@ -126,6 +127,7 @@ export const between = (
             // I don't know actually. Probably possible to construct scenarios that... hmm.. maybe not
             // though.
             parts.push(one[i] + (two[i] - one[i]) / 2);
+            console.log(one[i], two[i], parts);
             return parts;
         }
         parts.push(one[i]);

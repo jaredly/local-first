@@ -17,7 +17,23 @@ const apply = (base, delta) =>
         throw new Error('no other');
     });
 
-console.log(JSON.stringify(base));
+// console.log(JSON.stringify(base));
+
+describe('tombstones', () => {
+    it('should shorten an array', () => {
+        const changed = apply(
+            base,
+            crdt.deltas.removeAt(base, ['instructions', 1], '2'),
+        );
+        console.log(JSON.stringify([changed, base]));
+        expect(changed.value.instructions).toEqual([
+            { text: 'go left' },
+            { stop: true },
+        ]);
+        crdt.checkConsistency(changed);
+    });
+});
+
 describe('it', () => {
     it('should do something', () => {
         const changed = apply(
@@ -53,6 +69,7 @@ describe('it', () => {
             { text: 'go left' },
             { stop: true },
         ]);
+        console.log(JSON.stringify([base, changed]));
         crdt.checkConsistency(changed);
     });
 });
