@@ -244,19 +244,11 @@ export const deltas = {
     diff<T, Other>(one: ?CRDT<T, Other>, two: CRDT<T, Other>) {
         if (!one) {
             // return deltas.set([], two);
-            return {
-                type: 'set',
-                path: [],
-                value,
-            };
+            return { type: 'set', path: [], value };
         }
         // TODO something a little more intelligent probably?
         // return deltas.set([], two);
-        return {
-            type: 'set',
-            path: [],
-            value,
-        };
+        return { type: 'set', path: [], value };
     },
     stamp<T, Other>(
         delta: HostDelta<T, Other>,
@@ -368,17 +360,6 @@ export const applyDelta = function<T, O, Other, OtherDelta>(
 ): CRDT<T, Other> {
     switch (delta.type) {
         case 'set':
-            if (delta.path.length === 0) {
-                const { value, meta } = merge(
-                    crdt.value,
-                    crdt.meta,
-                    delta.value.value,
-                    delta.value.meta,
-                    mergeOther,
-                );
-                // $FlowFixMe
-                return genericize(value, meta);
-            }
             return set(crdt, delta.path, delta.key, delta.value, mergeOther);
         case 'insert':
             return insert(
@@ -649,6 +630,35 @@ export const set = function<T, O, Other>(
     });
 };
 
+export const get = function<T, O, Other>(
+    crdt: CRDT<T, Other>,
+    path: Array<string | number>,
+) {
+    if (path.length === 0) {
+        return crdt;
+    }
+    const key = path[0];
+    if (crdt.meta.type === 'map') {
+        return get(
+            { value: crdt.value[key], meta: crdt.meta.map[key] },
+            path.slice(1),
+        );
+    }
+    if (crdt.meta.type === 'array') {
+        if (typeof key !== 'number') {
+            throw new Error(`Must use a numeric index`);
+        }
+        return get(
+            {
+                value: crdt.value[key],
+                meta: crdt.meta.items[crdt.meta.idsInOrder[key]].meta,
+            },
+            path.slice(1),
+        );
+    }
+    throw new Error(`Can't get a sub item of a ${crdt.meta.type}`);
+};
+
 const applyInner = function<T, O, Other, R>(
     crdt: CRDT<T, Other>,
     key: KeyPath,
@@ -911,30 +921,6 @@ export const createDeepMap = function<T: {}, Other>(
     hlcStamp: string,
 ): CRDT<T, Other> {
     return { value, meta: createDeepMapMeta(value, hlcStamp) };
-};
-
-export const createValue = function<T, Other>(
-    value: T,
-    hlcStamp: string,
-): CRDT<T, Other> {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-        const res = createDeepMap(value, hlcStamp);
-        return genericize(res.value, res.meta);
-    } else {
-        const res = create(value, hlcStamp);
-        return genericize(res.value, res.meta);
-    }
-};
-
-export const createMap = function<T: {}, Other>(
-    value: T,
-    hlcStamp: string,
-): {| value: T, meta: MapMeta<Other> |} {
-    const meta = { type: 'map', map: {}, hlcStamp };
-    Object.keys(value).forEach(k => {
-        meta.map[k] = { type: 'plain', hlcStamp };
-    });
-    return { value, meta };
 };
 
 export const create = function<T, Other>(

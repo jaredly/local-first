@@ -13,10 +13,13 @@ const baseData = {
 };
 const base = crdt.createDeep(baseData, '1');
 
-const apply = (base, delta) =>
-    crdt.applyDelta(base, delta, (_, __, ___) => {
+const apply = (base, delta) => {
+    const res = crdt.applyDelta(base, delta, (_, __, ___) => {
         throw new Error('no other');
     });
+    crdt.checkConsistency(res);
+    return res;
+};
 
 describe('tombstones', () => {
     it('should shorten an array', () => {
@@ -29,6 +32,24 @@ describe('tombstones', () => {
             { stop: true },
         ]);
         crdt.checkConsistency(changed);
+    });
+    it('should shorten an array, and then restore it', () => {
+        const a = apply(
+            base,
+            crdt.deltas.removeAt(base, ['instructions', 1], '2'),
+        );
+        const delta = crdt.deltas.set(
+            base,
+            ['instructions', 1],
+            crdt.createDeep({ text: 'oooh' }, '3'),
+        );
+        const b = apply(a, delta);
+        expect(b.value.instructions).toEqual([
+            { text: 'go left' },
+            { text: 'oooh' },
+            { stop: true },
+        ]);
+        crdt.checkConsistency(b);
     });
 });
 
@@ -101,6 +122,26 @@ describe('it', () => {
             { text: 'go right' },
             { stop: true },
         ]);
+    });
+    it('set older', () => {
+        const a = apply(
+            base,
+            crdt.deltas.set(
+                base,
+                ['person'],
+                crdt.createDeep({ name: 'ok', age: 5 }, ''),
+            ),
+        );
+        expect(a.value).toEqual(base.value);
+    });
+    it('merge', () => {
+        const person = crdt.get(base, ['person']);
+        const newPerson = apply(
+            person,
+            crdt.deltas.set(person, ['name'], crdt.create('Yes', '2')),
+        );
+        const a = apply(base, crdt.deltas.set(base, ['person'], newPerson));
+        expect(a.value.person).toEqual({ name: 'Yes', age: 2 });
     });
     it('should handle insert to start & end', () => {
         const a = apply(
