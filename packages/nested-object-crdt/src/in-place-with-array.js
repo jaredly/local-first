@@ -661,6 +661,9 @@ const applyInner = function<T, O, Other, R>(
         // $FlowFixMe
         return fn(crdt);
     }
+    if (!crdt) {
+        throw new Error('No crdt ' + JSON.stringify(key));
+    }
     if (crdt.meta.hlcStamp > key[0].stamp) {
         return crdt;
     }
@@ -901,15 +904,7 @@ export const createDeepMapMeta = function<T: {}, Other>(
         hlcStamp,
     };
     Object.keys(value).forEach(k => {
-        if (value[k] && typeof value[k] === 'object') {
-            if (Array.isArray(value[k])) {
-                meta.map[k] = createDeepArrayMeta(value[k], hlcStamp);
-            } else {
-                meta.map[k] = createDeepMapMeta(value[k], hlcStamp);
-            }
-        } else {
-            meta.map[k] = { type: 'plain', hlcStamp };
-        }
+        meta.map[k] = createDeepMeta(value[k], hlcStamp);
     });
     return meta;
 };

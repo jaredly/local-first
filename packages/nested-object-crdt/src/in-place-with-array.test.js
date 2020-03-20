@@ -8,6 +8,7 @@ const baseData = {
         name: 'local',
         age: 2,
     },
+    colors: ['red', 'green', 'blue'],
     instructions: [{ text: 'go left' }, { text: 'go right' }, { stop: true }],
 };
 const base = crdt.createDeep(baseData, '1');
@@ -70,5 +71,70 @@ describe('it', () => {
             { stop: true },
         ]);
         crdt.checkConsistency(changed);
+    });
+    it('should add and remove an object attribute', () => {
+        const a = apply(
+            base,
+            crdt.deltas.set(
+                base,
+                ['person', 'color'],
+                crdt.create('green', '2'),
+            ),
+        );
+        expect(a.value.person).toEqual({
+            name: 'local',
+            age: 2,
+            color: 'green',
+        });
+        const b = apply(a, crdt.deltas.removeAt(a, ['person', 'color'], '3'));
+        expect(b.value.person).toEqual({ name: 'local', age: 2 });
+    });
+    it('should handle insert', () => {
+        const a = apply(
+            base,
+            crdt.deltas.insert(
+                base,
+                ['instructions'],
+                1,
+                crdt.createDeep({ text: 'more things' }, '2'),
+                '2',
+            ),
+        );
+        expect(a.value.instructions).toEqual([
+            { text: 'go left' },
+            { text: 'more things' },
+            { text: 'go right' },
+            { stop: true },
+        ]);
+    });
+    it('should handle insert to start & end', () => {
+        const a = apply(
+            base,
+            crdt.deltas.insert(
+                base,
+                ['colors'],
+                0,
+                crdt.create('orange', '2'),
+                '2',
+            ),
+        );
+        expect(a.value.colors).toEqual(['orange', 'red', 'green', 'blue']);
+        const b = apply(
+            a,
+            crdt.deltas.insert(
+                a,
+                ['colors'],
+                a.value.colors.length,
+                crdt.create('yellow', '3'),
+                '3',
+            ),
+        );
+        expect(b.value.colors).toEqual([
+            'orange',
+            'red',
+            'green',
+            'blue',
+            'yellow',
+        ]);
     });
 });
