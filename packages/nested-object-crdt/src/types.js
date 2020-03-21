@@ -1,8 +1,9 @@
 // @flow
 
-export type KeyPath = Array<{ stamp: string, key: string }>;
+export type { Sort } from './array-utils';
+import type { Sort } from './array-utils';
 
-export type Sort = Array<number>;
+export type KeyPath = Array<{ stamp: string, key: string }>;
 
 export type ArrayMeta<Other> = {|
     type: 'array',
