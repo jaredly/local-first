@@ -98,15 +98,21 @@ export const deltas = {
             ? latestStamp(delta.value, otherStamp)
             : delta.sort.stamp;
     },
+    other<T, Other, OtherDelta>(
+        current: CRDT<T, Other>,
+        path: Array<string | number>,
+        delta: OtherDelta,
+    ): Delta<T, Other, OtherDelta> {
+        return { type: 'other', path: makeKeyPath(current.meta, path), delta };
+    },
     set<T, Other>(
         current: CRDT<T, Other>,
         path: Array<string | number>,
         value: CRDT<T, Other>,
     ): HostDelta<T, Other> {
-        const keyPath = makeKeyPath(current.meta, path);
         return {
             type: 'set',
-            path: keyPath,
+            path: makeKeyPath(current.meta, path),
             value,
         };
     },

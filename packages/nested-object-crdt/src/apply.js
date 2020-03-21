@@ -13,11 +13,16 @@ import type {
     MapMeta,
     OtherMerge,
 } from './types';
+import { get } from './deltas';
 
 export const applyDelta = function<T, O, Other, OtherDelta>(
     crdt: CRDT<T, Other>,
     delta: Delta<O, Other, OtherDelta>,
-    applyOtherDelta: (any, Other, OtherDelta) => Other,
+    applyOtherDelta: <T, Other>(
+        T,
+        Other,
+        OtherDelta,
+    ) => { value: T, meta: Other },
     mergeOther: OtherMerge<Other>,
 ): CRDT<T, Other> {
     switch (delta.type) {
@@ -27,6 +32,8 @@ export const applyDelta = function<T, O, Other, OtherDelta>(
             return insert(crdt, delta.path, delta.sort, delta.value);
         case 'reorder':
             return reorder(crdt, delta.path, delta.sort);
+        case 'other':
+            return otherDelta(crdt, delta.path, delta.delta, applyOtherDelta);
     }
     throw new Error('unknown delta type' + JSON.stringify(delta));
 };
@@ -152,11 +159,70 @@ export const reorder = function<T, Other>(
             throw new Error(`No array at path`);
         }
         if (inner.meta.type !== 'array' || !Array.isArray(inner.value)) {
-            console.log('a', JSON.stringify(inner), path);
             throw new Error(`Cannot insert ${id} into a ${inner.meta.type}`);
         }
 
         return reorderArray(inner.value, inner.meta, id, sort);
+    });
+};
+
+export const otherDelta = function<T, Other, OtherDelta>(
+    crdt: CRDT<T, Other>,
+    path: KeyPath,
+    delta: OtherDelta,
+    applyOtherDelta: <T, Other>(
+        T,
+        Other,
+        OtherDelta,
+    ) => { value: T, meta: Other },
+): CRDT<T, Other> {
+    return applyInner(crdt, path, (inner, id) => {
+        if (inner.meta.type === 'map') {
+            const { meta, value } = inner;
+            if (meta.map[id].type !== 'other') {
+                throw new Error(`Expected 'other', found ${meta.map[id].type}`);
+            }
+            const merged = applyOtherDelta(
+                // $FlowFixMe
+                inner.value[id],
+                meta.map[id].meta,
+                delta,
+            );
+            return {
+                value: { ...value, [id]: merged.value },
+                meta: {
+                    ...meta,
+                    map: {
+                        ...meta.map,
+                        [id]: { ...meta.map[id], meta: merged.meta },
+                    },
+                },
+            };
+        } else if (inner.meta.type === 'array') {
+            const meta = inner.meta;
+            const idx = meta.idsInOrder.indexOf(id);
+            const merged = applyOtherDelta(
+                inner.value[idx],
+                // $FlowFixMe
+                meta.items[id].meta,
+                delta,
+            );
+            const value = inner.value.slice();
+            value[idx] = merged.value;
+            return {
+                value,
+                meta: {
+                    ...meta,
+                    items: {
+                        ...meta.items,
+                        [id]: { ...meta.items[id], meta: merged.meta },
+                    },
+                },
+            };
+        }
+        // const value = get(inner, [id]);
+
+        throw new Error(`Cannot set inside of a ${inner.meta.type}`);
     });
 };
 
