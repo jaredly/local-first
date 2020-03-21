@@ -1,4 +1,4 @@
-// @flow
+// @-flow
 
 import * as crdt from './new';
 

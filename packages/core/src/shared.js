@@ -36,12 +36,13 @@ export type CRDTImpl<Delta, Data> = {
     value<T>(Data): T,
     deltas: {
         diff(?Data, Data): Delta,
-        set(Array<string>, Data): Delta,
+        set(Data, Array<string>, Data): Delta,
+        replace(Data): Delta,
         remove(string): Delta,
-        apply(?Data, Delta): Data,
+        apply(Data, Delta): Data,
         stamp(Delta): string,
     },
-    createValue<T>(T, string): Data,
+    createValue<T>(T, string, () => string): Data,
 };
 
 const send = <Data, T>(
@@ -72,10 +73,10 @@ export const getCollection = function<Delta, Data, T>(
             validate(node, schema);
             state.cache[id] = crdt.merge(
                 state.cache[id],
-                crdt.createValue(node, getStamp()),
+                crdt.createValue(node, getStamp(), getStamp),
             );
             send(state, id, node);
-            const delta = crdt.deltas.set([], state.cache[id]);
+            const delta = crdt.deltas.replace(state.cache[id]);
             state.cache[id] = await persistence.applyDelta(
                 colid,
                 id,
@@ -89,9 +90,19 @@ export const getCollection = function<Delta, Data, T>(
 
         async setAttribute(id: string, path: Array<string>, value: any) {
             validateSet(schema, path, value);
+            if (!state.cache[id]) {
+                const stored = await persistence.load(colid, id);
+                if (!stored) {
+                    throw new Error(
+                        `Cannot set attribute, node with id ${id} doesn't exist`,
+                    );
+                }
+                state.cache[id] = stored;
+            }
             const delta = crdt.deltas.set(
+                state.cache[id],
                 path,
-                crdt.createValue(value, getStamp()),
+                crdt.createValue(value, getStamp(), getStamp),
             );
             let plain = null;
             if (state.cache[id]) {

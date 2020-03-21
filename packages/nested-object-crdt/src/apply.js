@@ -16,7 +16,7 @@ import type {
 import { get } from './deltas';
 
 export const applyDelta = function<T, O, Other, OtherDelta>(
-    crdt: CRDT<T, Other>,
+    crdt: ?CRDT<T, Other>,
     delta: Delta<O, Other, OtherDelta>,
     applyOtherDelta: <T, Other>(
         T,
@@ -25,6 +25,15 @@ export const applyDelta = function<T, O, Other, OtherDelta>(
     ) => { value: T, meta: Other },
     mergeOther: OtherMerge<Other>,
 ): CRDT<T, Other> {
+    if (!crdt) {
+        if (delta.type !== 'set' || delta.path.length) {
+            throw new Error(
+                `Only a 'replace' delta can be applied to an empty base`,
+            );
+        }
+        // $FlowFixMe
+        return delta.value;
+    }
     switch (delta.type) {
         case 'set':
             return set(crdt, delta.path, delta.value, mergeOther);

@@ -212,9 +212,7 @@ describe('it', () => {
                 '3',
             ),
         );
-        // console.log(JSON.stringify([a, b]));
         const final = crdt.mergeTwo(a, b, () => {});
-        // console.log(JSON.stringify(final));kk
         expect(final.value.colors).toEqual([
             'red',
             'orange',

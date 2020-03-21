@@ -24,7 +24,7 @@ export const applyDeltas = async function<Delta, Data>(
     const stores = storeDeltas
         ? [collection + ':meta', collection + ':nodes', collection + ':deltas']
         : [collection + ':meta', collection + ':nodes'];
-    // console.log('Opening for stores', stores);
+    console.log('Opening for stores', stores);
     const tx = (await db).transaction(stores, 'readwrite');
     if (storeDeltas) {
         const deltaStore = tx.objectStore(collection + ':deltas');
@@ -71,6 +71,7 @@ const makePersistence = (
                 // store a cursor for each server.
                 db.createObjectStore(name + ':meta');
             });
+            console.log('made object stores');
         },
     });
 

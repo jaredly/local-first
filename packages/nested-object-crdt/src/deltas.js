@@ -105,6 +105,13 @@ export const deltas = {
     ): Delta<T, Other, OtherDelta> {
         return { type: 'other', path: makeKeyPath(current.meta, path), delta };
     },
+    replace<T, Other>(value: CRDT<T, Other>): HostDelta<T, Other> {
+        return {
+            type: 'set',
+            path: [],
+            value,
+        };
+    },
     set<T, Other>(
         current: CRDT<T, Other>,
         path: Array<string | number>,

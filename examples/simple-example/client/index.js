@@ -7,35 +7,48 @@ import {
     type HLC,
     createBlobClient,
     PersistentClock,
+    localStorageClockPersist,
     makeBlobPersistence,
     createBasicBlobNetwork,
     createDeltaClient,
     makeDeltaPersistence,
     createWebSocketNetwork,
-    crdt,
-} from './lib.js';
+    // crdt,
+} from '../../../packages/client-bundle';
 import { ItemSchema } from '../shared/schema.js';
 
-const clockPersist = (key: string) => ({
-    get(init) {
-        const raw = localStorage.getItem(key);
-        if (!raw) {
-            const res = init();
-            localStorage.setItem(key, hlc.pack(res));
-            return res;
-        }
-        return hlc.unpack(raw);
+import * as ncrdt from '../../../packages/nested-object-crdt/src/new';
+
+const newCrdt = {
+    merge: (one, two) => {
+        if (!one) return two;
+        return ncrdt.mergeTwo(one, two);
     },
-    set(clock: HLC) {
-        localStorage.setItem(key, hlc.pack(clock));
+    latestStamp: ncrdt.latestStamp,
+    value: d => d.value,
+    deltas: {
+        ...ncrdt.deltas,
+        apply: (base, delta) =>
+            ncrdt.applyDelta(
+                base,
+                delta,
+                () => {
+                    throw new Error('no other yet');
+                },
+                () => {
+                    throw new Error('no other yet');
+                },
+            ),
     },
-});
+    createValue: ncrdt.createDeep,
+};
 
 const setupBlob = () => {
     return createBlobClient(
-        crdt,
+        // crdt,
+        newCrdt,
         { tasks: ItemSchema },
-        new PersistentClock(clockPersist('local-first')),
+        new PersistentClock(localStorageClockPersist('local-first')),
         makeBlobPersistence('local-first', ['tasks']),
         createBasicBlobNetwork('http://localhost:9900/blob/awesome.blob'),
     );
@@ -43,16 +56,18 @@ const setupBlob = () => {
 
 const setupDelta = () => {
     return createDeltaClient(
-        crdt,
+        // crdt,
+        newCrdt,
         { tasks: ItemSchema },
-        new PersistentClock(clockPersist('local-first')),
+        new PersistentClock(localStorageClockPersist('local-first')),
         makeDeltaPersistence('local-first', ['tasks']),
         // createPollingNetwork('http://localhost:9900/sync'),
         createWebSocketNetwork('ws://localhost:9900/sync'),
     );
 };
 
-const client = setupBlob();
+// const client = setupBlob();
+const client = setupDelta();
 
 type Tasks = {
     [key: string]: {
@@ -100,7 +115,10 @@ const App = () => {
     return (
         <div style={{ margin: '32px 64px' }}>
             <div>
-                Hello! We are {connected ? 'Online' : 'Offline'}{' '}
+                Hello! We are{' '}
+                {connected && connected.status !== 'disconnected'
+                    ? 'Online'
+                    : 'Offline'}{' '}
                 {client.sessionId}
             </div>
             <button

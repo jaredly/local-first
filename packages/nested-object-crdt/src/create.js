@@ -27,10 +27,16 @@ export const createDeepMeta = function<T, Other>(
     return createDeepMapMeta(value, hlcStamp, getStamp);
 };
 
+const randomStamp = () => {
+    return Math.random()
+        .toString(36)
+        .slice(2);
+};
+
 export const createDeep = function<T, Other>(
     value: T,
     hlcStamp: string,
-    getStamp: () => string,
+    getStamp: () => string = randomStamp,
 ): CRDT<T, Other> {
     return { value, meta: createDeepMeta(value, hlcStamp, getStamp) };
 };

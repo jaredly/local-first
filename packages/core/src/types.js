@@ -46,7 +46,7 @@ export type Persistence = {
         id: string,
         delta: Delta,
         stamp: string,
-        apply: (?Data, Delta) => Data,
+        apply: (Data, Delta) => Data,
     ): Promise<Data>,
     load<T>(colid: string, id: string): Promise<?T>,
     loadAll<T>(colid: string): Promise<{ [key: string]: T }>,
@@ -82,7 +82,7 @@ export type MultiPersistence = {
         colid: string,
         deltas: Array<{ node: string, delta: Delta, stamp: string }>,
         serverCursor: number,
-        apply: (?Data, Delta) => Data,
+        apply: (Data, Delta) => Data,
     ): Promise<{ [key: string]: Data }>,
     deltas<Delta>(
         collection: string,
@@ -118,7 +118,7 @@ export type DeltaPersistence = {
         colid: string,
         deltas: Array<{ node: string, delta: Delta, stamp: string }>,
         serverCursor: number,
-        apply: (?Data, Delta) => Data,
+        apply: (Data, Delta) => Data,
     ): Promise<{ [key: string]: Data }>,
     deltas<Delta>(
         collection: string,
