@@ -4,6 +4,7 @@
 ../../packages
 
 [libs]
+flow-typed
 
 [lints]
 

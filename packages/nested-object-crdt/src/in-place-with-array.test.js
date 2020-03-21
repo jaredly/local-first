@@ -224,7 +224,7 @@ describe('it', () => {
                 crdt.createDeepMap({ name: 'Yo' }, 3),
             ),
         );
-        console.log(JSON.stringify([delta, a]));
+        // console.log(JSON.stringify([delta, a]));
         const b = apply(a, delta);
         expect(b.value.person).toEqual({ name: 'Yo' });
     });

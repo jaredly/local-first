@@ -5,6 +5,14 @@ import type { CRDT, Meta, ArrayMeta, PlainMeta, MapMeta } from './types';
 
 export const MIN_STAMP = '';
 
+export const createOther = function<T, Other>(
+    value: T,
+    other: Other,
+    hlcStamp: string,
+): CRDT<T, Other> {
+    return { value, meta: { type: 'other', meta: other, hlcStamp } };
+};
+
 export const createDeepMeta = function<T, Other>(
     value: T,
     hlcStamp: string,

@@ -160,6 +160,84 @@ export const reorder = function<T, Other>(
     });
 };
 
+const mapSet = function<T: {}, O, Other>(
+    inner: T,
+    meta: MapMeta<Other>,
+    key: string,
+    value: CRDT<O, Other>,
+    mergeOther: OtherMerge<Other>,
+): CRDT<T, Other> {
+    const res = meta.map[key]
+        ? merge(inner[key], meta.map[key], value.value, value.meta, mergeOther)
+        : value;
+    const newv = { ...inner };
+    if (res.meta.type === 't') {
+        delete newv[key];
+    } else {
+        newv[key] = res.value;
+    }
+    return {
+        value: newv,
+        meta: {
+            ...meta,
+            map: {
+                ...meta.map,
+                [key]: res.meta,
+            },
+        },
+    };
+};
+
+const arraySet = function<T, Other>(
+    array: Array<?T>,
+    meta: ArrayMeta<Other>,
+    key: string,
+    value: CRDT<?T, Other>,
+    mergeOther: OtherMerge<Other>,
+): CRDT<Array<?T>, Other> {
+    const idx = meta.idsInOrder.indexOf(key);
+    const merged = merge(
+        // if it's not in there, we're dealing with a tombstone
+        idx === -1 ? null : array[idx],
+        meta.items[key].meta,
+        value.value,
+        value.meta,
+        mergeOther,
+    );
+    const res = array.slice();
+    let idsInOrder = meta.idsInOrder;
+    if (merged.meta.type === 't' && meta.items[key].meta.type !== 't') {
+        res.splice(idx, 1);
+        idsInOrder = idsInOrder.slice();
+        idsInOrder.splice(idx, 1);
+    } else if (meta.items[key].meta.type === 't' && merged.meta.type !== 't') {
+        const idx = sortedArray.insertionIndex(
+            idsInOrder,
+            id => meta.items[id].sort.idx,
+            meta.items[key].sort.idx,
+        );
+        res.splice(idx, 0, merged.value);
+        idsInOrder = idsInOrder.slice();
+        idsInOrder.splice(idx, 0, key);
+    } else {
+        res[idx] = merged.value;
+    }
+    return {
+        value: res,
+        meta: {
+            ...meta,
+            idsInOrder,
+            items: {
+                ...meta.items,
+                [key]: {
+                    meta: merged.meta,
+                    sort: meta.items[key].sort,
+                },
+            },
+        },
+    };
+};
+
 export const set = function<T, O, Other>(
     crdt: CRDT<T, Other>,
     path: KeyPath,
@@ -178,6 +256,7 @@ export const set = function<T, O, Other>(
     }
     return applyInner(crdt, path, (inner, key) => {
         if (!inner) {
+            // $FlowFixMe
             return value;
         }
         if (inner.meta.type === 'map') {
@@ -188,81 +267,13 @@ export const set = function<T, O, Other>(
             ) {
                 throw new Error(`Invalid value, doesn't match meta type 'map'`);
             }
-            const res = inner.meta.map[key]
-                ? merge(
-                      inner.value[key],
-                      inner.meta.map[key],
-                      value.value,
-                      value.meta,
-                      mergeOther,
-                  )
-                : value;
-            const newv = { ...inner.value };
-            if (res.meta.type === 't') {
-                delete newv[key];
-            } else {
-                newv[key] = res.value;
-            }
-            return {
-                value: newv,
-                meta: {
-                    ...inner.meta,
-                    map: {
-                        ...inner.meta.map,
-                        [key]: res.meta,
-                    },
-                },
-            };
+            return mapSet(inner.value, inner.meta, key, value, mergeOther);
         } else if (inner.meta.type === 'array') {
             if (!Array.isArray(inner.value)) {
                 throw new Error(`Not an array`);
             }
-            const array = inner.value;
-            const meta = inner.meta;
-            const idx = meta.idsInOrder.indexOf(key);
-            const merged = merge(
-                // if it's not in there, we're dealing with a tombstone
-                idx === -1 ? null : array[idx],
-                meta.items[key].meta,
-                value.value,
-                value.meta,
-                mergeOther,
-            );
-            const res = array.slice();
-            let idsInOrder = meta.idsInOrder;
-            if (merged.meta.type === 't' && meta.items[key].meta.type !== 't') {
-                res.splice(idx, 1);
-                idsInOrder = idsInOrder.slice();
-                idsInOrder.splice(idx, 1);
-            } else if (
-                meta.items[key].meta.type === 't' &&
-                merged.meta.type !== 't'
-            ) {
-                const idx = sortedArray.insertionIndex(
-                    idsInOrder,
-                    id => meta.items[id].sort.idx,
-                    meta.items[key].sort.idx,
-                );
-                res.splice(idx, 0, merged.value);
-                idsInOrder = idsInOrder.slice();
-                idsInOrder.splice(idx, 0, key);
-            } else {
-                res[idx] = merged.value;
-            }
-            return {
-                value: res,
-                meta: {
-                    ...meta,
-                    idsInOrder,
-                    items: {
-                        ...meta.items,
-                        [key]: {
-                            meta: merged.meta,
-                            sort: meta.items[key].sort,
-                        },
-                    },
-                },
-            };
+            // $FlowFixMe
+            return arraySet(inner.value, inner.meta, key, value, mergeOther);
         } else {
             throw new Error(`Cannot 'set' into a ${inner.meta.type}`);
         }
@@ -474,7 +485,7 @@ export const merge = function<A, B, Other>(
     }
     if (m1.type === 'map' && m2.type === 'map') {
         // $FlowFixMe
-        const { value, meta } = mergeMaps(v1, m1, v2, m2);
+        const { value, meta } = mergeMaps(v1, m1, v2, m2, mergeOther);
         return { value, meta };
     }
     if (m1.type === 'array' && m2.type === 'array') {
