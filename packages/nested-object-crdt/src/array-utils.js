@@ -4,6 +4,16 @@ export type Sort = Array<number>;
 
 const epsilon = Math.pow(2, -10);
 
+export const sortForInsertion = (
+    ids: Array<string>,
+    sortForId: string => Sort,
+    idx: number,
+) => {
+    const pre = idx === 0 ? null : sortForId(ids[idx - 1]);
+    const post = idx >= ids.length ? null : sortForId(ids[idx]);
+    return between(pre, post);
+};
+
 export const insertionIndex = (
     ids: Array<string>,
     sortForId: string => Sort,
@@ -24,11 +34,8 @@ export const compare = (one: Array<number>, two: Array<number>) => {
             return one[i] - two[i];
         }
     }
-    if (i < one.length - 1) {
-        return -1;
-    }
-    if (i < two.length - 1) {
-        return 1;
+    if (one.length !== two.length) {
+        return one.length - two.length;
     }
     return 0;
 };
@@ -38,8 +45,8 @@ export const between = (
     two: ?Array<number>,
 ): Array<number> => {
     if (!one || !two) {
-        if (one) return [one[0] + 1];
-        if (two) return [two[0] - 1];
+        if (one) return [one[0] + 10];
+        if (two) return [two[0] - 10];
         return [0];
     }
     let i = 0;
@@ -55,11 +62,10 @@ export const between = (
         }
         parts.push(one[i]);
     }
-    if (i < one.length - 1) {
-        // is this possible? it would mean that two is less than one I think...
-        parts.push(one[i] + 1);
-    } else if (i < two.length - 1) {
-        parts.push(two[i] - 1);
+    if (one.length < two.length) {
+        parts.push(two[i] - 10);
+    } else if (two.length < one.length) {
+        parts.push(one[i] + 10);
     } else {
         parts.push(0);
     }

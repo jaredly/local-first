@@ -1,6 +1,7 @@
 // @-flow
 
-import * as crdt from './in-place-with-array';
+import * as crdt from './new';
+import { checkConsistency } from './debug';
 
 const baseData = {
     person: {
@@ -16,7 +17,7 @@ const apply = (base, delta) => {
     const res = crdt.applyDelta(base, delta, (_, __, ___) => {
         throw new Error('no other');
     });
-    crdt.checkConsistency(res);
+    checkConsistency(res);
     return res;
 };
 
@@ -30,7 +31,7 @@ describe('tombstones', () => {
             { text: 'go left' },
             { stop: true },
         ]);
-        crdt.checkConsistency(changed);
+        checkConsistency(changed);
     });
     it('should shorten an array, and then restore it', () => {
         const a = apply(
@@ -48,7 +49,7 @@ describe('tombstones', () => {
             { text: 'oooh' },
             { stop: true },
         ]);
-        crdt.checkConsistency(b);
+        checkConsistency(b);
     });
 });
 
@@ -63,7 +64,7 @@ describe('it', () => {
             ),
         );
         expect(changed.value.person.name).toEqual('Awesome');
-        crdt.checkConsistency(changed);
+        checkConsistency(changed);
     });
     it('should set inside an array', () => {
         const changed = apply(
@@ -75,19 +76,17 @@ describe('it', () => {
             ),
         );
         expect(changed.value.instructions[1].text).toEqual('go back');
-        crdt.checkConsistency(changed);
+        checkConsistency(changed);
     });
     it('should reorder an array', () => {
-        const changed = apply(
-            base,
-            crdt.deltas.reorder(base, ['instructions'], 0, 1, '2'),
-        );
+        const delta = crdt.deltas.reorder(base, ['instructions'], 0, 1, '2');
+        const changed = apply(base, delta);
         expect(changed.value.instructions).toEqual([
             { text: 'go right' },
             { text: 'go left' },
             { stop: true },
         ]);
-        crdt.checkConsistency(changed);
+        checkConsistency(changed);
     });
     it('should add and remove an object attribute', () => {
         const delta = crdt.deltas.set(
@@ -111,6 +110,7 @@ describe('it', () => {
                 base,
                 ['instructions'],
                 1,
+                'aaaa',
                 crdt.createDeep({ text: 'more things' }, '2'),
                 '2',
             ),
@@ -150,6 +150,7 @@ describe('it', () => {
                 base,
                 ['colors'],
                 0,
+                'aaaa',
                 crdt.create('orange', '2'),
                 '2',
             ),
@@ -161,6 +162,7 @@ describe('it', () => {
                 a,
                 ['colors'],
                 a.value.colors.length,
+                'aaaba',
                 crdt.create('yellow', '3'),
                 '3',
             ),
@@ -181,6 +183,7 @@ describe('it', () => {
                 base,
                 ['colors'],
                 1,
+                'aaaa',
                 crdt.create('orange', '2'),
                 '2',
             ),
@@ -191,6 +194,7 @@ describe('it', () => {
                 base,
                 ['colors'],
                 1,
+                'aaab',
                 crdt.create('yellow', '3'),
                 '3',
             ),
@@ -220,8 +224,23 @@ describe('it', () => {
                 crdt.createDeepMap({ name: 'Yo' }, 3),
             ),
         );
-        console.log(JSON.stringify([delta, a]));
+        // console.log(JSON.stringify([delta, a]));
         const b = apply(a, delta);
         expect(b.value.person).toEqual({ name: 'Yo' });
+    });
+    it('insert into a nested array', () => {
+        const base = crdt.createDeep([{ numbers: [4, 5, 6] }], '1');
+        const a = apply(
+            base,
+            crdt.deltas.insert(
+                base,
+                [0, 'numbers'],
+                2,
+                'zz',
+                crdt.create(9, '2'),
+                '2',
+            ),
+        );
+        expect(a.value[0].numbers).toEqual([4, 5, 9, 6]);
     });
 });

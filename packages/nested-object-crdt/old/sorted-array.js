@@ -1,8 +1,8 @@
 // @flow
 
-import type { Delta } from './index';
-import { type MapCRDT, type CRDT, create } from './index';
-export type { MapCRDT, CRDT } from './index';
+import type { Delta } from '../src/index';
+import { type MapCRDT, type CRDT, create } from '../src/index';
+export type { MapCRDT, CRDT } from '../src/index';
 
 // how to do ordered arrays?
 // great discussion here https://news.ycombinator.com/item?id=10957273
@@ -81,7 +81,7 @@ const epsilon = Math.pow(2, -10);
 export const insertionIndex = (
     ids: Array<string>,
     sortForId: string => Sort,
-    newSort,
+    newSort: Sort,
 ) => {
     for (let i = 0; i < ids.length; i++) {
         if (compare(sortForId(ids[i]), newSort) > 0) {
@@ -265,7 +265,7 @@ export const decode = (t: Type, v: any): any => {
     return res;
 };
 
-import type { Type } from './schema';
+import type { Type } from '../src/schema';
 export const value = (t: Type, crdt: CRDT) => {
     if (crdt.type === 'plain') {
         return crdt.value;
