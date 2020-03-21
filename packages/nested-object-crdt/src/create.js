@@ -16,26 +16,29 @@ export const createOther = function<T, Other>(
 export const createDeepMeta = function<T, Other>(
     value: T,
     hlcStamp: string,
+    getStamp: () => string,
 ): Meta<Other> {
     if (!value || typeof value !== 'object') {
         return { type: 'plain', hlcStamp };
     }
     if (Array.isArray(value)) {
-        return createDeepArrayMeta(value, hlcStamp);
+        return createDeepArrayMeta(value, hlcStamp, getStamp);
     }
-    return createDeepMapMeta(value, hlcStamp);
+    return createDeepMapMeta(value, hlcStamp, getStamp);
 };
 
 export const createDeep = function<T, Other>(
     value: T,
     hlcStamp: string,
+    getStamp: () => string,
 ): CRDT<T, Other> {
-    return { value, meta: createDeepMeta(value, hlcStamp) };
+    return { value, meta: createDeepMeta(value, hlcStamp, getStamp) };
 };
 
 export const createDeepArrayMeta = function<T, Other>(
     value: Array<T>,
     hlcStamp: string,
+    getStamp: () => string,
 ): ArrayMeta<Other> {
     const meta = {
         type: 'array',
@@ -45,10 +48,8 @@ export const createDeepArrayMeta = function<T, Other>(
     };
     let last = null;
     value.forEach(item => {
-        const id = Math.random()
-            .toString(36)
-            .slice(2);
-        const innerMeta = createDeepMeta(item, hlcStamp);
+        const id = getStamp();
+        const innerMeta = createDeepMeta(item, hlcStamp, getStamp);
         const sort = sortedArray.between(last, null);
         last = sort;
         meta.items[id] = {
@@ -63,6 +64,7 @@ export const createDeepArrayMeta = function<T, Other>(
 export const createDeepMapMeta = function<T: {}, Other>(
     value: T,
     hlcStamp: string,
+    getStamp: () => string,
 ): MapMeta<Other> {
     const meta: MapMeta<Other> = {
         type: 'map',
@@ -70,16 +72,9 @@ export const createDeepMapMeta = function<T: {}, Other>(
         hlcStamp,
     };
     Object.keys(value).forEach(k => {
-        meta.map[k] = createDeepMeta(value[k], hlcStamp);
+        meta.map[k] = createDeepMeta(value[k], hlcStamp, getStamp);
     });
     return meta;
-};
-
-export const createDeepMap = function<T: {}, Other>(
-    value: T,
-    hlcStamp: string,
-): CRDT<T, Other> {
-    return { value, meta: createDeepMapMeta(value, hlcStamp) };
 };
 
 export const create = function<T, Other>(

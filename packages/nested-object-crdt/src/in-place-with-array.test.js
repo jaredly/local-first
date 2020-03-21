@@ -3,6 +3,12 @@
 import * as crdt from './new';
 import { checkConsistency } from './debug';
 
+let counter = 0;
+const getStamp = () => {
+    counter += 1;
+    return counter.toString(36).padStart(5, '0');
+};
+
 const baseData = {
     person: {
         name: 'local',
@@ -11,12 +17,19 @@ const baseData = {
     colors: ['red', 'green', 'blue'],
     instructions: [{ text: 'go left' }, { text: 'go right' }, { stop: true }],
 };
-const base = crdt.createDeep(baseData, '1');
+const base = crdt.createDeep(baseData, '1', getStamp);
 
 const apply = (base, delta) => {
-    const res = crdt.applyDelta(base, delta, (_, __, ___) => {
-        throw new Error('no other');
-    });
+    const res = crdt.applyDelta(
+        base,
+        delta,
+        (_, __, ___) => {
+            throw new Error('no other');
+        },
+        (_, __) => {
+            throw new Error('no other');
+        },
+    );
     checkConsistency(res);
     return res;
 };
@@ -41,7 +54,7 @@ describe('tombstones', () => {
         const delta = crdt.deltas.set(
             base,
             ['instructions', 1],
-            crdt.createDeep({ text: 'oooh' }, '3'),
+            crdt.createDeep({ text: 'oooh' }, '3', getStamp),
         );
         const b = apply(a, delta);
         expect(b.value.instructions).toEqual([
@@ -111,7 +124,7 @@ describe('it', () => {
                 ['instructions'],
                 1,
                 'aaaa',
-                crdt.createDeep({ text: 'more things' }, '2'),
+                crdt.createDeep({ text: 'more things' }, '2', getStamp),
                 '2',
             ),
         );
@@ -128,7 +141,7 @@ describe('it', () => {
             crdt.deltas.set(
                 base,
                 ['person'],
-                crdt.createDeep({ name: 'ok', age: 5 }, ''),
+                crdt.createDeep({ name: 'ok', age: 5 }, '', getStamp),
             ),
         );
         expect(a.value).toEqual(base.value);
@@ -221,7 +234,7 @@ describe('it', () => {
             crdt.deltas.set(
                 base,
                 ['person'],
-                crdt.createDeepMap({ name: 'Yo' }, 3),
+                crdt.createDeep({ name: 'Yo' }, 3, getStamp),
             ),
         );
         // console.log(JSON.stringify([delta, a]));
@@ -229,7 +242,7 @@ describe('it', () => {
         expect(b.value.person).toEqual({ name: 'Yo' });
     });
     it('insert into a nested array', () => {
-        const base = crdt.createDeep([{ numbers: [4, 5, 6] }], '1');
+        const base = crdt.createDeep([{ numbers: [4, 5, 6] }], '1', getStamp);
         const a = apply(
             base,
             crdt.deltas.insert(

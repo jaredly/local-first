@@ -15,9 +15,15 @@ const applyOtherDelta = function<T, Other>(v: T, meta: Other, delta) {
     return { value: Math.max(v, delta), meta };
 };
 
+let counter = 0;
+const getStamp = () => {
+    counter += 1;
+    return counter.toString(36).padStart(5, '0');
+};
+
 describe('other crdt handling', () => {
     it('other delta in array', () => {
-        const base = crdt.createDeep([3], '1');
+        const base = crdt.createDeep([3], '1', getStamp);
         // $FlowFixMe
         base.meta.items[base.meta.idsInOrder[0]].meta = {
             type: 'other',
@@ -43,7 +49,7 @@ describe('other crdt handling', () => {
         let base: crdt.CRDT<
             { one: number, two: number, three?: number },
             null,
-        > = crdt.createDeep({ one: 1, two: 2 }, '1');
+        > = crdt.createDeep({ one: 1, two: 2 }, '1', getStamp);
         base = crdt.applyDelta(
             base,
             // $FlowFixMe
@@ -82,7 +88,7 @@ describe('other crdt handling', () => {
         const base: crdt.CRDT<
             { one: number, two: number, three?: number },
             null,
-        > = crdt.createDeep({ one: 1, two: 2 }, '1');
+        > = crdt.createDeep({ one: 1, two: 2 }, '1', getStamp);
         const one = crdt.applyDelta(
             base,
             // $FlowFixMe
