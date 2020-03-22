@@ -42,10 +42,13 @@ const split = (state: CRDT, key: string, splitPoint: number) => {
         parent: toKey(node.id),
         size: node.size - splitPoint,
         content: { type: 'text', text: text.slice(splitPoint) },
-        deleted: node.deleted,
+        // deleted: node.deleted,
         formats: node.formats,
         children: node.children,
     };
+    if (node.deleted) {
+        newNode.deleted = true;
+    }
     const newKey = toKey(newNode.id);
     state.map[newKey] = newNode;
     state.map[key] = {
@@ -322,12 +325,16 @@ const deleteFormat = (state, stamp, open, close) => {
                 return false; // we're done
             }
             if (node.formats[key] && node.formats[key].includes(openKey)) {
+                const changed = node.formats[key].filter(k => k !== openKey);
+                let formats = { ...node.formats };
+                if (changed.length) {
+                    formats[key] = changed;
+                } else {
+                    delete formats[key];
+                }
                 state.map[toKey(node.id)] = {
                     ...node,
-                    formats: {
-                        ...node.formats,
-                        [key]: node.formats[key].filter(k => k !== openKey),
-                    },
+                    formats,
                 };
             }
         },
