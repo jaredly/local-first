@@ -49,7 +49,7 @@ const setupBlob = () => {
         newCrdt,
         { tasks: ItemSchema },
         new PersistentClock(localStorageClockPersist('local-first')),
-        makeBlobPersistence('local-first', ['tasks']),
+        makeBlobPersistence('local-first-blob', ['tasks']),
         createBasicBlobNetwork('http://localhost:9900/blob/awesome.blob'),
     );
 };
@@ -66,8 +66,8 @@ const setupDelta = () => {
     );
 };
 
-// const client = setupBlob();
-const client = setupDelta();
+const client = setupBlob();
+// const client = setupDelta();
 
 type Tasks = {
     [key: string]: {
