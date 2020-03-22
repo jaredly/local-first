@@ -1,8 +1,7 @@
 // @flow
 import type { Content, CRDT, Node } from './types';
 import { keyCmp, toKey, contentChars } from './utils';
-import { lastId } from './loc';
-import { rootParent, rootSite } from './loc';
+import { lastId, walk, fmtIdx, rootParent, rootSite } from './loc';
 
 type Map = { [key: string]: Node };
 
@@ -158,6 +157,37 @@ const collectNodes = (map, afters, key, parent: string): Array<string> => {
     return children;
 };
 
+const addFormats = (state: CRDT) => {
+    let format = {};
+    walk(state, node => {
+        if (node.content.type === 'open') {
+            const { content } = node;
+            const current = format[content.key]
+                ? format[content.key].slice()
+                : [];
+            const idx = fmtIdx(
+                current.map(id => state.map[id].content),
+                content,
+            );
+            current.splice(idx, 0, toKey(node.id));
+            format = { ...format, [content.key]: current };
+        }
+        if (node.content.type === 'close' && format[node.content.key]) {
+            const { content } = node;
+            const current = format[content.key].filter(
+                id => state.map[id].content.stamp !== content.stamp,
+            );
+            if (!current.length) {
+                format = { ...format };
+                delete format[content.key];
+            } else {
+                format = { ...format, [content.key]: current };
+            }
+        }
+        node.formats = format;
+    });
+};
+
 export const merge = (one: CRDT, two: CRDT, site: string): CRDT => {
     const rootMap = {};
     one.roots.forEach(id => (rootMap[id] = true));
@@ -192,10 +222,12 @@ export const merge = (one: CRDT, two: CRDT, site: string): CRDT => {
     const map = {};
     const roots = collectNodes(map, afters, rootParent, rootParent);
     // console.log(map);
-    return {
+    const res = {
         site,
         largestLocalId,
         roots,
         map,
     };
+    addFormats(res);
+    return res;
 };
