@@ -32,6 +32,7 @@ module.exports = [
     // // Insertions
     {
         title: 'Basic insertion',
+        only: true,
         actions: [insert(0, 'Hi'), { state: [text('Hi')] }],
     },
     {

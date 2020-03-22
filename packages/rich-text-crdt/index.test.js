@@ -13,6 +13,7 @@ import {
     fmtIdx,
     toKey,
     getFormatValues,
+    merge,
 } from './';
 import { quillDeltasToDeltas, stateToQuillContents } from './quill-deltas';
 
@@ -178,6 +179,7 @@ const runActionsTest = actions => {
                 // const back = quillDeltasToDeltas(state, qd, genStamp)
             });
         }
+        expect(merge(state, state, state.site)).toEqual(state);
     });
 };
 
