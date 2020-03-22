@@ -48,18 +48,26 @@ const mergeNodes = (one: Node, two: Node) => {
     // through both ... merging as I go along?
 };
 
-const addAtoms = (afters, node, after) => {
+const addAtoms = (atoms, afters, node, after) => {
     const [id, site] = node.id;
     if (node.content.type === 'text') {
         const text = node.content.text;
         for (let i = 0; i < text.length; i++) {
             const thisAfter = i === 0 ? after : [id + i - 1, site];
             const key = toKey(thisAfter);
+            const atomKey = toKey([id + i, site]);
+            if (atoms[atomKey]) {
+                if (node.deleted && !atoms[atomKey].deleted) {
+                    atoms[atomKey].deleted = true;
+                }
+                continue;
+            }
             const atom = {
                 id: [id + i, site],
                 deleted: node.deleted,
                 content: { type: 'text', text: text.charAt(i) },
             };
+            atoms[atomKey] = atom;
             if (!afters[key]) {
                 afters[key] = [atom];
             } else {
@@ -68,11 +76,19 @@ const addAtoms = (afters, node, after) => {
         }
     } else {
         const key = toKey(after);
+        const atomKey = toKey(node.id);
+        if (atoms[atomKey]) {
+            if (node.deleted && !atoms[atomKey].deleted) {
+                atoms[atomKey].deleted = true;
+            }
+            return;
+        }
         const atom = {
             id: node.id,
             deleted: node.deleted,
             content: node.content,
         };
+        atoms[atomKey] = atom;
         if (!afters[key]) {
             afters[key] = [atom];
         } else {
@@ -109,6 +125,10 @@ const collectNode = (map, afters, atom, parent: string) => {
                 ) {
                     // mutation!! this is ok b/c atoms are single-use
                     content.text += child.content.text;
+                    if (!node.deleted) {
+                        node.size += 1;
+                    }
+                    continue;
                 }
             }
             break;
@@ -130,7 +150,7 @@ const collectNodes = (map, afters, key, parent: string): Array<string> => {
     if (!afters[key]) {
         return [];
     }
-    const atoms = afters[key].sort((a, b) => keyCmp(a.id, b.id));
+    const atoms = afters[key].sort((a, b) => -keyCmp(a.id, b.id));
     const children = atoms.map(atom => {
         collectNode(map, afters, atom, parent);
         return toKey(atom.id);
@@ -144,6 +164,7 @@ export const merge = (one: CRDT, two: CRDT, site: string): CRDT => {
     two.roots.forEach(id => (rootMap[id] = true));
     let largestLocalId = 0;
 
+    const atoms = {};
     const afters = {};
     Object.keys(one.map).forEach(key => {
         const node = one.map[key];
@@ -151,7 +172,10 @@ export const merge = (one: CRDT, two: CRDT, site: string): CRDT => {
             node.parent === rootParent
                 ? [0, rootSite]
                 : getAfter(one.map[node.parent]);
-        addAtoms(afters, node, after);
+        addAtoms(atoms, afters, node, after);
+        if (node.id[1] === site) {
+            largestLocalId = Math.max(largestLocalId, lastId(node)[0]);
+        }
     });
     Object.keys(two.map).forEach(key => {
         const node = two.map[key];
@@ -159,12 +183,15 @@ export const merge = (one: CRDT, two: CRDT, site: string): CRDT => {
             node.parent === rootParent
                 ? [0, rootSite]
                 : getAfter(two.map[node.parent]);
-        addAtoms(afters, node, after);
+        addAtoms(atoms, afters, node, after);
+        if (node.id[1] === site) {
+            largestLocalId = Math.max(largestLocalId, lastId(node)[0]);
+        }
     });
 
     const map = {};
     const roots = collectNodes(map, afters, rootParent, rootParent);
-    console.log(map);
+    // console.log(map);
     return {
         site,
         largestLocalId,
