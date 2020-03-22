@@ -51,6 +51,10 @@ export const contentLength = (content: Content) => {
     }
 };
 
+export const lastId = (node: Node) => {
+    return node.id[0] + contentLength(node.content) - 1;
+};
+
 // export const strKeyCmp = (a: string, b: string): number => {
 //     const [a0, a1] = a.split(':');
 //     const [b0, b1] = b.split(':');

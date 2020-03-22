@@ -28,6 +28,7 @@ export const inflate = (
     return state;
 };
 
+export * from './merge';
 export * from './deltas';
 export * from './apply';
 export * from './loc';

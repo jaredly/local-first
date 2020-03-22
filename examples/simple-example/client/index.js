@@ -18,6 +18,9 @@ import {
 import { ItemSchema } from '../shared/schema.js';
 
 import * as ncrdt from '../../../packages/nested-object-crdt/src/new';
+import * as text from '../../../packages/rich-text-crdt';
+
+// const otherMerge =
 
 const newCrdt = {
     merge: (one, two) => {
@@ -66,8 +69,8 @@ const setupDelta = () => {
     );
 };
 
-const client = setupBlob();
-// const client = setupDelta();
+// const client = setupBlob();
+const client = setupDelta();
 
 type Tasks = {
     [key: string]: {
