@@ -252,10 +252,10 @@ const deleteSpan = (state: CRDT, span: Span) => {
         cp = node.parent;
     }
 
-    maybeMergeUp(state, key);
     if (state.map[key].children.length === 1) {
         maybeMergeUp(state, state.map[key].children[0]);
     }
+    maybeMergeUp(state, key);
 };
 
 const maybeMergeUp = (state, key) => {

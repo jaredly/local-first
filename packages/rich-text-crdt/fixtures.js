@@ -380,6 +380,28 @@ module.exports = [
         ],
     },
 
+    {
+        title: 'merge ups',
+        // only: true,
+        actions: [
+            insert(0, 'abc'),
+            del(1, 1),
+            del(1, 1),
+            { state: [text('a', {})] },
+        ],
+    },
+
+    {
+        title: 'Delete across added',
+        only: true,
+        actions: [
+            insert(0, 'abde'),
+            insert(2, 'c'),
+            del(1, 3),
+            { state: [text('ae', {})] },
+        ],
+    },
+
     // Umm. So now what?
     // Maybe I write out the results?
     // Or something?

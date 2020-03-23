@@ -179,7 +179,7 @@ const App = () => {
 };
 
 const TextBindingExample = () => {
-    const [text, setText] = React.useState(() => rich.init('a'));
+    const [text, setText] = React.useState(() => rich.init());
     const plain = rich.toString(text);
     return (
         <div>
@@ -196,11 +196,11 @@ const TextBindingExample = () => {
                     );
                     console.log(plain, value, change);
                     const deltas = [];
-                    const clone = { ...text };
+                    // const clone = { ...text };
                     if (change.removed) {
                         deltas.push(
                             rich.del(
-                                clone,
+                                text,
                                 change.removed.at,
                                 change.removed.len,
                             ),
@@ -209,7 +209,8 @@ const TextBindingExample = () => {
                     if (change.added) {
                         deltas.push(
                             rich.insert(
-                                clone,
+                                text,
+                                'a',
                                 change.added.at,
                                 change.added.text,
                             ),
