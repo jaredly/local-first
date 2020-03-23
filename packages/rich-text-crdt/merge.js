@@ -175,7 +175,9 @@ const addFormats = (state: CRDT) => {
         if (node.content.type === 'close' && format[node.content.key]) {
             const { content } = node;
             const current = format[content.key].filter(
-                id => state.map[id].content.stamp !== content.stamp,
+                id =>
+                    state.map[id].content.type !== 'text' &&
+                    state.map[id].content.stamp !== content.stamp,
             );
             if (!current.length) {
                 format = { ...format };

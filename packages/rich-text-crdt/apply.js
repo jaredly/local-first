@@ -167,7 +167,7 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
     const currentFormats =
         idx === 0
             ? parent.formats
-            : state.map[lastChild(state, parent.children[idx])].formats;
+            : state.map[lastChild(state, parent.children[idx - 1])].formats;
     const key = toKey(id);
     const node = mkNode(id, parentKey, content, currentFormats);
     const size = contentChars(content);

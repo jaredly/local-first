@@ -8,7 +8,6 @@ import {
     del,
     format,
     init,
-    inflate,
     walk,
     fmtIdx,
     toKey,

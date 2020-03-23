@@ -20,7 +20,8 @@ import path from 'path';
 import fs from 'fs';
 import levelup from 'levelup';
 import leveldown from 'leveldown';
-import setupPersistence from './sqlite-persistence';
+// import setupPersistence from './sqlite-persistence';
+import setupPersistence from './memory-persistence';
 
 const crdtImpl = {
     createEmpty: crdt.createEmpty,

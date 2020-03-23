@@ -57,9 +57,8 @@ class FakeDb {
     constructor() {
         this.collections = {};
         this.keyPaths = {};
-        // colids.forEach(id => (this.collections[id] = {}));
     }
-    createObjectStore(name: string, options?) {
+    createObjectStore(name: string, options?: { keyPath: string }) {
         this.collections[name] = {};
         if (options && options.keyPath) {
             this.keyPaths[name] = options.keyPath;
@@ -90,6 +89,8 @@ class FakeDb {
     }
 }
 
+// TODO abstract this out so that we can have the same base implementation
+// Also be smart so if the idb doesn't have the correct objectStores set up, I throw an error.
 const makePersistence = (
     name: string,
     collections: Array<string>,
@@ -118,7 +119,7 @@ const makePersistence = (
         },
         async deleteDeltas(collection: string, upTo: string) {
             // console.log('delete up to', upTo);
-            db.deleteUpTo(collection, upTo);
+            db.deleteUpTo(collection + ':deltas', upTo);
         },
         async applyDelta<Delta, Data>(
             colid: string,
