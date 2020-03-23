@@ -182,7 +182,7 @@ const runActionsTest = actions => {
                 if (!states[site]) {
                     states[site] = {
                         deltas: [],
-                        state: inflate(site, pre.roots, pre.map),
+                        state: pre,
                     };
                 }
                 action.parallel[site].forEach(subAction => {

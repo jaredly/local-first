@@ -289,11 +289,7 @@ export const format = (
     //     // endLoc.site = node.id[1];
     // });
     const endAfterId = length === 0 ? afterId : idAfter(state, endLoc);
-    const largestLocalId2 = Math.max(
-        endLoc.id,
-        endAfterId,
-        state.largestIDs[site] || 0,
-    );
+    const largestLocalId2 = Math.max(endLoc.id, endAfterId, id);
     const endId = largestLocalId2 + 1;
     const closeNode = {
         after: [endLoc.id, endLoc.site],

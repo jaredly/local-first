@@ -3,7 +3,7 @@ import { apply, init, insert } from './';
 
 describe('posToLoc', () => {
     it('should worlk for left on empty', () => {
-        expect(posToLoc(init('a'), 0, true)).toEqual({
+        expect(posToLoc(init(), 0, true)).toEqual({
             id: 0,
             site: rootSite,
             pre: true,
@@ -11,8 +11,8 @@ describe('posToLoc', () => {
     });
 
     it('should worlk for left', () => {
-        let state = init('a');
-        const deltas = insert(state, 0, 'Hello');
+        let state = init();
+        const deltas = insert(state, 'a', 0, 'Hello');
         deltas.forEach(delta => {
             state = apply(state, delta);
         });
@@ -24,8 +24,8 @@ describe('posToLoc', () => {
     });
 
     it('should do another one', () => {
-        let state = init('a');
-        const deltas = insert(state, 0, 'Hello');
+        let state = init();
+        const deltas = insert(state, 'a', 0, 'Hello');
         deltas.forEach(delta => {
             state = apply(state, delta);
         });
