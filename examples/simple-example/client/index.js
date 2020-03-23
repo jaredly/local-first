@@ -161,7 +161,13 @@ const App = () => {
                     (a, b) => noteData[a].createdDate - noteData[b].createdDate,
                 )
                 .map(id => (
-                    <Note key={id} id={id} item={noteData[id]} col={noteCol} />
+                    <Note
+                        key={id}
+                        sessionId={client.sessionId}
+                        id={id}
+                        item={noteData[id]}
+                        col={noteCol}
+                    />
                 ))}
             {Object.keys(data)
                 .sort((a, b) => data[a].createdDate - data[b].createdDate)
@@ -228,7 +234,7 @@ const TextBindingExample = () => {
     );
 };
 
-const Note = ({ id, item, col }) => {
+const Note = ({ id, item, col, sessionId }) => {
     console.log(item);
     let currentText = rich.toString(item.body);
     return (
@@ -261,6 +267,7 @@ const Note = ({ id, item, col }) => {
                             deltas.push(
                                 rich.insert(
                                     item.body,
+                                    sessionId,
                                     change.added.at,
                                     change.added.text,
                                 ),
