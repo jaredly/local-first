@@ -316,7 +316,7 @@ module.exports = [
     },
     {
         title: 'Format then delete - within',
-        only: true,
+        // only: true,
         actions: [
             insert(0, 'Hello'),
             fmt(1, 3, 'bold', true, '0'),

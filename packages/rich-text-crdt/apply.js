@@ -115,6 +115,12 @@ const insertId = (ids: Array<string>, id: string, idx: number) => {
 
 const insertNode = (state: CRDT, id, after, content: Content) => {
     const afterKey = toKey(after);
+    if (id[1] === state.site) {
+        state.largestLocalId = Math.max(
+            state.largestLocalId,
+            content.type === 'text' ? id[0] + content.text.length - 1 : id[0],
+        );
+    }
     if (afterKey === rootParent) {
         const idx = insertionPos(state.roots, id);
         const currentFormats =

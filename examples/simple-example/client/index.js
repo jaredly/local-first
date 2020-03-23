@@ -55,7 +55,6 @@ const newCrdt = {
 
 const setupBlob = () => {
     return createBlobClient(
-        // crdt,
         newCrdt,
         { tasks: ItemSchema, notes: NoteSchema },
         new PersistentClock(localStorageClockPersist('local-first')),
@@ -66,7 +65,6 @@ const setupBlob = () => {
 
 const setupDelta = () => {
     return createDeltaClient(
-        // crdt,
         newCrdt,
         { tasks: ItemSchema, notes: NoteSchema },
         new PersistentClock(localStorageClockPersist('local-first')),
@@ -125,6 +123,7 @@ const App = () => {
     }, []);
     return (
         <div style={{ margin: '32px 64px' }}>
+            <TextBindingExample />
             <div>
                 Hello! We are{' '}
                 {connected && connected.status !== 'disconnected'
@@ -162,15 +161,7 @@ const App = () => {
                     (a, b) => noteData[a].createdDate - noteData[b].createdDate,
                 )
                 .map(id => (
-                    <Note
-                        key={id}
-                        id={id}
-                        item={noteData[id]}
-                        col={noteCol}
-                        // onChange={(attr, value) => {
-                        //     col.setAttribute(id, [attr], value);
-                        // }}
-                    />
+                    <Note key={id} id={id} item={noteData[id]} col={noteCol} />
                 ))}
             {Object.keys(data)
                 .sort((a, b) => data[a].createdDate - data[b].createdDate)
@@ -187,11 +178,58 @@ const App = () => {
     );
 };
 
+const TextBindingExample = () => {
+    const [text, setText] = React.useState(() => rich.init('a'));
+    const plain = rich.toString(text);
+    return (
+        <div>
+            <textarea
+                value={plain}
+                onChange={e => {
+                    const value = e.target.value;
+                    const change = textBinding.inferChange(
+                        plain,
+                        value,
+                        e.target.selectionStart === e.target.selectionEnd
+                            ? e.target.selectionStart
+                            : null,
+                    );
+                    console.log(plain, value, change);
+                    const deltas = [];
+                    const clone = { ...text };
+                    if (change.removed) {
+                        deltas.push(
+                            rich.del(
+                                clone,
+                                change.removed.at,
+                                change.removed.len,
+                            ),
+                        );
+                    }
+                    if (change.added) {
+                        deltas.push(
+                            rich.insert(
+                                clone,
+                                change.added.at,
+                                change.added.text,
+                            ),
+                        );
+                    }
+                    console.log(deltas);
+                    // col.applyRichTextDelta(id, ['body'], deltas);
+                    setText(rich.apply(text, deltas));
+                }}
+            />
+            <div style={{ whiteSpace: 'pre' }}>
+                {JSON.stringify(text, null, 2)}
+            </div>
+        </div>
+    );
+};
+
 const Note = ({ id, item, col }) => {
     console.log(item);
     let currentText = rich.toString(item.body);
-    // let oldText = React.useRef(null)
-    // oldText.value = rich.toString(item.body)
     return (
         <div>
             Note
@@ -228,8 +266,6 @@ const Note = ({ id, item, col }) => {
                             );
                         }
                         col.applyRichTextDelta(id, ['body'], deltas);
-                        // console.log(e.target.value);
-                        // console.log(deltas);
                     }}
                 />
             </div>
