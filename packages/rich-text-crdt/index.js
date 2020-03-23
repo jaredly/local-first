@@ -1,29 +1,30 @@
 // @flow
 import type { Content, CRDT, Node } from './types';
 
-export const init = (site: string): CRDT => ({
-    site,
-    largestLocalId: 0,
+export const init = (): CRDT => ({
+    largestIDs: {},
     map: {},
     roots: [],
 });
 
 export const inflate = (
-    site: string,
     roots: Array<string>,
     map: { [key: string]: Node },
-) => {
+): CRDT => {
     const state = {
-        site,
-        largestLocalId: 0,
+        largestIDs: {},
         map,
         roots,
     };
     Object.keys(map).forEach(k => {
         const node = map[k];
-        if (node.id[1] === site && node.id[0] > state.largestLocalId) {
-            state.largestLocalId = node.id[0];
-        }
+        state.largestIDs[node.id[1]] = Math.max(
+            state.largestIDs[node.id[1]] || 0,
+            node.id[0] +
+                (node.content.type === 'text'
+                    ? node.content.text.length - 1
+                    : 0),
+        );
     });
     return state;
 };

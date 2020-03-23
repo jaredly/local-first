@@ -188,11 +188,17 @@ const addFormats = (state: CRDT) => {
     });
 };
 
-export const merge = (one: CRDT, two: CRDT, site: string): CRDT => {
+export const merge = (one: CRDT, two: CRDT): CRDT => {
     const rootMap = {};
     one.roots.forEach(id => (rootMap[id] = true));
     two.roots.forEach(id => (rootMap[id] = true));
-    let largestLocalId = 0;
+    const largestIDs = { ...one.largestIDs };
+    Object.keys(two.largestIDs).forEach(site => {
+        largestIDs[site] = Math.max(
+            largestIDs[site] || 0,
+            two.largestIDs[site],
+        );
+    });
 
     const atoms = {};
     const afters = {};
@@ -203,9 +209,9 @@ export const merge = (one: CRDT, two: CRDT, site: string): CRDT => {
                 ? [0, rootSite]
                 : getAfter(one.map[node.parent]);
         addAtoms(atoms, afters, node, after);
-        if (node.id[1] === site) {
-            largestLocalId = Math.max(largestLocalId, lastId(node)[0]);
-        }
+        // if (node.id[1] === site) {
+        //     largestLocalId = Math.max(largestLocalId, lastId(node)[0]);
+        // }
     });
     Object.keys(two.map).forEach(key => {
         const node = two.map[key];
@@ -214,17 +220,16 @@ export const merge = (one: CRDT, two: CRDT, site: string): CRDT => {
                 ? [0, rootSite]
                 : getAfter(two.map[node.parent]);
         addAtoms(atoms, afters, node, after);
-        if (node.id[1] === site) {
-            largestLocalId = Math.max(largestLocalId, lastId(node)[0]);
-        }
+        // if (node.id[1] === site) {
+        //     largestLocalId = Math.max(largestLocalId, lastId(node)[0]);
+        // }
     });
 
     const map = {};
     const roots = collectNodes(map, afters, rootParent, rootParent);
     // console.log(map);
     const res = {
-        site,
-        largestLocalId,
+        largestIDs,
         roots,
         map,
     };

@@ -39,8 +39,7 @@ export const rootSite = '0:-root-';
 export const rootSiteRight = '1:-root-';
 
 export type CRDT = {|
-    site: string,
-    largestLocalId: number,
+    largestIDs: { [site: string]: number },
     roots: Array<string>,
     map: { [key: string]: Node },
 |};

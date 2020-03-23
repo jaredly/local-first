@@ -158,6 +158,7 @@ export const deltaToQuillDeltas = (
 
 export const quillDeltasToDeltas = (
     state: CRDT,
+    site: string,
     quillDeltas: Array<QuillDelta>,
     genStamp: () => string,
 ): { deltas: Array<Delta>, state: CRDT } => {
@@ -167,6 +168,7 @@ export const quillDeltasToDeltas = (
         if (quillDelta.insert) {
             const changes = insert(
                 state,
+                site,
                 at,
                 quillDelta.insert,
                 quillDelta.attributes || {},
@@ -185,6 +187,7 @@ export const quillDeltasToDeltas = (
                 Object.keys(attrs).forEach(key => {
                     const change = format(
                         state,
+                        site,
                         at,
                         quillDelta.retain,
                         key,
