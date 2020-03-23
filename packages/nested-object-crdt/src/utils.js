@@ -37,5 +37,5 @@ export const latestStamp = function<T, Other>(
     otherStamp: Other => ?string,
 ): string {
     const latest = latestMetaStamp(data.meta, otherStamp);
-    return latest ?? '';
+    return latest ? latest : '';
 };

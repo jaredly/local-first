@@ -65,6 +65,7 @@ export type Delta<T, Other, OtherDelta> =
           type: 'other',
           path: KeyPath,
           delta: OtherDelta,
+          stamp: string,
       };
 
 export type Meta<Other> =

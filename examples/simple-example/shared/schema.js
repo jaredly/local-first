@@ -11,4 +11,13 @@ const ItemSchema: Schema = {
     },
 };
 
-module.exports = { ItemSchema };
+const NoteSchema: Schema = {
+    type: 'object',
+    attributes: {
+        title: 'string',
+        body: 'rich-text',
+        createDate: 'int',
+    },
+};
+
+module.exports = { ItemSchema, NoteSchema };

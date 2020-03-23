@@ -1,7 +1,8 @@
 #!/usr/bin/env node -r @babel/register
 // @flow
-import * as crdt from '../../../packages/nested-object-crdt';
-import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
+// import * as crdt from '../../../packages/nested-object-crdt';
+import * as crdt from '../../../packages/nested-object-crdt/src/new';
+// import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
 import type { Schema } from '../../../packages/nested-object-crdt/src/schema.js';
 import make, {
     onMessage,
@@ -21,8 +22,16 @@ import levelup from 'levelup';
 import leveldown from 'leveldown';
 import setupPersistence from './sqlite-persistence';
 
+const crdtImpl = {
+    createEmpty: crdt.createEmpty,
+    applyDelta: crdt.applyDelta,
+    deltas: {
+        stamp: delta => crdt.deltas.stamp(delta, () => null),
+    },
+};
+
 export const makeServer = (dataPath: string) =>
-    make<Delta, Data>(crdt, setupPersistence(dataPath), (
+    make<Delta, Data>(crdtImpl, setupPersistence(dataPath), (
         collectionId /*: string*/,
     ) /*: Schema*/ => {
         return ItemSchema;

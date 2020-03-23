@@ -90,20 +90,28 @@ export const deltas = {
         // TODO something a little more intelligent probably?
         return { type: 'set', path: [], value: one };
     },
-    stamp<T, Other>(
-        delta: HostDelta<T, Other>,
+    stamp<T, Other, OtherDelta>(
+        delta: Delta<T, Other, OtherDelta>,
         otherStamp: Other => ?string,
     ): string {
         return delta.type === 'set'
             ? latestStamp(delta.value, otherStamp)
+            : delta.type === 'other'
+            ? delta.stamp
             : delta.sort.stamp;
     },
     other<T, Other, OtherDelta>(
         current: CRDT<T, Other>,
         path: Array<string | number>,
         delta: OtherDelta,
+        stamp: string,
     ): Delta<T, Other, OtherDelta> {
-        return { type: 'other', path: makeKeyPath(current.meta, path), delta };
+        return {
+            type: 'other',
+            path: makeKeyPath(current.meta, path),
+            delta,
+            stamp,
+        };
     },
     replace<T, Other>(value: CRDT<T, Other>): HostDelta<T, Other> {
         return {

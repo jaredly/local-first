@@ -2,6 +2,7 @@
 
 import * as sortedArray from './array-utils';
 import type { CRDT, Meta, ArrayMeta, PlainMeta, MapMeta } from './types';
+import type { Type, Schema } from './schema';
 
 export const MIN_STAMP = '';
 
@@ -22,15 +23,104 @@ export const createDeepMeta = function<T, Other>(
         return { type: 'plain', hlcStamp };
     }
     if (Array.isArray(value)) {
-        return createDeepArrayMeta(value, hlcStamp, getStamp);
+        return createDeepArrayMeta(value, hlcStamp, getStamp, item =>
+            createDeepMeta(item, hlcStamp, getStamp),
+        );
     }
-    return createDeepMapMeta(value, hlcStamp, getStamp);
+    return createDeepMapMeta(value, hlcStamp, getStamp, item =>
+        createDeepMeta(item, hlcStamp, getStamp),
+    );
 };
 
 const randomStamp = () => {
     return Math.random()
         .toString(36)
         .slice(2);
+};
+
+const metaForSchema = function<T, Other>(
+    value: T,
+    hlcStamp: string,
+    getStamp: () => string,
+    schema: Type,
+    createOtherMeta: any => Other,
+): Meta<Other> {
+    if (schema === 'rich-text') {
+        return { type: 'other', meta: createOtherMeta(value), hlcStamp };
+    }
+    if (typeof schema === 'string') {
+        return { type: 'plain', hlcStamp };
+    }
+    switch (schema.type) {
+        case 'array':
+            if (!Array.isArray(value)) {
+                throw new Error(`Value not an array`);
+            }
+            return createDeepArrayMeta(value, hlcStamp, getStamp, item =>
+                metaForSchema(
+                    item,
+                    hlcStamp,
+                    getStamp,
+                    schema.item,
+                    createOtherMeta,
+                ),
+            );
+        case 'optional':
+            return value
+                ? metaForSchema(
+                      value,
+                      hlcStamp,
+                      getStamp,
+                      schema,
+                      createOtherMeta,
+                  )
+                : { type: 't', hlcStamp };
+        case 'map':
+            if (!value || typeof value !== 'object') {
+                throw new Error(`Not an object`);
+            }
+            return createDeepMapMeta(value, hlcStamp, getStamp, (item, key) =>
+                metaForSchema(
+                    item,
+                    hlcStamp,
+                    getStamp,
+                    schema.value,
+                    createOtherMeta,
+                ),
+            );
+        case 'object':
+            if (!value || typeof value !== 'object') {
+                throw new Error(`Not an object`);
+            }
+            return createDeepMapMeta(value, hlcStamp, getStamp, (item, key) =>
+                metaForSchema(
+                    item,
+                    hlcStamp,
+                    getStamp,
+                    schema.attributes[key],
+                    createOtherMeta,
+                ),
+            );
+        default:
+            throw new Error(
+                'Unexpected schema type: ' + JSON.stringify(schema),
+            );
+    }
+};
+
+export const createWithSchema = function<T, Other>(
+    value: T,
+    hlcStamp: string,
+    getStamp: () => string,
+    schema: Type,
+    createOtherMeta: any => Other,
+): CRDT<T, Other> {
+    // need to assume that 'rich-text' is 'other', right?
+    // If there's need for more/other than that, I can update this.
+    return {
+        value,
+        meta: metaForSchema(value, hlcStamp, getStamp, schema, createOtherMeta),
+    };
 };
 
 export const createDeep = function<T, Other>(
@@ -42,9 +132,10 @@ export const createDeep = function<T, Other>(
 };
 
 export const createDeepArrayMeta = function<T, Other>(
-    value: Array<T>,
+    value: $ReadOnlyArray<T>,
     hlcStamp: string,
     getStamp: () => string,
+    createInner: any => Meta<Other>,
 ): ArrayMeta<Other> {
     const meta = {
         type: 'array',
@@ -55,7 +146,7 @@ export const createDeepArrayMeta = function<T, Other>(
     let last = null;
     value.forEach(item => {
         const id = getStamp();
-        const innerMeta = createDeepMeta(item, hlcStamp, getStamp);
+        const innerMeta = createInner(item); //createDeepMeta(item, hlcStamp, getStamp);
         const sort = sortedArray.between(last, null);
         last = sort;
         meta.items[id] = {
@@ -71,6 +162,7 @@ export const createDeepMapMeta = function<T: {}, Other>(
     value: T,
     hlcStamp: string,
     getStamp: () => string,
+    createInner: (any, string) => Meta<Other>,
 ): MapMeta<Other> {
     const meta: MapMeta<Other> = {
         type: 'map',
@@ -78,7 +170,7 @@ export const createDeepMapMeta = function<T: {}, Other>(
         hlcStamp,
     };
     Object.keys(value).forEach(k => {
-        meta.map[k] = createDeepMeta(value[k], hlcStamp, getStamp);
+        meta.map[k] = createInner(value[k], k);
     });
     return meta;
 };

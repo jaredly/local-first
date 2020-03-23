@@ -26,7 +26,7 @@ export type Collection<T> = {
     save: (id: string, value: T) => Promise<void>,
     setAttribute: (
         id: string,
-        path: Array<string>,
+        path: Array<string | number>,
         value: any,
     ) => Promise<void>,
     load: (id: string) => Promise<?T>,

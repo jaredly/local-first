@@ -1,7 +1,7 @@
 // @flow
 
-import type { Delta } from './index';
-import { type CRDT, value as baseValue } from './index';
+// import type { Delta } from './index';
+// import { type CRDT, value as baseValue } from './index';
 
 export type Type =
     | 'id'
@@ -12,8 +12,8 @@ export type Type =
     | 'boolean'
     | 'array'
     | 'any'
+    | 'rich-text'
     | { type: 'array', item: Schema }
-    // | ['id']
     | Schema
     | { type: 'map', value: Type }
     | { type: 'optional', value: Type };
@@ -27,9 +27,13 @@ export type Schema = {
 
 class ValidationError extends Error {
     value: any;
-    path: Array<string>;
-    constructor(message, value, path) {
-        super(`${message} ${JSON.stringify(value)} ${path.join(' - ')}`);
+    path: Array<string | number>;
+    constructor(message, value, path: Array<string | number>) {
+        super(
+            `${message} ${JSON.stringify(value)} ${path
+                .map(m => m.toString())
+                .join(' - ')}`,
+        );
         this.value = value;
         this.path = path;
     }
@@ -48,17 +52,73 @@ const expectObject = (v, path) => {
     }
 };
 
+const expectRichText = (v, path) => {
+    expectType(v, 'object', path);
+    if (
+        !('site' in v) ||
+        !('map' in v) ||
+        !('largestLocalId' in v) ||
+        !('roots' in v)
+    ) {
+        throw new Error(`Doesn't look like a rich text object`);
+    }
+};
+
 const expectArray = (v, path) => {
     if (!v || !Array.isArray(v)) {
         throw new ValidationError(`Expected array`, v, path);
     }
 };
 
+export const subSchema = (
+    t: Type,
+    setPath: Array<string | number>,
+    path: Array<string | number> = [],
+): Type => {
+    if (setPath.length === 0) {
+        return t;
+    }
+    const attr = setPath[0];
+    if (typeof t !== 'object') {
+        throw new ValidationError(
+            `Invalid sub path, not a nested type`,
+            t,
+            path,
+        );
+    }
+    switch (t.type) {
+        case 'array':
+            return subSchema(t.item, setPath.slice(1), path.concat([attr]));
+        case 'optional':
+            return subSchema(t.value, setPath, path);
+        case 'map':
+            return subSchema(t.value, setPath.slice(1), path.concat([attr]));
+        case 'object':
+            if (typeof attr !== 'string') {
+                throw new Error(`Object attributes must be strings`);
+            }
+            if (!t.attributes[attr]) {
+                throw new ValidationError(
+                    `Invalid sub path`,
+                    t,
+                    path.concat([attr]),
+                );
+            }
+            return subSchema(
+                t.attributes[attr],
+                setPath.slice(1),
+                path.concat([attr]),
+            );
+        default:
+            throw new Error(`Invalid type schema ${JSON.stringify(t)}`);
+    }
+};
+
 export const validateSet = (
     t: Type,
-    setPath: Array<string>,
+    setPath: Array<string | number>,
     value: any,
-    path: Array<string> = [],
+    path: Array<string | number> = [],
 ) => {
     if (setPath.length === 0) {
         return validate(value, t);
@@ -89,6 +149,9 @@ export const validateSet = (
                 path.concat([attr]),
             );
         case 'object':
+            if (typeof attr !== 'string') {
+                throw new Error(`Object attributes must be strings`);
+            }
             if (!t.attributes[attr]) {
                 throw new ValidationError(
                     `Invalid sub path`,
@@ -107,7 +170,11 @@ export const validateSet = (
     }
 };
 
-export const validate = (value: any, t: Type, path: Array<string> = []) => {
+export const validate = (
+    value: any,
+    t: Type,
+    path: Array<string | number> = [],
+) => {
     if (typeof t === 'string') {
         switch (t) {
             case 'id':
@@ -123,6 +190,8 @@ export const validate = (value: any, t: Type, path: Array<string> = []) => {
                 return expectObject(value, path);
             case 'array':
                 return expectArray(value, path);
+            case 'rich-text':
+                return expectRichText(value, path);
             case 'any':
                 return true;
             default:
