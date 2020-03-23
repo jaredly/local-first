@@ -8,13 +8,14 @@ import {
     createBlobClient,
     PersistentClock,
     localStorageClockPersist,
+    inMemoryClockPersist,
     makeBlobPersistence,
     createBasicBlobNetwork,
     createDeltaClient,
     makeDeltaPersistence,
     createWebSocketNetwork,
-    // crdt,
 } from '../../../packages/client-bundle';
+import { default as makeDeltaInMemoryPersistence } from '../../../packages/idb/src/delta-mem';
 import { ItemSchema, NoteSchema } from '../shared/schema.js';
 
 import * as ncrdt from '../../../packages/nested-object-crdt/src/new';
@@ -67,8 +68,11 @@ const setupDelta = () => {
     return createDeltaClient(
         newCrdt,
         { tasks: ItemSchema, notes: NoteSchema },
-        new PersistentClock(localStorageClockPersist('local-first')),
-        makeDeltaPersistence('local-first', ['tasks', 'notes']),
+        new PersistentClock(inMemoryClockPersist('local-first')),
+        makeDeltaInMemoryPersistence('local-first', ['tasks', 'notes']),
+        // new PersistentClock(localStorageClockPersist('local-first')),
+        // makeDeltaPersistence('local-first', ['tasks', 'notes']),
+
         // createPollingNetwork('http://localhost:9900/sync'),
         createWebSocketNetwork('ws://localhost:9900/sync'),
     );
