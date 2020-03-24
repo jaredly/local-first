@@ -19,6 +19,10 @@ class FakeDb {
         };
     }
     getAllSince(colid, sessionId, minId) {
+        console.log(
+            `[db] Getting all ${colid} for ${sessionId} since ${minId}`,
+        );
+        console.log(`Total: ${this.collections[colid].length}`);
         const res = this.collections[colid].filter((item, i) => {
             if (minId != null && minId >= i) {
                 return;
@@ -28,10 +32,13 @@ class FakeDb {
             }
             return true;
         });
+        console.log(`Matched: ${res.length}`);
         return res;
     }
     maxId(colid) {
-        return this.collections[colid].length - 1;
+        return !this.collections[colid].length
+            ? null
+            : this.collections[colid].length - 1;
     }
     insert(colid, data) {
         this.collections[colid].push(data);
@@ -76,7 +83,12 @@ const setupPersistence = (baseDir: string) => {
                     ...rows.map(({ changes }) => JSON.parse(changes)),
                 );
                 const cursor = db.maxId(collection);
-                if (!cursor) {
+                if (cursor == null) {
+                    if (rows.length) {
+                        throw new Error(
+                            `No maxId, but deltas returned! ${rows.length}; ${cursor}`,
+                        );
+                    }
                     return null;
                 }
                 return { deltas, cursor: cursor };

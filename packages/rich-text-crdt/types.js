@@ -35,8 +35,8 @@ export type Content =
           stamp: string,
       |};
 
-export const rootSite = '0:-root-';
-export const rootSiteRight = '1:-root-';
+// export const rootSite = '0:-root-';
+// export const rootSiteRight = '1:-root-';
 
 export type CRDT = {|
     largestIDs: { [site: string]: number },

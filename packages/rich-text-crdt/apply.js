@@ -8,7 +8,15 @@ import {
     contentChars,
     keyEq,
 } from './utils';
-import { rootParent, walkFrom, lastChild, nodeForKey } from './loc';
+import {
+    rootParent,
+    rootSite,
+    walkFrom,
+    lastChild,
+    lastId,
+    nodeForKey,
+} from './loc';
+import deepEqual from 'fast-deep-equal';
 
 const insertionPos = (ids, id) => {
     for (let i = 0; i < ids.length; i++) {
@@ -115,6 +123,46 @@ const insertId = (ids: Array<string>, id: string, idx: number) => {
 
 const insertNode = (state: CRDT, id, after, content: Content) => {
     const afterKey = toKey(after);
+
+    if (state.largestIDs[id[1]] != null && id[0] <= state.largestIDs[id[1]]) {
+        // const key = toKey(id);
+        // if (state.map[key]) {
+        //     const node = state.map[key];
+        //     const currentAfter =
+        //         node.parent === rootParent
+        //             ? [0, rootSite]
+        //             : lastId(state.map[node.parent]);
+        //     if (!keyEq(currentAfter, after)) {
+        //         throw new Error(
+        //             `Inserting a node that was already inserted, with a different 'after'`,
+        //         );
+        //     }
+        //     if (node.content.type !== content.type) {
+        //         throw new Error(
+        //             `Inserting a node that was already inserted, with a different content type`,
+        //         );
+        //     }
+        //     if (node.content.type === 'text' && content.type === 'text') {
+        //         const currentText = node.content.text;
+        //         const newText = content.text;
+        //         if (newText.length < currentText.length) {
+        //             if (!currentText.startsWith(newText)) {
+        //                 throw new Error(`Text mismatch of re-inserted node`);
+        //             }
+        //         } else if (!newText.startsWith(currentText)) {
+        //             throw new Error(`Text mismatch of re-inserted node`);
+        //         }
+        //     } else if (!deepEqual(node.content, content)) {
+        //         throw new Error(
+        //             `Reinserting a format node, and the content differs`,
+        //         );
+        //     }
+        // }
+        // TODO TODO establish consistency here
+        console.log('skipping dup');
+        return;
+    }
+
     state.largestIDs[id[1]] = Math.max(
         state.largestIDs[id[1]] || 0,
         content.type === 'text' ? id[0] + content.text.length - 1 : id[0],
@@ -168,9 +216,9 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
         idx === 0
             ? parent.formats
             : state.map[lastChild(state, parent.children[idx - 1])].formats;
-    const key = toKey(id);
     const node = mkNode(id, parentKey, content, currentFormats);
     const size = contentChars(content);
+    const key = toKey(id);
     state.map[parentKey] = {
         ...parent,
         children: insertId(parent.children, key, idx),
@@ -353,10 +401,6 @@ export const apply = (state: CRDT, delta: Delta | Array<Delta>): CRDT => {
     }
     state = { ...state, map: { ...state.map } };
     if (delta.type === 'insert') {
-        const key = toKey(delta.id);
-        if (state.map[key]) {
-            throw new Error(`Applying something ${key}?`);
-        }
         insertNode(state, delta.id, delta.after, {
             type: 'text',
             text: delta.text,
