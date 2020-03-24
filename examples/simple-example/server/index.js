@@ -1,9 +1,10 @@
-#!/usr/bin/env node -r @babel/register
 // @flow
-// import * as crdt from '../../../packages/nested-object-crdt';
 import * as crdt from '../../../packages/nested-object-crdt/src/new';
-// import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
 import type { Schema } from '../../../packages/nested-object-crdt/src/schema.js';
+import type {
+    Delta as NewDelta,
+    CRDT,
+} from '../../../packages/nested-object-crdt/src/types.js';
 import make, {
     onMessage,
     getMessages,
@@ -22,6 +23,9 @@ import levelup from 'levelup';
 import leveldown from 'leveldown';
 // import setupPersistence from './sqlite-persistence';
 import setupPersistence from './memory-persistence';
+
+type Delta = NewDelta<any, null, RichDelta>;
+type Data = CRDT<any, null>;
 
 const crdtImpl = {
     createEmpty: crdt.createEmpty,
@@ -132,25 +136,25 @@ export const onWebsocket = <Delta, Data>(
     ws: { send: string => void, on: (string, (string) => void) => void },
 ) => {
     clients[sessionId] = {
-        send: messages => ws.send(JSON.stringify(messages)),
+        send: (messages: Array<ServerMessage<Delta, Data>>) =>
+            ws.send(JSON.stringify(messages)),
     };
     ws.on('message', data => {
         // console.log(data);
-        const messages = JSON.parse(data);
+        const messages: Array<ClientMessage<Delta, Data>> = JSON.parse(data);
         const acks = messages
             .map(message => onMessage(server, sessionId, message))
             .filter(Boolean);
-        // messages.forEach(message =>
-        //     onMessage(server, sessionId, message),
-        // );
         const response = getMessages(server, sessionId);
 
         ws.send(JSON.stringify(acks.concat(response)));
 
-        Object.keys(clients).forEach(id => {
+        Object.keys(clients).forEach((id: string) => {
             if (id !== sessionId) {
                 const response = getMessages(server, id);
-                clients[id].send(messages);
+                if (response.length) {
+                    clients[id].send(response);
+                }
             }
         });
     });

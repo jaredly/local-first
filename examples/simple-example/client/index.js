@@ -23,12 +23,18 @@ import * as rich from '../../../packages/rich-text-crdt';
 import * as textBinding from '../../../packages/rich-text-crdt/text-binding';
 
 const otherMerge = (v1, m1, v2, m2) => {
-    return { value: rich.merge(v1, v2, v1.site), meta: null };
+    return { value: rich.merge(v1, v2), meta: null };
 };
-const applyOtherDelta = (text, meta, delta) => ({
-    value: rich.apply(text, delta),
-    meta,
-});
+window.applied = [];
+const applyOtherDelta = (text: rich.CRDT, meta: null, delta: rich.Delta) => {
+    console.log('!!! applying rich text delta', text, delta);
+    window.applied.push({ text, delta });
+    window.rich = rich;
+    return {
+        value: rich.apply(text, delta),
+        meta,
+    };
+};
 
 const newCrdt = {
     merge: (one, two) => {
@@ -257,6 +263,7 @@ const Note = ({ id, item, col, sessionId }) => {
                                 ? e.target.selectionStart
                                 : null,
                         );
+                        console.log('>> change inferred <<', change);
                         const deltas = [];
                         if (change.removed) {
                             deltas.push(
@@ -277,9 +284,13 @@ const Note = ({ id, item, col, sessionId }) => {
                                 ),
                             );
                         }
+                        console.log('applying', deltas);
                         col.applyRichTextDelta(id, ['body'], deltas);
                     }}
                 />
+            </div>
+            <div style={{ whiteSpace: 'pre', fontFamily: 'monospace' }}>
+                {JSON.stringify(item.body, null, 2)}
             </div>
         </div>
     );

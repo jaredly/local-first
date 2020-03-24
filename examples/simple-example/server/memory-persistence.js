@@ -5,13 +5,13 @@ import type { CursorType } from '../../../packages/core/src/server';
 
 class FakeDb {
     collections: {
-        [colid: string]: { data: { [key: string]: any }, maxId: number },
+        [colid: string]: Array<any>,
     };
     constructor() {
         this.collections = {};
     }
     createTable(colid: string) {
-        this.collections[colid] = { data: {}, maxId: 0 };
+        this.collections[colid] = [];
     }
     transaction(fn) {
         return function() {
@@ -19,26 +19,22 @@ class FakeDb {
         };
     }
     getAllSince(colid, sessionId, minId) {
-        const keys = Object.keys(this.collections[colid].data).sort();
-        const res = [];
-        keys.forEach(key => {
-            if (minId != null && minId >= key) {
+        const res = this.collections[colid].filter((item, i) => {
+            if (minId != null && minId >= i) {
                 return;
             }
-            if (this.collections[colid].data[key].sessionId === sessionId) {
+            if (item.sessionId === sessionId) {
                 return;
             }
-            res.push(this.collections[colid].data[key]);
+            return true;
         });
         return res;
     }
     maxId(colid) {
-        return this.collections[colid].maxId;
+        return this.collections[colid].length - 1;
     }
     insert(colid, data) {
-        const col = this.collections[colid];
-        col.data[col.maxId] = data;
-        col.maxId++;
+        this.collections[colid].push(data);
     }
 }
 

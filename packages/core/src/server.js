@@ -158,10 +158,12 @@ export const onMessage = function<Delta, Data>(
             state.clients[sessionId] = { collections: {} };
         }
         const schema = state.getSchema(message.collection);
-        console.log('Setting server cursor', message);
+        console.log('Setting server cursor', message.serverCursor);
         // TODO should I only set this if its present?
-        state.clients[sessionId].collections[message.collection] =
-            message.serverCursor;
+        if (message.serverCursor) {
+            state.clients[sessionId].collections[message.collection] =
+                message.serverCursor;
+        }
         if (message.deltas.length) {
             // const deltas = message.deltas.map(item => ({ ...item, sessionId }));
             state.persistence.addDeltas(

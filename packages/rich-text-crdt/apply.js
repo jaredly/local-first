@@ -353,6 +353,10 @@ export const apply = (state: CRDT, delta: Delta | Array<Delta>): CRDT => {
     }
     state = { ...state, map: { ...state.map } };
     if (delta.type === 'insert') {
+        const key = toKey(delta.id);
+        if (state.map[key]) {
+            throw new Error(`Applying something ${key}?`);
+        }
         insertNode(state, delta.id, delta.after, {
             type: 'text',
             text: delta.text,
