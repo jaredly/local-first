@@ -47,7 +47,7 @@ export const applyDeltas = async function<Delta, Data>(
     });
     // console.log('idb changeMany processed', ids, map, serverCursor);
     ids.forEach(id => (map[id] ? nodes.put({ id, value: map[id] }) : null));
-    if (serverCursor) {
+    if (serverCursor != null) {
         tx.objectStore(collection + ':meta').put(serverCursor, 'cursor');
     }
     await tx.done;

@@ -132,7 +132,7 @@ const maybeDeleteFormats = (
         throw new Error(`no node ${toKey(openNode.after)}`);
     }
     const startNext = start ? nextNode(state, start) : state.roots[0];
-    if (!startNext) {
+    if (startNext == null) {
         return;
     }
     const startNextNode = state.map[startNext];
@@ -152,7 +152,7 @@ const maybeDeleteFormats = (
     let current = end;
     while (true) {
         const nextKey = nextNode(state, current);
-        if (!nextKey) {
+        if (nextKey == null) {
             break;
         }
         current = state.map[nextKey];
@@ -221,11 +221,12 @@ export const format = (
     value: any,
     stamp?: string,
 ): Array<Delta> => {
-    stamp = stamp
-        ? stamp
-        : Date.now()
-              .toString(36)
-              .padStart(5, '0');
+    stamp =
+        stamp != null
+            ? stamp
+            : Date.now()
+                  .toString(36)
+                  .padStart(5, '0');
 
     const loc = posToLoc(state, at, true);
     const afterId = idAfter(state, loc);

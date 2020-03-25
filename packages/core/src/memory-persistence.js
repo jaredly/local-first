@@ -2,7 +2,6 @@
 
 // import type { Delta, CRDT as Data } from '../../nested-object-crdt/src';
 import type { CursorType, Persistence } from './server';
-import { initialCursor } from './server';
 
 class FakeDb {
     collections: {
@@ -22,7 +21,7 @@ class FakeDb {
     getAllSince(colid, sessionId, minId: ?CursorType) {
         console.log(
             `[db] Getting all ${colid} for ${sessionId} since ${
-                minId ? minId : 'no-min'
+                minId != null ? minId : 'no-min'
             }`,
         );
         console.log(`Total: ${this.collections[colid].length}`);
@@ -40,7 +39,7 @@ class FakeDb {
     }
     maxId(colid): CursorType {
         return !this.collections[colid].length
-            ? initialCursor
+            ? -1
             : this.collections[colid].length - 1;
     }
     insert(colid, data) {
@@ -92,7 +91,7 @@ const setupPersistence = function<Delta, Data>(): Persistence<Delta, Data> {
                     ...rows.map(({ changes }) => JSON.parse(changes)),
                 );
                 const cursor = db.maxId(collection);
-                if (cursor == initialCursor) {
+                if (cursor == -1) {
                     if (rows.length) {
                         throw new Error(
                             `No maxId, but deltas returned! ${rows.length}`,

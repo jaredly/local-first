@@ -10,6 +10,8 @@
 flow-typed
 
 [lints]
+sketchy-null=error
+sketchy-null-bool=off
 
 [options]
 

@@ -254,7 +254,7 @@ const createDeepMap = (value: {}, hlcStamp: string): MapCRDT => {
 };
 
 const createValue = function<T>(value: T, hlcStamp: string): CRDT {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
+    if (value != null && typeof value === 'object' && !Array.isArray(value)) {
         return createDeepMap(value, hlcStamp);
     } else {
         return create(value, hlcStamp);

@@ -155,7 +155,9 @@ export const deltaToQuillDeltas = (
     }
     throw new Error(`Unexpected delta type ${delta.type}`);
 };
-
+/* flowlint
+ *   sketchy-null:off
+ */
 export const quillDeltasToDeltas = (
     state: CRDT,
     site: string,
@@ -200,7 +202,7 @@ export const quillDeltasToDeltas = (
             }
             at += quillDelta.retain;
         }
-        if (quillDelta.delete) {
+        if (quillDelta.delete != null) {
             const change = del(state, at, quillDelta.delete);
             state = apply(state, change);
             result.push(change);

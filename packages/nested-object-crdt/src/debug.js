@@ -20,7 +20,7 @@ export const checkConsistency = function<T, Other>(
     }
     if (crdt.meta.type === 'map') {
         if (
-            !crdt.value ||
+            crdt.value == null ||
             Array.isArray(crdt.value) ||
             typeof crdt.value !== 'object'
         ) {
@@ -35,7 +35,7 @@ export const checkConsistency = function<T, Other>(
         return;
     }
     if (crdt.meta.type === 'array') {
-        if (!crdt.value || !Array.isArray(crdt.value)) {
+        if (crdt.value == null || !Array.isArray(crdt.value)) {
             throw new Error(`meta is 'array' but value doesn't match`);
         }
         const { value, meta } = crdt;

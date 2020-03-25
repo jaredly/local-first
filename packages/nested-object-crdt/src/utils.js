@@ -9,7 +9,7 @@ const latestMetaStamp = function<Other>(
         let max = meta.hlcStamp;
         Object.keys(meta.map).forEach(id => {
             const stamp = latestMetaStamp(meta.map[id], otherStamp);
-            if (stamp && (!max || stamp > max)) {
+            if (stamp != null && (!max || stamp > max)) {
                 max = stamp;
             }
         });
@@ -20,7 +20,7 @@ const latestMetaStamp = function<Other>(
         let max = meta.hlcStamp;
         Object.keys(meta.items).forEach(id => {
             const stamp = latestMetaStamp(meta.items[id].meta, otherStamp);
-            if (stamp && (!max || stamp > max)) {
+            if (stamp != null && (!max || stamp > max)) {
                 max = stamp;
             }
         });
@@ -28,7 +28,7 @@ const latestMetaStamp = function<Other>(
     } else {
         const max = meta.hlcStamp;
         const inner = otherStamp(meta.meta);
-        return inner && inner > max ? inner : max;
+        return inner != null && inner > max ? inner : max;
     }
 };
 
@@ -37,5 +37,5 @@ export const latestStamp = function<T, Other>(
     otherStamp: Other => ?string,
 ): string {
     const latest = latestMetaStamp(data.meta, otherStamp);
-    return latest ? latest : '';
+    return latest != null ? latest : '';
 };

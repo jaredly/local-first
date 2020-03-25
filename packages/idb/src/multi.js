@@ -81,7 +81,7 @@ export const applyDeltas = async function<Delta, Data>(
     if (blobServerIds != null) {
         stores.push('blob-meta');
     }
-    if (serverCursor) {
+    if (serverCursor != null) {
         stores.push(metaName(collection));
     }
     const tx = (await db).transaction(stores, 'readwrite');
@@ -105,7 +105,7 @@ export const applyDeltas = async function<Delta, Data>(
         map[node] = apply(map[node], delta);
     });
     ids.forEach(id => (map[id] ? nodes.put({ id, value: map[id] }) : null));
-    if (serverCursor) {
+    if (serverCursor != null) {
         tx.objectStore(metaName(collection)).put(serverCursor, 'cursor');
     }
     if (blobServerIds != null && blobServerIds.length > 0) {
@@ -364,10 +364,10 @@ const makePersistence = (
             dirtyStampToClear: ?string,
         ) {
             const tx = (await db).transaction('blob-meta', 'readwrite');
-            if (serverEtag) {
+            if (serverEtag != null) {
                 tx.store.put(serverEtag, serverId + '-serverEtag');
             }
-            if (dirtyStampToClear) {
+            if (dirtyStampToClear != null) {
                 const current = tx.store.get(serverId + '-dirty');
                 if (current === dirtyStampToClear) {
                     tx.store.put(null, serverId + '-dirty');

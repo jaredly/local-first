@@ -67,7 +67,7 @@ export const getMessages = function<Delta, Data>(
                 const serverCursor = await persistence.getServerCursor(
                     collection,
                 );
-                if (deltas.length || !serverCursor || reconnected) {
+                if (deltas.length || serverCursor == null || reconnected) {
                     console.log('messages yeah', serverCursor);
                     return {
                         type: 'sync',
@@ -139,7 +139,7 @@ export const handleMessages = async function<Delta, Data>(
                 }
                 changedIds.forEach(id => {
                     // Only update the cache if the node has already been cached
-                    if (state[msg.collection].cache[id]) {
+                    if (state[msg.collection].cache[id] != null) {
                         state[msg.collection].cache[id] = data[id];
                     }
                     if (col.itemListeners[id]) {
@@ -164,7 +164,7 @@ export const handleMessages = async function<Delta, Data>(
                 let maxStamp = null;
                 msg.deltas.forEach(delta => {
                     const stamp = crdt.deltas.stamp(delta.delta);
-                    if (!maxStamp || stamp > maxStamp) {
+                    if (maxStamp == null || stamp > maxStamp) {
                         maxStamp = stamp;
                     }
                 });
@@ -228,7 +228,7 @@ function createClient<Delta, Data, SyncStatus>(
             () => persistence.getFull(serverId),
             async (full, etag, sendCrossTabChanges) => {
                 const max = fullMaxStamp(crdt, full);
-                if (max) {
+                if (max != null) {
                     clock.recv(hlc.unpack(max));
                 }
                 const result = await persistence.mergeFull<Delta, Data>(

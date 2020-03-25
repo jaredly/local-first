@@ -180,7 +180,7 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
         return;
     }
     const parentKey = parentForAfter(state, after);
-    if (!parentKey) {
+    if (parentKey == null) {
         throw new Error(`Cannot find parent for ${toKey(after)}`);
     }
     const parent = state.map[parentKey];

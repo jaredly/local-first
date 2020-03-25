@@ -25,9 +25,10 @@ const getSharedTail = (oldText, newText, selectionPos) => {
 };
 
 const getShared = (oldText, newText, selectionPos) => {
-    let tail = selectionPos
-        ? getSharedTail(oldText, newText, selectionPos)
-        : null;
+    let tail =
+        selectionPos != null
+            ? getSharedTail(oldText, newText, selectionPos)
+            : null;
     let head = 0;
     let offset = tail == null ? 0 : tail;
     const maxHead =

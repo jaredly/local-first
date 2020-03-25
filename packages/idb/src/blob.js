@@ -41,10 +41,10 @@ export const makePersistence = function(
         },
         async updateMeta(serverEtag: ?string, dirtyStampToClear: ?string) {
             const tx = (await db).transaction('meta', 'readwrite');
-            if (serverEtag) {
+            if (serverEtag != null) {
                 tx.store.put(serverEtag, 'serverEtag');
             }
-            if (dirtyStampToClear) {
+            if (dirtyStampToClear != null) {
                 const current = await tx.store.get('dirty');
                 if (current === dirtyStampToClear) {
                     tx.store.put(null, 'dirty');

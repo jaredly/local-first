@@ -45,7 +45,7 @@ export const applyDeltas = function<Delta, Data>(
     ids.forEach(id =>
         map[id] ? db.put(collection + ':nodes', { id, value: map[id] }) : null,
     );
-    if (serverCursor) {
+    if (serverCursor != null) {
         db.put(collection + ':meta', serverCursor, 'cursor');
     }
     return map;
@@ -70,7 +70,7 @@ class FakeDb {
         );
     }
     put<T>(colid: string, object: T, key?: string) {
-        if (!key) {
+        if (key == null) {
             key = object[this.keyPaths[colid]];
         }
         this.collections[colid][key] = object;

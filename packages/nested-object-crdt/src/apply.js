@@ -381,7 +381,7 @@ const applyInner = function<T, O, Other, R>(
         const cmeta = crdt.meta;
         const k = key[0].key;
         if (
-            !crdt.value ||
+            crdt.value == null ||
             typeof crdt.value !== 'object' ||
             Array.isArray(crdt.value)
         ) {
@@ -409,7 +409,7 @@ const applyInner = function<T, O, Other, R>(
         const k = key[0].key;
         const meta = crdt.meta.items[k].meta;
         const idx = crdt.meta.idsInOrder.indexOf(k);
-        if (!crdt.value || !Array.isArray(crdt.value)) {
+        if (crdt.value == null || !Array.isArray(crdt.value)) {
             throw new Error(`Invalid CRDT! Meta is misaligned with the value`);
         }
         const arr = crdt.value.slice();

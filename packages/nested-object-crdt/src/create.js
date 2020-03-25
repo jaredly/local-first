@@ -19,7 +19,7 @@ export const createDeepMeta = function<T, Other>(
     hlcStamp: string,
     getStamp: () => string,
 ): Meta<Other> {
-    if (!value || typeof value !== 'object') {
+    if (value == null || typeof value !== 'object') {
         return { type: 'plain', hlcStamp };
     }
     if (Array.isArray(value)) {
@@ -66,7 +66,7 @@ const metaForSchema = function<T, Other>(
                 ),
             );
         case 'optional':
-            return value
+            return value != null
                 ? metaForSchema(
                       value,
                       hlcStamp,
@@ -76,7 +76,7 @@ const metaForSchema = function<T, Other>(
                   )
                 : { type: 't', hlcStamp };
         case 'map':
-            if (!value || typeof value !== 'object') {
+            if (value == null || typeof value !== 'object') {
                 throw new Error(`Not an object`);
             }
             return createDeepMapMeta(value, hlcStamp, getStamp, (item, key) =>
@@ -89,7 +89,7 @@ const metaForSchema = function<T, Other>(
                 ),
             );
         case 'object':
-            if (!value || typeof value !== 'object') {
+            if (value == null || typeof value !== 'object') {
                 throw new Error(`Not an object`);
             }
             return createDeepMapMeta(value, hlcStamp, getStamp, (item, key) =>

@@ -20,7 +20,7 @@ export const inMemoryClockPersist = () => {
 export const localStorageClockPersist = (key: string) => ({
     get(init: () => HLC): HLC {
         const raw = localStorage.getItem(key);
-        if (!raw) {
+        if (raw == null) {
             const res = init();
             localStorage.setItem(key, hlc.pack(res));
             return res;

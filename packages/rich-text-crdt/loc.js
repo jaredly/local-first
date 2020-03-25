@@ -395,7 +395,7 @@ export const idAfter = function(crdt: CRDT, loc: Loc): number {
             return crdt.map[node.children[0]].id[0];
         }
         const next = nextSibling(crdt, node);
-        if (next) {
+        if (next != null) {
             return crdt.map[next].id[0];
         }
     }

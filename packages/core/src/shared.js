@@ -73,7 +73,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
 ): Collection<T> {
     const applyDelta = async (id: string, delta) => {
         let plain = null;
-        if (state.cache[id]) {
+        if (state.cache[id] != null) {
             state.cache[id] = crdt.deltas.apply(state.cache[id], delta);
             plain = crdt.value(state.cache[id]);
             send(state, id, plain);
@@ -124,7 +124,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             if (sub !== 'rich-text') {
                 throw new Error(`Schema at path is not a rich-text`);
             }
-            if (!state.cache[id]) {
+            if (state.cache[id] == null) {
                 const stored = await persistence.load(colid, id);
                 if (!stored) {
                     throw new Error(
@@ -149,7 +149,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         ) {
             const sub = subSchema(schema, path);
             validate(value, sub);
-            if (!state.cache[id]) {
+            if (state.cache[id] == null) {
                 const stored = await persistence.load(colid, id);
                 if (!stored) {
                     throw new Error(

@@ -123,7 +123,7 @@ export const getMessages = function<Delta, Data>(
                 lastSeen,
                 sessionId,
             );
-            if ((!result || !result.deltas.length) && !lastSeen) {
+            if ((!result || !result.deltas.length) && lastSeen == null) {
                 return {
                     type: 'sync',
                     collection: cid,
@@ -134,7 +134,7 @@ export const getMessages = function<Delta, Data>(
             if (!result) {
                 console.log(
                     `no new messages since ${
-                        lastSeen ? lastSeen : 'no-start'
+                        lastSeen != null ? lastSeen : 'no-start'
                     } for ${cid} (${sessionId})`,
                 );
                 return;
@@ -147,7 +147,7 @@ export const getMessages = function<Delta, Data>(
                 }
                 console.log(
                     `${deltas.length} new deltas for ${cid} since ${
-                        lastSeen ? lastSeen : 'no-start'
+                        lastSeen != null ? lastSeen : 'no-start'
                     }, cursor ${cursor}`,
                 );
                 return {
@@ -180,8 +180,8 @@ export const onMessage = function<Delta, Data>(
         );
         // TODO should I only set this if its present?
         if (
-            message.serverCursor ||
-            !state.clients[sessionId].collections[message.collection]
+            message.serverCursor != null ||
+            state.clients[sessionId].collections[message.collection] == null
         ) {
             state.clients[sessionId].collections[message.collection] =
                 message.serverCursor;
@@ -196,7 +196,7 @@ export const onMessage = function<Delta, Data>(
             let maxStamp = null;
             message.deltas.forEach(delta => {
                 const stamp = state.crdt.deltas.stamp(delta.delta);
-                if (!maxStamp || stamp > maxStamp) {
+                if (maxStamp == null || stamp > maxStamp) {
                     maxStamp = stamp;
                 }
             });
