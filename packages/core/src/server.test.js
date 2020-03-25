@@ -121,7 +121,6 @@ const createServer = messages => {
     // server
     return {
         getMessages(sessionId: string): Array<ServerMessage<Delta, Data>> {
-            //
             return server.getMessages(state, sessionId);
         },
         receive(
