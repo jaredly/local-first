@@ -133,12 +133,60 @@ const createServer = messages => {
             return responses;
         },
         getState(collections: Array<string>) {
-            //
+            const data = {};
+            collections.forEach(cid => {
+                data[cid] = {};
+                const result = state.persistence.deltasSince(cid, -1, '');
+                if (!result) return;
+                result.deltas.forEach(({ node, delta }) => {
+                    data[cid][node] = state.crdt.applyDelta(
+                        data[cid][node],
+                        delta,
+                    );
+                });
+            });
+            return data;
         },
     };
 };
 
 describe('client-server interaction', () => {
+    it.only('Clean both - initial handshake', async () => {
+        const client = createClient('a');
+        const server = createServer();
+        const initialClient = await client.getMessages();
+        expect(initialClient).toEqual(
+            client.collections.map(name => ({
+                type: 'sync',
+                collection: name,
+                serverCursor: undefined,
+                deltas: [],
+            })),
+        );
+        expect(server.receive(client.sessionId, initialClient)).toEqual([]);
+        const initialServer = server.getMessages(client.sessionId);
+        expect(initialServer).toEqual(
+            client.collections.map(collection => ({
+                type: 'sync',
+                collection,
+                serverCursor: -1,
+                deltas: [],
+            })),
+        );
+        const acks = await client.receive(initialServer);
+        expect(acks).toEqual(
+            client.collections.map(collection => ({
+                type: 'ack',
+                collection,
+                serverCursor: -1,
+            })),
+        );
+        expect(await client.getMessages()).toEqual([]);
+        expect(server.receive(client.sessionId, acks)).toEqual([]);
+        expect(server.getMessages(client.sessionId)).toEqual([]);
+        expect(client.getState()).toEqual(server.getState(client.collections));
+    });
+
     it('Clean client, clean server should only require messages one way', async () => {
         const client = createClient('a');
         const server = createServer();

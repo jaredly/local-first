@@ -61,7 +61,6 @@ type CRDTImpl<Delta, Data> = {
     },
 };
 
-export const initialCursor = -1;
 export type CursorType = number;
 
 export type Persistence<Delta, Data> = {
@@ -124,6 +123,14 @@ export const getMessages = function<Delta, Data>(
                 lastSeen,
                 sessionId,
             );
+            if ((!result || !result.deltas.length) && !lastSeen) {
+                return {
+                    type: 'sync',
+                    collection: cid,
+                    deltas: [],
+                    serverCursor: -1,
+                };
+            }
             if (!result) {
                 console.log(
                     `no new messages since ${
@@ -204,6 +211,9 @@ export const onMessage = function<Delta, Data>(
             }
             console.log('not acking');
         }
+    } else if (message.type === 'ack') {
+        state.clients[sessionId].collections[message.collection] =
+            message.serverCursor;
     }
 };
 
