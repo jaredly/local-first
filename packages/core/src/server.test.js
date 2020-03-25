@@ -6,8 +6,11 @@ import * as ncrdt from '../../nested-object-crdt/src/new';
 import * as rich from '../../rich-text-crdt/index';
 import makePersistence from '../../idb/src/delta-mem';
 import * as client from './delta/create-client';
+import * as server from './server';
+import setupServerPersistence from './memory-persistence';
 import { PersistentClock, inMemoryClockPersist } from './persistent-clock';
 import type { CRDTImpl } from './shared';
+import type { ServerState } from './server';
 
 const otherMerge = (v1, m1, v2, m2) => {
     return { value: rich.merge(v1, v2), meta: null };
@@ -111,18 +114,24 @@ const createClient = (sessionId, messages) => {
 };
 
 const createServer = messages => {
+    const state: ServerState<Delta, Data> = server.default<Delta, Data>(
+        newCrdt,
+        setupServerPersistence<Delta, Data>(),
+    );
     // server
     return {
         getMessages(sessionId: string): Array<ServerMessage<Delta, Data>> {
             //
-            return [];
+            return server.getMessages(state, sessionId);
         },
         receive(
             sessionId: string,
             messages: Array<ClientMessage<Delta, Data>>,
         ): Array<ServerMessage<Delta, Data>> {
-            //
-            return [];
+            const responses = messages
+                .map(message => server.onMessage(state, sessionId, message))
+                .filter(Boolean);
+            return responses;
         },
         getState(collections: Array<string>) {
             //

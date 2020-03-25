@@ -61,6 +61,7 @@ type CRDTImpl<Delta, Data> = {
     },
 };
 
+export const initialCursor = -1;
 export type CursorType = number;
 
 export type Persistence<Delta, Data> = {
@@ -95,7 +96,7 @@ type Connection<Delta, Data> = {
 export type ServerState<Delta, Data> = {
     persistence: Persistence<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,
-    getSchema: string => Schema,
+    // getSchema: string => Schema,
     clients: {
         [sessionId: string]: {
             collections: {
@@ -164,7 +165,7 @@ export const onMessage = function<Delta, Data>(
         if (!state.clients[sessionId]) {
             state.clients[sessionId] = { collections: {} };
         }
-        const schema = state.getSchema(message.collection);
+        // const schema = state.getSchema(message.collection);
         console.log(
             'Setting server cursor',
             message.serverCursor,
@@ -209,9 +210,9 @@ export const onMessage = function<Delta, Data>(
 const make = <Delta, Data>(
     crdt: CRDTImpl<Delta, Data>,
     persistence: Persistence<Delta, Data>,
-    getSchema: string => Schema,
+    // getSchema: string => Schema,
 ): ServerState<Delta, Data> => {
-    return { crdt, persistence, getSchema, clients: {} };
+    return { crdt, persistence, clients: {} };
 };
 
 export default make;

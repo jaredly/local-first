@@ -69,7 +69,7 @@ export const handleMessages = async function<Delta, Data>(
     recvClock: HLC => void,
     sendCrossTabChanges: PeerChange => mixed,
 ): Promise<Array<ClientMessage<Delta, Data>>> {
-    const res = await Promise.all(
+    const res: Array<?ClientMessage<Delta, Data>> = await Promise.all(
         messages.map(async (msg): Promise<?ClientMessage<Delta, Data>> => {
             if (msg.type === 'sync') {
                 const col = state[msg.collection];
