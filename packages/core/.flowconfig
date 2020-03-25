@@ -3,9 +3,7 @@
 [include]
 ../nested-object-crdt
 ../hybrid-logical-clock
-../../public/nested-object-crdt
-../../public/hybrid-logical-clock
-../../public/rich-text-crdt
+../rich-text-crdt
 
 [libs]
 flow-typed

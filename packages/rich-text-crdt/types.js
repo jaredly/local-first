@@ -51,13 +51,15 @@ export type Loc = { id: number, site: string, pre: boolean };
 
 export type Span = { id: number, site: string, length: number };
 
+export type InsertDelta = {|
+    type: 'insert',
+    id: [number, string],
+    after: [number, string],
+    text: string,
+|};
+
 export type Delta =
-    | {|
-          type: 'insert',
-          id: [number, string],
-          after: [number, string],
-          text: string,
-      |}
+    | InsertDelta
     | {| type: 'delete', spans: Array<Span> |}
     // | {|
     //       type: 'update',

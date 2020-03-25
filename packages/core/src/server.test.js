@@ -2,10 +2,10 @@
 
 import type { ClientMessage, ServerMessage } from './server';
 
-// import * as ncrdt from '../../nested-object-crdt/src/new';
-// import * as rich from '../../rich-text-crdt/index';
-import * as ncrdt from '../../../public/nested-object-crdt';
-import * as rich from '../../../public/rich-text-crdt';
+import * as ncrdt from '../../nested-object-crdt/src/new';
+import * as rich from '../../rich-text-crdt/index';
+// import * as ncrdt from '../../../public/nested-object-crdt';
+// import * as rich from '../../../public/rich-text-crdt';
 
 const otherMerge = (v1, m1, v2, m2) => {
     return { value: rich.merge(v1, v2), meta: null };
