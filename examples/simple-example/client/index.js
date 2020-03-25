@@ -39,7 +39,10 @@ const applyOtherDelta = (text: rich.CRDT, meta: null, delta: rich.Delta) => {
 const newCrdt = {
     merge: (one, two) => {
         if (!one) return two;
-        return ncrdt.mergeTwo(one, two);
+        return ncrdt.mergeTwo(one, two, (v1, _, v2, __) => ({
+            value: rich.merge(v1, v2),
+            meta: null,
+        }));
     },
     latestStamp: ncrdt.latestStamp,
     value: d => d.value,

@@ -8,7 +8,7 @@ import { peerTabAwareSync } from '../peer-tabs';
 const reconnectingSocket = (
     url,
     onOpen,
-    onMessage: string => mixed,
+    onMessage: (string, (string) => void) => mixed,
     updateStatus: SyncStatus => mixed,
 ) => {
     const state: { socket: ?WebSocket } = {
@@ -38,7 +38,8 @@ const reconnectingSocket = (
                     });
                     socket.addEventListener(
                         'message',
-                        ({ data }: { data: any }) => onMessage(data),
+                        ({ data }: { data: any }) =>
+                            onMessage(data, response => socket.send(response)),
                     );
                 }),
             500,
@@ -65,17 +66,20 @@ const createWebSocketNetwork = <Delta, Data>(
             const state = reconnectingSocket(
                 `${url}?sessionId=${sessionId}`,
                 () => sync(false),
-                async msg => {
+                async (msg, respond) => {
                     const messages = JSON.parse(msg);
-                    const changed = await handleMessages(
+                    const responseMessages = await handleMessages(
                         messages,
                         sendCrossTabChange,
                     ).catch(err => {
                         console.log('Failed to handle messages!');
                         console.error(err);
                     });
-                    if (changed) {
-                        softResync();
+                    if (
+                        responseMessages != null &&
+                        responseMessages.length > 0
+                    ) {
+                        respond(JSON.stringify(responseMessages));
                     }
                 },
                 updateStatus,

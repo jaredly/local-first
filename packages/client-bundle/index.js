@@ -19,4 +19,4 @@ export {
     PersistentClock,
     localStorageClockPersist,
     inMemoryClockPersist,
-} from './persistent-clock';
+} from '../core/src/persistent-clock';

@@ -132,14 +132,14 @@ app.post('/sync', async (req, res) => {
     if (promises.length) {
         await Promise.all(promises);
     }
-    req.body.forEach(message =>
-        onMessage(server, req.query.sessionId, message),
-    );
+    const acks = req.body
+        .map(message => onMessage(server, req.query.sessionId, message))
+        .filter(Boolean);
     const response = getMessages(server, req.query.sessionId);
 
     // console.log(response);
     // console.log(server.collections.tasks);
-    res.json(response);
+    res.json(acks.concat(response));
 });
 
 const clients = {};
@@ -162,18 +162,18 @@ app.ws('/sync', function(ws, req) {
         if (promises.length) {
             await Promise.all(promises);
         }
-        messages.forEach(message =>
-            onMessage(server, req.query.sessionId, message),
-        );
+        const acks = messages
+            .map(message => onMessage(server, req.query.sessionId, message))
+            .filter(Boolean);
         const response = getMessages(server, req.query.sessionId);
 
         // console.log('ok', data);
-        ws.send(JSON.stringify(response));
+        ws.send(JSON.stringify(acks.concat(response)));
 
         Object.keys(clients).forEach(id => {
             if (id !== req.query.sessionId) {
                 const response = getMessages(server, id);
-                clients[id].send(messages);
+                clients[id].send(response);
             }
         });
     });

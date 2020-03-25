@@ -163,10 +163,14 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
         return;
     }
 
-    state.largestIDs[id[1]] = Math.max(
-        state.largestIDs[id[1]] || 0,
-        content.type === 'text' ? id[0] + content.text.length - 1 : id[0],
-    );
+    // console.warn('Setting new largestID for', id[1]);
+    state.largestIDs = {
+        ...state.largestIDs,
+        [id[1]]: Math.max(
+            state.largestIDs[id[1]] || 0,
+            content.type === 'text' ? id[0] + content.text.length - 1 : id[0],
+        ),
+    };
     if (afterKey === rootParent) {
         const idx = insertionPos(state.roots, id);
         const currentFormats =

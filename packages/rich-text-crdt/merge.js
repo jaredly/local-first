@@ -197,6 +197,7 @@ export const merge = (one: CRDT, two: CRDT): CRDT => {
     one.roots.forEach(id => (rootMap[id] = true));
     two.roots.forEach(id => (rootMap[id] = true));
     const largestIDs = { ...one.largestIDs };
+    // console.warn('Merge largestIDs', one.largestIDs, two.largestIDs);
     Object.keys(two.largestIDs).forEach(site => {
         largestIDs[site] = Math.max(
             largestIDs[site] || 0,

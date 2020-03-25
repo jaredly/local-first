@@ -22,9 +22,11 @@ import fs from 'fs';
 import levelup from 'levelup';
 import leveldown from 'leveldown';
 // import setupPersistence from './sqlite-persistence';
-import setupPersistence from './memory-persistence';
+import setupPersistence from '../../../packages/core/src/memory-persistence';
 
-type Delta = NewDelta<any, null, RichDelta>;
+import { onWebsocket } from '../../../packages/server-bundle/websocket';
+
+type Delta = NewDelta<any, null, any>;
 type Data = CRDT<any, null>;
 
 const crdtImpl = {
@@ -127,38 +129,38 @@ export const post = <Delta, Data>(
     return acks.concat(responses);
 };
 
-export const onWebsocket = <Delta, Data>(
-    server: ServerState<Delta, Data>,
-    clients: {
-        [key: string]: { send: (Array<ServerMessage<Delta, Data>>) => void },
-    },
-    sessionId: string,
-    ws: { send: string => void, on: (string, (string) => void) => void },
-) => {
-    clients[sessionId] = {
-        send: (messages: Array<ServerMessage<Delta, Data>>) =>
-            ws.send(JSON.stringify(messages)),
-    };
-    ws.on('message', data => {
-        // console.log(data);
-        const messages: Array<ClientMessage<Delta, Data>> = JSON.parse(data);
-        const acks = messages
-            .map(message => onMessage(server, sessionId, message))
-            .filter(Boolean);
-        const response = getMessages(server, sessionId);
+// export const onWebsocket = <Delta, Data>(
+//     server: ServerState<Delta, Data>,
+//     clients: {
+//         [key: string]: { send: (Array<ServerMessage<Delta, Data>>) => void },
+//     },
+//     sessionId: string,
+//     ws: { send: string => void, on: (string, (string) => void) => void },
+// ) => {
+//     clients[sessionId] = {
+//         send: (messages: Array<ServerMessage<Delta, Data>>) =>
+//             ws.send(JSON.stringify(messages)),
+//     };
+//     ws.on('message', data => {
+//         // console.log(data);
+//         const messages: Array<ClientMessage<Delta, Data>> = JSON.parse(data);
+//         const acks = messages
+//             .map(message => onMessage(server, sessionId, message))
+//             .filter(Boolean);
+//         const response = getMessages(server, sessionId);
 
-        ws.send(JSON.stringify(acks.concat(response)));
+//         ws.send(JSON.stringify(acks.concat(response)));
 
-        Object.keys(clients).forEach((id: string) => {
-            if (id !== sessionId) {
-                const response = getMessages(server, id);
-                if (response.length) {
-                    clients[id].send(response);
-                }
-            }
-        });
-    });
-    ws.on('close', () => {
-        delete clients[sessionId];
-    });
-};
+//         Object.keys(clients).forEach((id: string) => {
+//             if (id !== sessionId) {
+//                 const response = getMessages(server, id);
+//                 if (response.length) {
+//                     clients[id].send(response);
+//                 }
+//             }
+//         });
+//     });
+//     ws.on('close', () => {
+//         delete clients[sessionId];
+//     });
+// };
