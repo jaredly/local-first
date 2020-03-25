@@ -9,16 +9,35 @@
     "browserslist": [
         "last 1 Chrome versions"
     ],
+    "scripts": {
+        "test": "jest"
+    },
     "devDependencies": {
         "@babel/cli": "^7.8.3",
         "@babel/core": "^7.0.0-0",
+        "@babel/plugin-syntax-nullish-coalescing-operator": "^7.8.3",
         "@babel/preset-env": "^7.8.7",
+        "babel-jest": "^25.1.0",
         "flow-bin": "^0.116.1",
         "jest": "^25.1.0"
     },
     "jest": {
         "transformIgnorePatterns": [
             "node_modules"
-        ]
+        ],
+        "transform": {
+            "\\.js$": [
+                "babel-jest",
+                {
+                    "presets": [
+                        "@babel/preset-flow",
+                        "@babel/preset-env"
+                    ],
+                    "ignore": [
+                        "node_modules"
+                    ]
+                }
+            ]
+        }
     }
 }

@@ -4,6 +4,7 @@
 ../nested-object-crdt
 ../hybrid-logical-clock
 ../rich-text-crdt
+../idb
 
 [libs]
 flow-typed

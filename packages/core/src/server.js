@@ -31,22 +31,24 @@ relies on sqlite for all the things?
 
 */
 
-export type ClientMessage<Delta, Data> = {
-    type: 'sync',
-    collection: string,
-    serverCursor: ?CursorType,
-    deltas: Array<{ node: string, delta: Delta }>,
-};
+export type ClientMessage<Delta, Data> =
+    | {|
+          type: 'sync',
+          collection: string,
+          serverCursor: ?CursorType,
+          deltas: Array<{ node: string, delta: Delta }>,
+      |}
+    | {| type: 'ack', collection: string, serverCursor: CursorType |};
 
 export type ServerMessage<Delta, Data> =
-    | {
+    | {|
           type: 'sync',
           collection: string,
           serverCursor: CursorType,
           deltas: Array<{ node: string, delta: Delta }>,
-      }
+      |}
     // Indicating that deltas from a client have been received.
-    | { type: 'ack', collection: string, deltaStamp: string };
+    | {| type: 'ack', collection: string, deltaStamp: string |};
 
 // This doesn't have any special permissions things
 // We'll do collection-level permissions.

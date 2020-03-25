@@ -221,11 +221,11 @@ export const format = (
     value: any,
     stamp?: string,
 ): Array<Delta> => {
-    stamp =
-        stamp ??
-        Date.now()
-            .toString(36)
-            .padStart(5, '0');
+    stamp = stamp
+        ? stamp
+        : Date.now()
+              .toString(36)
+              .padStart(5, '0');
 
     const loc = posToLoc(state, at, true);
     const afterId = idAfter(state, loc);

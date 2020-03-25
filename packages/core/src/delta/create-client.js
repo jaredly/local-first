@@ -68,10 +68,9 @@ export const handleMessages = async function<Delta, Data>(
     state: { [colid: string]: CollectionState<Data, any> },
     recvClock: HLC => void,
     sendCrossTabChanges: PeerChange => mixed,
-) {
-    let hasChanged = false;
-    await Promise.all(
-        messages.map(async msg => {
+): Promise<Array<ClientMessage<Delta, Data>>> {
+    const res = await Promise.all(
+        messages.map(async (msg): Promise<?ClientMessage<Delta, Data>> => {
             if (msg.type === 'sync') {
                 const col = state[msg.collection];
 
@@ -124,7 +123,6 @@ export const handleMessages = async function<Delta, Data>(
                         col: msg.collection,
                         nodes: changedIds,
                     });
-                    hasChanged = true;
                 }
 
                 let maxStamp = null;
@@ -137,12 +135,25 @@ export const handleMessages = async function<Delta, Data>(
                 if (maxStamp) {
                     recvClock(hlc.unpack(maxStamp));
                 }
+                return {
+                    type: 'ack',
+                    collection: msg.collection,
+                    serverCursor: msg.serverCursor,
+                };
             } else if (msg.type === 'ack') {
-                return persistence.deleteDeltas(msg.collection, msg.deltaStamp);
+                await persistence.deleteDeltas(msg.collection, msg.deltaStamp);
             }
         }),
     );
-    return hasChanged;
+    return res.filter(Boolean);
+};
+
+export const initialState = function<Data>(
+    collections: Array<string>,
+): { [key: string]: CollectionState<Data, any> } {
+    const state = {};
+    collections.forEach(id => (state[id] = newCollection()));
+    return state;
 };
 
 function createClient<Delta, Data, SyncStatus>(
@@ -152,8 +163,7 @@ function createClient<Delta, Data, SyncStatus>(
     persistence: DeltaPersistence,
     createNetwork: NetworkCreator<Delta, Data, SyncStatus>,
 ): Client<SyncStatus> {
-    const state: { [key: string]: CollectionState<Data, any> } = {};
-    persistence.collections.forEach(id => (state[id] = newCollection()));
+    const state = initialState(persistence.collections);
 
     const network = peerTabAwareNetwork(
         (msg: PeerChange) => {

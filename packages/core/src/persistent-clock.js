@@ -1,6 +1,6 @@
 // @flow
-import * as hlc from '../hybrid-logical-clock';
-import type { HLC } from '../hybrid-logical-clock';
+import * as hlc from '../../hybrid-logical-clock/src';
+import type { HLC } from '../../hybrid-logical-clock/src';
 
 export const inMemoryClockPersist = () => {
     let saved = null;

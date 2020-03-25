@@ -4,8 +4,10 @@ import type { ClientMessage, ServerMessage } from './server';
 
 import * as ncrdt from '../../nested-object-crdt/src/new';
 import * as rich from '../../rich-text-crdt/index';
-// import * as ncrdt from '../../../public/nested-object-crdt';
-// import * as rich from '../../../public/rich-text-crdt';
+import makePersistence from '../../idb/src/delta-mem';
+import * as client from './delta/create-client';
+import { PersistentClock, inMemoryClockPersist } from './persistent-clock';
+import type { CRDTImpl } from './shared';
 
 const otherMerge = (v1, m1, v2, m2) => {
     return { value: rich.merge(v1, v2), meta: null };
@@ -17,14 +19,15 @@ const applyOtherDelta = (text: rich.CRDT, meta: null, delta: rich.Delta) => {
     };
 };
 
-const newCrdt = {
+const newCrdt: CRDTImpl<Delta, Data> = {
     merge: (one, two) => {
         if (!one) return two;
+        // $FlowFixMe
         return ncrdt.mergeTwo(one, two, () => {
             throw new Error('nope');
         });
     },
-    latestStamp: ncrdt.latestStamp,
+    latestStamp: data => ncrdt.latestStamp(data, () => null),
     value: d => d.value,
     deltas: {
         ...ncrdt.deltas,
@@ -68,29 +71,41 @@ client2 -> ack
 
 */
 
-type Data = {};
-type Delta = {};
+type Data = ncrdt.CRDT<any, any>;
+type Delta = ncrdt.Delta<any, any, rich.Delta>;
 
-const collections = ['one'];
+const collections = ['items'];
 const someMessages = [];
 
 const createClient = (sessionId, messages) => {
+    const persistence = makePersistence('yolo', collections);
+    const state = client.initialState(persistence.collections);
+    const clock = new PersistentClock(inMemoryClockPersist());
     // client
     return {
         sessionId,
         collections,
-        getMessages(): Array<ClientMessage<Data, Delta>> {
-            //
-            return [];
+        getMessages(): Promise<Array<ClientMessage<Delta, Data>>> {
+            return client.getMessages(persistence, false);
         },
         receive(
-            messages: Array<ServerMessage<Data, Delta>>,
-        ): Array<ClientMessage<Data, Delta>> {
-            //
-            return [];
+            messages: Array<ServerMessage<Delta, Data>>,
+        ): Promise<Array<ClientMessage<Delta, Data>>> {
+            return client.handleMessages(
+                newCrdt,
+                persistence,
+                messages,
+                state,
+                clock.recv,
+                () => {},
+            );
         },
         getState() {
-            //
+            const data = {};
+            Object.keys(state).forEach(col => {
+                data[col] = state[col].cache;
+            });
+            return data;
         },
     };
 };
@@ -98,14 +113,14 @@ const createClient = (sessionId, messages) => {
 const createServer = messages => {
     // server
     return {
-        getMessages(sessionId: string): Array<ServerMessage<Data, Delta>> {
+        getMessages(sessionId: string): Array<ServerMessage<Delta, Data>> {
             //
             return [];
         },
         receive(
             sessionId: string,
-            messages: Array<ClientMessage<Data, Delta>>,
-        ): Array<ServerMessage<Data, Delta>> {
+            messages: Array<ClientMessage<Delta, Data>>,
+        ): Array<ServerMessage<Delta, Data>> {
             //
             return [];
         },
@@ -116,44 +131,55 @@ const createServer = messages => {
 };
 
 describe('client-server interaction', () => {
-    it('Clean client, clean server should only require messages one way', () => {
+    it('Clean client, clean server should only require messages one way', async () => {
         const client = createClient('a');
         const server = createServer();
-        const acks = server.receive(client.sessionId, client.getMessages());
+        const acks = server.receive(
+            client.sessionId,
+            await client.getMessages(),
+        );
         // No client ack's
         expect(
-            client.receive(acks.concat(server.getMessages(client.sessionId))),
+            await client.receive(
+                acks.concat(server.getMessages(client.sessionId)),
+            ),
         ).toEqual([]);
         // client has no new data, there's no server cursor to ack
-        expect(client.getMessages()).toEqual([]);
+        expect(await client.getMessages()).toEqual([]);
         expect(client.getState()).toEqual(server.getState(client.collections));
     });
 
-    it('Clean client, server with data should back and forth', () => {
+    it('Clean client, server with data should back and forth', async () => {
         const client = createClient('a');
         const server = createServer(someMessages);
-        const acks = server.receive(client.sessionId, client.getMessages()); // hello world
-        const clientAcks = client.receive(
+        const acks = server.receive(
+            client.sessionId,
+            await client.getMessages(),
+        ); // hello world
+        const clientAcks = await client.receive(
             acks.concat(server.getMessages(client.sessionId)),
         );
         // client is ack'ing the server's data, but doesn't have its own messages.
         server.receive(client.sessionId, clientAcks);
-        expect(client.getMessages()).toEqual([]);
+        expect(await client.getMessages()).toEqual([]);
         // Server now has nothing more to send
         expect(server.getMessages(client.sessionId)).toEqual([]);
         expect(client.getState()).toEqual(server.getState(client.collections));
     });
 
-    it('Clean client, clean server, then client does a thing', () => {
+    it('Clean client, clean server, then client does a thing', async () => {
         const client = createClient('a');
         const server = createServer();
-        const acks = server.receive(client.sessionId, client.getMessages()); // hello world
-        const clientAcks = client.receive(
+        const acks = server.receive(
+            client.sessionId,
+            await client.getMessages(),
+        ); // hello world
+        const clientAcks = await client.receive(
             acks.concat(server.getMessages(client.sessionId)),
         );
         // client is ack'ing the server's data, but doesn't have its own messages.
         server.receive(client.sessionId, clientAcks);
-        expect(client.getMessages()).toEqual([]);
+        expect(await client.getMessages()).toEqual([]);
         // Server now has nothing more to send
         expect(server.getMessages(client.sessionId)).toEqual([]);
         expect(client.getState()).toEqual(server.getState(client.collections));
