@@ -32,6 +32,14 @@ const newCrdt: CRDTImpl<Delta, Data> = {
     },
     latestStamp: data => ncrdt.latestStamp(data, () => null),
     value: d => d.value,
+    applyDelta: (base, delta) =>
+        ncrdt.applyDelta(
+            base,
+            delta,
+            // $FlowFixMe
+            applyOtherDelta,
+            otherMerge,
+        ),
     deltas: {
         ...ncrdt.deltas,
         stamp: data => ncrdt.deltas.stamp(data, () => null),
@@ -189,13 +197,14 @@ const createServer = deltas => {
             const data = {};
             collections.forEach(cid => {
                 data[cid] = {};
+                const fulls = {};
                 const result = state.persistence.deltasSince(cid, -1, '');
                 if (!result) return;
                 result.deltas.forEach(({ node, delta }) => {
-                    data[cid][node] = state.crdt.applyDelta(
-                        data[cid][node],
-                        delta,
-                    );
+                    fulls[node] = state.crdt.applyDelta(fulls[node], delta);
+                });
+                Object.keys(fulls).forEach(key => {
+                    data[cid][key] = state.crdt.value(fulls[key]);
                 });
             });
             return data;
@@ -242,7 +251,7 @@ describe('client-server interaction', () => {
         );
     });
 
-    it.only('Clean client, server with data should back and forth', async () => {
+    it('Clean client, server with data should back and forth', async () => {
         const client = createClient('a', ['items']);
         const server = createServer({ items: someMessages });
         // hello world, back and forth
@@ -289,6 +298,12 @@ describe('client-server interaction', () => {
         await col.setAttribute('two', ['age'], 100);
         const clientMessages = await client.getMessages();
         expect(clientMessages.length).toEqual(1);
-        expect(server.receive(client.sessionId, clientMessages)).toEqual(acks);
+        const serverAcks = server.receive(client.sessionId, clientMessages);
+        expect(serverAcks[0].type).toEqual('ack');
+        expect(
+            await client.receive(
+                serverAcks.concat(server.getMessages(client.sessionId)),
+            ),
+        ).toEqual([]);
     });
 });
