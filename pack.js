@@ -28,11 +28,17 @@ pack({
     dest: 'public/client-bundle',
 });
 
-// pack({
-//     name: 'rich-text-crdt',
-//     entry: 'packages/rich-text-crdt/index.js',
-//     dest: 'public/rich-text-crdt',
-// });
+pack({
+    name: 'rich-text-crdt',
+    entry: 'packages/rich-text-crdt/index.js',
+    dest: 'public/rich-text-crdt',
+});
+
+pack({
+    name: 'nested-object-crdt',
+    entry: 'packages/nested-object-crdt/src/new.js',
+    dest: 'public/nested-object-crdt',
+});
 
 // pack({
 //     name: 'hybrid-logical-clock',

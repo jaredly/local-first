@@ -29,7 +29,6 @@ and then fetches them again ha ha
 yeah what would the "simplest" backend look like, that just completely
 relies on sqlite for all the things?
 
-
 */
 
 export type ClientMessage<Delta, Data> = {
@@ -124,7 +123,9 @@ export const getMessages = function<Delta, Data>(
             );
             if (!result) {
                 console.log(
-                    `no new messages since ${lastSeen} for ${cid} (${sessionId})`,
+                    `no new messages since ${
+                        lastSeen ? lastSeen : 'no-start'
+                    } for ${cid} (${sessionId})`,
                 );
                 return;
             }

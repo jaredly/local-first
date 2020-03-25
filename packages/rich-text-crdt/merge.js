@@ -1,5 +1,5 @@
 // @flow
-import type { Content, CRDT, Node } from './types';
+import type { Content, CRDT, Node, FormatContent } from './types';
 import { keyCmp, toKey, contentChars } from './utils';
 import { lastId, walk, fmtIdx, rootParent, rootSite } from './loc';
 
@@ -166,7 +166,9 @@ const addFormats = (state: CRDT) => {
                 ? format[content.key].slice()
                 : [];
             const idx = fmtIdx(
-                current.map(id => state.map[id].content),
+                current.map(
+                    id => ((state.map[id].content: any): FormatContent),
+                ),
                 content,
             );
             current.splice(idx, 0, toKey(node.id));

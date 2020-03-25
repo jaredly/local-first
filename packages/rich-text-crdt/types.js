@@ -18,11 +18,7 @@ export type Node = {
     formats: { [key: string]: Array<string> },
 };
 
-export type Content =
-    | {|
-          type: 'text',
-          text: string,
-      |}
+export type FormatContent =
     | {|
           type: 'open',
           key: string,
@@ -34,6 +30,13 @@ export type Content =
           key: string,
           stamp: string,
       |};
+
+export type Content =
+    | {|
+          type: 'text',
+          text: string,
+      |}
+    | FormatContent;
 
 // export const rootSite = '0:-root-';
 // export const rootSiteRight = '1:-root-';
