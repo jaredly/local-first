@@ -71,6 +71,13 @@ class FakeDb {
     }
     put<T>(colid: string, object: T, key?: string) {
         if (key == null) {
+            if (
+                object == null ||
+                typeof object !== 'object' ||
+                typeof object[this.keyPaths[colid]] !== 'string'
+            ) {
+                throw new Error('Must specify a key');
+            }
             key = object[this.keyPaths[colid]];
         }
         this.collections[colid][key] = object;

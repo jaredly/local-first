@@ -177,5 +177,5 @@ export type NetworkCreator<Delta, Data, SyncStatus> = (
     handleMessages: (
         Array<ServerMessage<Delta, Data>>,
         (PeerChange) => mixed,
-    ) => Promise<boolean>,
+    ) => Promise<Array<ClientMessage<Delta, Data>>>,
 ) => Network<SyncStatus>;

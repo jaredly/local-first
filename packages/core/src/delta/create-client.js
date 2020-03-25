@@ -31,11 +31,11 @@ const genId = () =>
         .slice(2);
 
 import { type ClientMessage, type ServerMessage } from '../server';
-export const getMessages = function<Delta, Data>(
+export const getMessages = async function<Delta, Data>(
     persistence: DeltaPersistence,
     reconnected: boolean,
 ): Promise<Array<ClientMessage<Delta, Data>>> {
-    return Promise.all(
+    const items: Array<?ClientMessage<Delta, Data>> = await Promise.all(
         persistence.collections.map(
             async (
                 collection: string,
@@ -58,7 +58,8 @@ export const getMessages = function<Delta, Data>(
                 }
             },
         ),
-    ).then(a => a.filter(Boolean));
+    );
+    return items.filter(Boolean);
 };
 
 export const handleMessages = async function<Delta, Data>(

@@ -53,12 +53,12 @@ So maybe this won't be a big deal?
 
 */
 
-export const getMessages = function<Delta, Data>(
+export const getMessages = async function<Delta, Data>(
     persistence: MultiPersistence,
     reconnected: boolean,
 ): Promise<Array<ClientMessage<Delta, Data>>> {
     console.log('getting messages');
-    return Promise.all(
+    const items: Array<?ClientMessage<Delta, Data>> = await Promise.all(
         persistence.collections.map(
             async (
                 collection: string,
@@ -83,7 +83,8 @@ export const getMessages = function<Delta, Data>(
                 }
             },
         ),
-    ).then(a => a.filter(Boolean));
+    );
+    return items.filter(Boolean);
 };
 
 export const handleMessages = async function<Delta, Data>(
@@ -94,9 +95,8 @@ export const handleMessages = async function<Delta, Data>(
     recvClock: HLC => void,
     sendCrossTabChanges: PeerChange => mixed,
 ) {
-    let hasChanged = false;
-    await Promise.all(
-        messages.map(async msg => {
+    const items: Array<?ClientMessage<Delta, Data>> = await Promise.all(
+        messages.map(async (msg): Promise<?ClientMessage<Delta, Data>> => {
             if (msg.type === 'sync') {
                 const col = state[msg.collection];
 
@@ -158,7 +158,6 @@ export const handleMessages = async function<Delta, Data>(
                         col: msg.collection,
                         nodes: changedIds,
                     });
-                    hasChanged = true;
                 }
 
                 let maxStamp = null;
@@ -171,12 +170,17 @@ export const handleMessages = async function<Delta, Data>(
                 if (maxStamp) {
                     recvClock(hlc.unpack(maxStamp));
                 }
+                return {
+                    type: 'ack',
+                    collection: msg.collection,
+                    serverCursor: msg.serverCursor,
+                };
             } else if (msg.type === 'ack') {
                 return persistence.deleteDeltas(msg.collection, msg.deltaStamp);
             }
         }),
     );
-    return hasChanged;
+    return items.filter(Boolean);
 };
 
 function createClient<Delta, Data, SyncStatus>(
@@ -212,6 +216,7 @@ function createClient<Delta, Data, SyncStatus>(
             clock.now.node,
             fresh => getMessages(persistence, fresh),
             (messages, sendCrossTabChanges) =>
+                // $FlowFixMe
                 handleMessages(
                     crdt,
                     persistence,

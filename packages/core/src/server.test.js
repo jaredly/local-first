@@ -10,7 +10,7 @@ import * as server from './server';
 import setupServerPersistence from './memory-persistence';
 import { PersistentClock, inMemoryClockPersist } from './persistent-clock';
 import { type CRDTImpl, getCollection } from './shared';
-import type { ServerState } from './server';
+import type { ServerState, CRDTImpl as ServerCRDTImpl } from './server';
 
 const otherMerge = (v1, m1, v2, m2) => {
     return { value: rich.merge(v1, v2), meta: null };
@@ -22,6 +22,21 @@ const applyOtherDelta = (text: rich.CRDT, meta: null, delta: rich.Delta) => {
     };
 };
 
+const serverCrdt: ServerCRDTImpl<Delta, Data> = {
+    createEmpty: ncrdt.createEmpty,
+    deltas: {
+        stamp: data => ncrdt.deltas.stamp(data, () => null),
+    },
+    applyDelta: (base, delta) =>
+        ncrdt.applyDelta(
+            base,
+            delta,
+            // $FlowFixMe
+            applyOtherDelta,
+            otherMerge,
+        ),
+};
+
 const newCrdt: CRDTImpl<Delta, Data> = {
     merge: (one, two) => {
         if (!one) return two;
@@ -30,8 +45,8 @@ const newCrdt: CRDTImpl<Delta, Data> = {
             throw new Error('nope');
         });
     },
-    latestStamp: data => ncrdt.latestStamp(data, () => null),
     value: d => d.value,
+    latestStamp: data => ncrdt.latestStamp(data, () => null),
     applyDelta: (base, delta) =>
         ncrdt.applyDelta(
             base,
@@ -165,7 +180,7 @@ const createClient = (sessionId, collections, messages) => {
 
 const createServer = deltas => {
     const state: ServerState<Delta, Data> = server.default<Delta, Data>(
-        newCrdt,
+        serverCrdt,
         setupServerPersistence<Delta, Data>(),
     );
     if (deltas) {
@@ -204,7 +219,7 @@ const createServer = deltas => {
                     fulls[node] = state.crdt.applyDelta(fulls[node], delta);
                 });
                 Object.keys(fulls).forEach(key => {
-                    data[cid][key] = state.crdt.value(fulls[key]);
+                    data[cid][key] = fulls[key].value;
                 });
             });
             return data;

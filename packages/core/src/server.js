@@ -53,7 +53,7 @@ export type ServerMessage<Delta, Data> =
 // This doesn't have any special permissions things
 // We'll do collection-level permissions.
 
-type CRDTImpl<Delta, Data> = {
+export type CRDTImpl<Delta, Data> = {
     createEmpty: () => Data,
     applyDelta: (Data, Delta) => Data,
     deltas: {

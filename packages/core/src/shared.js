@@ -41,6 +41,7 @@ export type CRDTImpl<Delta, Data> = {
         set(Data, Array<string | number>, Data): Delta,
         replace(Data): Delta,
         remove(string): Delta,
+        // $FlowFixMe
         other<Other>(Data, Array<string | number>, Other, string): Delta,
         apply(Data, Delta): Data,
         stamp(Delta): string,
