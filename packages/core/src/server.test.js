@@ -30,7 +30,13 @@ const newCrdt = {
         ...ncrdt.deltas,
         stamp: data => ncrdt.deltas.stamp(data, () => null),
         apply: (base, delta) =>
-            ncrdt.applyDelta(base, delta, applyOtherDelta, otherMerge),
+            ncrdt.applyDelta(
+                base,
+                delta,
+                // $FlowFixMe
+                applyOtherDelta,
+                otherMerge,
+            ),
     },
     createValue: (value, stamp, getStamp, schema) => {
         return ncrdt.createWithSchema(
