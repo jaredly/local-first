@@ -277,6 +277,7 @@ const CRDTTextarea = ({ sessionId, value, onChange }) => {
         if (text !== node.value) {
             const start = node.selectionStart;
             const end = node.selectionEnd;
+            console.log('setting text value to', text);
             node.value = text;
             try {
                 const oldText = rich.toString(oldValue);
@@ -285,16 +286,25 @@ const CRDTTextarea = ({ sessionId, value, onChange }) => {
                 console.log('Old', oldText, oldText.length);
                 console.log('New', text, text.length);
                 console.log('Selection', start, end);
-                const startLoc = rich.posToLoc(oldValue, start, false);
-                const endLoc = rich.posToLoc(oldValue, end, true);
-                console.log('locs', startLoc, endLoc);
-                const newStart = rich.locToPos(newValue, startLoc);
-                const newEnd = rich.locToPos(newValue, endLoc);
-                node.selectionStart = newStart;
-                node.selectionEnd = newEnd;
+                // const startLoc = rich.posToLoc(oldValue, start, false);
+                // const endLoc = rich.posToLoc(oldValue, end, true);
+                // console.log('locs', startLoc, endLoc);
+                // const newStart = rich.locToPos(newValue, startLoc);
+                // const newEnd = rich.locToPos(newValue, endLoc);
+                const transformed = rich.adjustSelection(
+                    oldValue,
+                    newValue,
+                    start,
+                    end,
+                );
+                console.log('New selection', transformed);
+                node.selectionStart = transformed.start;
+                node.selectionEnd = transformed.end;
             } catch (err) {
                 console.error(err);
             }
+        } else {
+            console.log('text already matches', text);
         }
     }, []);
 
@@ -321,13 +331,17 @@ const CRDTTextarea = ({ sessionId, value, onChange }) => {
                 const deltas = [];
                 if (change.removed) {
                     deltas.push(
-                        rich.del(value, change.removed.at, change.removed.len),
+                        rich.del(
+                            savedValue.current,
+                            change.removed.at,
+                            change.removed.len,
+                        ),
                     );
                 }
                 if (change.added) {
                     deltas.push(
                         rich.insert(
-                            value,
+                            savedValue.current,
                             sessionId,
                             change.added.at,
                             change.added.text,

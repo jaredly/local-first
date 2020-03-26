@@ -210,6 +210,11 @@ const runActionsTest = actions => {
             deltas.forEach(delta => {
                 // const qd = deltaToQuillDeltas(state, delta)
                 state = apply(state, delta);
+                const again = apply(state, delta);
+                expect(again).toEqual(
+                    state,
+                    'idempotence test ' + JSON.stringify(delta),
+                );
                 // const back = quillDeltasToDeltas(state, qd, genStamp)
             });
         }

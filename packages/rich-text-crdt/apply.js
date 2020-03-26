@@ -48,9 +48,8 @@ const split = (state: CRDT, key: string, splitPoint: number) => {
     const newNode: Node = {
         id: [node.id[0] + splitPoint, node.id[1]],
         parent: toKey(node.id),
-        size: node.size - splitPoint,
+        size: node.deleted ? node.size : node.size - splitPoint,
         content: { type: 'text', text: text.slice(splitPoint) },
-        // deleted: node.deleted,
         formats: node.formats,
         children: node.children,
     };
@@ -194,6 +193,7 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
         content.type === 'text' &&
         parent.id[1] === id[1] &&
         parent.id[0] + parent.content.text.length === id[0] &&
+        !parent.deleted &&
         (parent.children.length === 0 ||
             state.map[parent.children[0]].id[0] < id[0])
     ) {
@@ -266,7 +266,11 @@ const addFormat = (
     return insertId(formats, id, idx);
 };
 
+// const
+
 const deleteSpan = (state: CRDT, span: Span) => {
+    // const parentNode = nodeForKey(state, [span.id, span.site]);
+    // if (parentNode && parentNode.deleted && parentNode)
     if (!ensureNodeAt(state, [span.id, span.site])) {
         throw new Error(`Failed to ensure node at ${span.id}:${span.site}`);
     }
@@ -286,28 +290,31 @@ const deleteSpan = (state: CRDT, span: Span) => {
         // This splits it
         ensureNodeAt(state, [span.id + span.length, span.site]);
     }
-    const deletedLength = text.length > span.length ? span.length : text.length;
-    state.map[key] = {
-        ...state.map[key],
-        size: state.map[key].size - deletedLength,
-        deleted: true,
-    };
-
-    // Remove the length of this text from all parent's sizes.
-    let cp = node.parent;
-    while (cp !== rootParent) {
-        const node = state.map[cp];
-        state.map[cp] = {
-            ...node,
-            size: node.size - deletedLength,
+    if (!state.map[key].deleted) {
+        const deletedLength = state.map[key].content.text.length;
+        // text.length > span.length ? span.length : text.length;
+        state.map[key] = {
+            ...state.map[key],
+            size: state.map[key].size - deletedLength,
+            deleted: true,
         };
-        cp = node.parent;
-    }
 
-    if (state.map[key].children.length === 1) {
-        maybeMergeUp(state, state.map[key].children[0]);
+        // Remove the length of this text from all parent's sizes.
+        let cp = node.parent;
+        while (cp !== rootParent) {
+            const node = state.map[cp];
+            state.map[cp] = {
+                ...node,
+                size: node.size - deletedLength,
+            };
+            cp = node.parent;
+        }
+
+        if (state.map[key].children.length === 1) {
+            maybeMergeUp(state, state.map[key].children[0]);
+        }
+        maybeMergeUp(state, key);
     }
-    maybeMergeUp(state, key);
 };
 
 const maybeMergeUp = (state, key) => {
@@ -363,6 +370,9 @@ const deleteFormat = (state, stamp, open, close) => {
     ) {
         throw new Error(`Invalid "delete-format" delta`);
     }
+    if (openNode.deleted && closeNode.deleted) {
+        return;
+    }
     const key = openNode.content.key;
     state.map[openKey] = {
         ...openNode,
@@ -398,12 +408,13 @@ const deleteFormat = (state, stamp, open, close) => {
     );
 };
 
-export const apply = (state: CRDT, delta: Delta | Array<Delta>): CRDT => {
+export const apply = (current: CRDT, delta: Delta | Array<Delta>): CRDT => {
     if (Array.isArray(delta)) {
+        let state = current;
         delta.forEach(delta => (state = apply(state, delta)));
         return state;
     }
-    state = { ...state, map: { ...state.map } };
+    let state = { ...current, map: { ...current.map } };
     if (delta.type === 'insert') {
         insertNode(state, delta.id, delta.after, {
             type: 'text',
@@ -417,6 +428,10 @@ export const apply = (state: CRDT, delta: Delta | Array<Delta>): CRDT => {
         deleteFormat(state, delta.stamp, delta.open, delta.close);
     } else if (delta.type === 'format') {
         const openKey = toKey(delta.open.id);
+        // Format already exists. TODO check consistency
+        if (state.map[openKey] && state.map[toKey(delta.close.id)]) {
+            return state;
+        }
         insertNode(state, delta.open.id, delta.open.after, {
             type: 'open',
             key: delta.key,
@@ -455,5 +470,12 @@ export const apply = (state: CRDT, delta: Delta | Array<Delta>): CRDT => {
             true,
         );
     }
+    try {
+        checkConsistency(state);
+    } catch (err) {
+        debugger;
+    }
     return state;
 };
+
+import { checkConsistency } from './check';

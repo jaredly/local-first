@@ -1,5 +1,5 @@
-import { posToLoc, rootSite } from './loc';
-import { apply, init, insert } from './';
+import { posToLoc, rootSite, adjustSelection } from './loc';
+import { apply, init, insert, del, toString } from './';
 
 describe('posToLoc', () => {
     it('should worlk for left on empty', () => {
@@ -34,5 +34,26 @@ describe('posToLoc', () => {
             site: deltas[0].id[1],
             pre: true,
         });
+    });
+
+    it('should properly place selections', () => {
+        let state = init();
+        state = apply(state, insert(state, 'a', 0, 'one two three'));
+        state = apply(state, insert(state, 'a', 4, 'four '));
+        let current = apply(state, del(state, 9, 1));
+        current = apply(current, del(current, 8, 1));
+        current = apply(current, del(current, 7, 1));
+        expect(toString(state)).toEqual('one four two three');
+        expect(toString(current)).toEqual('one fouwo three');
+        // console.log(JSON.stringify([state, current]));
+        expect(adjustSelection(state, current, 4, 8)).toEqual({
+            start: 4,
+            end: 7,
+        });
+
+        // one two three
+        // one four two three
+        // select four
+        // start deleting from t of two
     });
 });
