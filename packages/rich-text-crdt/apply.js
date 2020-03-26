@@ -266,11 +266,24 @@ const addFormat = (
     return insertId(formats, id, idx);
 };
 
-// const
+const isSpanAllDeleted = (state: CRDT, span: Span) => {
+    const parentNode = nodeForKey(state, [span.id, span.site]);
+    if (!parentNode || !parentNode.deleted) return false;
+    const length = contentLength(parentNode.content);
+    if (span.length <= length) {
+        return true;
+    }
+    return isSpanAllDeleted(state, {
+        id: span.id + length,
+        site: span.site,
+        length: span.length - length,
+    });
+};
 
 const deleteSpan = (state: CRDT, span: Span) => {
-    // const parentNode = nodeForKey(state, [span.id, span.site]);
-    // if (parentNode && parentNode.deleted && parentNode)
+    if (isSpanAllDeleted(state, span)) {
+        return;
+    }
     if (!ensureNodeAt(state, [span.id, span.site])) {
         throw new Error(`Failed to ensure node at ${span.id}:${span.site}`);
     }
