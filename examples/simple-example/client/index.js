@@ -20,7 +20,7 @@ import { ItemSchema, NoteSchema } from '../shared/schema.js';
 
 import * as ncrdt from '../../../packages/nested-object-crdt/src/new';
 import * as rich from '../../../packages/rich-text-crdt';
-import checkConsistency from '../../../packages/rich-text-crdt/debug';
+import { checkConsistency } from '../../../packages/rich-text-crdt/check';
 import * as textBinding from '../../../packages/rich-text-crdt/text-binding';
 
 const otherMerge = (v1, m1, v2, m2) => {
@@ -282,9 +282,12 @@ const CRDTTextarea = ({ sessionId, value, onChange }) => {
                 const oldText = rich.toString(oldValue);
                 checkConsistency(oldValue);
                 checkConsistency(newValue);
-                console.log('Old');
+                console.log('Old', oldText, oldText.length);
+                console.log('New', text, text.length);
+                console.log('Selection', start, end);
                 const startLoc = rich.posToLoc(oldValue, start, false);
                 const endLoc = rich.posToLoc(oldValue, end, true);
+                console.log('locs', startLoc, endLoc);
                 const newStart = rich.locToPos(newValue, startLoc);
                 const newEnd = rich.locToPos(newValue, endLoc);
                 node.selectionStart = newStart;
