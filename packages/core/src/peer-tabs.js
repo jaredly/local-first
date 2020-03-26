@@ -163,11 +163,20 @@ export const peerTabAwareSync = function<SyncStatus>(
         sync = makeLeaderSync(sendCrossTabChange);
     });
 
+    let syncTimer = null;
+
     return {
         sendConnectionStatus: (status: SyncStatus) => {
             channel.postMessage({ type: 'status', status });
         },
         sendCrossTabChange,
-        sync: () => sync(),
+        // Dedup sync calls within the same tick -- makes a lot of things easier.
+        sync: () => {
+            if (syncTimer) return;
+            syncTimer = setImmediate(() => {
+                syncTimer = null;
+                sync();
+            });
+        },
     };
 };

@@ -35,7 +35,9 @@ export const broadcast = function<Delta, Data>(
     Object.keys(clients).forEach(id => {
         if (id !== sessionId) {
             const response = getMessages(server, id);
-            clients[id].send(response);
+            if (response.length) {
+                clients[id].send(response);
+            }
         }
     });
 };
