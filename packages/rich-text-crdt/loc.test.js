@@ -29,7 +29,6 @@ describe('posToLoc', () => {
         deltas.forEach(delta => {
             state = apply(state, delta);
         });
-        console.log(JSON.stringify(state));
         expect(posToLoc(state, 1, true)).toEqual({
             id: deltas[0].id[0],
             site: deltas[0].id[1],

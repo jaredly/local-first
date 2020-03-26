@@ -393,7 +393,7 @@ module.exports = [
 
     {
         title: 'Delete across added',
-        only: true,
+        // only: true,
         actions: [
             insert(0, 'abde'),
             insert(2, 'c'),

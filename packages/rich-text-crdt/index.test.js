@@ -14,6 +14,7 @@ import {
     getFormatValues,
     merge,
 } from './';
+import { checkConsistency } from './check';
 import { quillDeltasToDeltas, stateToQuillContents } from './quill-deltas';
 
 const walkWithFmt = (state, fn) => {
@@ -213,6 +214,7 @@ const runActionsTest = actions => {
             });
         }
         // expect(merge(state, state)).toEqual(state);
+        checkConsistency(state);
     });
 };
 

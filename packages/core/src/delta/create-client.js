@@ -45,7 +45,7 @@ export const getMessages = async function<Delta, Data>(
                     collection,
                 );
                 if (deltas.length || serverCursor == null || reconnected) {
-                    console.log('messages yeah', serverCursor);
+                    // console.log('messages yeah', serverCursor);
                     return {
                         type: 'sync',
                         collection,
@@ -86,7 +86,7 @@ export const handleMessages = async function<Delta, Data>(
                 }));
 
                 const changedIds = Object.keys(changed);
-                console.log('applying deltas', msg.serverCursor);
+                // console.log('applying deltas', msg.serverCursor);
                 const data = await persistence.applyDeltas(
                     msg.collection,
                     deltasWithStamps,
@@ -116,10 +116,10 @@ export const handleMessages = async function<Delta, Data>(
                 });
 
                 if (changedIds.length) {
-                    console.log(
-                        'Broadcasting to client-level listeners',
-                        changedIds,
-                    );
+                    // console.log(
+                    //     'Broadcasting to client-level listeners',
+                    //     changedIds,
+                    // );
                     sendCrossTabChanges({
                         col: msg.collection,
                         nodes: changedIds,

@@ -29,7 +29,7 @@ export const peerTabAwareNetworks = function<SyncStatus>(
             connectionListeners.forEach(f => f(currentSyncStatus));
         },
         peerChange => {
-            console.log('received peer change');
+            // console.log('received peer change');
             handleCrossTabChanges(peerChange);
         },
         // Create the thing.
@@ -86,7 +86,7 @@ export const peerTabAwareNetwork = function<SyncStatus>(
             connectionListeners.forEach(f => f(currentSyncStatus));
         },
         peerChange => {
-            console.log('received peer change');
+            // console.log('received peer change');
             handleCrossTabChanges(peerChange);
         },
         sendCrossTabChange => {
@@ -141,7 +141,7 @@ export const peerTabAwareSync = function<SyncStatus>(
             | { type: 'sync' }
             | { type: 'status', status: SyncStatus },
     ) => {
-        console.log('got a peer message', msg.type);
+        // console.log('got a peer message', msg.type);
         if (msg.type === 'sync' && sync !== originalSync) {
             sync();
         } else if (msg.type === 'change') {
@@ -149,11 +149,11 @@ export const peerTabAwareSync = function<SyncStatus>(
         } else if (msg.type === 'status') {
             onStatus(msg.status);
         }
-        console.log('Processed message', msg);
+        // console.log('Processed message', msg);
     };
 
     const sendCrossTabChange = (change: PeerChange) => {
-        console.log('Sending changes', change);
+        // console.log('Sending changes', change);
         channel.postMessage({ type: 'change', peerChange: change });
     };
 

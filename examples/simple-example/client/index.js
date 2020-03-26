@@ -20,6 +20,7 @@ import { ItemSchema, NoteSchema } from '../shared/schema.js';
 
 import * as ncrdt from '../../../packages/nested-object-crdt/src/new';
 import * as rich from '../../../packages/rich-text-crdt';
+import checkConsistency from '../../../packages/rich-text-crdt/debug';
 import * as textBinding from '../../../packages/rich-text-crdt/text-binding';
 
 const otherMerge = (v1, m1, v2, m2) => {
@@ -27,7 +28,7 @@ const otherMerge = (v1, m1, v2, m2) => {
 };
 window.applied = [];
 const applyOtherDelta = (text: rich.CRDT, meta: null, delta: rich.Delta) => {
-    console.log('!!! applying rich text delta', text, delta);
+    // console.log('!!! applying rich text delta', text, delta);
     window.applied.push({ text, delta });
     window.rich = rich;
     return {
@@ -112,10 +113,10 @@ const useCollection = function<T: {}>(client, name) {
     const [data, setData] = React.useState(({}: { [key: string]: T }));
     React.useEffect(() => {
         col.loadAll().then(data => {
-            console.log('loaded all', data);
+            // console.log('loaded all', data);
             setData(a => ({ ...a, ...data }));
             col.onChanges(changes => {
-                console.log('changes', changes);
+                // console.log('changes', changes);
                 setData(data => {
                     const n = { ...data };
                     changes.forEach(({ value, id }) => {
@@ -278,6 +279,10 @@ const CRDTTextarea = ({ sessionId, value, onChange }) => {
             const end = node.selectionEnd;
             node.value = text;
             try {
+                const oldText = rich.toString(oldValue);
+                checkConsistency(oldValue);
+                checkConsistency(newValue);
+                console.log('Old');
                 const startLoc = rich.posToLoc(oldValue, start, false);
                 const endLoc = rich.posToLoc(oldValue, end, true);
                 const newStart = rich.locToPos(newValue, startLoc);
@@ -309,7 +314,7 @@ const CRDTTextarea = ({ sessionId, value, onChange }) => {
                         ? e.target.selectionStart
                         : null,
                 );
-                console.log('>> change inferred <<', change);
+                // console.log('>> change inferred <<', change);
                 const deltas = [];
                 if (change.removed) {
                     deltas.push(
@@ -326,7 +331,7 @@ const CRDTTextarea = ({ sessionId, value, onChange }) => {
                         ),
                     );
                 }
-                console.log('applying', deltas);
+                // console.log('applying', deltas);
                 onChange(deltas);
             }}
         />
@@ -344,7 +349,7 @@ const Note = ({
     col: Collection<Note>,
     sessionId: string,
 }) => {
-    console.log(item);
+    // console.log(item);
     // let currentText = rich.toString(item.body);
     return (
         <div>
