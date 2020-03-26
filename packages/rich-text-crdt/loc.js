@@ -414,6 +414,7 @@ export const posToLoc = function(
 ): Loc {
     const total = length(crdt);
     if (pos > total) {
+        debugger;
         throw new Error(`Loc ${pos} is outside of the bounds ${total}`);
     }
     const [[id, site], offset] = anchorToLocAtLeft
