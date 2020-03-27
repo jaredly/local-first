@@ -1,6 +1,5 @@
 // @flow
 import type { BlobNetworkCreator, Network, Blob, PeerChange } from '../types';
-import { peerTabAwareNetwork } from '../peer-tabs';
 import poller from '../poller';
 import backOff from '../back-off';
 import { debounce } from '../debounce';
@@ -96,7 +95,7 @@ const syncFetch = async function<Data>(
     let dirtyStamp = local ? local.stamp : null;
     console.log(
         `[blob]`,
-        dirtyStamp ? 'local changes!' + dirtyStamp : 'no local changes',
+        dirtyStamp != null ? 'local changes!' + dirtyStamp : 'no local changes',
     );
     const remote = await getRemote(serverEtag);
     if (!local && !remote) {
@@ -130,7 +129,7 @@ const syncFetch = async function<Data>(
         });
         newServerEtag = await putRemote(toSend);
     }
-    if (newServerEtag || dirtyStamp) {
+    if (newServerEtag != null || dirtyStamp != null) {
         console.log('clearing dirty stamp');
         await updateMeta(newServerEtag, dirtyStamp);
     }
@@ -173,7 +172,7 @@ const makeSync = <Delta, Data>(
                             console.log('[blob] Checking for new data', etag);
                             const res = await fetch(url, {
                                 headers: {
-                                    'If-None-Match': etag ? etag : '',
+                                    'If-None-Match': etag != null ? etag : '',
                                     'Access-control-request-headers':
                                         'etag,content-type,content-length',
                                 },
@@ -193,7 +192,7 @@ const makeSync = <Delta, Data>(
                             const blob = await res.json();
                             const newEtag = res.headers.get('etag');
                             console.log('[blob] New etag', newEtag);
-                            if (!newEtag) {
+                            if (newEtag == null) {
                                 throw new Error(
                                     `Remote didn't set an etag on get`,
                                 );
@@ -219,7 +218,7 @@ const makeSync = <Delta, Data>(
                                 );
                             }
                             const etag = res.headers.get('etag');
-                            if (!etag) {
+                            if (etag == null) {
                                 throw new Error(
                                     `Remote didn't respond to post with an etag`,
                                 );

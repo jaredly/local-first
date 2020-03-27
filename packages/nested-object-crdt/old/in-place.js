@@ -44,7 +44,7 @@ const latestMetaStamp = function<Other>(
         let max = meta.hlcStamp;
         Object.keys(meta.map).forEach(id => {
             const stamp = latestMetaStamp(meta.map[id], otherStamp);
-            if (stamp && (!max || stamp > max)) {
+            if (stamp != null && (!max || stamp > max)) {
                 max = stamp;
             }
         });
@@ -202,7 +202,7 @@ const set = function<T, Other>(
         const k = key[0].key;
         // This delta is too old; the map was created more recently and so this change doesn't apply
         if (
-            !crdt.value ||
+            crdt.value == null ||
             typeof crdt.value !== 'object' ||
             Array.isArray(crdt.value)
         ) {
@@ -269,7 +269,7 @@ const merge = function<A, B, Other>(
     value: A | B,
     meta: Meta<Other>,
 } {
-    if (!v2) {
+    if (v2 == null) {
         return { value: v1, meta: m1 };
     }
     if (m1.type !== m2.type) {
@@ -337,7 +337,7 @@ const createValue = function<T, Other>(
     value: T,
     hlcStamp: string,
 ): CRDT<T, Other> {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
+    if (value != null && typeof value === 'object' && !Array.isArray(value)) {
         const res = createDeepMap(value, hlcStamp);
         return genericize(res.value, res.meta);
     } else {

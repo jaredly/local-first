@@ -37,7 +37,7 @@ export const fullMaxStamp = function<Delta, Data>(
     Object.keys(full).forEach(colid => {
         Object.keys(full[colid]).forEach(key => {
             const latest = crdt.latestStamp(full[colid][key]);
-            if (latest && (!maxStamp || latest > maxStamp)) {
+            if (latest != null && (maxStamp == null || latest > maxStamp)) {
                 maxStamp = latest;
             }
         });
@@ -70,7 +70,7 @@ export const updateCacheAndNotify = function<Delta, Data>(
         changedIds[colid].forEach(id => {
             // Only update the cache if the node has already been cached
             // Umm is this necessary though?
-            if (state[colid].cache[id] || col.itemListeners[id]) {
+            if (state[colid].cache[id] != null || col.itemListeners[id]) {
                 state[colid].cache[id] = data[id];
             }
             if (col.itemListeners[id]) {
@@ -115,7 +115,7 @@ function createClient<Delta, Data, SyncStatus>(
             persistence.getFull,
             async (full, etag, sendCrossTabChanges) => {
                 const max = fullMaxStamp(crdt, full);
-                if (max) {
+                if (max != null) {
                     clock.recv(hlc.unpack(max));
                 }
                 const result = await persistence.mergeFull<Data>(

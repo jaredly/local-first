@@ -8,85 +8,115 @@ import {
     createBlobClient,
     PersistentClock,
     localStorageClockPersist,
+    inMemoryClockPersist,
     makeBlobPersistence,
     createBasicBlobNetwork,
     createDeltaClient,
     makeDeltaPersistence,
     createWebSocketNetwork,
-    // crdt,
 } from '../../../packages/client-bundle';
-import { ItemSchema } from '../shared/schema.js';
+import { default as makeDeltaInMemoryPersistence } from '../../../packages/idb/src/delta-mem';
+import { ItemSchema, NoteSchema } from '../shared/schema.js';
 
 import * as ncrdt from '../../../packages/nested-object-crdt/src/new';
+import * as rich from '../../../packages/rich-text-crdt';
+import { checkConsistency } from '../../../packages/rich-text-crdt/check';
+import * as textBinding from '../../../packages/rich-text-crdt/text-binding';
+
+const otherMerge = (v1, m1, v2, m2) => {
+    return { value: rich.merge(v1, v2), meta: null };
+};
+window.applied = [];
+const applyOtherDelta = (text: rich.CRDT, meta: null, delta: rich.Delta) => {
+    // console.log('!!! applying rich text delta', text, delta);
+    window.applied.push({ text, delta });
+    window.rich = rich;
+    return {
+        value: rich.apply(text, delta),
+        meta,
+    };
+};
 
 const newCrdt = {
     merge: (one, two) => {
         if (!one) return two;
-        return ncrdt.mergeTwo(one, two);
+        return ncrdt.mergeTwo(one, two, (v1, _, v2, __) => ({
+            value: rich.merge(v1, v2),
+            meta: null,
+        }));
     },
     latestStamp: ncrdt.latestStamp,
     value: d => d.value,
     deltas: {
         ...ncrdt.deltas,
+        stamp: data => ncrdt.deltas.stamp(data, () => null),
         apply: (base, delta) =>
-            ncrdt.applyDelta(
-                base,
-                delta,
-                () => {
-                    throw new Error('no other yet');
-                },
-                () => {
-                    throw new Error('no other yet');
-                },
-            ),
+            ncrdt.applyDelta(base, delta, applyOtherDelta, otherMerge),
     },
-    createValue: ncrdt.createDeep,
+    createValue: (value, stamp, getStamp, schema) => {
+        return ncrdt.createWithSchema(
+            value,
+            stamp,
+            getStamp,
+            schema,
+            value => null,
+        );
+    },
 };
 
 const setupBlob = () => {
     return createBlobClient(
-        // crdt,
         newCrdt,
-        { tasks: ItemSchema },
+        { tasks: ItemSchema, notes: NoteSchema },
         new PersistentClock(localStorageClockPersist('local-first')),
-        makeBlobPersistence('local-first-blob', ['tasks']),
+        makeBlobPersistence('local-first-blob', ['tasks', 'notes']),
         createBasicBlobNetwork('http://localhost:9900/blob/awesome.blob'),
     );
 };
 
 const setupDelta = () => {
     return createDeltaClient(
-        // crdt,
         newCrdt,
-        { tasks: ItemSchema },
+        { tasks: ItemSchema, notes: NoteSchema },
+        // new PersistentClock(inMemoryClockPersist('local-first')),
+        // makeDeltaInMemoryPersistence('local-first', ['tasks', 'notes']),
         new PersistentClock(localStorageClockPersist('local-first')),
-        makeDeltaPersistence('local-first', ['tasks']),
+        makeDeltaPersistence('local-first', ['tasks', 'notes']),
+
         // createPollingNetwork('http://localhost:9900/sync'),
         createWebSocketNetwork('ws://localhost:9900/sync'),
     );
 };
 
-const client = setupBlob();
-// const client = setupDelta();
+// const client = setupBlob();
+const client = setupDelta();
 
-type Tasks = {
-    [key: string]: {
-        completed: boolean,
-        title: string,
-        createdDate: number,
-        tags: { [key: string]: boolean },
-    },
+type Task = {
+    completed: boolean,
+    title: string,
+    createdDate: number,
+    tags: { [key: string]: boolean },
 };
 
-const useCollection = (client, name) => {
+type Tasks = {
+    [key: string]: Task,
+};
+
+type NoteT = {
+    createdDate: number,
+    title: string,
+    body: rich.CRDT,
+};
+
+const useCollection = function<T: {}>(client, name) {
     const col = React.useMemo(() => client.getCollection(name), []);
-    const [data, setData] = React.useState(({}: Tasks));
+    const [data, setData] = React.useState(({}: { [key: string]: T }));
     React.useEffect(() => {
         col.loadAll().then(data => {
-            console.log('loaded all', data);
+            // console.log('loaded all', data);
             setData(a => ({ ...a, ...data }));
             col.onChanges(changes => {
-                console.log('changes', changes);
+                // console.log('changes', changes);
                 setData(data => {
                     const n = { ...data };
                     changes.forEach(({ value, id }) => {
@@ -107,13 +137,15 @@ const useCollection = (client, name) => {
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
 const App = () => {
-    const [col, data] = useCollection(client, 'tasks');
+    const [col, data] = useCollection<Task>(client, 'tasks');
+    const [noteCol, noteData] = useCollection<NoteT>(client, 'notes');
     const [connected, setConnected] = React.useState(false);
     React.useEffect(() => {
         client.onSyncStatus(status => setConnected(status));
     }, []);
     return (
         <div style={{ margin: '32px 64px' }}>
+            <TextBindingExample />
             <div>
                 Hello! We are{' '}
                 {connected && connected.status !== 'disconnected'
@@ -121,6 +153,18 @@ const App = () => {
                     : 'Offline'}{' '}
                 {client.sessionId}
             </div>
+            <button
+                onClick={() => {
+                    const id = client.getStamp();
+                    noteCol.save(id, {
+                        title: 'New note',
+                        createDate: Date.now(),
+                        body: rich.init(client.sessionId),
+                    });
+                }}
+            >
+                Add a note
+            </button>
             <button
                 onClick={() => {
                     const id = client.getStamp();
@@ -134,6 +178,19 @@ const App = () => {
             >
                 Add a thing
             </button>
+            {Object.keys(noteData)
+                .sort(
+                    (a, b) => noteData[a].createdDate - noteData[b].createdDate,
+                )
+                .map(id => (
+                    <Note
+                        key={id}
+                        sessionId={client.sessionId}
+                        id={id}
+                        item={noteData[id]}
+                        col={noteCol}
+                    />
+                ))}
             {Object.keys(data)
                 .sort((a, b) => data[a].createdDate - data[b].createdDate)
                 .map(id => (
@@ -149,7 +206,231 @@ const App = () => {
     );
 };
 
-const Item = ({ item, onChange }) => {
+const TextBindingExample = () => {
+    const [text, setText] = React.useState(() => rich.init());
+    const plain = rich.toString(text);
+    return (
+        <div>
+            <textarea
+                value={plain}
+                onChange={e => {
+                    const value = e.target.value;
+                    const change = textBinding.inferChange(
+                        plain,
+                        value,
+                        e.target.selectionStart === e.target.selectionEnd
+                            ? e.target.selectionStart
+                            : null,
+                    );
+                    console.log(plain, value, change);
+                    const deltas = [];
+                    // const clone = { ...text };
+                    if (change.removed) {
+                        deltas.push(
+                            rich.del(
+                                text,
+                                change.removed.at,
+                                change.removed.len,
+                            ),
+                        );
+                    }
+                    if (change.added) {
+                        deltas.push(
+                            rich.insert(
+                                text,
+                                'a',
+                                change.added.at,
+                                change.added.text,
+                            ),
+                        );
+                    }
+                    console.log(deltas);
+                    // col.applyRichTextDelta(id, ['body'], deltas);
+                    setText(rich.apply(text, deltas));
+                }}
+            />
+            <div style={{ whiteSpace: 'pre' }}>
+                {JSON.stringify(text, null, 2)}
+            </div>
+        </div>
+    );
+};
+
+const CRDTTextarea = ({ sessionId, value, onChange }) => {
+    const ref = React.useRef(null);
+    const savedValue = React.useRef(value);
+    const currentText = rich.toString(value);
+    const initial = React.useRef(true);
+
+    const sync = React.useCallback(newValue => {
+        if (newValue === savedValue.current && !initial.current) {
+            return;
+        }
+        if (!ref.current) {
+            return;
+        }
+        const node = ref.current;
+        initial.current = false;
+        const text = rich.toString(newValue);
+        const oldValue = savedValue.current;
+        savedValue.current = newValue;
+        if (text !== node.value) {
+            const start = node.selectionStart;
+            const end = node.selectionEnd;
+            console.log('setting text value to', text);
+            node.value = text;
+            try {
+                const oldText = rich.toString(oldValue);
+                checkConsistency(oldValue);
+                checkConsistency(newValue);
+                console.log('Old', oldText, oldText.length);
+                console.log('New', text, text.length);
+                console.log('Selection', start, end);
+                // const startLoc = rich.posToLoc(oldValue, start, false);
+                // const endLoc = rich.posToLoc(oldValue, end, true);
+                // console.log('locs', startLoc, endLoc);
+                // const newStart = rich.locToPos(newValue, startLoc);
+                // const newEnd = rich.locToPos(newValue, endLoc);
+                const transformed = rich.adjustSelection(
+                    oldValue,
+                    newValue,
+                    start,
+                    end,
+                );
+                console.log('New selection', transformed);
+                node.selectionStart = transformed.start;
+                node.selectionEnd = transformed.end;
+            } catch (err) {
+                console.error(err);
+            }
+        } else {
+            console.log('text already matches', text);
+        }
+    }, []);
+
+    sync(value);
+
+    return (
+        <textarea
+            ref={node => {
+                if (node) {
+                    ref.current = node;
+                    sync(value);
+                }
+            }}
+            onChange={e => {
+                const newValue = e.target.value;
+                const change = textBinding.inferChange(
+                    currentText,
+                    newValue,
+                    e.target.selectionStart === e.target.selectionEnd
+                        ? e.target.selectionStart
+                        : null,
+                );
+                // console.log('>> change inferred <<', change);
+                const deltas = [];
+                if (change.removed) {
+                    deltas.push(
+                        rich.del(
+                            savedValue.current,
+                            change.removed.at,
+                            change.removed.len,
+                        ),
+                    );
+                }
+                if (change.added) {
+                    deltas.push(
+                        rich.insert(
+                            savedValue.current,
+                            sessionId,
+                            change.added.at,
+                            change.added.text,
+                        ),
+                    );
+                }
+                // console.log('applying', deltas);
+                onChange(deltas);
+            }}
+        />
+    );
+};
+
+const Note = ({
+    id,
+    item,
+    col,
+    sessionId,
+}: {
+    id: string,
+    item: NoteT,
+    col: Collection<Note>,
+    sessionId: string,
+}) => {
+    // console.log(item);
+    // let currentText = rich.toString(item.body);
+    return (
+        <div>
+            Note
+            <div>{item.title || 'Untitled'}</div>
+            <div>
+                <CRDTTextarea
+                    sessionId={sessionId}
+                    value={item.body}
+                    onChange={deltas =>
+                        col.applyRichTextDelta(id, ['body'], deltas)
+                    }
+                />
+                {/* <textarea
+                    value={currentText}
+                    onChange={e => {
+                        const newValue = e.target.value;
+                        const change = textBinding.inferChange(
+                            currentText,
+                            newValue,
+                            e.target.selectionStart === e.target.selectionEnd
+                                ? e.target.selectionStart
+                                : null,
+                        );
+                        console.log('>> change inferred <<', change);
+                        const deltas = [];
+                        if (change.removed) {
+                            deltas.push(
+                                rich.del(
+                                    item.body,
+                                    change.removed.at,
+                                    change.removed.len,
+                                ),
+                            );
+                        }
+                        if (change.added) {
+                            deltas.push(
+                                rich.insert(
+                                    item.body,
+                                    sessionId,
+                                    change.added.at,
+                                    change.added.text,
+                                ),
+                            );
+                        }
+                        console.log('applying', deltas);
+                        col.applyRichTextDelta(id, ['body'], deltas);
+                    }}
+                /> */}
+            </div>
+            <div style={{ whiteSpace: 'pre', fontFamily: 'monospace' }}>
+                {JSON.stringify(item.body, null, 2)}
+            </div>
+        </div>
+    );
+};
+
+const Item = ({
+    item,
+    onChange,
+}: {
+    item: Task,
+    onChange: (string, any) => void,
+}) => {
     const [text, setText] = React.useState(null);
     return (
         <div

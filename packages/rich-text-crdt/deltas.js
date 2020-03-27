@@ -19,6 +19,7 @@ import {
 
 export const insert = (
     state: CRDT,
+    site: string,
     at: number,
     text: string,
     newFormat: ?{ [key: string]: any } = null,
@@ -30,10 +31,14 @@ export const insert = (
         : initialLoc;
     const afterId = idAfter(state, loc);
 
-    state.largestLocalId = Math.max(loc.id, afterId, state.largestLocalId);
+    const largestLocalId = Math.max(
+        loc.id,
+        afterId,
+        state.largestIDs[site] || 0,
+    );
 
     const deltas = [];
-    let nextId = state.largestLocalId + 1;
+    let nextId = largestLocalId + 1;
     let nextAfter = [loc.id, loc.site];
     // console.log('Insert', initialLoc, loc, nextId);
     if (newFormat) {
@@ -43,12 +48,12 @@ export const insert = (
         const addFormat = (key, value) => {
             const openNode = {
                 after: nextAfter,
-                id: [nextId, state.site],
+                id: [nextId, site],
             };
             nextId += 1;
             const closeNode = {
                 after: openNode.id,
-                id: [nextId, state.site],
+                id: [nextId, site],
             };
             nextId += 1;
             nextAfter = openNode.id;
@@ -83,10 +88,10 @@ export const insert = (
     deltas.push({
         type: 'insert',
         after: nextAfter,
-        id: [nextId, state.site],
+        id: [nextId, site],
         text,
     });
-    state.largestLocalId = nextId + text.length - 1;
+    // state.largestLocalId = nextId + text.length - 1;
 
     return deltas;
 
@@ -127,7 +132,7 @@ const maybeDeleteFormats = (
         throw new Error(`no node ${toKey(openNode.after)}`);
     }
     const startNext = start ? nextNode(state, start) : state.roots[0];
-    if (!startNext) {
+    if (startNext == null) {
         return;
     }
     const startNextNode = state.map[startNext];
@@ -147,7 +152,7 @@ const maybeDeleteFormats = (
     let current = end;
     while (true) {
         const nextKey = nextNode(state, current);
-        if (!nextKey) {
+        if (nextKey == null) {
             break;
         }
         current = state.map[nextKey];
@@ -209,6 +214,7 @@ const maybeDeleteFormats = (
 
 export const format = (
     state: CRDT,
+    site: string,
     at: number,
     length: number,
     key: string,
@@ -216,19 +222,24 @@ export const format = (
     stamp?: string,
 ): Array<Delta> => {
     stamp =
-        stamp ??
-        Date.now()
-            .toString(36)
-            .padStart(5, '0');
+        stamp != null
+            ? stamp
+            : Date.now()
+                  .toString(36)
+                  .padStart(5, '0');
 
     const loc = posToLoc(state, at, true);
     const afterId = idAfter(state, loc);
-    state.largestLocalId = Math.max(loc.id, afterId, state.largestLocalId);
-    const id = state.largestLocalId + 1;
-    state.largestLocalId += 1;
+    const largestLocalId = Math.max(
+        loc.id,
+        afterId,
+        state.largestIDs[site] || 0,
+    );
+    const id = largestLocalId + 1;
+    // state.largestLocalId += 1;
     const openNode = {
         after: [loc.id, loc.site],
-        id: [id, state.site],
+        id: [id, site],
     };
 
     const endLoc =
@@ -279,16 +290,11 @@ export const format = (
     //     // endLoc.site = node.id[1];
     // });
     const endAfterId = length === 0 ? afterId : idAfter(state, endLoc);
-    state.largestLocalId = Math.max(
-        endLoc.id,
-        endAfterId,
-        state.largestLocalId,
-    );
-    const endId = state.largestLocalId + 1;
-    state.largestLocalId += 1;
+    const largestLocalId2 = Math.max(endLoc.id, endAfterId, id);
+    const endId = largestLocalId2 + 1;
     const closeNode = {
         after: [endLoc.id, endLoc.site],
-        id: [endId, state.site],
+        id: [endId, site],
     };
 
     return [

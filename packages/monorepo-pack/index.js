@@ -7,6 +7,7 @@ const babel = require('@babel/core');
 const { transformFromAst, transform } = babel;
 const traverse = require('@babel/traverse');
 const generate = require('@babel/generator');
+const recast = require('recast');
 
 const asExternal = (config, full) => {
     return null; // no external support yet
@@ -75,9 +76,17 @@ const processFile = (path, config, addFile) => {
         ],
     });
 
-    const ast = parser.parse(code, { sourceType: 'module', plugins: ['flow'] });
+    const ast = recast.parse(code, {
+        parser: {
+            parse: code =>
+                parser.parse(code, {
+                    sourceType: 'module',
+                    plugins: ['flow'],
+                }),
+        },
+    });
     traverse.default(ast, plugin(babel).visitor);
-    const { code: flow } = generate.default(ast);
+    const { code: flow } = recast.print(ast);
 
     return { es5, flow };
 };
@@ -187,6 +196,7 @@ module.exports = config => {
         const rel = path.relative(base, file);
         const full = path.join(config.dest, rel);
         mkdirp(path.dirname(full));
+        console.log('Writing', full);
         fs.writeFileSync(full, files[file].es5, 'utf8');
         fs.writeFileSync(full + '.flow', files[file].flow, 'utf8');
     });

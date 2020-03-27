@@ -18,9 +18,11 @@ export const handleMessages = function<Delta, Data>(
     const acks = messages
         .map(message => onMessage(server, sessionId, message))
         .filter(Boolean);
-    const response = getMessages(server, sessionId);
+    const response = acks.concat(getMessages(server, sessionId));
 
-    respond(acks.concat(response));
+    if (response.length) {
+        respond(response);
+    }
 };
 
 export const broadcast = function<Delta, Data>(
@@ -33,7 +35,9 @@ export const broadcast = function<Delta, Data>(
     Object.keys(clients).forEach(id => {
         if (id !== sessionId) {
             const response = getMessages(server, id);
-            clients[id].send(response);
+            if (response.length) {
+                clients[id].send(response);
+            }
         }
     });
 };
@@ -47,7 +51,8 @@ export const onWebsocket = <Delta, Data>(
     ws: { send: string => void, on: (string, (string) => void) => void },
 ) => {
     clients[sessionId] = {
-        send: messages => ws.send(JSON.stringify(messages)),
+        send: (messages: Array<ServerMessage<Delta, Data>>) =>
+            ws.send(JSON.stringify(messages)),
     };
     ws.on('message', data => {
         handleMessages(

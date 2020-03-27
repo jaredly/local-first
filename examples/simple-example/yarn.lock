@@ -2845,7 +2845,7 @@ icss-replace-symbols@1.1.0, icss-replace-symbols@^1.1.0:
   resolved "https://registry.yarnpkg.com/icss-replace-symbols/-/icss-replace-symbols-1.1.0.tgz#06ea6f83679a7749e386cfe1fe812ae5db223ded"
   integrity sha1-Bupvg2ead0njhs/h/oEq5dsiPe0=
 
-idb@^5.0.0:
+idb@^5.0.1:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/idb/-/idb-5.0.1.tgz#aad7d045490a3be133885cd0ce15b334a83ce3ac"
   integrity sha512-jdFnxTvz3JZ5AQP4nAb0x7bnisFNO5KqafsarDn/aehIn84UcVY3z96mq6WiqNe8z7OpZWZ0xG1ORbkwuBp5Mw==

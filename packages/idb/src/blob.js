@@ -32,6 +32,7 @@ export const makePersistence = function(
 
     return {
         collections,
+        tabIsolated: false,
         async load(collection: string, id: string) {
             const data = await (await db).get(colName(collection), id);
             return data ? data.value : null;
@@ -41,10 +42,10 @@ export const makePersistence = function(
         },
         async updateMeta(serverEtag: ?string, dirtyStampToClear: ?string) {
             const tx = (await db).transaction('meta', 'readwrite');
-            if (serverEtag) {
+            if (serverEtag != null) {
                 tx.store.put(serverEtag, 'serverEtag');
             }
-            if (dirtyStampToClear) {
+            if (dirtyStampToClear != null) {
                 const current = await tx.store.get('dirty');
                 if (current === dirtyStampToClear) {
                     tx.store.put(null, 'dirty');

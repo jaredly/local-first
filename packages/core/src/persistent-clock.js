@@ -1,11 +1,26 @@
 // @flow
-import * as hlc from '../hybrid-logical-clock';
-import type { HLC } from '../hybrid-logical-clock';
+import * as hlc from '../../hybrid-logical-clock/src';
+import type { HLC } from '../../hybrid-logical-clock/src';
+
+export const inMemoryClockPersist = () => {
+    let saved = null;
+    return {
+        get(init: () => HLC): HLC {
+            if (!saved) {
+                saved = init();
+            }
+            return saved;
+        },
+        set(clock: HLC) {
+            saved = clock;
+        },
+    };
+};
 
 export const localStorageClockPersist = (key: string) => ({
     get(init: () => HLC): HLC {
         const raw = localStorage.getItem(key);
-        if (!raw) {
+        if (raw == null) {
             const res = init();
             localStorage.setItem(key, hlc.pack(res));
             return res;

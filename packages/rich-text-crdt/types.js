@@ -18,11 +18,7 @@ export type Node = {
     formats: { [key: string]: Array<string> },
 };
 
-export type Content =
-    | {|
-          type: 'text',
-          text: string,
-      |}
+export type FormatContent =
     | {|
           type: 'open',
           key: string,
@@ -35,12 +31,18 @@ export type Content =
           stamp: string,
       |};
 
-export const rootSite = '0:-root-';
-export const rootSiteRight = '1:-root-';
+export type Content =
+    | {|
+          type: 'text',
+          text: string,
+      |}
+    | FormatContent;
+
+// export const rootSite = '0:-root-';
+// export const rootSiteRight = '1:-root-';
 
 export type CRDT = {|
-    site: string,
-    largestLocalId: number,
+    largestIDs: { [site: string]: number },
     roots: Array<string>,
     map: { [key: string]: Node },
 |};
@@ -49,13 +51,15 @@ export type Loc = { id: number, site: string, pre: boolean };
 
 export type Span = { id: number, site: string, length: number };
 
+export type InsertDelta = {|
+    type: 'insert',
+    id: [number, string],
+    after: [number, string],
+    text: string,
+|};
+
 export type Delta =
-    | {|
-          type: 'insert',
-          id: [number, string],
-          after: [number, string],
-          text: string,
-      |}
+    | InsertDelta
     | {| type: 'delete', spans: Array<Span> |}
     // | {|
     //       type: 'update',

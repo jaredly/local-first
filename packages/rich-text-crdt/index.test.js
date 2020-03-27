@@ -1,4 +1,4 @@
-//
+// @-flow
 import fixtures from './fixtures';
 import deepEqual from 'fast-deep-equal';
 
@@ -8,42 +8,44 @@ import {
     del,
     format,
     init,
-    inflate,
     walk,
     fmtIdx,
     toKey,
     getFormatValues,
+    merge,
 } from './';
+import { checkConsistency } from './check';
 import { quillDeltasToDeltas, stateToQuillContents } from './quill-deltas';
 
 const walkWithFmt = (state, fn) => {
     const format = {};
     const fmt = {};
     walk(state, node => {
-        if (node.content.type === 'text') {
-            fn(node.content.text, fmt);
-        } else if (node.content.type === 'open') {
-            if (!format[node.content.key]) {
-                format[node.content.key] = [node.content];
+        const { content } = node;
+        if (content.type === 'text') {
+            fn(content.text, fmt);
+        } else if (content.type === 'open') {
+            if (!format[content.key]) {
+                format[content.key] = [content];
             } else {
-                const idx = fmtIdx(format[node.content.key], node.content);
+                const idx = fmtIdx(format[content.key], content);
                 // insert into sorted order.
-                format[node.content.key].splice(idx, 0, node.content);
+                format[content.key].splice(idx, 0, content);
             }
-            fmt[node.content.key] = format[node.content.key][0].value;
-        } else if (node.content.type === 'close') {
-            const f = format[node.content.key];
+            fmt[content.key] = format[content.key][0].value;
+        } else if (content.type === 'close') {
+            const f = format[content.key];
             if (!f) {
-                console.log('nope at the close', node.content);
+                console.log('nope at the close', content);
             }
-            const idx = f.findIndex(item => item.stamp === node.content.stamp);
+            const idx = f.findIndex(item => item.stamp === content.stamp);
             if (idx !== -1) {
                 f.splice(idx, 1);
             }
             if (f.length) {
-                fmt[node.content.key] = f[0].value;
+                fmt[content.key] = f[0].value;
             } else {
-                delete fmt[node.content.key];
+                delete fmt[content.key];
             }
         }
     });
@@ -51,20 +53,26 @@ const walkWithFmt = (state, fn) => {
 
 const justContents = (state, all) => {
     const res = [];
-    walk(state, node => res.push(node.content), all);
+    walk(
+        state,
+        node => {
+            res.push(node.content);
+        },
+        all,
+    );
     return res;
 };
 
 const testAltSerialize = state => {
     const res = [];
-    walk(state, node => {
-        if (node.content.type === 'text') {
-            const fmt = getFormatValues(state, node.formats);
+    walk(state, ({ content, formats }) => {
+        if (content.type === 'text') {
+            const fmt = getFormatValues(state, formats);
             if (res.length && deepEqual(res[res.length - 1].fmt, fmt)) {
-                res[res.length - 1].text += node.content.text;
+                res[res.length - 1].text += content.text;
             } else {
                 res.push({
-                    text: node.content.text,
+                    text: content.text,
                     fmt,
                 });
             }
@@ -85,15 +93,39 @@ const testSerialize = state => {
     return res;
 };
 
-const actionToDeltas = (state, action) => {
+const actionToDeltas = (
+    state,
+    site: string,
+    action:
+        | {
+              type: 'insert',
+              at: number,
+              text: string,
+              format: any,
+          }
+        | {
+              type: 'delete',
+              at: number,
+              count: number,
+          }
+        | {
+              type: 'fmt',
+              at: number,
+              count: number,
+              key: string,
+              value: any,
+              stamp: string,
+          },
+) => {
     if (action.type === 'insert') {
-        return insert(state, action.at, action.text, action.format);
+        return insert(state, site, action.at, action.text, action.format);
     } else if (action.type === 'delete') {
         return [del(state, action.at, action.count)];
     } else if (action.type === 'fmt') {
         return [
             format(
                 state,
+                site,
                 action.at,
                 action.count,
                 action.key,
@@ -105,11 +137,12 @@ const actionToDeltas = (state, action) => {
 };
 
 const runQuillTest = (deltas, result) => {
-    let state = init('a');
+    let state = init();
     let i = 0;
     deltas.forEach(quillDelta => {
         const { state: nw, deltas } = quillDeltasToDeltas(
             state,
+            'a',
             quillDelta.ops,
             () => (i++).toString(36).padStart(5, '0'),
         );
@@ -121,7 +154,8 @@ const runQuillTest = (deltas, result) => {
 };
 
 const runActionsTest = actions => {
-    let state = init('a');
+    const baseSite = 'a';
+    let state = init();
     actions.forEach(action => {
         // console.log('action', action);
         if (action.state) {
@@ -148,12 +182,13 @@ const runActionsTest = actions => {
                 if (!states[site]) {
                     states[site] = {
                         deltas: [],
-                        state: inflate(site, pre.roots, pre.map),
+                        state: pre,
                     };
                 }
                 action.parallel[site].forEach(subAction => {
                     const deltas = actionToDeltas(
                         states[site].state,
+                        site,
                         subAction,
                     );
                     deltas.forEach(delta => {
@@ -164,20 +199,27 @@ const runActionsTest = actions => {
             });
             state = states.a.state;
             Object.keys(action.parallel).forEach(site => {
-                if (site !== state.site) {
+                if (site !== 'a') {
                     states[site].deltas.forEach(delta => {
                         state = apply(state, delta);
                     });
                 }
             });
         } else {
-            const deltas = actionToDeltas(state, action);
+            const deltas = actionToDeltas(state, 'a', action);
             deltas.forEach(delta => {
                 // const qd = deltaToQuillDeltas(state, delta)
                 state = apply(state, delta);
+                const again = apply(state, delta);
+                expect(again).toEqual(
+                    state,
+                    'idempotence test ' + JSON.stringify(delta),
+                );
                 // const back = quillDeltasToDeltas(state, qd, genStamp)
             });
         }
+        // expect(merge(state, state)).toEqual(state);
+        checkConsistency(state);
     });
 };
 

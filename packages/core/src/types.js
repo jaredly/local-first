@@ -26,7 +26,7 @@ export type Collection<T> = {
     save: (id: string, value: T) => Promise<void>,
     setAttribute: (
         id: string,
-        path: Array<string>,
+        path: Array<string | number>,
         value: any,
     ) => Promise<void>,
     load: (id: string) => Promise<?T>,
@@ -50,6 +50,7 @@ export type Persistence = {
     ): Promise<Data>,
     load<T>(colid: string, id: string): Promise<?T>,
     loadAll<T>(colid: string): Promise<{ [key: string]: T }>,
+    tabIsolated: boolean,
     // delete(colid: string, id: string): Promise<void>,
 };
 
@@ -177,5 +178,5 @@ export type NetworkCreator<Delta, Data, SyncStatus> = (
     handleMessages: (
         Array<ServerMessage<Delta, Data>>,
         (PeerChange) => mixed,
-    ) => Promise<boolean>,
+    ) => Promise<Array<ClientMessage<Delta, Data>>>,
 ) => Network<SyncStatus>;

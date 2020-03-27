@@ -395,7 +395,7 @@ export const idAfter = function(crdt: CRDT, loc: Loc): number {
             return crdt.map[node.children[0]].id[0];
         }
         const next = nextSibling(crdt, node);
-        if (next) {
+        if (next != null) {
             return crdt.map[next].id[0];
         }
     }
@@ -414,6 +414,7 @@ export const posToLoc = function(
 ): Loc {
     const total = length(crdt);
     if (pos > total) {
+        debugger;
         throw new Error(`Loc ${pos} is outside of the bounds ${total}`);
     }
     const [[id, site], offset] = anchorToLocAtLeft
@@ -472,8 +473,12 @@ export const locToPos = function(crdt: CRDT, loc: Loc): number {
     }
     // step 2: find the position-in-text for this node
     const nodePos = charactersBeforeNode(crdt, node);
-    // step 3: add 1 based on whether it's pre or post
+    if (node.deleted) {
+        return nodePos;
+    }
+    // step 3: adjust for an internal ID
     const offset = loc.id - node.id[0];
+    // step 4: if it's pre (and we're a text node) add 1
     return nodePos + offset + (loc.pre && node.content.type === 'text' ? 1 : 0);
 };
 
@@ -522,4 +527,18 @@ export const locToInsertionPos = function(
         const offset = after[0] - node.id[0];
         return nodePos + offset + 1; // TODO??? (node.content.type === 'text' ? 1 : 0);
     }
+};
+
+export const adjustSelection = (
+    prev: CRDT,
+    current: CRDT,
+    start: number,
+    end: number,
+) => {
+    const startLoc = posToLoc(prev, start, false);
+    const endLoc = posToLoc(prev, end, true);
+    // console.log('locs', startLoc, endLoc);
+    const newStart = locToPos(current, startLoc);
+    const newEnd = locToPos(current, endLoc);
+    return { start: newStart, end: newEnd };
 };

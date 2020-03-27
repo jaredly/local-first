@@ -1,25 +1,19 @@
 // @flow
 import type { Node, CRDT, Content } from './types';
 
-// export const nodeToString = function<Format>(
-//     node: Node<Format>,
-//     format?: (string, Format) => string,
-// ) {
-//     return (
-//         (node.deleted
-//             ? ''
-//             : format && node.format
-//             ? format(node.text, node.format)
-//             : node.text) +
-//         node.children.map(child => nodeToString(child, format)).join('')
-//     );
-// };
-// export const toString = function<Format>(
-//     crdt: CRDT<Format>,
-//     format?: (string, Format) => string,
-// ) {
-//     return crdt.roots.map(root => nodeToString(root, format)).join('');
-// };
+export const nodeToString = function(state: CRDT, node: Node) {
+    return (
+        (node.deleted || node.content.type !== 'text'
+            ? ''
+            : node.content.text) +
+        node.children
+            .map(child => nodeToString(state, state.map[child]))
+            .join('')
+    );
+};
+export const toString = function(crdt: CRDT) {
+    return crdt.roots.map(root => nodeToString(crdt, crdt.map[root])).join('');
+};
 
 export const toKey = ([id, site]: [number, string]) => `${id}:${site}`;
 export const fromKey = (id: string): [number, string] => {

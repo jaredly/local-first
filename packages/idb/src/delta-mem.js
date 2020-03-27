@@ -1,40 +1,36 @@
 // @flow
 import { openDB } from 'idb';
-import * as hlc from '../../hybrid-logical-clock';
-import type { HLC } from '../../hybrid-logical-clock';
-import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
-import { type CursorType } from '../../../packages/core/src/types';
+import * as hlc from '../../hybrid-logical-clock/src';
+import type { HLC } from '../../hybrid-logical-clock/src';
+import type { Delta, CRDT as Data } from '../../nested-object-crdt/src';
+import { type CursorType } from '../../core/src/types';
 import deepEqual from 'fast-deep-equal';
 import type {
     Persistence,
     FullPersistence,
     DeltaPersistence,
 } from '../../core/src/types';
-import type { DB, Transaction } from './types';
 
-export const applyDeltas = async function<Delta, Data>(
-    db: Promise<DB>,
+export const applyDeltas = function<Delta, Data>(
+    db: FakeDb,
     collection: string,
     deltas: Array<{ node: string, delta: Delta, stamp: string }>,
     serverCursor: ?CursorType,
     apply: (?Data, Delta) => Data,
     storeDeltas: boolean,
 ) {
-    console.log('Apply to collection', collection);
+    // console.log('Apply to collection', collection);
     const stores = storeDeltas
         ? [collection + ':meta', collection + ':nodes', collection + ':deltas']
         : [collection + ':meta', collection + ':nodes'];
-    console.log('Opening for stores', stores);
-    const tx = (await db).transaction(stores, 'readwrite');
+    // console.log('Opening for stores', stores);
     if (storeDeltas) {
-        const deltaStore = tx.objectStore(collection + ':deltas');
-        deltas.forEach(obj => deltaStore.put(obj));
+        deltas.forEach(obj => db.put(collection + ':deltas', obj));
     }
-    const nodes = tx.objectStore(collection + ':nodes');
     const idMap = {};
     deltas.forEach(d => (idMap[d.node] = true));
     const ids = Object.keys(idMap);
-    const gotten = await Promise.all(ids.map(id => nodes.get(id)));
+    const gotten = ids.map(id => db.get(collection + ':nodes', id));
     // console.log('loaded up', ids, gotten);
     const map = {};
     gotten.forEach(res => {
@@ -46,56 +42,92 @@ export const applyDeltas = async function<Delta, Data>(
         map[node] = apply(map[node], delta);
     });
     // console.log('idb changeMany processed', ids, map, serverCursor);
-    ids.forEach(id => (map[id] ? nodes.put({ id, value: map[id] }) : null));
+    ids.forEach(id =>
+        map[id] ? db.put(collection + ':nodes', { id, value: map[id] }) : null,
+    );
     if (serverCursor != null) {
-        tx.objectStore(collection + ':meta').put(serverCursor, 'cursor');
+        db.put(collection + ':meta', serverCursor, 'cursor');
     }
-    await tx.done;
     return map;
 };
 
+class FakeDb {
+    collections: { [colid: string]: { [key: string]: any } };
+    keyPaths: { [colid: string]: string };
+    constructor() {
+        this.collections = {};
+        this.keyPaths = {};
+    }
+    createObjectStore(name: string, options?: { keyPath: string }) {
+        this.collections[name] = {};
+        if (options && options.keyPath) {
+            this.keyPaths[name] = options.keyPath;
+        }
+    }
+    getAll<T>(colid: string): Array<T> {
+        return Object.keys(this.collections[colid]).map(
+            key => this.collections[colid][key],
+        );
+    }
+    put<T>(colid: string, object: T, key?: string) {
+        if (key == null) {
+            if (
+                object == null ||
+                typeof object !== 'object' ||
+                typeof object[this.keyPaths[colid]] !== 'string'
+            ) {
+                throw new Error('Must specify a key');
+            }
+            key = object[this.keyPaths[colid]];
+        }
+        this.collections[colid][key] = object;
+    }
+    get<T>(colid: string, key: string): ?T {
+        return this.collections[colid][key];
+    }
+    deleteUpTo(colid: string, upTo: string) {
+        const keys = Object.keys(this.collections[colid]).sort();
+        for (let key of keys) {
+            delete this.collections[colid][key];
+            if (key === upTo) {
+                break;
+            }
+        }
+    }
+}
+
+// TODO abstract this out so that we can have the same base implementation
+// Also be smart so if the idb doesn't have the correct objectStores set up, I throw an error.
 const makePersistence = (
     name: string,
     collections: Array<string>,
 ): DeltaPersistence => {
-    // console.log('Persistence with name', name);
-    const db: Promise<DB> = openDB(name, 1, {
-        upgrade(db, oldVersion, newVersion, transaction) {
-            collections.forEach(name => {
-                db.createObjectStore(name + ':deltas', {
-                    keyPath: 'stamp',
-                });
-                db.createObjectStore(name + ':nodes', { keyPath: 'id' });
-                // stores "cursor", and that's it for the moment
-                // In a multi-delta-persistence world, it would
-                // store a cursor for each server.
-                db.createObjectStore(name + ':meta');
-            });
-            console.log('made object stores');
-        },
+    const db = new FakeDb();
+    collections.forEach(name => {
+        db.createObjectStore(name + ':deltas', {
+            keyPath: 'stamp',
+        });
+        db.createObjectStore(name + ':nodes', { keyPath: 'id' });
+        // stores "cursor", and that's it for the moment
+        // In a multi-delta-persistence world, it would
+        // store a cursor for each server.
+        db.createObjectStore(name + ':meta');
     });
 
     return {
         collections,
-        tabIsolated: false,
+        tabIsolated: true,
         async deltas<Delta>(
             collection: string,
         ): Promise<Array<{ node: string, delta: Delta, stamp: string }>> {
-            return await (await db).getAll(collection + ':deltas');
+            return db.getAll(collection + ':deltas');
         },
         async getServerCursor(collection: string): Promise<?number> {
-            return await (await db).get(collection + ':meta', 'cursor');
+            return db.get(collection + ':meta', 'cursor');
         },
         async deleteDeltas(collection: string, upTo: string) {
             // console.log('delete up to', upTo);
-            let cursor = await (await db)
-                .transaction(collection + ':deltas', 'readwrite')
-                // $FlowFixMe why doesn't flow like this
-                .store.openCursor(IDBKeyRange.upperBound(upTo));
-            while (cursor) {
-                cursor.delete();
-                cursor = await cursor.continue();
-            }
+            db.deleteUpTo(collection + ':deltas', upTo);
         },
         async applyDelta<Delta, Data>(
             colid: string,
@@ -109,7 +141,7 @@ const makePersistence = (
             if (!collections.includes(colid)) {
                 throw new Error('Unknown collection ' + colid);
             }
-            const map = await applyDeltas(
+            const map = applyDeltas(
                 db,
                 colid,
                 [{ node: id, delta, stamp }],
@@ -121,11 +153,11 @@ const makePersistence = (
         },
 
         async load<T>(collection: string, id: string): Promise<?T> {
-            const data = await (await db).get(collection + ':nodes', id);
+            const data = db.get(collection + ':nodes', id);
             return data ? data.value : null;
         },
         async loadAll<T>(collection: string): Promise<{ [key: string]: T }> {
-            const items = await (await db).getAll(collection + ':nodes');
+            const items = db.getAll(collection + ':nodes');
             const res = {};
             items.forEach(item => (res[item.id] = item.value));
             return res;

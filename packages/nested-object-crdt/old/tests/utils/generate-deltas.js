@@ -52,7 +52,7 @@ const randomCrdt = (
     hlcStamp: string,
 ) => {
     const rep = randomValue(value);
-    if (rep && typeof rep === 'object') {
+    if (rep != null && typeof rep === 'object') {
         return createDeepMap(rep, hlcStamp);
     }
     return create(rep, hlcStamp);

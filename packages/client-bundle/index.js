@@ -15,4 +15,8 @@ export { default as makeDeltaPersistence } from '../idb/src/delta';
 export { default as createPollingNetwork } from '../core/src/delta/polling-network';
 export { default as createWebSocketNetwork } from '../core/src/delta/websocket-network';
 
-export { PersistentClock, localStorageClockPersist } from './persistent-clock';
+export {
+    PersistentClock,
+    localStorageClockPersist,
+    inMemoryClockPersist,
+} from '../core/src/persistent-clock';

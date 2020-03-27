@@ -3,11 +3,15 @@
 [include]
 ../nested-object-crdt
 ../hybrid-logical-clock
+../rich-text-crdt
+../idb
 
 [libs]
 flow-typed
 
 [lints]
+sketchy-null=error
+sketchy-null-bool=off
 
 [options]
 

@@ -32,7 +32,8 @@ module.exports = [
     // // Insertions
     {
         title: 'Basic insertion',
-        actions: [insert(0, 'Hi'), { state: [text('Hi')] }],
+        // only: true,
+        actions: [insert(0, 'Hia'), { state: [text('Hia')] }],
     },
     {
         title: 'Insert several',
@@ -376,6 +377,28 @@ module.exports = [
             {
                 contents: [ctext('123'), ctext('456')],
             },
+        ],
+    },
+
+    {
+        title: 'merge ups',
+        // only: true,
+        actions: [
+            insert(0, 'abc'),
+            del(1, 1),
+            del(1, 1),
+            { state: [text('a', {})] },
+        ],
+    },
+
+    {
+        title: 'Delete across added',
+        // only: true,
+        actions: [
+            insert(0, 'abde'),
+            insert(2, 'c'),
+            del(1, 3),
+            { state: [text('ae', {})] },
         ],
     },
 

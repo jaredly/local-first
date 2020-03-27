@@ -29,30 +29,31 @@ and then fetches them again ha ha
 yeah what would the "simplest" backend look like, that just completely
 relies on sqlite for all the things?
 
-
 */
 
-export type ClientMessage<Delta, Data> = {
-    type: 'sync',
-    collection: string,
-    serverCursor: ?CursorType,
-    deltas: Array<{ node: string, delta: Delta }>,
-};
+export type ClientMessage<Delta, Data> =
+    | {|
+          type: 'sync',
+          collection: string,
+          serverCursor: ?CursorType,
+          deltas: Array<{ node: string, delta: Delta }>,
+      |}
+    | {| type: 'ack', collection: string, serverCursor: CursorType |};
 
 export type ServerMessage<Delta, Data> =
-    | {
+    | {|
           type: 'sync',
           collection: string,
           serverCursor: CursorType,
           deltas: Array<{ node: string, delta: Delta }>,
-      }
+      |}
     // Indicating that deltas from a client have been received.
-    | { type: 'ack', collection: string, deltaStamp: string };
+    | {| type: 'ack', collection: string, deltaStamp: string |};
 
 // This doesn't have any special permissions things
 // We'll do collection-level permissions.
 
-type CRDTImpl<Delta, Data> = {
+export type CRDTImpl<Delta, Data> = {
     createEmpty: () => Data,
     applyDelta: (Data, Delta) => Data,
     deltas: {
@@ -94,7 +95,7 @@ type Connection<Delta, Data> = {
 export type ServerState<Delta, Data> = {
     persistence: Persistence<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,
-    getSchema: string => Schema,
+    // getSchema: string => Schema,
     clients: {
         [sessionId: string]: {
             collections: {
@@ -109,10 +110,12 @@ export const getMessages = function<Delta, Data>(
     sessionId: string,
 ): Array<ServerMessage<Delta, Data>> {
     if (!state.clients[sessionId]) {
+        console.log(`No clients registered for ${sessionId}`);
         return [];
     }
-    console.log(`Getting messages for ${sessionId}`);
-    return Object.keys(state.clients[sessionId].collections)
+    const colids = Object.keys(state.clients[sessionId].collections);
+    console.log(`Getting messages for ${sessionId}: ${colids.join(',')}`);
+    return colids
         .map((cid: string): ?ServerMessage<Delta, Data> => {
             const lastSeen = state.clients[sessionId].collections[cid];
             const result = state.persistence.deltasSince(
@@ -120,29 +123,41 @@ export const getMessages = function<Delta, Data>(
                 lastSeen,
                 sessionId,
             );
+            if ((!result || !result.deltas.length) && lastSeen == null) {
+                return {
+                    type: 'sync',
+                    collection: cid,
+                    deltas: [],
+                    serverCursor: -1,
+                };
+            }
             if (!result) {
-                console.log('no new messages since', lastSeen);
+                console.log(
+                    `no new messages since ${
+                        lastSeen != null ? lastSeen : 'no-start'
+                    } for ${cid} (${sessionId})`,
+                );
                 return;
             }
             const { cursor, deltas } = result;
             // console.log('getting all since', lastSeen, cursor, deltas);
-            console.log(
-                deltas.length,
-                'new messages since',
-                lastSeen,
-                'new cursor',
-                cursor,
-            );
             if (deltas.length) {
-                if (!cursor) {
+                if (cursor == null) {
                     throw new Error(`Got deltas, but no cursor`);
                 }
+                console.log(
+                    `${deltas.length} new deltas for ${cid} since ${
+                        lastSeen != null ? lastSeen : 'no-start'
+                    }, cursor ${cursor}`,
+                );
                 return {
                     type: 'sync',
                     collection: cid,
                     deltas,
                     serverCursor: cursor,
                 };
+            } else {
+                console.log(`Nothing new for ${cid}`);
             }
         })
         .filter(Boolean);
@@ -157,11 +172,20 @@ export const onMessage = function<Delta, Data>(
         if (!state.clients[sessionId]) {
             state.clients[sessionId] = { collections: {} };
         }
-        const schema = state.getSchema(message.collection);
-        console.log('Setting server cursor', message);
+        // const schema = state.getSchema(message.collection);
+        console.log(
+            'Setting server cursor',
+            message.serverCursor,
+            message.collection,
+        );
         // TODO should I only set this if its present?
-        state.clients[sessionId].collections[message.collection] =
-            message.serverCursor;
+        if (
+            message.serverCursor != null ||
+            state.clients[sessionId].collections[message.collection] == null
+        ) {
+            state.clients[sessionId].collections[message.collection] =
+                message.serverCursor;
+        }
         if (message.deltas.length) {
             // const deltas = message.deltas.map(item => ({ ...item, sessionId }));
             state.persistence.addDeltas(
@@ -172,7 +196,7 @@ export const onMessage = function<Delta, Data>(
             let maxStamp = null;
             message.deltas.forEach(delta => {
                 const stamp = state.crdt.deltas.stamp(delta.delta);
-                if (!maxStamp || stamp > maxStamp) {
+                if (maxStamp == null || stamp > maxStamp) {
                     maxStamp = stamp;
                 }
             });
@@ -187,15 +211,18 @@ export const onMessage = function<Delta, Data>(
             }
             console.log('not acking');
         }
+    } else if (message.type === 'ack') {
+        state.clients[sessionId].collections[message.collection] =
+            message.serverCursor;
     }
 };
 
 const make = <Delta, Data>(
     crdt: CRDTImpl<Delta, Data>,
     persistence: Persistence<Delta, Data>,
-    getSchema: string => Schema,
+    // getSchema: string => Schema,
 ): ServerState<Delta, Data> => {
-    return { crdt, persistence, getSchema, clients: {} };
+    return { crdt, persistence, clients: {} };
 };
 
 export default make;

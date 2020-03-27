@@ -11,8 +11,10 @@ import type {
 } from './types';
 import {
     type Schema,
+    type Type as SchemaType,
     validate,
     validateSet,
+    subSchema,
 } from '../../nested-object-crdt/src/schema.js';
 import type { HLC } from '../../hybrid-logical-clock';
 import * as hlc from '../../hybrid-logical-clock';
@@ -36,13 +38,15 @@ export type CRDTImpl<Delta, Data> = {
     value<T>(Data): T,
     deltas: {
         diff(?Data, Data): Delta,
-        set(Data, Array<string>, Data): Delta,
+        set(Data, Array<string | number>, Data): Delta,
         replace(Data): Delta,
         remove(string): Delta,
+        // $FlowFixMe
+        other<Other>(Data, Array<string | number>, Other, string): Delta,
         apply(Data, Delta): Data,
         stamp(Delta): string,
     },
-    createValue<T>(T, string, () => string): Data,
+    createValue<T>(T, string, () => string, SchemaType): Data,
 };
 
 const send = <Data, T>(
@@ -58,7 +62,7 @@ const send = <Data, T>(
 
 // This is the full version, non-patch I think?
 // Ok I believe this also works with the patch version.
-export const getCollection = function<Delta, Data, T>(
+export const getCollection = function<Delta, Data, RichTextDelta, T>(
     colid: string,
     crdt: CRDTImpl<Delta, Data>,
     persistence: Persistence,
@@ -68,12 +72,36 @@ export const getCollection = function<Delta, Data, T>(
     sendCrossTabChanges: PeerChange => mixed,
     schema: Schema,
 ): Collection<T> {
+    const applyDelta = async (id: string, delta) => {
+        let plain = null;
+        if (state.cache[id] != null) {
+            state.cache[id] = crdt.deltas.apply(state.cache[id], delta);
+            plain = crdt.value(state.cache[id]);
+            send(state, id, plain);
+        }
+        const full = await persistence.applyDelta(
+            colid,
+            id,
+            delta,
+            crdt.deltas.stamp(delta),
+            crdt.deltas.apply,
+        );
+        state.cache[id] = full;
+        const newPlain = crdt.value(full);
+        if (!deepEqual(plain, newPlain)) {
+            send(state, id, newPlain);
+        }
+        sendCrossTabChanges({ col: colid, nodes: [id] });
+        setDirty();
+    };
     return {
         async save(id: string, node: T) {
             validate(node, schema);
             state.cache[id] = crdt.merge(
                 state.cache[id],
-                crdt.createValue(node, getStamp(), getStamp),
+                // STOPSHIP here's the bit
+                // TODO use a schema folks, so we know what should be the rich-text-crdt for example.
+                crdt.createValue(node, getStamp(), getStamp, schema),
             );
             send(state, id, node);
             const delta = crdt.deltas.replace(state.cache[id]);
@@ -88,9 +116,41 @@ export const getCollection = function<Delta, Data, T>(
             setDirty();
         },
 
-        async setAttribute(id: string, path: Array<string>, value: any) {
-            validateSet(schema, path, value);
-            if (!state.cache[id]) {
+        async applyRichTextDelta(
+            id: string,
+            path: Array<string | number>,
+            delta: RichTextDelta,
+        ) {
+            const sub = subSchema(schema, path);
+            if (sub !== 'rich-text') {
+                throw new Error(`Schema at path is not a rich-text`);
+            }
+            if (state.cache[id] == null) {
+                const stored = await persistence.load(colid, id);
+                if (!stored) {
+                    throw new Error(
+                        `Cannot set attribute, node with id ${id} doesn't exist`,
+                    );
+                }
+                state.cache[id] = stored;
+            }
+            const hostDelta = crdt.deltas.other(
+                state.cache[id],
+                path,
+                delta,
+                getStamp(),
+            );
+            return applyDelta(id, hostDelta);
+        },
+
+        async setAttribute(
+            id: string,
+            path: Array<string | number>,
+            value: any,
+        ) {
+            const sub = subSchema(schema, path);
+            validate(value, sub);
+            if (state.cache[id] == null) {
                 const stored = await persistence.load(colid, id);
                 if (!stored) {
                     throw new Error(
@@ -102,28 +162,9 @@ export const getCollection = function<Delta, Data, T>(
             const delta = crdt.deltas.set(
                 state.cache[id],
                 path,
-                crdt.createValue(value, getStamp(), getStamp),
+                crdt.createValue(value, getStamp(), getStamp, sub),
             );
-            let plain = null;
-            if (state.cache[id]) {
-                state.cache[id] = crdt.deltas.apply(state.cache[id], delta);
-                plain = crdt.value(state.cache[id]);
-                send(state, id, plain);
-            }
-            const full = await persistence.applyDelta(
-                colid,
-                id,
-                delta,
-                crdt.deltas.stamp(delta),
-                crdt.deltas.apply,
-            );
-            state.cache[id] = full;
-            const newPlain = crdt.value(full);
-            if (!deepEqual(plain, newPlain)) {
-                send(state, id, newPlain);
-            }
-            sendCrossTabChanges({ col: colid, nodes: [id] });
-            setDirty();
+            return applyDelta(id, delta);
         },
 
         async load(id: string) {
