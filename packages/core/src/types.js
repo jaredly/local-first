@@ -50,6 +50,7 @@ export type Persistence = {
     ): Promise<Data>,
     load<T>(colid: string, id: string): Promise<?T>,
     loadAll<T>(colid: string): Promise<{ [key: string]: T }>,
+    tabIsolated: boolean,
     // delete(colid: string, id: string): Promise<void>,
 };
 

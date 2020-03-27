@@ -158,6 +158,33 @@ export const initialState = function<Data>(
     return state;
 };
 
+const tabIsolatedNetwork = function<SyncStatus>(
+    network: Network<SyncStatus>,
+): OldNetwork<SyncStatus> {
+    const connectionListeners = [];
+    let currentSyncStatus = network.initial;
+    const sync = network.createSync(
+        () => {},
+        (status: SyncStatus) => {
+            currentSyncStatus = status;
+            connectionListeners.forEach(f => f(currentSyncStatus));
+        },
+        () => {
+            // do nothing
+        },
+    );
+    return {
+        setDirty: () => sync(false),
+        onSyncStatus: fn => {
+            connectionListeners.push(fn);
+        },
+        getSyncStatus() {
+            return currentSyncStatus;
+        },
+        sendCrossTabChanges(peerChange) {},
+    };
+};
+
 function createClient<Delta, Data, SyncStatus>(
     crdt: CRDTImpl<Delta, Data>,
     schemas: { [colid: string]: Schema },
@@ -167,30 +194,33 @@ function createClient<Delta, Data, SyncStatus>(
 ): Client<SyncStatus> {
     const state = initialState(persistence.collections);
 
-    const network = peerTabAwareNetwork(
-        (msg: PeerChange) => {
-            return onCrossTabChanges(
+    console.log();
+
+    const innerNetwork = createNetwork(
+        clock.now.node,
+        fresh => getMessages(persistence, fresh),
+        (messages, sendCrossTabChanges) =>
+            handleMessages(
                 crdt,
                 persistence,
-                state[msg.col],
-                msg.col,
-                msg.nodes,
-            );
-        },
-        createNetwork(
-            clock.now.node,
-            fresh => getMessages(persistence, fresh),
-            (messages, sendCrossTabChanges) =>
-                handleMessages(
-                    crdt,
-                    persistence,
-                    messages,
-                    state,
-                    clock.recv,
-                    sendCrossTabChanges,
-                ),
-        ),
+                messages,
+                state,
+                clock.recv,
+                sendCrossTabChanges,
+            ),
     );
+
+    const network = persistence.tabIsolated
+        ? tabIsolatedNetwork(innerNetwork)
+        : peerTabAwareNetwork((msg: PeerChange) => {
+              return onCrossTabChanges(
+                  crdt,
+                  persistence,
+                  state[msg.col],
+                  msg.col,
+                  msg.nodes,
+              );
+          }, innerNetwork);
 
     return {
         sessionId: clock.now.node,

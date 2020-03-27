@@ -1,6 +1,5 @@
 // @flow
 import type { BlobNetworkCreator, Network, Blob, PeerChange } from '../types';
-import { peerTabAwareNetwork } from '../peer-tabs';
 import poller from '../poller';
 import backOff from '../back-off';
 import { debounce } from '../debounce';

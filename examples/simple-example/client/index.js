@@ -78,10 +78,10 @@ const setupDelta = () => {
     return createDeltaClient(
         newCrdt,
         { tasks: ItemSchema, notes: NoteSchema },
-        new PersistentClock(inMemoryClockPersist('local-first')),
-        makeDeltaInMemoryPersistence('local-first', ['tasks', 'notes']),
-        // new PersistentClock(localStorageClockPersist('local-first')),
-        // makeDeltaPersistence('local-first', ['tasks', 'notes']),
+        // new PersistentClock(inMemoryClockPersist('local-first')),
+        // makeDeltaInMemoryPersistence('local-first', ['tasks', 'notes']),
+        new PersistentClock(localStorageClockPersist('local-first')),
+        makeDeltaPersistence('local-first', ['tasks', 'notes']),
 
         // createPollingNetwork('http://localhost:9900/sync'),
         createWebSocketNetwork('ws://localhost:9900/sync'),

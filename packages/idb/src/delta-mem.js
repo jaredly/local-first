@@ -116,6 +116,7 @@ const makePersistence = (
 
     return {
         collections,
+        tabIsolated: true,
         async deltas<Delta>(
             collection: string,
         ): Promise<Array<{ node: string, delta: Delta, stamp: string }>> {

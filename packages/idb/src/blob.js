@@ -32,6 +32,7 @@ export const makePersistence = function(
 
     return {
         collections,
+        tabIsolated: false,
         async load(collection: string, id: string) {
             const data = await (await db).get(colName(collection), id);
             return data ? data.value : null;

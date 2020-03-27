@@ -3,7 +3,6 @@ import { type PeerChange } from '../types';
 import { type ClientMessage, type ServerMessage } from '../server';
 import type { Network, NetworkCreator } from '../types.js';
 import backOff from '../back-off';
-import { peerTabAwareSync } from '../peer-tabs';
 
 const reconnectingSocket = (
     url,
