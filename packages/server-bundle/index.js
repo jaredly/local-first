@@ -1,8 +1,4 @@
 // @flow
-import * as crdt from '../nested-object-crdt';
-import type { Delta, CRDT as Data } from '../nested-object-crdt';
-import type { Schema } from '../nested-object-crdt/src/schema.js';
-import make, { onMessage, getMessages } from '../core/src/server';
 import type {
     ClientMessage,
     ServerMessage,
@@ -12,20 +8,10 @@ import type {
 
 import path from 'path';
 import fs from 'fs';
-import levelup from 'levelup';
-import leveldown from 'leveldown';
-import setupPersistence from './sqlite-persistence';
 
 import { getBlob, putBlob } from './blob';
 import { post } from './poll';
 import { onWebsocket } from './websocket';
-
-export const makeServer = (schema: Schema, dataPath: string) =>
-    make<Delta, Data>(crdt, setupPersistence(dataPath), (
-        collectionId /*: string*/,
-    ) /*: Schema*/ => {
-        return schema;
-    });
 
 export const runServer = <Delta, Data>(
     port: number,
@@ -41,13 +27,13 @@ export const runServer = <Delta, Data>(
     app.use(require('body-parser').json());
 
     app.get('/blob/:name', (req, res) => {
-        console.log(`Getting blob ${req.params['name']}`);
+        // console.log(`Getting blob ${req.params['name']}`);
         const filePath = path.join(dataPath, 'blobs', req.params['name']);
         getBlob(filePath, req.get('if-none-match'), res);
     });
 
     app.put('/blob/:name', (req, res) => {
-        console.log(`Updating blob ${req.params['name']}`);
+        // console.log(`Updating blob ${req.params['name']}`);
         const filePath = path.join(dataPath, 'blobs', req.params['name']);
         putBlob(filePath, req.body, res);
     });

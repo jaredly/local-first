@@ -145,7 +145,6 @@ const App = () => {
     }, []);
     return (
         <div style={{ margin: '32px 64px' }}>
-            <TextBindingExample />
             <div>
                 Hello! We are{' '}
                 {connected && connected.status !== 'disconnected'
@@ -206,56 +205,6 @@ const App = () => {
     );
 };
 
-const TextBindingExample = () => {
-    const [text, setText] = React.useState(() => rich.init());
-    const plain = rich.toString(text);
-    return (
-        <div>
-            <textarea
-                value={plain}
-                onChange={e => {
-                    const value = e.target.value;
-                    const change = textBinding.inferChange(
-                        plain,
-                        value,
-                        e.target.selectionStart === e.target.selectionEnd
-                            ? e.target.selectionStart
-                            : null,
-                    );
-                    console.log(plain, value, change);
-                    const deltas = [];
-                    // const clone = { ...text };
-                    if (change.removed) {
-                        deltas.push(
-                            rich.del(
-                                text,
-                                change.removed.at,
-                                change.removed.len,
-                            ),
-                        );
-                    }
-                    if (change.added) {
-                        deltas.push(
-                            rich.insert(
-                                text,
-                                'a',
-                                change.added.at,
-                                change.added.text,
-                            ),
-                        );
-                    }
-                    console.log(deltas);
-                    // col.applyRichTextDelta(id, ['body'], deltas);
-                    setText(rich.apply(text, deltas));
-                }}
-            />
-            <div style={{ whiteSpace: 'pre' }}>
-                {JSON.stringify(text, null, 2)}
-            </div>
-        </div>
-    );
-};
-
 const CRDTTextarea = ({ sessionId, value, onChange }) => {
     const ref = React.useRef(null);
     const savedValue = React.useRef(value);
@@ -283,14 +232,6 @@ const CRDTTextarea = ({ sessionId, value, onChange }) => {
                 const oldText = rich.toString(oldValue);
                 checkConsistency(oldValue);
                 checkConsistency(newValue);
-                console.log('Old', oldText, oldText.length);
-                console.log('New', text, text.length);
-                console.log('Selection', start, end);
-                // const startLoc = rich.posToLoc(oldValue, start, false);
-                // const endLoc = rich.posToLoc(oldValue, end, true);
-                // console.log('locs', startLoc, endLoc);
-                // const newStart = rich.locToPos(newValue, startLoc);
-                // const newEnd = rich.locToPos(newValue, endLoc);
                 const transformed = rich.adjustSelection(
                     oldValue,
                     newValue,
@@ -380,45 +321,6 @@ const Note = ({
                         col.applyRichTextDelta(id, ['body'], deltas)
                     }
                 />
-                {/* <textarea
-                    value={currentText}
-                    onChange={e => {
-                        const newValue = e.target.value;
-                        const change = textBinding.inferChange(
-                            currentText,
-                            newValue,
-                            e.target.selectionStart === e.target.selectionEnd
-                                ? e.target.selectionStart
-                                : null,
-                        );
-                        console.log('>> change inferred <<', change);
-                        const deltas = [];
-                        if (change.removed) {
-                            deltas.push(
-                                rich.del(
-                                    item.body,
-                                    change.removed.at,
-                                    change.removed.len,
-                                ),
-                            );
-                        }
-                        if (change.added) {
-                            deltas.push(
-                                rich.insert(
-                                    item.body,
-                                    sessionId,
-                                    change.added.at,
-                                    change.added.text,
-                                ),
-                            );
-                        }
-                        console.log('applying', deltas);
-                        col.applyRichTextDelta(id, ['body'], deltas);
-                    }}
-                /> */}
-            </div>
-            <div style={{ whiteSpace: 'pre', fontFamily: 'monospace' }}>
-                {JSON.stringify(item.body, null, 2)}
             </div>
         </div>
     );

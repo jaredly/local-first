@@ -1,7 +1,6 @@
 // @flow
 
-import type { Delta, CRDT as Data } from '../nested-object-crdt';
-import type { CursorType } from '../core/src/server';
+import type { CursorType, Persistence } from '../core/src/server';
 const sqlite3 = require('better-sqlite3');
 
 function queryAll(db, sql, params = []) {
@@ -20,7 +19,9 @@ function queryRun(db, sql, params = []) {
     return stmt.run(...params);
 }
 
-const setupPersistence = (baseDir: string) => {
+const setupPersistence = function<Delta, Data>(
+    baseDir: string,
+): Persistence<Delta, Data> {
     const db = sqlite3(baseDir + '/data.db');
     const dbs = {};
     const tableName = col => col + ':messages';

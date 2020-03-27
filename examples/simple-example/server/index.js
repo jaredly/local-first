@@ -21,8 +21,8 @@ import path from 'path';
 import fs from 'fs';
 import levelup from 'levelup';
 import leveldown from 'leveldown';
-// import setupPersistence from './sqlite-persistence';
-import setupPersistence from '../../../packages/core/src/memory-persistence';
+import setupPersistence from './sqlite-persistence';
+// import setupPersistence from '../../../packages/core/src/memory-persistence';
 
 import { onWebsocket } from '../../../packages/server-bundle/websocket';
 

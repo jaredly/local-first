@@ -173,10 +173,10 @@ export const peerTabAwareSync = function<SyncStatus>(
         // Dedup sync calls within the same tick -- makes a lot of things easier.
         sync: () => {
             if (syncTimer) return;
-            syncTimer = setImmediate(() => {
+            syncTimer = setTimeout(() => {
                 syncTimer = null;
                 sync();
-            });
+            }, 0);
         },
     };
 };

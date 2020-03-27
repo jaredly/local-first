@@ -110,11 +110,11 @@ export const getMessages = function<Delta, Data>(
     sessionId: string,
 ): Array<ServerMessage<Delta, Data>> {
     if (!state.clients[sessionId]) {
-        console.log(`No clients registered for ${sessionId}`);
+        // console.log(`No clients registered for ${sessionId}`);
         return [];
     }
     const colids = Object.keys(state.clients[sessionId].collections);
-    console.log(`Getting messages for ${sessionId}: ${colids.join(',')}`);
+    // console.log(`Getting messages for ${sessionId}: ${colids.join(',')}`);
     return colids
         .map((cid: string): ?ServerMessage<Delta, Data> => {
             const lastSeen = state.clients[sessionId].collections[cid];
@@ -132,11 +132,11 @@ export const getMessages = function<Delta, Data>(
                 };
             }
             if (!result) {
-                console.log(
-                    `no new messages since ${
-                        lastSeen != null ? lastSeen : 'no-start'
-                    } for ${cid} (${sessionId})`,
-                );
+                // console.log(
+                //     `no new messages since ${
+                //         lastSeen != null ? lastSeen : 'no-start'
+                //     } for ${cid} (${sessionId})`,
+                // );
                 return;
             }
             const { cursor, deltas } = result;
@@ -145,11 +145,11 @@ export const getMessages = function<Delta, Data>(
                 if (cursor == null) {
                     throw new Error(`Got deltas, but no cursor`);
                 }
-                console.log(
-                    `${deltas.length} new deltas for ${cid} since ${
-                        lastSeen != null ? lastSeen : 'no-start'
-                    }, cursor ${cursor}`,
-                );
+                // console.log(
+                //     `${deltas.length} new deltas for ${cid} since ${
+                //         lastSeen != null ? lastSeen : 'no-start'
+                //     }, cursor ${cursor}`,
+                // );
                 return {
                     type: 'sync',
                     collection: cid,
@@ -157,7 +157,7 @@ export const getMessages = function<Delta, Data>(
                     serverCursor: cursor,
                 };
             } else {
-                console.log(`Nothing new for ${cid}`);
+                // console.log(`Nothing new for ${cid}`);
             }
         })
         .filter(Boolean);
@@ -173,11 +173,11 @@ export const onMessage = function<Delta, Data>(
             state.clients[sessionId] = { collections: {} };
         }
         // const schema = state.getSchema(message.collection);
-        console.log(
-            'Setting server cursor',
-            message.serverCursor,
-            message.collection,
-        );
+        // console.log(
+        //     'Setting server cursor',
+        //     message.serverCursor,
+        //     message.collection,
+        // );
         // TODO should I only set this if its present?
         if (
             message.serverCursor != null ||
@@ -200,16 +200,16 @@ export const onMessage = function<Delta, Data>(
                     maxStamp = stamp;
                 }
             });
-            console.log('max', maxStamp, message.deltas);
+            // console.log('max', maxStamp, message.deltas);
             if (maxStamp) {
-                console.log('acking');
+                // console.log('acking');
                 return {
                     type: 'ack',
                     deltaStamp: maxStamp,
                     collection: message.collection,
                 };
             }
-            console.log('not acking');
+            // console.log('not acking');
         }
     } else if (message.type === 'ack') {
         state.clients[sessionId].collections[message.collection] =
