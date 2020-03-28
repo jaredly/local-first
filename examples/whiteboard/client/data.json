@@ -1,0 +1,366 @@
+[
+  {
+    "description": "To have important accomplishments", 
+    "title": "Achievement"
+  }, 
+  {
+    "description": "To have new and exciting experiences", 
+    "title": "Adventure"
+  }, 
+  {
+    "description": "To be physically attractive", 
+    "title": "Attractiveness"
+  }, 
+  {
+    "description": "To be in charge of and responsible for others", 
+    "title": "Authority"
+  }, 
+  {
+    "description": "To be self-determined and independent", 
+    "title": "Autonomy"
+  }, 
+  {
+    "description": "To appreciate beauty around me", 
+    "title": "Beauty"
+  }, 
+  {
+    "description": "To take care of others", 
+    "title": "Caring"
+  }, 
+  {
+    "description": "To take on difficult tasks and problems", 
+    "title": "Challenge"
+  }, 
+  {
+    "description": "To have a full life of change and variety", 
+    "title": "Change"
+  }, 
+  {
+    "description": "To have a pleasant and comfortable life", 
+    "title": "Comfort"
+  }, 
+  {
+    "description": "To make enduring, meaningful commitments", 
+    "title": "Commitment"
+  }, 
+  {
+    "description": "To feel and act on concern for others", 
+    "title": "Compassion"
+  }, 
+  {
+    "description": "To make a lasting contribution in the world", 
+    "title": "Contribution"
+  }, 
+  {
+    "description": "To work collaboratively with others", 
+    "title": "Cooperation"
+  }, 
+  {
+    "description": "To be considerate and polite toward others", 
+    "title": "Courtesy"
+  }, 
+  {
+    "description": "To have new and original ideas", 
+    "title": "Creativity"
+  }, 
+  {
+    "description": "To be reliable and trustworthy", 
+    "title": "Dependability"
+  }, 
+  {
+    "description": "To carry out my duties and obligations", 
+    "title": "Duty"
+  }, 
+  {
+    "description": "To live in harmony with the environment", 
+    "title": "Ecology/_____"
+  }, 
+  {
+    "description": "To have a life full of thrills and stimulation", 
+    "title": "Excitement"
+  }, 
+  {
+    "description": "To be loyal and true in relationships", 
+    "title": "Faithfulness"
+  }, 
+  {
+    "description": "To be known and recognized", 
+    "title": "Fame"
+  }, 
+  {
+    "description": "To have a happy, loving family", 
+    "title": "Family"
+  }, 
+  {
+    "description": "To be physically fit and strong", 
+    "title": "Fitness"
+  }, 
+  {
+    "description": "To adjust to new circumstances easily", 
+    "title": "Flexibility"
+  }, 
+  {
+    "description": "To be forgiving of others", 
+    "title": "Forgiveness"
+  }, 
+  {
+    "description": "To have close, supportive friends", 
+    "title": "Friendship"
+  }, 
+  {
+    "description": "To play and have fun", 
+    "title": "Fun"
+  }, 
+  {
+    "description": "To give what I have to others", 
+    "title": "Generosity"
+  }, 
+  {
+    "description": "To act in a manner that is true to who I am", 
+    "title": "Genuineness"
+  }, 
+  {
+    "description": "To keep changing and growing", 
+    "title": "Growth"
+  }, 
+  {
+    "description": "To be physically well and healthy", 
+    "title": "Health (physical)"
+  }, 
+  {
+    "description": "To be spiritually well and healthy", 
+    "title": "Health (spiritual)"
+  }, 
+  {
+    "description": "To be helpful to others", 
+    "title": "Helpfulness"
+  }, 
+  {
+    "description": "To be warm, friendly, and generous to guests and strangers ", 
+    "title": "Hospitality"
+  }, 
+  {
+    "description": "To be honest and truthful", 
+    "title": "Honesty"
+  }, 
+  {
+    "description": "To maintain a positive and optimistic outlook", 
+    "title": "Hope"
+  }, 
+  {
+    "description": "To be modest and unassuming", 
+    "title": "Humility"
+  }, 
+  {
+    "description": "To see the humorous side of myself and the world", 
+    "title": "Humor"
+  }, 
+  {
+    "description": "To be free from dependence on others", 
+    "title": "Independence"
+  }, 
+  {
+    "description": "To work hard and well at my life tasks", 
+    "title": "Industry"
+  }, 
+  {
+    "description": "To experience personal peace", 
+    "title": "Inner Peace"
+  }, 
+  {
+    "description": "To share my innermost experiences with others", 
+    "title": "Intimacy"
+  }, 
+  {
+    "description": "To promote fair and equal treatment", 
+    "title": "Justice"
+  }, 
+  {
+    "description": "To learn and contribute valuable knowledge", 
+    "title": "Knowledge"
+  }, 
+  {
+    "description": "To take time to relax and enjoy", 
+    "title": "Leisure"
+  }, 
+  {
+    "description": "To be loved by those close to me", 
+    "title": "Loved"
+  }, 
+  {
+    "description": "To give love to others", 
+    "title": "Loving"
+  }, 
+  {
+    "description": "To excel in my everyday activities", 
+    "title": "Mastery"
+  }, 
+  {
+    "description": "To live conscious and mindful of the present moment", 
+    "title": "Mindfulness"
+  }, 
+  {
+    "description": "To avoid excesses and find a middle ground", 
+    "title": "Moderation"
+  }, 
+  {
+    "description": "To have one close, loving relationship", 
+    "title": "Monogamy"
+  }, 
+  {
+    "description": "To question and challenge authority and norms", 
+    "title": "Non-conformity"
+  }, 
+  {
+    "description": "To take care of and nurture others", 
+    "title": "Nurturance"
+  }, 
+  {
+    "description": "To be open to new experienes, ideas and options", 
+    "title": "Openness"
+  }, 
+  {
+    "description": "To have a life that is well-ordered and organized", 
+    "title": "Order"
+  }, 
+  {
+    "description": "To have deep feelings about ideas, activities, or people", 
+    "title": "Passion"
+  }, 
+  {
+    "description": "To feel good", 
+    "title": "Pleasure"
+  }, 
+  {
+    "description": "To be well-liked by many people", 
+    "title": "Popularity"
+  }, 
+  {
+    "description": "To have control over others", 
+    "title": "Power"
+  }, 
+  {
+    "description": "To have meaning and direction in my life", 
+    "title": "Purpose"
+  }, 
+  {
+    "description": "To be guided by reason and logic", 
+    "title": "Rationality"
+  }, 
+  {
+    "description": "To see and act realistically and practically", 
+    "title": "Realism"
+  }, 
+  {
+    "description": "To make and carry out responsible decisions", 
+    "title": "Responsibility"
+  }, 
+  {
+    "description": "To take risks and chances", 
+    "title": "Risk"
+  }, 
+  {
+    "description": "To have intense, exciting love in my life", 
+    "title": "Romance"
+  }, 
+  {
+    "description": "To be safe and secure", 
+    "title": "Safety"
+  }, 
+  {
+    "description": "To accept myself as I am", 
+    "title": "Self-Acceptance"
+  }, 
+  {
+    "description": "To be disciplined in my own actions", 
+    "title": "Self-Control"
+  }, 
+  {
+    "description": "To feel good about myself", 
+    "title": "Self-Esteem"
+  }, 
+  {
+    "description": "To have a deep and honest understanding of myself", 
+    "title": "Self-Knoweldge"
+  }, 
+  {
+    "description": "To be of service to others", 
+    "title": "Service"
+  }, 
+  {
+    "description": "To have an active and satisfying sex life", 
+    "title": "Sexuality"
+  }, 
+  {
+    "description": "To live life simply, with minimal needs", 
+    "title": "Simplicity"
+  }, 
+  {
+    "description": "To have time and space where I can be apart from others", 
+    "title": "Solitude"
+  }, 
+  {
+    "description": "To grow and mature spiritually", 
+    "title": "Spirituality"
+  }, 
+  {
+    "description": "To have a life that stays fairly consistent", 
+    "title": "Stability"
+  }, 
+  {
+    "description": "To accept and respect those who differ from me", 
+    "title": "Tolerance"
+  }, 
+  {
+    "description": "To embody a way(s) of life given to us by our ancestors", 
+    "title": "Tradition"
+  }, 
+  {
+    "description": "To live a morally pure and excellent life", 
+    "title": "Virtue"
+  }, 
+  {
+    "description": "To have plenty of money", 
+    "title": "Wealth"
+  }, 
+  {
+    "description": "To work to promote peace in the world", 
+    "title": "World Peace"
+  }, 
+  {
+    "description": "The ability for American Indian/ Alaska Natives to make culturally informed decisions for the good of their people, by their rights as sovereign nations", 
+    "title": "Self Determination"
+  }, 
+  {
+    "description": "The consideration of others as equals", 
+    "title": "Respect"
+  }, 
+  {
+    "description": "A sense of worth, self-sufficiency, and strength", 
+    "title": "Pride/Dignity"
+  }, 
+  {
+    "description": "The ability to take the perspective of another and feel what they feel", 
+    "title": "Empathy"
+  }, 
+  {
+    "description": "The sense that nothing is separate from anything else", 
+    "title": "Connection"
+  }, 
+  {
+    "description": "Acceptance for the outcomes of choices, actions and behaviors", 
+    "title": "Responsibility"
+  }, 
+  {
+    "description": "", 
+    "title": "Other Value"
+  }, 
+  {
+    "description": "To be accepted as I am", 
+    "title": "Acceptance"
+  }, 
+  {
+    "description": "To be accurate in my opinions and beliefs", 
+    "title": "Accuracy"
+  }
+]

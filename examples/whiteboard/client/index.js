@@ -9,7 +9,10 @@ import { useCollection } from '../../../packages/client-react';
 
 import { type Schema } from '../../../packages/client-bundle';
 
+const defaultCards = require('./data.json');
+
 type Card = {
+    id: string,
     title: string,
     description: string,
     position: { x: number, y: number },
@@ -22,6 +25,7 @@ type Card = {
 const CardSchema: Schema = {
     type: 'object',
     attributes: {
+        id: 'string',
         title: 'string',
         description: 'string',
         position: { type: 'object', attributes: { x: 'number', y: 'number' } },
@@ -47,7 +51,16 @@ const Whiteboard = () => {
     );
     const [col, cards] = useCollection(React, client, 'cards');
 
-    return <div>Hello folks!</div>;
+    return (
+        <div>
+            Oy
+            <div>
+                {Object.keys(cards).map(id => (
+                    <div>{id}</div>
+                ))}
+            </div>
+        </div>
+    );
 };
 
 const App = () => {
