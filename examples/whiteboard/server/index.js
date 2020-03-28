@@ -6,6 +6,7 @@ import type {
     CRDT,
 } from '../../../packages/nested-object-crdt/src/types.js';
 import make from '../../../packages/core/src/server';
+import path from 'path';
 
 import setupPersistence from '../../../packages/server-bundle/sqlite-persistence';
 import setupInMemoryPersistence from '../../../packages/core/src/memory-persistence';
@@ -32,7 +33,9 @@ export const run = (dataPath: string, port: number = 9090) => {
     if (!process.env.NO_AUTH) {
         const { SECRET: secret } = process.env;
         if (!secret) {
-            throw new Error('SECRET is not defined');
+            throw new Error(
+                "process.env.SECRET is required if you don't pass process.env.NO_AUTH",
+            );
         }
 
         const userServers = {};
@@ -53,6 +56,7 @@ export const run = (dataPath: string, port: number = 9090) => {
         );
 
         auth.setupAuth(db, state.app, secret);
+        return state;
     } else {
         const server = make<Delta, Data>(crdtImpl, setupPersistence(dataPath));
         const ephemeralServer = make<Delta, Data>(
@@ -65,9 +69,8 @@ export const run = (dataPath: string, port: number = 9090) => {
             () => path.join(dataPath, 'blobs'),
             () => server,
         );
-        setupWebsocket(state.app, ephemeralServer, '/ephemeral/sync');
-        setupPolling(state.app, ephemeralServer, '/ephemeral/sync');
+        setupWebsocket(state.app, ephemeralServer, [], '/ephemeral/sync');
+        setupPolling(state.app, ephemeralServer, [], '/ephemeral/sync');
+        return state;
     }
-
-    return state;
 };
