@@ -49,7 +49,7 @@ const reconnectingSocket = (
     return state;
 };
 
-type SyncStatus = { status: 'connected' } | { status: 'disconnected' };
+export type SyncStatus = { status: 'connected' } | { status: 'disconnected' };
 
 const createWebSocketNetwork = <Delta, Data>(
     url: string,

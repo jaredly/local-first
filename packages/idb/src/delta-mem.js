@@ -98,10 +98,7 @@ class FakeDb {
 
 // TODO abstract this out so that we can have the same base implementation
 // Also be smart so if the idb doesn't have the correct objectStores set up, I throw an error.
-const makePersistence = (
-    name: string,
-    collections: Array<string>,
-): DeltaPersistence => {
+const makePersistence = (collections: Array<string>): DeltaPersistence => {
     const db = new FakeDb();
     collections.forEach(name => {
         db.createObjectStore(name + ':deltas', {

@@ -525,14 +525,14 @@ export const mergeTwo = function<A, Other>(
     one: CRDT<A, Other>,
     two: CRDT<A, Other>,
     mergeOther: OtherMerge<Other>,
-) {
-    return merge<A, A, Other>(
+): CRDT<A, Other> {
+    return (merge<A, A, Other>(
         one.value,
         one.meta,
         two.value,
         two.meta,
         mergeOther,
-    );
+    ): any);
 };
 
 export const merge = function<A, B, Other>(

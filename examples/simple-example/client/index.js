@@ -78,8 +78,8 @@ const setupDelta = () => {
     return createDeltaClient(
         newCrdt,
         { tasks: ItemSchema, notes: NoteSchema },
-        // new PersistentClock(inMemoryClockPersist('local-first')),
-        // makeDeltaInMemoryPersistence('local-first', ['tasks', 'notes']),
+        // new PersistentClock(inMemoryClockPersist()),
+        // makeDeltaInMemoryPersistence(['tasks', 'notes']),
         new PersistentClock(localStorageClockPersist('local-first')),
         makeDeltaPersistence('local-first', ['tasks', 'notes']),
 
