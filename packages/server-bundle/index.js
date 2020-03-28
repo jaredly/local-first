@@ -16,64 +16,72 @@ import { onWebsocket } from './websocket';
 import express from 'express';
 import ws from 'express-ws';
 
+type req = any;
+type Middleware = Array<(req, *, () => void) => void>;
+
 export const setupBlob = (
     app: express,
-    dataPath: string,
+    getDataPath: req => string,
+    middleware: Middleware = [],
     prefix: string = '/blob',
 ) => {
-    app.get(prefix + '/:name', (req, res) => {
-        const filePath = path.join(dataPath, req.params['name']);
+    app.get(prefix + '/:name', middleware, (req, res) => {
+        const filePath = path.join(getDataPath(req), req.params['name']);
         getBlob(filePath, req.get('if-none-match'), res);
     });
 
-    app.put(prefix + '/:name', (req, res) => {
-        const filePath = path.join(dataPath, req.params['name']);
+    app.put(prefix + '/:name', middleware, (req, res) => {
+        const filePath = path.join(getDataPath(req), req.params['name']);
         putBlob(filePath, req.body, res);
     });
 };
 
 export const setupPolling = function<Delta, Data>(
     app: express,
-    server: ServerState<Data, Delta>,
+    getServer: req => ServerState<Data, Delta>,
+    middleware: Middleware = [],
     path: string = '/sync',
 ) {
-    app.post(path, (req, res) => {
+    app.post(path, middleware, (req, res) => {
         if (!req.query.sessionId) {
             throw new Error('No sessionId');
         }
-        res.json(post(server, req.query.sessionId, req.body));
+        res.json(post(getServer(req), req.query.sessionId, req.body));
     });
 };
 
 export const setupWebsocket = function<Delta, Data>(
     app: express,
-    server: ServerState<Data, Delta>,
+    getServer: express.Request => ServerState<Data, Delta>,
+    middleware: Middleware = [],
     path: string = '/sync',
 ) {
     const clients = {};
 
-    app.ws(path, function(ws, req) {
-        if (!req.query.sessionId) {
-            console.log('no sessionid');
-            throw new Error('No sessionId');
+    app.ws(path, middleware, function(ws, req) {
+        if (!req.query.siteId) {
+            console.log('no siteId');
+            throw new Error('No siteId');
         }
-        onWebsocket(server, clients, req.query.sessionId, ws);
+        const server = getServer(req);
+        onWebsocket(server, clients, req.query.siteId, ws);
     });
 };
 
 export const runServer = <Delta, Data>(
     port: number,
-    dataPath: string,
-    server: ServerState<Delta, Data>,
+    getBlobDataPath: req => string,
+    getServer: req => ServerState<Delta, Data>,
+    middleware: Middleware = [],
 ) => {
     const app = express();
     const wsInst = ws(app);
     app.use(require('cors')({ exposedHeaders: ['etag'] }));
     app.use(require('body-parser').json());
 
-    setupBlob(app, path.join(dataPath, 'blobs'));
-    setupPolling(app, server);
-    setupWebsocket(app, server);
+    setupBlob(app, getBlobDataPath, middleware);
+    setupPolling(app, getServer, middleware);
+    setupWebsocket(app, getServer, middleware);
 
     const http = app.listen(port);
     return { http, app, wsInst };

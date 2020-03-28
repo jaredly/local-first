@@ -9,6 +9,7 @@ import make from '../../../packages/core/src/server';
 
 import setupPersistence from '../../../packages/server-bundle/sqlite-persistence';
 import setupInMemoryPersistence from '../../../packages/core/src/memory-persistence';
+import * as auth from '../../../packages/auth';
 
 import {
     runServer,
@@ -28,13 +29,45 @@ const crdtImpl = {
 };
 
 export const run = (dataPath: string, port: number = 9090) => {
-    const server = make<Delta, Data>(crdtImpl, setupPersistence(dataPath));
-    const state = runServer(port, dataPath, server);
-    const ephemeralServer = make<Delta, Data>(
-        crdtImpl,
-        setupInMemoryPersistence(),
-    );
-    setupWebsocket(state.app, ephemeralServer, '/ephemeral/sync');
-    setupPolling(state.app, ephemeralServer, '/ephemeral/sync');
+    if (!process.env.NO_AUTH) {
+        const { SECRET: secret } = process.env;
+        if (!secret) {
+            throw new Error('SECRET is not defined');
+        }
+
+        const userServers = {};
+
+        const state = runServer(
+            port,
+            req => path.join(dataPath, req.auth.id, 'blobs'),
+            req => {
+                if (!userServers[req.auth.id]) {
+                    userServers[req.auth.id] = make<Delta, Data>(
+                        crdtImpl,
+                        setupPersistence(path.join(dataPath, req.auth.id)),
+                    );
+                }
+                return userServers[req.auth.id];
+            },
+            [auth.middleware(db, secret)],
+        );
+
+        auth.setupAuth(db, state.app, secret);
+    } else {
+        const server = make<Delta, Data>(crdtImpl, setupPersistence(dataPath));
+        const ephemeralServer = make<Delta, Data>(
+            crdtImpl,
+            setupInMemoryPersistence(),
+        );
+        dataPath = path.join(dataPath, 'anon');
+        const state = runServer(
+            port,
+            () => path.join(dataPath, 'blobs'),
+            () => server,
+        );
+        setupWebsocket(state.app, ephemeralServer, '/ephemeral/sync');
+        setupPolling(state.app, ephemeralServer, '/ephemeral/sync');
+    }
+
     return state;
 };
