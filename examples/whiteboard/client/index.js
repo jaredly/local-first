@@ -1,6 +1,6 @@
 // @flow
 // /** @jsx jsx */
-// import { jsx } from '@emotion/core';
+import { jsx } from '@emotion/core';
 import { render } from 'react-dom';
 import React from 'react';
 import { createInMemoryDeltaClient } from '../../../packages/client-bundle';
@@ -45,7 +45,7 @@ const Whiteboard = () => {
             ),
         [],
     );
-    const [col, cards] = useCollection(client, 'cards');
+    const [col, cards] = useCollection(React, client, 'cards');
 
     return <div>Hello folks!</div>;
 };

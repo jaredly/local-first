@@ -1,9 +1,10 @@
 // @flow
-import React from 'react';
+// import React from '../../examples/whiteboard/node_modules/react';
 
 import { type Client } from '../client-bundle';
 
 export const useCollection = function<T: {}>(
+    React,
     client: Client<mixed>,
     name: string,
 ) {
