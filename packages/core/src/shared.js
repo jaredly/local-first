@@ -71,6 +71,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
     setDirty: () => void,
     sendCrossTabChanges: PeerChange => mixed,
     schema: Schema,
+    // undoManager or some such
 ): Collection<T> {
     const applyDelta = async (id: string, delta) => {
         let plain = null;
@@ -97,6 +98,9 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
     return {
         async save(id: string, node: T) {
             validate(node, schema);
+            // NOTE this overwrites everything, setAttribute will do much better merges
+            // const prev = state.cache[id] ? crdt.value(state.cache[id]) : null
+            // historyManager.add(() => this.save(id, prev))
             state.cache[id] = crdt.merge(
                 state.cache[id],
                 // STOPSHIP here's the bit
@@ -159,6 +163,8 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                 }
                 state.cache[id] = stored;
             }
+            // const prev = crdt.get(state.cache[id], path)
+            // historyManager.add(() => this.setAttribute(id, path, prev ? crdt.value(prev) : null))
             const delta = crdt.deltas.set(
                 state.cache[id],
                 path,
