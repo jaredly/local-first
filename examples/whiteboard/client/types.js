@@ -2,17 +2,26 @@
 
 export type rect = { position: pos, size: pos };
 
-export const clamp = (pos: pos, range: rect) => {
+export const clamp = (pos: pos, size: pos, range: rect) => {
+    console.log('clamp', pos, size, range);
     return {
         x: Math.min(
             Math.max(range.position.x, pos.x),
-            Math.max(range.position.x + range.size.x, pos.x),
+            range.position.x + range.size.x - size.x,
         ),
         y: Math.min(
             Math.max(range.position.y, pos.y),
-            Math.max(range.position.y + range.size.y, pos.y),
+            range.position.y + range.size.y - size.y,
         ),
     };
+};
+
+export const toScreen = (pos: pos, pan: pos, zoom: number) => {
+    return { x: (pos.x + pan.x) * zoom, y: (pos.y + pan.y) * zoom };
+};
+
+export const fromScreen = (pos: pos, pan: pos, zoom: number) => {
+    return { x: pos.x / zoom + pan.x / zoom, y: pos.y / zoom + pan.y / zoom };
 };
 
 export const addPos = (pos1: pos, pos2: pos) => ({
@@ -42,14 +51,14 @@ export const evtPos = (evt: { clientX: number, clientY: number }): pos => ({
 
 export const rectIntersect = (one: rect, two: rect) => {
     return (
-        ((two.position.x < one.position.x &&
-            one.position.x < two.position.x + two.size.x) ||
-            (one.position.x < two.position.x &&
-                two.position.x < one.position.x + one.size.x)) &&
-        ((two.position.y < one.position.y &&
-            one.position.y < two.position.y + two.size.y) ||
-            (one.position.y < two.position.y &&
-                two.position.y < one.position.y + one.size.y))
+        ((two.position.x <= one.position.x &&
+            one.position.x <= two.position.x + two.size.x) ||
+            (one.position.x <= two.position.x &&
+                two.position.x <= one.position.x + one.size.x)) &&
+        ((two.position.y <= one.position.y &&
+            one.position.y <= two.position.y + two.size.y) ||
+            (one.position.y <= two.position.y &&
+                two.position.y <= one.position.y + one.size.y))
     );
 };
 

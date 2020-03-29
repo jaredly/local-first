@@ -21,6 +21,8 @@ import {
     absMax,
     clamp,
     rectIntersect,
+    toScreen,
+    fromScreen,
 } from './types';
 
 import Card from './Card';
@@ -30,7 +32,7 @@ const defaultCards = require('./data.json');
 const DEFAULT_HEIGHT = 70;
 const DEFAULT_WIDTH = 200;
 const DEFAULT_MARGIN = 12;
-const BOUNDS = { position: { x: -500, y: -500 }, size: { x: 1500, y: 1500 } };
+const BOUNDS = { position: { x: -500, y: -500 }, size: { x: 5000, y: 3500 } };
 
 const makeDefaultCards = (genId): Array<CardT> => {
     return defaultCards.map(({ description, title }, i) => ({
@@ -100,7 +102,16 @@ const reducer = (state: State, action): State => {
         case 'scroll':
             return {
                 ...state,
-                pan: clamp(addPos(state.pan, action.delta), BOUNDS),
+                pan: clamp(
+                    addPos(state.pan, action.delta),
+                    { x: window.innerWidth, y: window.innerHeight },
+                    BOUNDS,
+                ),
+            };
+        case 'zoom':
+            return {
+                ...state,
+                zoom: Math.max(Math.min(action.zoom, 10), 0.25),
             };
         default:
             return state;
@@ -141,6 +152,7 @@ export type Action =
           selection: { [key: string]: boolean },
       |}
     | {| type: 'scroll', delta: pos |}
+    | {| type: 'zoom', zoom: number |}
     | {|
           type: 'replace_selection',
           selection: { [key: string]: boolean },
@@ -161,7 +173,7 @@ const onMove = (evt, state, dispatch, dragRef) => {
         const drag = state.drag;
         evt.preventDefault();
         evt.stopPropagation();
-        const pos = evtPos(evt);
+        const pos = fromScreen(evtPos(evt), state.pan, state.zoom);
         const diff = posDiff(drag.offset, pos);
         const enough =
             drag.enough ||
@@ -181,7 +193,8 @@ const onMove = (evt, state, dispatch, dragRef) => {
         const { dragSelect } = state;
         evt.preventDefault();
         evt.stopPropagation();
-        const pos = evtPos(evt);
+        // const pos = evtPos(evt);
+        const pos = fromScreen(evtPos(evt), state.pan, state.zoom);
         const enough = absMax(posDiff(dragSelect.position, pos)) > MIN_MOVEMENT;
         if (enough) {
             dragRef.current = true;
@@ -279,7 +292,12 @@ const Whiteboard = () => {
         };
         const down = evt => {
             evt.preventDefault();
-            const pos = evtPos(evt);
+            // const pos = evtPos(evt);
+            const pos = fromScreen(
+                evtPos(evt),
+                currentState.current.pan,
+                currentState.current.zoom,
+            );
             dispatch({ type: 'start_select', pos });
             dragRef.current = false;
         };
@@ -289,7 +307,6 @@ const Whiteboard = () => {
             }
         };
         const mousewheel = evt => {
-            console.log(evt.deltaX, evt.deltaY);
             dispatch({
                 type: 'scroll',
                 delta: { x: evt.deltaX, y: evt.deltaY },
@@ -322,20 +339,43 @@ const Whiteboard = () => {
     return (
         <div>
             Oy
-            <button
-                onClick={() => {
-                    makeDefaultCards(client.getStamp).forEach(card => {
-                        col.save(card.id, card);
-                    });
-                }}
-            >
-                Add default cards
-            </button>
+            <div style={{ position: 'relative', zIndex: 10000 }}>
+                <button
+                    onClick={() => {
+                        makeDefaultCards(client.getStamp).forEach(card => {
+                            col.save(card.id, card);
+                        });
+                    }}
+                >
+                    Add default cards
+                </button>
+                <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    value={state.zoom}
+                    onMouseDown={evt => evt.stopPropagation()}
+                    onClick={evt => evt.stopPropagation()}
+                    onInput={evt => {
+                        console.log('input', evt);
+                    }}
+                    onChange={evt => {
+                        console.log(evt.target.value);
+                        dispatch({ type: 'zoom', zoom: evt.target.value });
+                    }}
+                />
+            </div>
             <div
                 style={{
                     position: 'absolute',
-                    top: 20 - state.pan.y,
+                    top: -state.pan.y,
                     left: -state.pan.x,
+                    transform: `scale(${state.zoom.toFixed(2)})`,
+                    // transform: `scale(${state.zoom.toFixed(
+                    //     2,
+                    // )}) translate(${(-state.pan.x).toFixed(2)}px, ${(
+                    //     20 - state.pan.y
+                    // ).toFixed(2)}px)`,
                 }}
             >
                 {Object.keys(cards)
@@ -359,6 +399,40 @@ const Whiteboard = () => {
                         />
                     ))}
             </div>
+            <MiniMap zoom={state.zoom} pan={state.pan} />
+        </div>
+    );
+};
+
+const MiniMap = ({ zoom, pan }) => {
+    const width = 100;
+    const height = (BOUNDS.size.y / BOUNDS.size.x) * width;
+    const iw = window.innerWidth / BOUNDS.size.x;
+    const ih = window.innerHeight / BOUNDS.size.y;
+    const x = (pan.x - BOUNDS.position.x) / BOUNDS.size.x; // - window.innerWidth);
+    const y = (pan.y - BOUNDS.position.y) / BOUNDS.size.y; // - window.innerHeight);
+    console.log(width, BOUNDS.size.x, window.innerWidth, iw, x);
+    return (
+        <div
+            style={{
+                position: 'absolute',
+                right: 20,
+                bottom: 20,
+                width,
+                height,
+                backgroundColor: 'rgba(100,100,255,0.2)',
+            }}
+        >
+            <div
+                style={{
+                    position: 'absolute',
+                    backgroundColor: 'rgba(100,100,255,0.2)',
+                    left: x * width,
+                    top: y * height,
+                    width: width * iw,
+                    height: height * ih,
+                }}
+            />
         </div>
     );
 };
