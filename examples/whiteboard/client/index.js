@@ -16,7 +16,7 @@ type CardT = {
     title: string,
     description: string,
     position: { x: number, y: number },
-    size: { width: number, height: number },
+    size: { x: number, y: number },
     color: ?string,
     header: ?number,
     disabled: boolean,
@@ -37,7 +37,7 @@ const CardSchema: Schema = {
         },
         size: {
             type: 'object',
-            attributes: { width: 'number', height: 'number' },
+            attributes: { x: 'number', y: 'number' },
         },
         color: { type: 'optional', value: 'string' },
         header: { type: 'optional', value: 'number' },
@@ -50,7 +50,7 @@ const DEFAULT_WIDTH = 200;
 const DEFAULT_MARGIN = 12;
 const BOUNDS = { x0: -500, y0: -500, x1: 1500, y1: 1500 };
 
-const makeDefaultCards = genId => {
+const makeDefaultCards = (genId): Array<CardT> => {
     return defaultCards.map(({ description, title }, i) => ({
         id: genId(),
         title,
@@ -61,7 +61,7 @@ const makeDefaultCards = genId => {
                 parseInt(i / 10) * (DEFAULT_WIDTH + DEFAULT_MARGIN),
             y: DEFAULT_MARGIN + (i % 10) * (DEFAULT_HEIGHT + DEFAULT_MARGIN),
         },
-        size: { height: DEFAULT_HEIGHT, width: DEFAULT_WIDTH },
+        size: { y: DEFAULT_HEIGHT, x: DEFAULT_WIDTH },
         disabled: false,
     }));
 };
@@ -79,6 +79,7 @@ const objDiff = (one, two) => {
 const reducer = (state: State, action): State => {
     switch (action.type) {
         case 'replace_selection':
+            console.log('new selection fols', action.selection);
             return { ...state, selection: action.selection };
         case 'add_selection':
             return {
@@ -94,21 +95,25 @@ const reducer = (state: State, action): State => {
             return {
                 ...state,
                 drag: { offset: action.pos, mouse: action.pos, enough: false },
+                dragSelect: null,
             };
         case 'set_drag':
             return {
                 ...state,
                 drag: action.drag,
+                dragSelect: null,
             };
         case 'start_select':
             return {
                 ...state,
-                dragSelect: { origin: action.pos, mouse: action.pos },
+                dragSelect: { position: action.pos, size: { x: 0, y: 0 } },
+                drag: null,
             };
         case 'set_select':
             return {
                 ...state,
                 dragSelect: action.dragSelect,
+                drag: null,
             };
     }
     return state;
@@ -119,7 +124,7 @@ type pos = { x: number, y: number };
 type State = {
     selection: { [key: string]: boolean },
     drag?: ?{ offset: pos, mouse: pos, enough: boolean },
-    dragSelect?: ?{ origin: pos, mouse: pos },
+    dragSelect?: ?{ position: pos, size: pos },
 };
 type Action = any;
 
@@ -128,12 +133,37 @@ const initialState = {
     drag: null,
     dragSelect: null,
 };
+type rect = { position: pos, size: pos };
 
 const MIN_MOVEMENT = 5;
 
 const addPos = (pos1, pos2) => ({ x: pos1.x + pos2.x, y: pos1.y + pos2.y });
 const posDiff = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
 const absMax = pos => Math.max(Math.abs(pos.x), Math.abs(pos.y));
+const normalizedRect = ({ position, size }) => ({
+    position: {
+        x: size.x < 0 ? position.x + size.x : position.x,
+        y: size.y < 0 ? position.y + size.y : position.y,
+    },
+    size: {
+        x: Math.abs(size.x),
+        y: Math.abs(size.y),
+    },
+});
+
+const rectIntersect = (one: rect, two: rect) => {
+    return (
+        ((two.position.x < one.position.x &&
+            one.position.x < two.position.x + two.size.x) ||
+            (one.position.x < two.position.x &&
+                two.position.x < one.position.x + one.size.x)) &&
+        ((two.position.y < one.position.y &&
+            one.position.y < two.position.y + two.size.y) ||
+            (one.position.y < two.position.y &&
+                two.position.y < one.position.y + one.size.y))
+    );
+};
+
 // const threshhold = (pos, min) =>
 //     Math.max(Math.abs(pos.x), Math.abs(pos.y)) > min ? pos : null;
 
@@ -161,8 +191,8 @@ const Card = React.memo(
                 style={{
                     top: pos.y,
                     left: pos.x,
-                    width: card.size.width,
-                    height: card.size.height,
+                    width: card.size.x,
+                    height: card.size.y,
                 }}
                 css={{
                     padding: '4px 12px',
@@ -186,8 +216,10 @@ const Card = React.memo(
                             selection: { [card.id]: true },
                         });
                     }
+                    evt.stopPropagation();
                 }}
                 onClick={evt => {
+                    evt.stopPropagation();
                     if (dragRef.current) {
                         // const prev = downPos.current;
                         // downPos.current = null;
@@ -270,6 +302,23 @@ const Whiteboard = () => {
                         enough: enough,
                     },
                 });
+            } else if (currentState.current.dragSelect) {
+                const { dragSelect } = currentState.current;
+                evt.preventDefault();
+                evt.stopPropagation();
+                const pos = evtPos(evt);
+                const enough =
+                    absMax(posDiff(dragSelect.position, pos)) > MIN_MOVEMENT;
+                if (enough) {
+                    dragRef.current = true;
+                }
+                dispatch({
+                    type: 'set_select',
+                    dragSelect: {
+                        position: dragSelect.position,
+                        size: posDiff(dragSelect.position, pos),
+                    },
+                });
             }
         };
         const up = evt => {
@@ -288,11 +337,53 @@ const Whiteboard = () => {
                 evt.preventDefault();
                 evt.stopPropagation();
                 dispatch({ type: 'set_drag', drag: null });
+            } else if (currentState.current.dragSelect) {
+                const { dragSelect } = currentState.current;
+                const newSelection = {};
+                let anySelected = false;
+                Object.keys(currentCards.current).forEach(key => {
+                    if (
+                        rectIntersect(
+                            {
+                                position: currentCards.current[key].position,
+                                size: currentCards.current[key].size,
+                            },
+                            normalizedRect(dragSelect),
+                        )
+                    ) {
+                        anySelected = true;
+                        newSelection[key] = true;
+                    }
+                });
+                console.log('ok', dragSelect, anySelected, newSelection);
+                if (anySelected) {
+                    dispatch({ type: 'set_select', dragSelect: null });
+                    dispatch({
+                        type: evt.metaKey
+                            ? 'add_selection'
+                            : 'replace_selection',
+                        selection: newSelection,
+                    });
+                }
             }
         };
+        const down = evt => {
+            evt.preventDefault();
+            const pos = evtPos(evt);
+            dispatch({ type: 'start_select', pos });
+        };
+        const click = evt => {
+            if (!dragRef.current) {
+                dispatch({ type: 'replace_selection', selection: {} });
+            }
+        };
+        window.addEventListener('click', click);
+        window.addEventListener('mousedown', down);
         window.addEventListener('mousemove', move, true);
         window.addEventListener('mouseup', up, true);
         return () => {
+            window.removeEventListener('click', click);
+            window.addEventListener('mousedown', down);
             window.removeEventListener('mousemove', move, true);
             window.removeEventListener('mouseup', up, true);
         };
