@@ -3,9 +3,9 @@
 
 import { type Client } from '../client-bundle';
 
-export const useCollection = function<T: {}>(
-    React,
-    client: Client<mixed>,
+export const useCollection = function<T: {}, SyncStatus>(
+    React: *,
+    client: Client<SyncStatus>,
     name: string,
 ) {
     const col = React.useMemo(() => client.getCollection<T>(name), []);

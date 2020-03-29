@@ -8,22 +8,23 @@ export type Type =
     | 'string'
     | 'int'
     | 'float'
+    | 'number'
     | 'object'
     | 'boolean'
     | 'array'
     | 'any'
     | 'rich-text'
-    | { type: 'array', item: Schema }
+    | {| type: 'array', item: Schema |}
     | Schema
-    | { type: 'map', value: Type }
-    | { type: 'optional', value: Type };
+    | {| type: 'map', value: Type |}
+    | {| type: 'optional', value: Type |};
 
-export type Schema = {
+export type Schema = {|
     type: 'object',
     attributes: {
         [key: string]: Type,
     },
-};
+|};
 
 class ValidationError extends Error {
     value: any;
@@ -183,7 +184,7 @@ export const validate = (
             case 'boolean':
                 return expectType(value, 'boolean', path);
             case 'int':
-                return expectType(value, 'number', path);
+            case 'number':
             case 'float':
                 return expectType(value, 'number', path);
             case 'object':

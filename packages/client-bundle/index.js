@@ -7,10 +7,11 @@ export type { Delta, CRDT as Data } from '../nested-object-crdt/src/types';
 import * as rich from '../rich-text-crdt';
 import type { Schema } from '../nested-object-crdt/src/schema';
 export { hlc, crdt, rich };
+export type { Schema };
 
 import type { CRDTImpl } from '../core/src/shared';
 import type { Client } from '../core/src/types';
-export type { Client } from '../core/src/types';
+export type { Client, Collection } from '../core/src/types';
 
 import { default as createBlobClient } from '../core/src/blob/create-client';
 import { default as makeBlobPersistence } from '../idb/src/blob';
