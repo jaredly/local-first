@@ -154,17 +154,17 @@ const Card = React.memo(
         return (
             <div
                 key={card.id}
+                style={{
+                    top: pos.y,
+                    left: pos.x,
+                    width: card.size.width,
+                    height: card.size.height,
+                }}
                 css={[
                     {
                         padding: '4px 12px',
                         boxShadow: '0 0 3px #ccc',
                         position: 'absolute',
-                        top: pos.y,
-                        left: pos.x,
-                        width: card.size.width,
-                        height: card.size.height,
-                    },
-                    {
                         backgroundColor: selected ? 'aliceblue' : 'white',
                     },
                 ]}
