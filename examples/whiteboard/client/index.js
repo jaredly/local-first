@@ -144,6 +144,91 @@ const initialState = {
 
 const MIN_MOVEMENT = 5;
 
+const onMove = (evt, state, dispatch, dragRef) => {
+    if (state.drag) {
+        const drag = state.drag;
+        evt.preventDefault();
+        evt.stopPropagation();
+        const pos = evtPos(evt);
+        const diff = posDiff(drag.offset, pos);
+        const enough =
+            drag.enough ||
+            Math.max(Math.abs(diff.x), Math.abs(diff.y)) > MIN_MOVEMENT;
+        if (enough) {
+            dragRef.current = true;
+        }
+        dispatch({
+            type: 'set_drag',
+            drag: {
+                offset: drag.offset,
+                mouse: pos,
+                enough: enough,
+            },
+        });
+    } else if (state.dragSelect) {
+        const { dragSelect } = state;
+        evt.preventDefault();
+        evt.stopPropagation();
+        const pos = evtPos(evt);
+        const enough = absMax(posDiff(dragSelect.position, pos)) > MIN_MOVEMENT;
+        if (enough) {
+            dragRef.current = true;
+        }
+        dispatch({
+            type: 'set_select',
+            dragSelect: {
+                position: dragSelect.position,
+                size: posDiff(dragSelect.position, pos),
+            },
+        });
+    }
+};
+
+const onMouseUp = (evt, state, cards, dispatch, col) => {
+    if (state.drag) {
+        const drag = state.drag;
+        if (drag.enough) {
+            const diff = posDiff(drag.offset, drag.mouse);
+            Object.keys(state.selection).forEach(key => {
+                col.setAttribute(
+                    key,
+                    ['position'],
+                    addPos(cards[key].position, diff),
+                );
+            });
+        }
+        evt.preventDefault();
+        evt.stopPropagation();
+        dispatch({ type: 'set_drag', drag: null });
+    } else if (state.dragSelect) {
+        const { dragSelect } = state;
+        const newSelection = {};
+        let anySelected = false;
+        Object.keys(cards).forEach(key => {
+            if (
+                rectIntersect(
+                    {
+                        position: cards[key].position,
+                        size: cards[key].size,
+                    },
+                    normalizedRect(dragSelect),
+                )
+            ) {
+                anySelected = true;
+                newSelection[key] = true;
+            }
+        });
+        // console.log('ok', dragSelect, anySelected, newSelection);
+        dispatch({ type: 'set_select', dragSelect: null });
+        if (anySelected) {
+            dispatch({
+                type: evt.metaKey ? 'add_selection' : 'replace_selection',
+                selection: newSelection,
+            });
+        }
+    }
+};
+
 const Whiteboard = () => {
     // we're assuming we're authed, and cookies are taking care of things.
     const client = React.useMemo(
@@ -169,91 +254,16 @@ const Whiteboard = () => {
                 client.undo();
             }
         };
-        const move = evt => {
-            if (currentState.current.drag) {
-                const drag = currentState.current.drag;
-                evt.preventDefault();
-                evt.stopPropagation();
-                const pos = evtPos(evt);
-                const diff = posDiff(drag.offset, pos);
-                const enough =
-                    drag.enough ||
-                    Math.max(Math.abs(diff.x), Math.abs(diff.y)) > MIN_MOVEMENT;
-                if (enough) {
-                    dragRef.current = true;
-                }
-                dispatch({
-                    type: 'set_drag',
-                    drag: {
-                        offset: drag.offset,
-                        mouse: pos,
-                        enough: enough,
-                    },
-                });
-            } else if (currentState.current.dragSelect) {
-                const { dragSelect } = currentState.current;
-                evt.preventDefault();
-                evt.stopPropagation();
-                const pos = evtPos(evt);
-                const enough =
-                    absMax(posDiff(dragSelect.position, pos)) > MIN_MOVEMENT;
-                if (enough) {
-                    dragRef.current = true;
-                }
-                dispatch({
-                    type: 'set_select',
-                    dragSelect: {
-                        position: dragSelect.position,
-                        size: posDiff(dragSelect.position, pos),
-                    },
-                });
-            }
-        };
+        const move = evt =>
+            onMove(evt, currentState.current, dispatch, dragRef);
         const up = evt => {
-            if (currentState.current.drag) {
-                const drag = currentState.current.drag;
-                if (drag.enough) {
-                    const diff = posDiff(drag.offset, drag.mouse);
-                    Object.keys(currentState.current.selection).forEach(key => {
-                        col.setAttribute(
-                            key,
-                            ['position'],
-                            addPos(currentCards.current[key].position, diff),
-                        );
-                    });
-                }
-                evt.preventDefault();
-                evt.stopPropagation();
-                dispatch({ type: 'set_drag', drag: null });
-            } else if (currentState.current.dragSelect) {
-                const { dragSelect } = currentState.current;
-                const newSelection = {};
-                let anySelected = false;
-                Object.keys(currentCards.current).forEach(key => {
-                    if (
-                        rectIntersect(
-                            {
-                                position: currentCards.current[key].position,
-                                size: currentCards.current[key].size,
-                            },
-                            normalizedRect(dragSelect),
-                        )
-                    ) {
-                        anySelected = true;
-                        newSelection[key] = true;
-                    }
-                });
-                // console.log('ok', dragSelect, anySelected, newSelection);
-                dispatch({ type: 'set_select', dragSelect: null });
-                if (anySelected) {
-                    dispatch({
-                        type: evt.metaKey
-                            ? 'add_selection'
-                            : 'replace_selection',
-                        selection: newSelection,
-                    });
-                }
-            }
+            onMouseUp(
+                evt,
+                currentState.current,
+                currentCards.current,
+                dispatch,
+                col,
+            );
         };
         const down = evt => {
             evt.preventDefault();
