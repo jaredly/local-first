@@ -173,8 +173,15 @@ const tabIsolatedNetwork = function<SyncStatus>(
             // do nothing
         },
     );
+    let syncTimer = null;
     return {
-        setDirty: () => sync(false),
+        setDirty: () => {
+            if (syncTimer) return;
+            syncTimer = setTimeout(() => {
+                syncTimer = null;
+                sync(false);
+            }, 0);
+        },
         onSyncStatus: fn => {
             connectionListeners.push(fn);
         },

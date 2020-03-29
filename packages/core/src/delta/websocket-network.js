@@ -63,7 +63,7 @@ const createWebSocketNetwork = <Delta, Data>(
         createSync: (sendCrossTabChange, updateStatus, softResync) => {
             console.log('Im the leader (websocket)');
             const state = reconnectingSocket(
-                `${url}?sessionId=${sessionId}`,
+                `${url}?siteId=${sessionId}`,
                 () => sync(false),
                 async (msg, respond) => {
                     const messages = JSON.parse(msg);

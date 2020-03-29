@@ -53,23 +53,33 @@ export const setupPolling = function<Delta, Data>(
 export const setupWebsocket = function<Delta, Data>(
     app: express,
     getServer: express.Request => ServerState<Data, Delta>,
-    middleware: Middleware = [],
+    // middleware: Middleware = [],
     path: string = '/sync',
 ) {
     const clients = {};
 
-    app.ws(path, middleware, function(ws, req) {
+    console.log('websocketing on', path);
+    app.ws(path, function(ws, req) {
+        console.log('ws connect');
         if (!req.query.siteId) {
+            console.log('not');
+            ws.close();
             console.log('no siteId');
             throw new Error('No siteId');
         }
-        const server = getServer(req);
-        onWebsocket(server, clients, req.query.siteId, ws);
+        console.log('got');
+        try {
+            const server = getServer(req);
+            onWebsocket(server, clients, req.query.siteId, ws);
+        } catch (err) {
+            console.log('noooo');
+            console.error(err);
+        }
     });
 };
 
 export const runServer = <Delta, Data>(
-    port: number,
+    // port: number,
     getBlobDataPath: req => string,
     getServer: req => ServerState<Delta, Data>,
     middleware: Middleware = [],
@@ -81,8 +91,8 @@ export const runServer = <Delta, Data>(
 
     setupBlob(app, getBlobDataPath, middleware);
     setupPolling(app, getServer, middleware);
-    setupWebsocket(app, getServer, middleware);
+    setupWebsocket(app, getServer);
 
-    const http = app.listen(port);
-    return { http, app, wsInst };
+    // const http = app.listen(port);
+    return { app, wsInst };
 };

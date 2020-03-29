@@ -17,7 +17,7 @@ type Card = {
     description: string,
     position: { x: number, y: number },
     size: { width: number, height: number },
-    color: string,
+    color: ?string,
     header: ?number,
     disabled: boolean,
 };
@@ -31,12 +31,26 @@ const CardSchema: Schema = {
         position: { type: 'object', attributes: { x: 'number', y: 'number' } },
         size: {
             type: 'object',
-            attributes: { width: 'number', width: 'number' },
+            attributes: { width: 'number', height: 'number' },
         },
-        color: 'string',
+        color: { type: 'optional', value: 'string' },
         header: { type: 'optional', value: 'number' },
         disabled: 'boolean',
     },
+};
+
+const DEFAULT_HEIGHT = 100;
+const DEFAULT_WIDTH = 200;
+
+const makeDefaultCards = genId => {
+    return defaultCards.map(({ description, title }, i) => ({
+        id: genId(),
+        title,
+        description,
+        position: { x: 0, y: i * DEFAULT_HEIGHT },
+        size: { height: DEFAULT_HEIGHT, width: DEFAULT_WIDTH },
+        disabled: false,
+    }));
 };
 
 const Whiteboard = () => {
@@ -45,7 +59,7 @@ const Whiteboard = () => {
         () =>
             createInMemoryDeltaClient(
                 { cards: CardSchema },
-                `http://localhost:9090/ephemeral/sync`,
+                `ws://localhost:9090/ephemeral/sync`,
             ),
         [],
     );
@@ -54,10 +68,44 @@ const Whiteboard = () => {
     return (
         <div>
             Oy
+            <button
+                onClick={() => {
+                    makeDefaultCards(client.getStamp).forEach(card => {
+                        col.save(card.id, card);
+                    });
+                }}
+            >
+                Add default cards
+            </button>
             <div>
-                {Object.keys(cards).map(id => (
-                    <div>{id}</div>
-                ))}
+                {Object.keys(cards)
+                    .map(id => cards[id])
+                    .map(card => (
+                        <div
+                            key={card.id}
+                            style={{
+                                backgroundColor: 'white',
+                                padding: 16,
+                                boxShadow: '0 0 3px #ccc',
+                                position: 'absolute',
+                                top: card.position.y,
+                                left: card.position.x,
+                                width: card.size.width,
+                                height: card.size.height,
+                            }}
+                        >
+                            <div
+                                style={{
+                                    fontWeight: 'bold',
+                                    marginBottom: 8,
+                                    textAlign: 'center',
+                                }}
+                            >
+                                {card.title}
+                            </div>
+                            <div>{card.description}</div>
+                        </div>
+                    ))}
             </div>
         </div>
     );

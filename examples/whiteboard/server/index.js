@@ -56,6 +56,7 @@ export const run = (dataPath: string, port: number = 9090) => {
         );
 
         auth.setupAuth(db, state.app, secret);
+        state.app.listen(port);
         return state;
     } else {
         const server = make<Delta, Data>(crdtImpl, setupPersistence(dataPath));
@@ -65,12 +66,14 @@ export const run = (dataPath: string, port: number = 9090) => {
         );
         dataPath = path.join(dataPath, 'anon');
         const state = runServer(
-            port,
+            // port,
             () => path.join(dataPath, 'blobs'),
             () => server,
         );
-        setupWebsocket(state.app, ephemeralServer, [], '/ephemeral/sync');
-        setupPolling(state.app, ephemeralServer, [], '/ephemeral/sync');
+        console.log('setup ephemeral socket');
+        setupWebsocket(state.app, () => ephemeralServer, '/ephemeral/sync');
+        setupPolling(state.app, () => ephemeralServer, [], '/ephemeral/sync');
+        state.app.listen(port);
         return state;
     }
 };
