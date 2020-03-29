@@ -22,7 +22,7 @@ import {
     rectIntersect,
 } from './types';
 
-import Card from './card';
+import Card from './Card';
 
 const defaultCards = require('./data.json');
 

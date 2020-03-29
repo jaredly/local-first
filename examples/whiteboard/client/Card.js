@@ -18,7 +18,7 @@ import {
     rectIntersect,
 } from './types';
 
-import type { Action } from './';
+import type { Action } from '.';
 
 type Props = {
     offset: ?pos,
