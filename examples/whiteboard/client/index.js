@@ -9,41 +9,19 @@ import { useCollection } from '../../../packages/client-react';
 
 import { type Schema, type Collection } from '../../../packages/client-bundle';
 
+import {
+    type pos,
+    type rect,
+    type CardT,
+    CardSchema,
+    addPos,
+    normalizedRect,
+    posDiff,
+    absMax,
+    rectIntersect,
+} from './types';
+
 const defaultCards = require('./data.json');
-
-type CardT = {
-    id: string,
-    title: string,
-    description: string,
-    position: { x: number, y: number },
-    size: { x: number, y: number },
-    color: ?string,
-    header: ?number,
-    disabled: boolean,
-};
-
-const CardSchema: Schema = {
-    type: 'object',
-    attributes: {
-        id: 'string',
-        title: 'string',
-        description: 'string',
-        position: {
-            type: 'object',
-            attributes: {
-                x: 'number',
-                y: 'number',
-            },
-        },
-        size: {
-            type: 'object',
-            attributes: { x: 'number', y: 'number' },
-        },
-        color: { type: 'optional', value: 'string' },
-        header: { type: 'optional', value: 'number' },
-        disabled: 'boolean',
-    },
-};
 
 const DEFAULT_HEIGHT = 70;
 const DEFAULT_WIDTH = 200;
@@ -83,6 +61,7 @@ const reducer = (state: State, action): State => {
         case 'add_selection':
             return {
                 ...state,
+                // $FlowFixMe
                 selection: { ...state.selection, ...action.selection },
             };
         case 'remove_selection':
@@ -118,53 +97,49 @@ const reducer = (state: State, action): State => {
     return state;
 };
 
-type pos = { x: number, y: number };
-
+type Drag = { offset: pos, mouse: pos, enough: boolean };
 type State = {
     selection: { [key: string]: boolean },
-    drag?: ?{ offset: pos, mouse: pos, enough: boolean },
-    dragSelect?: ?{ position: pos, size: pos },
+    drag?: ?Drag,
+    dragSelect?: ?rect,
 };
-type Action = any;
+type Action =
+    | {|
+          type: 'set_drag',
+          drag: ?Drag,
+      |}
+    | {|
+          type: 'set_select',
+          dragSelect: ?rect,
+      |}
+    | {|
+          type: 'start_drag',
+          pos: {| x: number, y: number |},
+      |}
+    | {|
+          type: 'start_select',
+          pos: {| x: number, y: number |},
+      |}
+    | {|
+          type: 'add_selection',
+          selection: { [key: string]: boolean },
+      |}
+    | {|
+          type: 'remove_selection',
+          selection: { [key: string]: boolean },
+      |}
+    | {|
+          type: 'replace_selection',
+          selection: { [key: string]: boolean },
+      |};
 
 const initialState = {
     selection: {},
     drag: null,
     dragSelect: null,
 };
-type rect = { position: pos, size: pos };
 
 const MIN_MOVEMENT = 5;
-
-const addPos = (pos1, pos2) => ({ x: pos1.x + pos2.x, y: pos1.y + pos2.y });
-const posDiff = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
-const absMax = pos => Math.max(Math.abs(pos.x), Math.abs(pos.y));
-const normalizedRect = ({ position, size }) => ({
-    position: {
-        x: size.x < 0 ? position.x + size.x : position.x,
-        y: size.y < 0 ? position.y + size.y : position.y,
-    },
-    size: {
-        x: Math.abs(size.x),
-        y: Math.abs(size.y),
-    },
-});
-
-const rectIntersect = (one: rect, two: rect) => {
-    return (
-        ((two.position.x < one.position.x &&
-            one.position.x < two.position.x + two.size.x) ||
-            (one.position.x < two.position.x &&
-                two.position.x < one.position.x + one.size.x)) &&
-        ((two.position.y < one.position.y &&
-            one.position.y < two.position.y + two.size.y) ||
-            (one.position.y < two.position.y &&
-                two.position.y < one.position.y + one.size.y))
-    );
-};
-
-// const threshhold = (pos, min) =>
-//     Math.max(Math.abs(pos.x), Math.abs(pos.y)) > min ? pos : null;
 
 const Card = React.memo(
     ({
@@ -211,12 +186,17 @@ const Card = React.memo(
                     dragRef.current = false;
                     // downPos.current = pos;
                     if (!selected) {
-                        dispatch({
-                            type: evt.metaKey
-                                ? 'add_selection'
-                                : 'replace_selection',
-                            selection: { [card.id]: true },
-                        });
+                        dispatch(
+                            evt.metaKey
+                                ? {
+                                      type: 'add_selection',
+                                      selection: { [card.id]: true },
+                                  }
+                                : {
+                                      type: 'replace_selection',
+                                      selection: { [card.id]: true },
+                                  },
+                        );
                     } else if (evt.metaKey) {
                         dispatch({
                             type: 'remove_selection',
