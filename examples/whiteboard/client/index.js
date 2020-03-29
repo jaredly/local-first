@@ -79,7 +79,6 @@ const objDiff = (one, two) => {
 const reducer = (state: State, action): State => {
     switch (action.type) {
         case 'replace_selection':
-            console.log('new selection fols', action.selection);
             return { ...state, selection: action.selection };
         case 'add_selection':
             return {
@@ -173,6 +172,7 @@ const Card = React.memo(
         card,
         col,
         selected,
+        hovered,
         dispatch,
         dragRef,
     }: {
@@ -180,6 +180,7 @@ const Card = React.memo(
         card: CardT,
         col: Collection<CardT>,
         selected: boolean,
+        hovered: ?boolean,
         dispatch: Action => void,
         dragRef: { current: boolean },
     }) => {
@@ -193,12 +194,13 @@ const Card = React.memo(
                     left: pos.x,
                     width: card.size.x,
                     height: card.size.y,
+                    backgroundColor:
+                        selected || hovered ? 'aliceblue' : 'white',
                 }}
                 css={{
                     padding: '4px 12px',
                     boxShadow: '0 0 3px #ccc',
                     position: 'absolute',
-                    backgroundColor: selected ? 'aliceblue' : 'white',
                 }}
                 onMouseDown={evt => {
                     const pos = evtPos(evt);
@@ -228,11 +230,18 @@ const Card = React.memo(
                         return;
                         // }
                     }
-                    if (selected && !evt.metaKey) {
-                        dispatch({
-                            type: 'replace_selection',
-                            selection: { [card.id]: true },
-                        });
+                    if (selected) {
+                        if (evt.metaKey) {
+                            dispatch({
+                                type: 'remove_selection',
+                                selection: { [card.id]: true },
+                            });
+                        } else {
+                            dispatch({
+                                type: 'replace_selection',
+                                selection: { [card.id]: true },
+                            });
+                        }
                     }
                 }}
             >
@@ -277,8 +286,6 @@ const Whiteboard = () => {
     const currentCards = React.useRef(cards);
     currentCards.current = cards;
     const dragRef = React.useRef(false);
-    // const currentDrag = React.useRef(state.drag);
-    // currentDrag.current = state.drag;
 
     React.useEffect(() => {
         const move = evt => {
@@ -355,9 +362,9 @@ const Whiteboard = () => {
                         newSelection[key] = true;
                     }
                 });
-                console.log('ok', dragSelect, anySelected, newSelection);
+                // console.log('ok', dragSelect, anySelected, newSelection);
+                dispatch({ type: 'set_select', dragSelect: null });
                 if (anySelected) {
-                    dispatch({ type: 'set_select', dragSelect: null });
                     dispatch({
                         type: evt.metaKey
                             ? 'add_selection'
@@ -393,6 +400,9 @@ const Whiteboard = () => {
         state.drag && state.drag.enough
             ? posDiff(state.drag.offset, state.drag.mouse)
             : null;
+    const dragSelect = state.dragSelect
+        ? normalizedRect(state.dragSelect)
+        : null;
 
     return (
         <div>
@@ -419,6 +429,9 @@ const Whiteboard = () => {
                                     : null
                             }
                             selected={state.selection[card.id]}
+                            hovered={
+                                dragSelect && rectIntersect(dragSelect, card)
+                            }
                             dispatch={dispatch}
                             card={card}
                             col={col}
