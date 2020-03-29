@@ -74,6 +74,8 @@ export const clientCrdtImpl: CRDTImpl<Delta, Data> = {
     },
     latestStamp: data => crdt.latestStamp(data, () => null),
     value: d => d.value,
+    get: crdt.get,
+    createEmpty: stamp => crdt.createEmpty(stamp),
     deltas: {
         ...crdt.deltas,
         stamp: data => crdt.deltas.stamp(data, () => null),

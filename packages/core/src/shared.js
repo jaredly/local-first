@@ -32,10 +32,16 @@ export const newCollection = () => ({
     itemListeners: {},
 });
 
+export type UndoManager = {
+    add(() => mixed): void,
+    undo(): void,
+};
+
 export type CRDTImpl<Delta, Data> = {
     merge(?Data, Data): Data,
     latestStamp(Data): ?string,
     value<T>(Data): T,
+    get(Data, Array<string | number>): ?Data,
     deltas: {
         diff(?Data, Data): Delta,
         set(Data, Array<string | number>, Data): Delta,
@@ -47,6 +53,7 @@ export type CRDTImpl<Delta, Data> = {
         stamp(Delta): string,
     },
     createValue<T>(T, string, () => string, SchemaType): Data,
+    createEmpty(string): Data,
 };
 
 const send = <Data, T>(
@@ -71,6 +78,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
     setDirty: () => void,
     sendCrossTabChanges: PeerChange => mixed,
     schema: Schema,
+    undoManager?: UndoManager,
     // undoManager or some such
 ): Collection<T> {
     const applyDelta = async (id: string, delta) => {
@@ -99,8 +107,12 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         async save(id: string, node: T) {
             validate(node, schema);
             // NOTE this overwrites everything, setAttribute will do much better merges
-            // const prev = state.cache[id] ? crdt.value(state.cache[id]) : null
-            // historyManager.add(() => this.save(id, prev))
+            if (undoManager) {
+                const prev = state.cache[id]
+                    ? crdt.value(state.cache[id])
+                    : null;
+                undoManager.add(() => this.save(id, prev));
+            }
             state.cache[id] = crdt.merge(
                 state.cache[id],
                 // STOPSHIP here's the bit
@@ -163,8 +175,24 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                 }
                 state.cache[id] = stored;
             }
-            // const prev = crdt.get(state.cache[id], path)
-            // historyManager.add(() => this.setAttribute(id, path, prev ? crdt.value(prev) : null))
+            if (undoManager) {
+                const prev = crdt.get(state.cache[id], path);
+                undoManager.add(() => {
+                    const delta = crdt.deltas.set(
+                        state.cache[id],
+                        path,
+                        prev
+                            ? crdt.createValue(
+                                  crdt.value(prev),
+                                  getStamp(),
+                                  getStamp,
+                                  sub,
+                              )
+                            : crdt.createEmpty(getStamp()),
+                    );
+                    return applyDelta(id, delta);
+                });
+            }
             const delta = crdt.deltas.set(
                 state.cache[id],
                 path,

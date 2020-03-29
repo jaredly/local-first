@@ -17,6 +17,7 @@ import deepEqual from 'fast-deep-equal';
 import { type PeerChange } from '../types';
 import { updateCacheAndNotify, fullMaxStamp } from '../blob/create-client';
 import { type ClientMessage, type ServerMessage } from '../server';
+import { create as createUndoManager } from '../undo-manager';
 
 import {
     newCollection,
@@ -264,10 +265,13 @@ function createClient<Delta, Data, SyncStatus>(
 
     const network = peerTabAwareNetworks(handlePeerChange, allNetworks);
 
+    const undoManager = createUndoManager();
+
     return {
         sessionId: clock.now.node,
         getStamp: clock.get,
         setDirty: network.setDirty,
+        undo: undoManager.undo,
         getCollection<T>(colid: string) {
             return getCollection(
                 colid,
@@ -278,6 +282,7 @@ function createClient<Delta, Data, SyncStatus>(
                 network.setDirty,
                 network.sendCrossTabChanges,
                 schemas[colid],
+                undoManager,
             );
         },
         onSyncStatus(fn) {

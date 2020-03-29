@@ -17,6 +17,8 @@ import { type Schema } from '../../../nested-object-crdt/src/schema.js';
 import deepEqual from 'fast-deep-equal';
 import { type PeerChange } from '../types';
 
+import { create as createUndoManager } from '../undo-manager';
+
 import {
     newCollection,
     getCollection,
@@ -200,6 +202,7 @@ function createClient<Delta, Data, SyncStatus>(
     createNetwork: NetworkCreator<Delta, Data, SyncStatus>,
 ): Client<SyncStatus> {
     const state = initialState(persistence.collections);
+    const undoManager = createUndoManager();
 
     console.log();
 
@@ -233,6 +236,7 @@ function createClient<Delta, Data, SyncStatus>(
         sessionId: clock.now.node,
         getStamp: clock.get,
         setDirty: network.setDirty,
+        undo: undoManager.undo,
         getCollection<T>(colid: string) {
             return getCollection(
                 colid,
@@ -243,6 +247,7 @@ function createClient<Delta, Data, SyncStatus>(
                 network.setDirty,
                 network.sendCrossTabChanges,
                 schemas[colid],
+                undoManager,
             );
         },
         onSyncStatus(fn) {

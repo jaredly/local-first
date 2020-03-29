@@ -281,6 +281,11 @@ const Whiteboard = () => {
     const dragRef = React.useRef(false);
 
     React.useEffect(() => {
+        const key = evt => {
+            if (evt.key === 'z' && evt.metaKey) {
+                client.undo();
+            }
+        };
         const move = evt => {
             if (currentState.current.drag) {
                 const drag = currentState.current.drag;
@@ -382,11 +387,13 @@ const Whiteboard = () => {
         window.addEventListener('mousedown', down);
         window.addEventListener('mousemove', move, true);
         window.addEventListener('mouseup', up, true);
+        window.addEventListener('keydown', key);
         return () => {
             window.removeEventListener('click', click);
             window.addEventListener('mousedown', down);
             window.removeEventListener('mousemove', move, true);
             window.removeEventListener('mouseup', up, true);
+            window.removeEventListener('keydown', key);
         };
     }, []);
 

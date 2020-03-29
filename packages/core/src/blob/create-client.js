@@ -13,6 +13,7 @@ import { peerTabAwareNetwork } from '../peer-tabs';
 import { type Schema } from '../../../nested-object-crdt/src/schema.js';
 import * as hlc from '../../../hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';
+import { create as createUndoManager } from '../undo-manager';
 
 import {
     newCollection,
@@ -140,10 +141,12 @@ function createClient<Delta, Data, SyncStatus>(
         ),
     );
 
+    const undoManager = createUndoManager();
     return {
         sessionId: clock.now.node,
         setDirty: network.setDirty,
         getStamp: clock.get,
+        undo: undoManager.undo,
         getCollection<T>(colid: string) {
             return getCollection(
                 colid,
@@ -154,6 +157,7 @@ function createClient<Delta, Data, SyncStatus>(
                 network.setDirty,
                 network.sendCrossTabChanges,
                 schemas[colid],
+                undoManager,
             );
         },
         onSyncStatus(fn) {

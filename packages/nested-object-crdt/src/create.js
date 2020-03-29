@@ -182,6 +182,8 @@ export const create = function<T, Other>(
     return { value, meta: { type: 'plain', hlcStamp } };
 };
 
-export const createEmpty = function<T, Other>(): CRDT<?T, Other> {
-    return { value: null, meta: { type: 't', hlcStamp: MIN_STAMP } };
+export const createEmpty = function<T, Other>(
+    hlcStamp: string = MIN_STAMP,
+): CRDT<?T, Other> {
+    return { value: null, meta: { type: 't', hlcStamp } };
 };

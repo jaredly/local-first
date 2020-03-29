@@ -16,6 +16,7 @@ export type OldNetwork<SyncStatus> = {
 export type Client<SyncStatus> = {
     sessionId: string,
     getStamp(): string,
+    undo(): void,
     getCollection<T>(id: string): Collection<T>,
     onSyncStatus(fn: (SyncStatus) => void): void,
     getSyncStatus(): SyncStatus,
