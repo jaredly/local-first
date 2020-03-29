@@ -93,7 +93,7 @@ const reducer = (state: State, action): State => {
         case 'start_drag':
             return {
                 ...state,
-                drag: { offset: action.pos, mouse: action.pos },
+                drag: { offset: action.pos, mouse: action.pos, enough: false },
             };
         case 'set_drag':
             return {
@@ -118,7 +118,7 @@ type pos = { x: number, y: number };
 
 type State = {
     selection: { [key: string]: boolean },
-    drag?: ?{ offset: pos, mouse: pos },
+    drag?: ?{ offset: pos, mouse: pos, enough: boolean },
     dragSelect?: ?{ origin: pos, mouse: pos },
 };
 type Action = any;
@@ -133,8 +133,8 @@ const MIN_MOVEMENT = 10;
 
 const addPos = (pos1, pos2) => ({ x: pos1.x + pos2.x, y: pos1.y + pos2.y });
 const posDiff = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
-const threshhold = (pos, min) =>
-    Math.max(Math.abs(pos.x), Math.abs(pos.y)) > min ? pos : null;
+// const threshhold = (pos, min) =>
+//     Math.max(Math.abs(pos.x), Math.abs(pos.y)) > min ? pos : null;
 
 const Card = React.memo(
     ({
@@ -173,15 +173,17 @@ const Card = React.memo(
                         type: 'start_drag',
                         pos: evtPos(evt),
                     });
+                    if (!selected) {
+                        dispatch({
+                            type: evt.metaKey
+                                ? 'add_selection'
+                                : 'replace_selection',
+                            selection: { [card.id]: true },
+                        });
+                    }
                 }}
-                onClick={evt => {
-                    dispatch({
-                        type: evt.metaKey
-                            ? 'add_selection'
-                            : 'replace_selection',
-                        selection: { [card.id]: true },
-                    });
-                }}
+                // onClick={evt => {
+                // }}
             >
                 <div
                     style={{
@@ -232,11 +234,17 @@ const Whiteboard = () => {
                 const drag = currentState.current.drag;
                 evt.preventDefault();
                 evt.stopPropagation();
+                const pos = evtPos(evt);
+                const diff = posDiff(drag.offset, pos);
                 dispatch({
                     type: 'set_drag',
                     drag: {
                         offset: drag.offset,
-                        mouse: evtPos(evt),
+                        mouse: pos,
+                        enough:
+                            drag.enough ||
+                            Math.max(Math.abs(diff.x), Math.abs(diff.y)) >
+                                MIN_MOVEMENT,
                     },
                 });
             }
@@ -244,10 +252,8 @@ const Whiteboard = () => {
         const up = evt => {
             if (currentState.current.drag) {
                 const drag = currentState.current.drag;
-                const diff = posDiff(drag.offset, drag.mouse);
-                if (
-                    Math.max(Math.abs(diff.x), Math.abs(diff.y)) > MIN_MOVEMENT
-                ) {
+                if (drag.enough) {
+                    const diff = posDiff(drag.offset, drag.mouse);
                     Object.keys(currentState.current.selection).forEach(key => {
                         col.setAttribute(
                             key,
@@ -269,9 +275,10 @@ const Whiteboard = () => {
         };
     }, []);
 
-    const dragOffset = state.drag
-        ? threshhold(posDiff(state.drag.offset, state.drag.mouse), MIN_MOVEMENT)
-        : null;
+    const dragOffset =
+        state.drag && state.drag.enough
+            ? posDiff(state.drag.offset, state.drag.mouse)
+            : null;
 
     return (
         <div>
