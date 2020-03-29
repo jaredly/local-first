@@ -217,31 +217,24 @@ const Card = React.memo(
                                 : 'replace_selection',
                             selection: { [card.id]: true },
                         });
+                    } else if (evt.metaKey) {
+                        dispatch({
+                            type: 'remove_selection',
+                            selection: { [card.id]: true },
+                        });
                     }
                     evt.stopPropagation();
                 }}
                 onClick={evt => {
                     evt.stopPropagation();
                     if (dragRef.current) {
-                        // const prev = downPos.current;
-                        // downPos.current = null;
-                        // const pos = evtPos(evt);
-                        // if (absMax(posDiff(prev, pos)) > MIN_MOVEMENT) {
                         return;
-                        // }
                     }
-                    if (selected) {
-                        if (evt.metaKey) {
-                            dispatch({
-                                type: 'remove_selection',
-                                selection: { [card.id]: true },
-                            });
-                        } else {
-                            dispatch({
-                                type: 'replace_selection',
-                                selection: { [card.id]: true },
-                            });
-                        }
+                    if (selected && !evt.metaKey) {
+                        dispatch({
+                            type: 'replace_selection',
+                            selection: { [card.id]: true },
+                        });
                     }
                 }}
             >
@@ -378,9 +371,10 @@ const Whiteboard = () => {
             evt.preventDefault();
             const pos = evtPos(evt);
             dispatch({ type: 'start_select', pos });
+            dragRef.current = false;
         };
         const click = evt => {
-            if (!dragRef.current) {
+            if (!dragRef.current && !evt.metaKey) {
                 dispatch({ type: 'replace_selection', selection: {} });
             }
         };
