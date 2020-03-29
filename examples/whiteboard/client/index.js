@@ -129,10 +129,11 @@ const initialState = {
     dragSelect: null,
 };
 
-const MIN_MOVEMENT = 10;
+const MIN_MOVEMENT = 5;
 
 const addPos = (pos1, pos2) => ({ x: pos1.x + pos2.x, y: pos1.y + pos2.y });
 const posDiff = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
+const absMax = pos => Math.max(Math.abs(pos.x), Math.abs(pos.y));
 // const threshhold = (pos, min) =>
 //     Math.max(Math.abs(pos.x), Math.abs(pos.y)) > min ? pos : null;
 
@@ -143,14 +144,17 @@ const Card = React.memo(
         col,
         selected,
         dispatch,
+        dragRef,
     }: {
         offset: ?pos,
         card: CardT,
         col: Collection<CardT>,
         selected: boolean,
         dispatch: Action => void,
+        dragRef: { current: boolean },
     }) => {
         const pos = offset ? addPos(card.position, offset) : card.position;
+        // const downPos = React.useRef(null);
         return (
             <div
                 key={card.id}
@@ -160,19 +164,20 @@ const Card = React.memo(
                     width: card.size.width,
                     height: card.size.height,
                 }}
-                css={[
-                    {
-                        padding: '4px 12px',
-                        boxShadow: '0 0 3px #ccc',
-                        position: 'absolute',
-                        backgroundColor: selected ? 'aliceblue' : 'white',
-                    },
-                ]}
+                css={{
+                    padding: '4px 12px',
+                    boxShadow: '0 0 3px #ccc',
+                    position: 'absolute',
+                    backgroundColor: selected ? 'aliceblue' : 'white',
+                }}
                 onMouseDown={evt => {
+                    const pos = evtPos(evt);
                     dispatch({
                         type: 'start_drag',
-                        pos: evtPos(evt),
+                        pos,
                     });
+                    dragRef.current = false;
+                    // downPos.current = pos;
                     if (!selected) {
                         dispatch({
                             type: evt.metaKey
@@ -182,8 +187,22 @@ const Card = React.memo(
                         });
                     }
                 }}
-                // onClick={evt => {
-                // }}
+                onClick={evt => {
+                    if (dragRef.current) {
+                        // const prev = downPos.current;
+                        // downPos.current = null;
+                        // const pos = evtPos(evt);
+                        // if (absMax(posDiff(prev, pos)) > MIN_MOVEMENT) {
+                        return;
+                        // }
+                    }
+                    if (selected && !evt.metaKey) {
+                        dispatch({
+                            type: 'replace_selection',
+                            selection: { [card.id]: true },
+                        });
+                    }
+                }}
             >
                 <div
                     style={{
@@ -225,6 +244,7 @@ const Whiteboard = () => {
     currentState.current = state;
     const currentCards = React.useRef(cards);
     currentCards.current = cards;
+    const dragRef = React.useRef(false);
     // const currentDrag = React.useRef(state.drag);
     // currentDrag.current = state.drag;
 
@@ -236,15 +256,18 @@ const Whiteboard = () => {
                 evt.stopPropagation();
                 const pos = evtPos(evt);
                 const diff = posDiff(drag.offset, pos);
+                const enough =
+                    drag.enough ||
+                    Math.max(Math.abs(diff.x), Math.abs(diff.y)) > MIN_MOVEMENT;
+                if (enough) {
+                    dragRef.current = true;
+                }
                 dispatch({
                     type: 'set_drag',
                     drag: {
                         offset: drag.offset,
                         mouse: pos,
-                        enough:
-                            drag.enough ||
-                            Math.max(Math.abs(diff.x), Math.abs(diff.y)) >
-                                MIN_MOVEMENT,
+                        enough: enough,
                     },
                 });
             }
@@ -298,6 +321,7 @@ const Whiteboard = () => {
                     .map(card => (
                         <Card
                             key={card.id}
+                            dragRef={dragRef}
                             offset={
                                 dragOffset && state.selection[card.id]
                                     ? dragOffset
