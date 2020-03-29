@@ -19,6 +19,7 @@ import {
     normalizedRect,
     posDiff,
     absMax,
+    clamp,
     rectIntersect,
 } from './types';
 
@@ -29,7 +30,7 @@ const defaultCards = require('./data.json');
 const DEFAULT_HEIGHT = 70;
 const DEFAULT_WIDTH = 200;
 const DEFAULT_MARGIN = 12;
-const BOUNDS = { x0: -500, y0: -500, x1: 1500, y1: 1500 };
+const BOUNDS = { position: { x: -500, y: -500 }, size: { x: 1500, y: 1500 } };
 
 const makeDefaultCards = (genId): Array<CardT> => {
     return defaultCards.map(({ description, title }, i) => ({
@@ -96,13 +97,21 @@ const reducer = (state: State, action): State => {
                 dragSelect: action.dragSelect,
                 drag: null,
             };
+        case 'scroll':
+            return {
+                ...state,
+                pan: clamp(addPos(state.pan, action.delta), BOUNDS),
+            };
+        default:
+            return state;
     }
-    return state;
 };
 
 export type Drag = { offset: pos, mouse: pos, enough: boolean };
 export type State = {
     selection: { [key: string]: boolean },
+    pan: pos,
+    zoom: number,
     drag?: ?Drag,
     dragSelect?: ?rect,
 };
@@ -131,6 +140,7 @@ export type Action =
           type: 'remove_selection',
           selection: { [key: string]: boolean },
       |}
+    | {| type: 'scroll', delta: pos |}
     | {|
           type: 'replace_selection',
           selection: { [key: string]: boolean },
@@ -138,6 +148,8 @@ export type Action =
 
 const initialState = {
     selection: {},
+    pan: { x: 0, y: 0 },
+    zoom: 1,
     drag: null,
     dragSelect: null,
 };
@@ -276,13 +288,22 @@ const Whiteboard = () => {
                 dispatch({ type: 'replace_selection', selection: {} });
             }
         };
+        const mousewheel = evt => {
+            console.log(evt.deltaX, evt.deltaY);
+            dispatch({
+                type: 'scroll',
+                delta: { x: evt.deltaX, y: evt.deltaY },
+            });
+        };
         window.addEventListener('click', click);
         window.addEventListener('mousedown', down);
         window.addEventListener('mousemove', move, true);
         window.addEventListener('mouseup', up, true);
         window.addEventListener('keydown', key);
+        window.addEventListener('mousewheel', mousewheel);
         return () => {
             window.removeEventListener('click', click);
+            window.removeEventListener('mousewheel', mousewheel);
             window.addEventListener('mousedown', down);
             window.removeEventListener('mousemove', move, true);
             window.removeEventListener('mouseup', up, true);
@@ -310,7 +331,13 @@ const Whiteboard = () => {
             >
                 Add default cards
             </button>
-            <div>
+            <div
+                style={{
+                    position: 'absolute',
+                    top: 20 - state.pan.y,
+                    left: -state.pan.x,
+                }}
+            >
                 {Object.keys(cards)
                     .map(id => cards[id])
                     .map(card => (

@@ -1,7 +1,19 @@
 // @flow
 
-export type pos = {| x: number, y: number |};
 export type rect = { position: pos, size: pos };
+
+export const clamp = (pos: pos, range: rect) => {
+    return {
+        x: Math.min(
+            Math.max(range.position.x, pos.x),
+            Math.max(range.position.x + range.size.x, pos.x),
+        ),
+        y: Math.min(
+            Math.max(range.position.y, pos.y),
+            Math.max(range.position.y + range.size.y, pos.y),
+        ),
+    };
+};
 
 export const addPos = (pos1: pos, pos2: pos) => ({
     x: pos1.x + pos2.x,
@@ -75,3 +87,4 @@ export const CardSchema: Schema = {
         disabled: 'boolean',
     },
 };
+export type pos = {| x: number, y: number |};
