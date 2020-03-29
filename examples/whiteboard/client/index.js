@@ -14,12 +14,15 @@ import {
     type rect,
     type CardT,
     CardSchema,
+    evtPos,
     addPos,
     normalizedRect,
     posDiff,
     absMax,
     rectIntersect,
 } from './types';
+
+import Card from './card';
 
 const defaultCards = require('./data.json');
 
@@ -97,13 +100,13 @@ const reducer = (state: State, action): State => {
     return state;
 };
 
-type Drag = { offset: pos, mouse: pos, enough: boolean };
-type State = {
+export type Drag = { offset: pos, mouse: pos, enough: boolean };
+export type State = {
     selection: { [key: string]: boolean },
     drag?: ?Drag,
     dragSelect?: ?rect,
 };
-type Action =
+export type Action =
     | {|
           type: 'set_drag',
           drag: ?Drag,
@@ -140,106 +143,6 @@ const initialState = {
 };
 
 const MIN_MOVEMENT = 5;
-
-const Card = React.memo(
-    ({
-        offset,
-        card,
-        col,
-        selected,
-        hovered,
-        dispatch,
-        dragRef,
-    }: {
-        offset: ?pos,
-        card: CardT,
-        col: Collection<CardT>,
-        selected: boolean,
-        hovered: ?boolean,
-        dispatch: Action => void,
-        dragRef: { current: boolean },
-    }) => {
-        const pos = offset ? addPos(card.position, offset) : card.position;
-        // const downPos = React.useRef(null);
-        return (
-            <div
-                key={card.id}
-                style={{
-                    top: pos.y,
-                    left: pos.x,
-                    width: card.size.x,
-                    height: card.size.y,
-                    backgroundColor:
-                        selected || hovered ? 'aliceblue' : 'white',
-                }}
-                css={{
-                    padding: '4px 12px',
-                    boxShadow: '0 0 3px #ccc',
-                    position: 'absolute',
-                }}
-                onMouseDown={evt => {
-                    const pos = evtPos(evt);
-                    dispatch({
-                        type: 'start_drag',
-                        pos,
-                    });
-                    dragRef.current = false;
-                    // downPos.current = pos;
-                    if (!selected) {
-                        dispatch(
-                            evt.metaKey
-                                ? {
-                                      type: 'add_selection',
-                                      selection: { [card.id]: true },
-                                  }
-                                : {
-                                      type: 'replace_selection',
-                                      selection: { [card.id]: true },
-                                  },
-                        );
-                    } else if (evt.metaKey) {
-                        dispatch({
-                            type: 'remove_selection',
-                            selection: { [card.id]: true },
-                        });
-                    }
-                    evt.stopPropagation();
-                }}
-                onClick={evt => {
-                    evt.stopPropagation();
-                    if (dragRef.current) {
-                        return;
-                    }
-                    if (selected && !evt.metaKey) {
-                        dispatch({
-                            type: 'replace_selection',
-                            selection: { [card.id]: true },
-                        });
-                    }
-                }}
-            >
-                <div
-                    style={{
-                        fontWeight: 'bold',
-                        marginBottom: 4,
-                        textAlign: 'center',
-                    }}
-                >
-                    {card.title}
-                </div>
-                <div
-                    style={{
-                        fontSize: '80%',
-                    }}
-                >
-                    {card.description}
-                </div>
-            </div>
-        );
-    },
-);
-
-const evtPos = evt => ({ x: evt.clientX, y: evt.clientY });
 
 const Whiteboard = () => {
     // we're assuming we're authed, and cookies are taking care of things.

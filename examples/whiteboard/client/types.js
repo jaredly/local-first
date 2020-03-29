@@ -1,6 +1,6 @@
 // @flow
 
-export type pos = { x: number, y: number };
+export type pos = {| x: number, y: number |};
 export type rect = { position: pos, size: pos };
 
 export const addPos = (pos1: pos, pos2: pos) => ({
@@ -23,6 +23,11 @@ export const normalizedRect = ({ position, size }: rect): rect => ({
     },
 });
 
+export const evtPos = (evt: { clientX: number, clientY: number }): pos => ({
+    x: evt.clientX,
+    y: evt.clientY,
+});
+
 export const rectIntersect = (one: rect, two: rect) => {
     return (
         ((two.position.x < one.position.x &&
@@ -40,8 +45,8 @@ export type CardT = {
     id: string,
     title: string,
     description: string,
-    position: { x: number, y: number },
-    size: { x: number, y: number },
+    position: {| x: number, y: number |},
+    size: {| x: number, y: number |},
     color: ?string,
     header: ?number,
     disabled: boolean,
