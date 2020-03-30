@@ -23,6 +23,7 @@ import {
     rectIntersect,
     toScreen,
     fromScreen,
+    BOUNDS,
 } from './types';
 
 import Card from './Card';
@@ -32,7 +33,6 @@ const defaultCards = require('./data.json');
 const DEFAULT_HEIGHT = 70;
 const DEFAULT_WIDTH = 200;
 const DEFAULT_MARGIN = 12;
-const BOUNDS = { position: { x: -500, y: -500 }, size: { x: 5000, y: 3500 } };
 
 const makeDefaultCards = (genId): Array<CardT> => {
     return defaultCards.map(({ description, title }, i) => ({
@@ -262,7 +262,11 @@ const onMouseUp = (evt, state, cards, dispatch, col) => {
                 col.setAttribute(
                     key,
                     ['position'],
-                    addPos(cards[key].position, diff),
+                    clamp(
+                        addPos(cards[key].position, diff),
+                        cards[key].size,
+                        BOUNDS,
+                    ),
                 );
             });
         }
@@ -287,7 +291,6 @@ const onMouseUp = (evt, state, cards, dispatch, col) => {
                 newSelection[key] = true;
             }
         });
-        // console.log('ok', dragSelect, anySelected, newSelection);
         dispatch({ type: 'set_select', dragSelect: null });
         if (anySelected) {
             dispatch({
@@ -320,7 +323,6 @@ const Whiteboard = () => {
     panZoom.current = { pan: state.pan, zoom: state.zoom };
 
     React.useEffect(() => {
-        console.log('effect');
         if (currentState.current.drag) {
             const timer = setInterval(() => {
                 const drag = currentState.current.drag;
@@ -354,7 +356,6 @@ const Whiteboard = () => {
                 }
             }, 20);
             return () => {
-                console.log('cleanup');
                 clearInterval(timer);
             };
         }
@@ -419,7 +420,6 @@ const Whiteboard = () => {
     }, []);
 
     const zoomLevels = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0];
-    // console.log(zoomLevels.indexOf(state.zoom), state.zoom);
 
     const dragOffset =
         state.drag && state.drag.enough
@@ -431,8 +431,15 @@ const Whiteboard = () => {
 
     return (
         <div>
-            Oy
-            <div style={{ position: 'relative', zIndex: 10000 }}>
+            <div
+                style={{
+                    position: 'absolute',
+                    zIndex: 10000,
+                    boxShadow: '0 0 2px #666',
+                    backgroundColor: 'white',
+                    padding: 4,
+                }}
+            >
                 <button
                     onClick={() => {
                         makeDefaultCards(client.getStamp).forEach(card => {

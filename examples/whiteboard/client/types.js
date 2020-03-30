@@ -1,5 +1,10 @@
 // @flow
 
+export const BOUNDS = {
+    position: { x: -500, y: -500 },
+    size: { x: 5000, y: 3500 },
+};
+
 export type rect = { position: pos, size: pos };
 
 export const clamp = (pos: pos, size: pos, range: rect) => {

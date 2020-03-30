@@ -17,6 +17,8 @@ import {
     absMax,
     rectIntersect,
     fromScreen,
+    clamp,
+    BOUNDS,
 } from './types';
 
 import type { Action } from '.';
@@ -42,7 +44,9 @@ const Card = ({
     dragRef,
     panZoom,
 }: Props) => {
-    const pos = offset ? addPos(card.position, offset) : card.position;
+    const pos = offset
+        ? clamp(addPos(card.position, offset), card.size, BOUNDS)
+        : card.position;
     return (
         <div
             key={card.id}
