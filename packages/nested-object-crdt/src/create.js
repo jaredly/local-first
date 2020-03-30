@@ -71,7 +71,7 @@ const metaForSchema = function<T, Other>(
                       value,
                       hlcStamp,
                       getStamp,
-                      schema,
+                      schema.value,
                       createOtherMeta,
                   )
                 : { type: 't', hlcStamp };

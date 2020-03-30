@@ -33,9 +33,42 @@ const defaultCards = require('./data.json');
 const DEFAULT_HEIGHT = 70;
 const DEFAULT_WIDTH = 200;
 const DEFAULT_MARGIN = 12;
+1;
+const makeDefaultHeadings = (genId): Array<CardT> => {
+    const titles = `
+Most Important to Me
+Very Important To Me
+Important To Me
+Somewhat Important to Me
+Not Important to Me
+`
+        .trim()
+        .split('\n')
+        .map(title => title.trim());
+    return titles.map((title, i) => ({
+        id: genId(),
+        title,
+        description: '',
+        color: null,
+        position: {
+            x: DEFAULT_MARGIN + i * (DEFAULT_WIDTH * 2.0 + DEFAULT_MARGIN),
+            y: DEFAULT_MARGIN + 50,
+        },
+        size: { y: DEFAULT_HEIGHT, x: DEFAULT_WIDTH * 2.0 },
+        header: 1,
+        disabled: false,
+    }));
+};
+
+const shuffle = array => {
+    return array
+        .map(item => [Math.random(), item])
+        .sort((a, b) => a[0] - b[0])
+        .map(item => item[1]);
+};
 
 const makeDefaultCards = (genId): Array<CardT> => {
-    return defaultCards.map(({ description, title }, i) => ({
+    return shuffle(defaultCards).map(({ description, title }, i) => ({
         id: genId(),
         title,
         description,
@@ -45,7 +78,7 @@ const makeDefaultCards = (genId): Array<CardT> => {
                 parseInt(i / 10) * (DEFAULT_WIDTH + DEFAULT_MARGIN),
             y:
                 DEFAULT_MARGIN +
-                100 +
+                500 +
                 (i % 10) * (DEFAULT_HEIGHT + DEFAULT_MARGIN),
         },
         size: { y: DEFAULT_HEIGHT, x: DEFAULT_WIDTH },
@@ -310,6 +343,12 @@ const arrangeCards = (
     // if they're already roughly in a grid, it would be nice to maintain that...
     const selectedCards = Object.keys(selection).map(key => cards[key]);
     selectedCards.sort((c1, c2) => {
+        if ((c1.header || 0) > (c2.header || 0)) {
+            return -1;
+        }
+        if ((c2.header || 0) > (c1.header || 0)) {
+            return 1;
+        }
         // if one is *definitely* higher than the other (more than 50% of the height), then it's before
         // otherwise, if one is *definiely* to the left of the other one, it's before
         // otherwise, compare dx & dy, whichever's bigger?
@@ -356,6 +395,52 @@ const arrangeCards = (
 
         x += card.size.x + DEFAULT_MARGIN;
     });
+};
+
+const AddCard = ({ heading, onAdd }) => {
+    const [adding, setAdding] = React.useState(false);
+    const [title, setTitle] = React.useState('');
+    const [description, setDescription] = React.useState('');
+    if (adding) {
+        return (
+            <div>
+                <strong>{heading}</strong>
+                <input
+                    style={{ display: 'block' }}
+                    onChange={evt => setTitle(evt.target.value)}
+                    value={title}
+                    placeholder="Title"
+                />
+                <input
+                    style={{ display: 'block' }}
+                    onChange={evt => setDescription(evt.target.value)}
+                    value={description}
+                    placeholder="Description"
+                />
+                <button
+                    onClick={() => {
+                        onAdd(title, description);
+                        setAdding(false);
+                        setTitle('');
+                        setDescription('');
+                    }}
+                >
+                    Save
+                </button>
+                <button
+                    onClick={() => {
+                        setAdding(false);
+                        setTitle('');
+                        setDescription('');
+                    }}
+                >
+                    Cancel
+                </button>
+            </div>
+        );
+    } else {
+        return <button onClick={() => setAdding(true)}>{heading}</button>;
+    }
 };
 
 const Whiteboard = () => {
@@ -497,9 +582,13 @@ const Whiteboard = () => {
                     padding: 4,
                 }}
                 onClick={evt => evt.stopPropagation()}
+                onMouseDown={evt => evt.stopPropagation()}
             >
                 <button
                     onClick={() => {
+                        makeDefaultHeadings(client.getStamp).forEach(card => {
+                            col.save(card.id, card);
+                        });
                         makeDefaultCards(client.getStamp).forEach(card => {
                             col.save(card.id, card);
                         });
@@ -507,6 +596,44 @@ const Whiteboard = () => {
                 >
                     Add default cards
                 </button>
+                <AddCard
+                    heading="Add a custom card"
+                    onAdd={(title, description) => {
+                        const id = client.getStamp();
+                        const card = {
+                            id,
+                            title,
+                            description,
+                            position: {
+                                x: state.pan.x + DEFAULT_MARGIN * 4,
+                                y: state.pan.y + DEFAULT_MARGIN * 4,
+                            },
+                            size: { y: DEFAULT_HEIGHT, x: DEFAULT_WIDTH },
+                            disabled: false,
+                        };
+                        col.save(id, card);
+                    }}
+                />
+                <AddCard
+                    heading="Add a custom heading"
+                    onAdd={(title, description) => {
+                        const id = client.getStamp();
+                        const card = {
+                            id,
+                            title,
+                            description,
+                            header: 1,
+                            position: {
+                                x: state.pan.x + DEFAULT_MARGIN * 4,
+                                y: state.pan.y + DEFAULT_MARGIN * 4,
+                            },
+                            size: { y: DEFAULT_HEIGHT, x: DEFAULT_WIDTH },
+                            disabled: false,
+                        };
+                        col.save(id, card);
+                    }}
+                />
+                {/* <AddHeader col={col} /> */}
                 <input
                     type="range"
                     min="0"

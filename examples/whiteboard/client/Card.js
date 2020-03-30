@@ -34,6 +34,8 @@ type Props = {
     dragRef: { current: boolean },
 };
 
+const fontSizes = ['1.1em', '1.5em', '1.7em', '2em', '2.2em'];
+
 const Card = ({
     offset,
     card,
@@ -55,13 +57,28 @@ const Card = ({
                 left: pos.x,
                 width: card.size.x,
                 height: card.size.y,
-                backgroundColor: selected || hovered ? 'aliceblue' : 'white',
+                backgroundColor: selected || hovered ? 'aliceblue' : undefined,
             }}
-            css={{
-                padding: '4px 12px',
-                boxShadow: '0 0 3px #ccc',
-                position: 'absolute',
-            }}
+            css={
+                card.header == null
+                    ? {
+                          padding: '4px 12px',
+                          boxShadow: '0 0 3px #ccc',
+                          backgroundColor: 'white',
+                          position: 'absolute',
+                          cursor: 'pointer',
+                      }
+                    : {
+                          cursor: 'pointer',
+                          padding: '4px 12px',
+                          fontSize:
+                              fontSizes[
+                                  Math.min(card.header, fontSizes.length - 1)
+                              ],
+                          backgroundColor: 'transparent',
+                          position: 'absolute',
+                      }
+            }
             onMouseDown={evt => {
                 const screenPos = evtPos(evt);
                 const pos = fromScreen(
@@ -121,6 +138,7 @@ const Card = ({
             <div
                 style={{
                     fontSize: '80%',
+                    textAlign: card.header != null ? 'center' : 'left',
                 }}
             >
                 {card.description}

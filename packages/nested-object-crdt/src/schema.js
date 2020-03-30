@@ -14,7 +14,7 @@ export type Type =
     | 'array'
     | 'any'
     | 'rich-text'
-    | {| type: 'array', item: Schema |}
+    | {| type: 'array', item: Type |}
     | Schema
     | {| type: 'map', value: Type |}
     | {| type: 'optional', value: Type |};
