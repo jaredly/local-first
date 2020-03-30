@@ -123,8 +123,8 @@ const reducer = (state: State, action): State => {
             const pan = clamp(
                 addPos(state.pan, action.delta),
                 {
-                    x: window.innerWidth * state.zoom,
-                    y: window.innerHeight * state.zoom,
+                    x: window.innerWidth / state.zoom,
+                    y: window.innerHeight / state.zoom,
                 },
                 BOUNDS,
             );
@@ -141,6 +141,14 @@ const reducer = (state: State, action): State => {
             return {
                 ...state,
                 zoom: action.zoom,
+                pan: clamp(
+                    state.pan,
+                    {
+                        x: window.innerWidth / action.zoom,
+                        y: window.innerHeight / action.zoom,
+                    },
+                    BOUNDS,
+                ),
             };
         default:
             return state;
@@ -388,7 +396,10 @@ const Whiteboard = () => {
         const mousewheel = evt => {
             dispatch({
                 type: 'scroll',
-                delta: { x: evt.deltaX, y: evt.deltaY },
+                delta: {
+                    x: evt.deltaX / state.zoom,
+                    y: evt.deltaY / state.zoom,
+                },
             });
         };
         window.addEventListener('click', click);
