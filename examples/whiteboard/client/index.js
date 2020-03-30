@@ -12,6 +12,8 @@ import { useCollection } from '../../../packages/client-react';
 
 import { type Schema, type Collection } from '../../../packages/client-bundle';
 
+import FlashcardMode from './FlashcardMode';
+
 import {
     type pos,
     type rect,
@@ -410,50 +412,76 @@ const arrangeCards = (
     });
 };
 
-const AddCard = ({ heading, onAdd }) => {
+const AddCard = ({ onAdd }) => {
     const [adding, setAdding] = React.useState(false);
     const [title, setTitle] = React.useState('');
     const [description, setDescription] = React.useState('');
-    if (adding) {
-        return (
-            <div>
-                <strong>{heading}</strong>
-                <input
-                    style={{ display: 'block' }}
-                    onChange={evt => setTitle(evt.target.value)}
-                    value={title}
-                    placeholder="Title"
-                />
-                <input
-                    style={{ display: 'block' }}
-                    onChange={evt => setDescription(evt.target.value)}
-                    value={description}
-                    placeholder="Description"
-                />
-                <button
-                    onClick={() => {
-                        onAdd(title, description);
-                        setAdding(false);
-                        setTitle('');
-                        setDescription('');
+    const [header, setHeader] = React.useState(null);
+    return (
+        <div>
+            <button onClick={() => setAdding(true)}>+ Card</button>
+            {adding ? (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: '50%',
+                        left: '50%',
+                        width: 300,
+                        height: 200,
+                        marginLet: -150,
+                        marginTop: -100,
+                        backgroundColor: 'white',
+                        margin: 32,
+                        boxShadow: '0 0 5px #666',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                     }}
                 >
-                    Save
-                </button>
-                <button
-                    onClick={() => {
-                        setAdding(false);
-                        setTitle('');
-                        setDescription('');
-                    }}
-                >
-                    Cancel
-                </button>
-            </div>
-        );
-    } else {
-        return <button onClick={() => setAdding(true)}>{heading}</button>;
-    }
+                    <strong>
+                        Add a {header === null ? 'normal' : 'header'} card
+                    </strong>
+                    <button
+                        onClick={() => setHeader(header === null ? 1 : null)}
+                    >
+                        {header !== null ? 'Header card' : 'Normal card'}
+                    </button>
+                    <input
+                        style={{ display: 'block' }}
+                        onChange={evt => setTitle(evt.target.value)}
+                        value={title}
+                        placeholder="Title"
+                    />
+                    <input
+                        style={{ display: 'block' }}
+                        onChange={evt => setDescription(evt.target.value)}
+                        value={description}
+                        placeholder="Description"
+                    />
+                    <button
+                        onClick={() => {
+                            onAdd(title, description, header);
+                            setAdding(false);
+                            setTitle('');
+                            setDescription('');
+                        }}
+                    >
+                        Save
+                    </button>
+                    <button
+                        onClick={() => {
+                            setAdding(false);
+                            setTitle('');
+                            setDescription('');
+                        }}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            ) : null}
+        </div>
+    );
 };
 
 const Whiteboard = () => {
@@ -524,7 +552,7 @@ const Whiteboard = () => {
                 console.log(evt.target);
                 return;
             }
-            if (evt.key === 'z' && evt.metaKey) {
+            if (evt.key === 'z' && (evt.metaKey || evt.ctrlKey)) {
                 client.undo();
             }
 
@@ -663,6 +691,8 @@ const Whiteboard = () => {
         dispatch({ type: 'replace_selection', selection: matching });
     }, []);
 
+    const [flashcard, setFlashcard] = React.useState(false);
+
     if (!Object.keys(cards).length) {
         return (
             <div
@@ -726,6 +756,8 @@ const Whiteboard = () => {
                     boxShadow: '0 0 2px #666',
                     backgroundColor: 'white',
                     padding: 4,
+                    bottom: 10,
+                    left: 10,
                 }}
                 onClick={evt => evt.stopPropagation()}
                 onMouseDown={evt => evt.stopPropagation()}
@@ -747,38 +779,25 @@ const Whiteboard = () => {
                         evt.target.blur();
                     }}
                 />
+                <button onClick={() => setFlashcard(true)}>
+                    Flashcard Mode
+                </button>
                 <AddCard
-                    heading="Add a custom card"
-                    onAdd={(title, description) => {
+                    onAdd={(title, description, header) => {
                         const id = client.getStamp();
                         const card = {
                             id,
                             title,
                             description,
+                            header,
                             position: {
                                 x: state.pan.x + DEFAULT_MARGIN * 4,
                                 y: state.pan.y + DEFAULT_MARGIN * 4,
                             },
-                            size: { y: DEFAULT_HEIGHT, x: DEFAULT_WIDTH },
-                            disabled: false,
-                        };
-                        col.save(id, card);
-                    }}
-                />
-                <AddCard
-                    heading="Add a custom heading"
-                    onAdd={(title, description) => {
-                        const id = client.getStamp();
-                        const card = {
-                            id,
-                            title,
-                            description,
-                            header: 1,
-                            position: {
-                                x: state.pan.x + DEFAULT_MARGIN * 4,
-                                y: state.pan.y + DEFAULT_MARGIN * 4,
+                            size: {
+                                y: DEFAULT_HEIGHT,
+                                x: DEFAULT_WIDTH * (header != null ? 2 : 1),
                             },
-                            size: { y: DEFAULT_HEIGHT, x: DEFAULT_WIDTH * 2 },
                             disabled: false,
                         };
                         col.save(id, card);
@@ -895,6 +914,13 @@ const Whiteboard = () => {
                 ) : null}
             </div>
             <MiniMap zoom={state.zoom} pan={state.pan} />
+            {flashcard ? (
+                <FlashcardMode
+                    cards={cards}
+                    col={col}
+                    onDone={() => setFlashcard(false)}
+                />
+            ) : null}
         </div>
     );
 };

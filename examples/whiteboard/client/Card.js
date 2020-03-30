@@ -237,7 +237,11 @@ const Card = ({
                         style={createTagStyle(card.number + '')}
                         onClick={evt => {
                             evt.stopPropagation();
-                            selectAllWith(c => c.number === card.number);
+                            selectAllWith(
+                                c =>
+                                    c.number === card.number &&
+                                    c.header === card.header,
+                            );
                         }}
                     >
                         {card.number}
@@ -249,7 +253,11 @@ const Card = ({
                         style={createTagStyle(card.letter)}
                         onClick={evt => {
                             evt.stopPropagation();
-                            selectAllWith(c => c.letter === card.letter);
+                            selectAllWith(
+                                c =>
+                                    c.letter === card.letter &&
+                                    c.header === card.header,
+                            );
                         }}
                     >
                         {card.letter.toUpperCase()}
@@ -260,7 +268,7 @@ const Card = ({
     );
 };
 
-const tagStyle = {
+export const tagStyle = {
     display: 'inline-block',
     marginLeft: 4,
     padding: '2px 4px',
@@ -269,7 +277,7 @@ const tagStyle = {
     // backgroundColor: 'white',
 };
 
-const createTagStyle = tag => {
+export const createTagStyle = (tag: string) => {
     return tagStyles[tag];
 };
 
@@ -280,8 +288,8 @@ const createTagStyle = tag => {
 // black background
 const digits = '0123456789';
 const letters = 'abcdefghijklmnopqrstuvwxyz';
-const tagStyles = {};
-[...letters].forEach((tag, i) => {
+export const tagStyles = {};
+[...(letters + digits)].forEach((tag, i) => {
     if (i < 10) {
         tagStyles[tag] = {
             color: colors[i],
