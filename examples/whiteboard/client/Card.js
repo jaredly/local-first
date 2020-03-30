@@ -49,9 +49,17 @@ const Card = ({
     const pos = offset
         ? clamp(addPos(card.position, offset), card.size, BOUNDS)
         : card.position;
+    const [editing, setEditing] = React.useState(null);
     return (
         <div
             key={card.id}
+            onDoubleClick={() => {
+                console.log('double click');
+                setEditing({
+                    title: card.title,
+                    description: card.description,
+                });
+            }}
             style={{
                 top: pos.y,
                 left: pos.x,
@@ -133,7 +141,23 @@ const Card = ({
                     textAlign: 'center',
                 }}
             >
-                {card.title}
+                {editing ? (
+                    <input
+                        onMouseDown={evt => evt.stopPropagation()}
+                        onClick={evt => evt.stopPropagation()}
+                        value={editing.title}
+                        onChange={evt =>
+                            setEditing({ ...editing, title: evt.target.value })
+                        }
+                        style={{
+                            fontWeight: 'inherit',
+                            fontFamily: 'inherit',
+                            width: '100%',
+                        }}
+                    />
+                ) : (
+                    card.title
+                )}
             </div>
             <div
                 style={{
@@ -141,8 +165,49 @@ const Card = ({
                     textAlign: card.header != null ? 'center' : 'left',
                 }}
             >
-                {card.description}
+                {/* {card.description} */}
+                {editing ? (
+                    <input
+                        onMouseDown={evt => evt.stopPropagation()}
+                        onClick={evt => evt.stopPropagation()}
+                        value={editing.description}
+                        onChange={evt =>
+                            setEditing({
+                                ...editing,
+                                description: evt.target.value,
+                            })
+                        }
+                        style={{
+                            fontWeight: 'inherit',
+                            fontFamily: 'inherit',
+                            width: '100%',
+                        }}
+                    />
+                ) : (
+                    card.description
+                )}
             </div>
+            {editing != null ? (
+                <div
+                    onMouseDown={evt => evt.stopPropagation()}
+                    onClick={evt => evt.stopPropagation()}
+                >
+                    <button
+                        onClick={() => {
+                            col.setAttribute(card.id, ['title'], editing.title);
+                            col.setAttribute(
+                                card.id,
+                                ['description'],
+                                editing.description,
+                            );
+                            setEditing(null);
+                        }}
+                    >
+                        Save
+                    </button>
+                    <button onClick={() => setEditing(null)}>Cancel</button>
+                </div>
+            ) : null}
         </div>
     );
 };
