@@ -1,10 +1,11 @@
 // @flow
-
+/* @jsx jsx */
+import { jsx } from '@emotion/core';
 import React from 'react';
 
 import { tagStyle, createTagStyle } from './Card';
 
-const FlashcardMode = ({ col, cards, onDone }) => {
+const FlashcardMode = ({ col, cards, onDone, settings, settingsCol }) => {
     const idsInOrder = React.useMemo(() => {
         return Object.keys(cards).filter(id => cards[id].header === null);
     }, []);
@@ -112,7 +113,41 @@ const FlashcardMode = ({ col, cards, onDone }) => {
             >
                 Close
             </button>
-            <div></div>
+            <div
+                style={{
+                    position: 'absolute',
+                    left: 10,
+                    top: 50,
+                    fontSize: 24,
+                }}
+            >
+                {Object.keys(tagsByUse).map(tag => (
+                    <div style={{ display: 'flex' }}>
+                        <div
+                            style={{
+                                width: '1.5em',
+                                textAlign: 'right',
+                                marginRight: 12,
+                            }}
+                        >
+                            {tagsByUse[tag]}
+                        </div>
+                        <div
+                            css={[
+                                tagStyle,
+                                {
+                                    width: '1.5em',
+                                    textAlign: 'center',
+                                    display: 'inline-block',
+                                },
+                            ]}
+                            style={createTagStyle(tag)}
+                        >
+                            {tag.toUpperCase()}
+                        </div>
+                    </div>
+                ))}
+            </div>
             <div style={{ fontWeight: 'bold', marginBottom: 32 }}>
                 {card.title}
             </div>

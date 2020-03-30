@@ -102,12 +102,13 @@ export const createPersistedBlobClient = (
     name: string,
     schemas: { [key: string]: Schema },
     url: ?string,
+    version: number,
 ): Client<SyncStatus> => {
     return createBlobClient(
         clientCrdtImpl,
         schemas,
         new PersistentClock(localStorageClockPersist(name)),
-        makeBlobPersistence(name, Object.keys(schemas)),
+        makeBlobPersistence(name, Object.keys(schemas), version),
         url ? createBasicBlobNetwork(url) : nullNetwork,
     );
 };

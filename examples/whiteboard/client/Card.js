@@ -8,8 +8,10 @@ import { type Schema, type Collection } from '../../../packages/client-bundle';
 import {
     type pos,
     type rect,
+    type SettingsT,
     type CardT,
     CardSchema,
+    SettingsSchema,
     evtPos,
     addPos,
     normalizedRect,

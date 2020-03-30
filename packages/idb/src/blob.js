@@ -18,14 +18,21 @@ const itemMap = items => {
 export const makePersistence = function(
     name: string,
     collections: Array<string>,
+    version: number,
 ): FullPersistence {
     const colName = name => name + ':nodes';
-    const db: Promise<DB> = openDB(name, 1, {
+    const db: Promise<DB> = openDB(name, version, {
         upgrade(db, oldVersion, newVersion, transaction) {
-            collections.forEach(name =>
-                db.createObjectStore(colName(name), { keyPath: 'id' }),
-            );
-            db.createObjectStore('meta');
+            const currentStores = [...db.objectStoreNames];
+            collections.forEach(name => {
+                const storeName = colName(name);
+                if (!currentStores.includes(storeName)) {
+                    db.createObjectStore(storeName, { keyPath: 'id' });
+                }
+            });
+            if (!currentStores.includes('meta')) {
+                db.createObjectStore('meta');
+            }
         },
     });
     const allStores = collections.map(name => colName(name)).concat(['meta']);

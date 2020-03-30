@@ -17,8 +17,10 @@ import FlashcardMode from './FlashcardMode';
 import {
     type pos,
     type rect,
+    type SettingsT,
     type CardT,
     CardSchema,
+    SettingsSchema,
     evtPos,
     addPos,
     normalizedRect,
@@ -487,7 +489,13 @@ const AddCard = ({ onAdd }) => {
 const Whiteboard = () => {
     // we're assuming we're authed, and cookies are taking care of things.
     const client = React.useMemo(
-        () => createPersistedBlobClient('hello', { cards: CardSchema }, null),
+        () =>
+            createPersistedBlobClient(
+                'hello',
+                { cards: CardSchema, settings: SettingsSchema },
+                null,
+                2,
+            ),
         // createInMemoryDeltaClient(
         //     { cards: CardSchema },
         //     `ws://localhost:9090/ephemeral/sync`,
@@ -495,6 +503,7 @@ const Whiteboard = () => {
         [],
     );
     const [col, cards] = useCollection(React, client, 'cards');
+    const [settingsCol, settings] = useCollection(React, client, 'settings');
 
     const [state, dispatch] = React.useReducer(reducer, initialState);
     const currentState = React.useRef(state);
@@ -885,6 +894,7 @@ const Whiteboard = () => {
                             key={card.id}
                             dragRef={dragRef}
                             panZoom={panZoom}
+                            settings={settings.default}
                             offset={
                                 dragOffset && state.selection[card.id]
                                     ? dragOffset
@@ -918,6 +928,8 @@ const Whiteboard = () => {
                 <FlashcardMode
                     cards={cards}
                     col={col}
+                    settings={settings.default}
+                    settingsCol={settingsCol}
                     onDone={() => setFlashcard(false)}
                 />
             ) : null}

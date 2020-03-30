@@ -66,6 +66,19 @@ export const rectIntersect = (one: rect, two: rect) => {
     );
 };
 
+export type SettingsT = {
+    title: string,
+    tagNames: { [key: string]: string },
+};
+
+export const SettingsSchema: Schema = {
+    type: 'object',
+    attributes: {
+        title: 'string',
+        tagNames: { type: 'map', value: 'string' },
+    },
+};
+
 export type CardT = {
     id: string,
     title: string,
