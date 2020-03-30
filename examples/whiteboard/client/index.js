@@ -301,6 +301,63 @@ const onMouseUp = (evt, state, cards, dispatch, col) => {
     }
 };
 
+const arrangeCards = (
+    cards: { [key: string]: CardT },
+    selection,
+    columns,
+    collection,
+) => {
+    // if they're already roughly in a grid, it would be nice to maintain that...
+    const selectedCards = Object.keys(selection).map(key => cards[key]);
+    selectedCards.sort((c1, c2) => {
+        // if one is *definitely* higher than the other (more than 50% of the height), then it's before
+        // otherwise, if one is *definiely* to the left of the other one, it's before
+        // otherwise, compare dx & dy, whichever's bigger?
+        if (c1.position.y + c1.size.y * 0.75 < c2.position.y) {
+            return -1;
+        }
+        if (c2.position.y + c2.size.y * 0.75 < c1.position.y) {
+            return 1;
+        }
+        if (c1.position.x + c1.size.x * 0.75 < c2.position.x) {
+            return -1;
+        }
+        if (c2.position.x + c2.size.x * 0.75 < c1.position.x) {
+            return 1;
+        }
+        const dx = c1.position.x - c2.position.x;
+        const dy = c1.position.y - c2.position.y;
+        if (Math.abs(dx) > Math.abs(dy)) {
+            return dx;
+        } else {
+            return dy;
+        }
+    });
+    let minX = selectedCards[0].position.x;
+    let minY = selectedCards[0].position.y;
+    selectedCards.forEach(card => {
+        minX = Math.min(minX, card.position.x);
+        minY = Math.min(minY, card.position.y);
+    });
+    const rows = Math.ceil(selectedCards.length / columns);
+    let x = minX;
+    let y = minY;
+    let rowHeight = 0;
+    selectedCards.forEach((card, i) => {
+        if (i % columns === 0 && i !== 0) {
+            x = minX;
+            y += rowHeight + DEFAULT_MARGIN;
+            rowHeight = 0;
+        }
+        rowHeight = Math.max(rowHeight, card.size.y);
+        if (x !== card.position.x || y !== card.position.y) {
+            collection.setAttribute(card.id, ['position'], { x, y });
+        }
+
+        x += card.size.x + DEFAULT_MARGIN;
+    });
+};
+
 const Whiteboard = () => {
     // we're assuming we're authed, and cookies are taking care of things.
     const client = React.useMemo(
@@ -439,6 +496,7 @@ const Whiteboard = () => {
                     backgroundColor: 'white',
                     padding: 4,
                 }}
+                onClick={evt => evt.stopPropagation()}
             >
                 <button
                     onClick={() => {
@@ -463,6 +521,31 @@ const Whiteboard = () => {
                         });
                     }}
                 />
+                {Object.keys(state.selection).length > 1 ? (
+                    <div>
+                        <button
+                            onClick={() => {
+                                arrangeCards(cards, state.selection, 1, col);
+                            }}
+                        >
+                            1
+                        </button>
+                        <button
+                            onClick={() => {
+                                arrangeCards(cards, state.selection, 2, col);
+                            }}
+                        >
+                            2
+                        </button>
+                        <button
+                            onClick={() => {
+                                arrangeCards(cards, state.selection, 3, col);
+                            }}
+                        >
+                            3
+                        </button>
+                    </div>
+                ) : null}
             </div>
             <div
                 style={{
