@@ -213,7 +213,20 @@ const Card = ({
                     <button onClick={() => setEditing(null)}>Cancel</button>
                 </div>
             ) : null}
+            <div
+                css={{
+                    position: 'absolute',
+                    bottom: 2,
+                    right: 2,
+                }}
+            >
+                {card.number != null ? <span>{card.number}</span> : null}
+                {card.letter != null ? (
+                    <span>{card.letter.toUpperCase()}</span>
+                ) : null}
+            </div>
         </div>
     );
 };
+
 export default React.memo<Props>(Card);

@@ -103,3 +103,10 @@ export const CardSchema: Schema = {
     },
 };
 export type pos = {| x: number, y: number |};
+
+const colorsRaw =
+    '1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf';
+export const colors = [];
+for (let i = 0; i < colorsRaw.length; i += 6) {
+    colors.push('#' + colorsRaw.slice(i, i + 6));
+}

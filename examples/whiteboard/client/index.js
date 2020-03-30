@@ -512,8 +512,44 @@ const Whiteboard = () => {
 
     React.useEffect(() => {
         const key = evt => {
+            if (evt.target !== document.body) {
+                console.log(evt.target);
+                return;
+            }
             if (evt.key === 'z' && evt.metaKey) {
                 client.undo();
+            }
+            if (evt.metaKey || evt.shiftKey) {
+                return;
+            }
+            const keys = Object.keys(currentState.current.selection);
+            if (!keys.length) return;
+
+            const digits = '0123456789';
+            if (digits.includes(evt.key)) {
+                const number = +evt.key;
+                const cards = keys.map(key => currentCards.current[key]);
+                let remove = !cards.some(card => card.number !== number);
+                cards.forEach(card => {
+                    if (remove) {
+                        col.setAttribute(card.id, ['number'], null);
+                    } else if (card.number !== number) {
+                        col.setAttribute(card.id, ['number'], number);
+                    }
+                });
+            }
+            const letters = 'abcdefghijklmnopqrstuvwxyz';
+            if (letters.includes(evt.key)) {
+                const letter = evt.key;
+                const cards = keys.map(key => currentCards.current[key]);
+                let remove = !cards.some(card => card.letter !== letter);
+                cards.forEach(card => {
+                    if (remove) {
+                        col.setAttribute(card.id, ['letter'], null);
+                    } else if (card.letter !== letter) {
+                        col.setAttribute(card.id, ['letter'], letter);
+                    }
+                });
             }
         };
         const move = evt =>
