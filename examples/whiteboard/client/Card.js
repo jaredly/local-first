@@ -16,6 +16,7 @@ import {
     posDiff,
     absMax,
     rectIntersect,
+    fromScreen,
 } from './types';
 
 import type { Action } from '.';
@@ -24,6 +25,7 @@ type Props = {
     offset: ?pos,
     card: CardT,
     col: Collection<CardT>,
+    panZoom: { current: { pan: pos, zoom: number } },
     selected: boolean,
     hovered: ?boolean,
     dispatch: Action => void,
@@ -38,9 +40,9 @@ const Card = ({
     hovered,
     dispatch,
     dragRef,
+    panZoom,
 }: Props) => {
     const pos = offset ? addPos(card.position, offset) : card.position;
-    // const downPos = React.useRef(null);
     return (
         <div
             key={card.id}
@@ -57,10 +59,16 @@ const Card = ({
                 position: 'absolute',
             }}
             onMouseDown={evt => {
-                const pos = evtPos(evt);
+                const screenPos = evtPos(evt);
+                const pos = fromScreen(
+                    screenPos,
+                    panZoom.current.pan,
+                    panZoom.current.zoom,
+                );
                 dispatch({
                     type: 'start_drag',
                     pos,
+                    screenPos,
                 });
                 dragRef.current = false;
                 // downPos.current = pos;

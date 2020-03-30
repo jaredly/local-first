@@ -3,7 +3,6 @@
 export type rect = { position: pos, size: pos };
 
 export const clamp = (pos: pos, size: pos, range: rect) => {
-    console.log('clamp', pos, size, range);
     return {
         x: Math.min(
             Math.max(range.position.x, pos.x),
@@ -21,7 +20,7 @@ export const toScreen = (pos: pos, pan: pos, zoom: number) => {
 };
 
 export const fromScreen = (pos: pos, pan: pos, zoom: number) => {
-    return { x: pos.x / zoom + pan.x / zoom, y: pos.y / zoom + pan.y / zoom };
+    return { x: pos.x / zoom + pan.x, y: pos.y / zoom + pan.y };
 };
 
 export const addPos = (pos1: pos, pos2: pos) => ({

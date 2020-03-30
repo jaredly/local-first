@@ -43,7 +43,10 @@ const makeDefaultCards = (genId): Array<CardT> => {
             x:
                 DEFAULT_MARGIN +
                 parseInt(i / 10) * (DEFAULT_WIDTH + DEFAULT_MARGIN),
-            y: DEFAULT_MARGIN + (i % 10) * (DEFAULT_HEIGHT + DEFAULT_MARGIN),
+            y:
+                DEFAULT_MARGIN +
+                100 +
+                (i % 10) * (DEFAULT_HEIGHT + DEFAULT_MARGIN),
         },
         size: { y: DEFAULT_HEIGHT, x: DEFAULT_WIDTH },
         disabled: false,
@@ -78,7 +81,12 @@ const reducer = (state: State, action): State => {
         case 'start_drag':
             return {
                 ...state,
-                drag: { offset: action.pos, mouse: action.pos, enough: false },
+                drag: {
+                    offset: action.pos,
+                    mouse: action.pos,
+                    enough: false,
+                    screenPos: action.screenPos,
+                },
                 dragSelect: null,
             };
         case 'set_drag':
@@ -104,21 +112,42 @@ const reducer = (state: State, action): State => {
                 ...state,
                 pan: clamp(
                     addPos(state.pan, action.delta),
-                    { x: window.innerWidth, y: window.innerHeight },
+                    {
+                        x: window.innerWidth / state.zoom,
+                        y: window.innerHeight / state.zoom,
+                    },
                     BOUNDS,
                 ),
+            };
+        case 'drag_scroll':
+            const pan = clamp(
+                addPos(state.pan, action.delta),
+                {
+                    x: window.innerWidth * state.zoom,
+                    y: window.innerHeight * state.zoom,
+                },
+                BOUNDS,
+            );
+            const diff = posDiff(state.pan, pan);
+            return {
+                ...state,
+                pan,
+                drag: {
+                    ...action.drag,
+                    mouse: addPos(action.drag.mouse, diff),
+                },
             };
         case 'zoom':
             return {
                 ...state,
-                zoom: Math.max(Math.min(action.zoom, 10), 0.25),
+                zoom: action.zoom,
             };
         default:
             return state;
     }
 };
 
-export type Drag = { offset: pos, mouse: pos, enough: boolean };
+export type Drag = { offset: pos, mouse: pos, enough: boolean, screenPos: pos };
 export type State = {
     selection: { [key: string]: boolean },
     pan: pos,
@@ -126,6 +155,7 @@ export type State = {
     drag?: ?Drag,
     dragSelect?: ?rect,
 };
+
 export type Action =
     | {|
           type: 'set_drag',
@@ -138,6 +168,7 @@ export type Action =
     | {|
           type: 'start_drag',
           pos: {| x: number, y: number |},
+          screenPos: pos,
       |}
     | {|
           type: 'start_select',
@@ -152,6 +183,7 @@ export type Action =
           selection: { [key: string]: boolean },
       |}
     | {| type: 'scroll', delta: pos |}
+    | {| type: 'drag_scroll', delta: pos, drag: Drag |}
     | {| type: 'zoom', zoom: number |}
     | {|
           type: 'replace_selection',
@@ -173,7 +205,8 @@ const onMove = (evt, state, dispatch, dragRef) => {
         const drag = state.drag;
         evt.preventDefault();
         evt.stopPropagation();
-        const pos = fromScreen(evtPos(evt), state.pan, state.zoom);
+        const screenPos = evtPos(evt);
+        const pos = fromScreen(screenPos, state.pan, state.zoom);
         const diff = posDiff(drag.offset, pos);
         const enough =
             drag.enough ||
@@ -187,13 +220,16 @@ const onMove = (evt, state, dispatch, dragRef) => {
                 offset: drag.offset,
                 mouse: pos,
                 enough: enough,
+                screenPos,
             },
         });
+        if (screenPos.x > window.innerWidth - 50) {
+            dispatch({ type: 'pan' });
+        }
     } else if (state.dragSelect) {
         const { dragSelect } = state;
         evt.preventDefault();
         evt.stopPropagation();
-        // const pos = evtPos(evt);
         const pos = fromScreen(evtPos(evt), state.pan, state.zoom);
         const enough = absMax(posDiff(dragSelect.position, pos)) > MIN_MOVEMENT;
         if (enough) {
@@ -272,6 +308,49 @@ const Whiteboard = () => {
     const currentCards = React.useRef(cards);
     currentCards.current = cards;
     const dragRef = React.useRef(false);
+    const panZoom = React.useRef({ pan: state.pan, zoom: state.zoom });
+    panZoom.current = { pan: state.pan, zoom: state.zoom };
+
+    React.useEffect(() => {
+        console.log('effect');
+        if (currentState.current.drag) {
+            const timer = setInterval(() => {
+                const drag = currentState.current.drag;
+                if (drag) {
+                    let dx = 0;
+                    let dy = 0;
+                    const margin = 50;
+                    if (drag.screenPos.x <= margin) {
+                        dx = drag.screenPos.x - margin;
+                    }
+                    if (drag.screenPos.y <= margin) {
+                        dy = drag.screenPos.y - margin;
+                    }
+                    if (drag.screenPos.x >= window.innerWidth - margin) {
+                        dx = drag.screenPos.x - (window.innerWidth - margin);
+                    }
+                    if (drag.screenPos.y >= window.innerHeight - margin) {
+                        dy = drag.screenPos.y - (window.innerHeight - margin);
+                    }
+                    if (dx !== 0 || dy !== 0) {
+                        // TODO maybe square the deltas
+                        dispatch({
+                            type: 'drag_scroll',
+                            delta: {
+                                x: dx / 2,
+                                y: dy / 2,
+                            },
+                            drag,
+                        });
+                    }
+                }
+            }, 20);
+            return () => {
+                console.log('cleanup');
+                clearInterval(timer);
+            };
+        }
+    }, [!!state.drag]);
 
     React.useEffect(() => {
         const key = evt => {
@@ -328,6 +407,9 @@ const Whiteboard = () => {
         };
     }, []);
 
+    const zoomLevels = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0];
+    // console.log(zoomLevels.indexOf(state.zoom), state.zoom);
+
     const dragOffset =
         state.drag && state.drag.enough
             ? posDiff(state.drag.offset, state.drag.mouse)
@@ -352,24 +434,23 @@ const Whiteboard = () => {
                 <input
                     type="range"
                     min="0"
-                    max="10"
-                    value={state.zoom}
+                    max={zoomLevels.length - 1}
+                    value={zoomLevels.indexOf(state.zoom)}
                     onMouseDown={evt => evt.stopPropagation()}
                     onClick={evt => evt.stopPropagation()}
-                    onInput={evt => {
-                        console.log('input', evt);
-                    }}
                     onChange={evt => {
-                        console.log(evt.target.value);
-                        dispatch({ type: 'zoom', zoom: evt.target.value });
+                        dispatch({
+                            type: 'zoom',
+                            zoom: zoomLevels[evt.target.value],
+                        });
                     }}
                 />
             </div>
             <div
                 style={{
                     position: 'absolute',
-                    top: -state.pan.y,
-                    left: -state.pan.x,
+                    top: -state.pan.y * state.zoom,
+                    left: -state.pan.x * state.zoom,
                     transform: `scale(${state.zoom.toFixed(2)})`,
                     // transform: `scale(${state.zoom.toFixed(
                     //     2,
@@ -384,6 +465,7 @@ const Whiteboard = () => {
                         <Card
                             key={card.id}
                             dragRef={dragRef}
+                            panZoom={panZoom}
                             offset={
                                 dragOffset && state.selection[card.id]
                                     ? dragOffset
@@ -398,6 +480,19 @@ const Whiteboard = () => {
                             col={col}
                         />
                     ))}
+                {dragSelect ? (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: dragSelect.position.y,
+                            left: dragSelect.position.x,
+                            width: dragSelect.size.x,
+                            height: dragSelect.size.y,
+                            mouseEvents: 'none',
+                            backgroundColor: 'rgba(100, 100, 255, 0.1)',
+                        }}
+                    />
+                ) : null}
             </div>
             <MiniMap zoom={state.zoom} pan={state.pan} />
         </div>
@@ -407,11 +502,10 @@ const Whiteboard = () => {
 const MiniMap = ({ zoom, pan }) => {
     const width = 100;
     const height = (BOUNDS.size.y / BOUNDS.size.x) * width;
-    const iw = window.innerWidth / BOUNDS.size.x;
-    const ih = window.innerHeight / BOUNDS.size.y;
+    const iw = window.innerWidth / zoom / BOUNDS.size.x;
+    const ih = window.innerHeight / zoom / BOUNDS.size.y;
     const x = (pan.x - BOUNDS.position.x) / BOUNDS.size.x; // - window.innerWidth);
     const y = (pan.y - BOUNDS.position.y) / BOUNDS.size.y; // - window.innerHeight);
-    console.log(width, BOUNDS.size.x, window.innerWidth, iw, x);
     return (
         <div
             style={{
