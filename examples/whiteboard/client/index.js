@@ -944,6 +944,13 @@ const Whiteboard = () => {
                         cards={cards}
                         settings={settings.default}
                         settingsCol={settingsCol}
+                        selectByTag={tag =>
+                            selectAllWith(
+                                card =>
+                                    card.header == null &&
+                                    (card.number == tag || card.letter === tag),
+                            )
+                        }
                     />
                 </div>
             )}

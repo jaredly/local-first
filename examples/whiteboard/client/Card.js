@@ -239,7 +239,7 @@ const Card = ({
                 css={{
                     position: 'absolute',
                     bottom: 0,
-                    right: 0,
+                    left: 0,
                 }}
             >
                 {card.number != null ? (
@@ -258,6 +258,14 @@ const Card = ({
                         {card.number}
                     </span>
                 ) : null}
+            </div>
+            <div
+                css={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                }}
+            >
                 {card.letter != null ? (
                     <span
                         css={tagStyle}
@@ -281,9 +289,9 @@ const Card = ({
 
 export const tagStyle = {
     display: 'inline-block',
-    marginLeft: 4,
-    padding: '2px 4px',
-    fontSize: '80%',
+    // marginLeft: 4,
+    padding: '0px 4px',
+    fontSize: '70%',
     borderRadius: 4,
     // backgroundColor: 'white',
 };

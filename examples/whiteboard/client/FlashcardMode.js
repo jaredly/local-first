@@ -117,6 +117,7 @@ const FlashcardMode = ({ col, cards, onDone, settings, settingsCol }) => {
                     cards={cards}
                     settings={settings}
                     settingsCol={settingsCol}
+                    selectByTag={() => {}}
                 />
             </div>
             <div style={{ fontWeight: 'bold', marginBottom: 32 }}>

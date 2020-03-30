@@ -12,15 +12,20 @@ const Key = ({
     cards,
     settings,
     settingsCol,
+    selectByTag,
 }: {
     cards: { [key: string]: CardT },
     settings: ?SettingsT,
     settingsCol: Collection<SettingsT>,
+    selectByTag: string => void,
 }) => {
     const tagsByUse = React.useMemo(() => {
         const tagsByUse = {};
         Object.keys(cards).forEach(id => {
             const card = cards[id];
+            if (card.header != null) {
+                return;
+            }
             if (card.letter != null) {
                 tagsByUse[card.letter] = (tagsByUse[card.letter] || 0) + 1;
             }
@@ -40,6 +45,7 @@ const Key = ({
         >
             {Object.keys(tagsByUse).map(tag => (
                 <Tag
+                    selectAll={() => selectByTag(tag)}
                     key={tag}
                     tag={tag}
                     count={tagsByUse[tag]}
@@ -68,13 +74,10 @@ const Key = ({
     );
 };
 
-const Tag = ({ tag, count, label, setLabel }) => {
+const Tag = ({ tag, count, label, setLabel, selectAll }) => {
     const [editing, setEditing] = React.useState(null);
     return (
-        <div
-            style={{ display: 'flex', cursor: 'pointer' }}
-            onClick={() => (editing === null ? setEditing(label || '') : null)}
-        >
+        <div style={{ display: 'flex', cursor: 'pointer' }}>
             <div
                 style={{
                     width: '1.5em',
@@ -85,6 +88,7 @@ const Tag = ({ tag, count, label, setLabel }) => {
                 {count}
             </div>
             <div
+                onClick={() => (editing === null ? selectAll() : null)}
                 css={[
                     tagStyle,
                     {
@@ -98,7 +102,15 @@ const Tag = ({ tag, count, label, setLabel }) => {
             >
                 {tag.toUpperCase()}
             </div>
-            {label && editing === null ? <div>{label}</div> : null}
+            {editing === null ? (
+                <div
+                    onClick={() => {
+                        setEditing(label || '');
+                    }}
+                >
+                    {label || 'No label'}
+                </div>
+            ) : null}
             {editing != null ? (
                 <input
                     value={editing}
