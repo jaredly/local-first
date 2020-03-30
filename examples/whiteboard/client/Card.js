@@ -18,6 +18,7 @@ import {
     rectIntersect,
     fromScreen,
     clamp,
+    colors,
     BOUNDS,
 } from './types';
 
@@ -216,17 +217,73 @@ const Card = ({
             <div
                 css={{
                     position: 'absolute',
-                    bottom: 2,
-                    right: 2,
+                    bottom: 0,
+                    right: 0,
                 }}
             >
-                {card.number != null ? <span>{card.number}</span> : null}
+                {card.number != null ? (
+                    <span
+                        css={tagStyle}
+                        style={createTagStyle(card.number + '')}
+                    >
+                        {card.number}
+                    </span>
+                ) : null}
                 {card.letter != null ? (
-                    <span>{card.letter.toUpperCase()}</span>
+                    <span css={tagStyle} style={createTagStyle(card.letter)}>
+                        {card.letter.toUpperCase()}
+                    </span>
                 ) : null}
             </div>
         </div>
     );
 };
+
+const tagStyle = {
+    display: 'inline-block',
+    marginLeft: 4,
+    padding: '2px 4px',
+    fontSize: '80%',
+    borderRadius: 4,
+    backgroundColor: 'white',
+};
+
+const createTagStyle = tag => {
+    return tagStyles[tag];
+};
+
+// 36. there are 10 colors. 4 diff styles.
+// the number in the color
+// single border
+// background color
+// black background
+const digits = '0123456789';
+const letters = 'abcdefghijklmnopqrstuvwxyz';
+const tagStyles = {};
+[...(digits + letters)].forEach((tag, i) => {
+    if (i < 10) {
+        tagStyles[tag] = { color: colors[i], fontWeight: 'bold' };
+    } else if (i < 20) {
+        tagStyles[tag] = {
+            backgroundColor: colors[i - 10],
+            color: 'white',
+            fontWeight: 'bold',
+        };
+    } else if (i < 30) {
+        tagStyles[tag] = {
+            borderColor: colors[i - 20],
+            borderWidth: 2,
+            borderStyle: 'solid',
+        };
+    } else {
+        tagStyles[tag] = {
+            borderColor: colors[i - 30],
+            borderWidth: 2,
+            borderStyle: 'solid',
+            color: 'white',
+            backgroundColor: '#666',
+        };
+    }
+});
 
 export default React.memo<Props>(Card);
