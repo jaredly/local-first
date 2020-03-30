@@ -33,6 +33,7 @@ type Props = {
     hovered: ?boolean,
     dispatch: Action => void,
     dragRef: { current: boolean },
+    currentHover: { current: ?string },
     selectAllWith: ((CardT) => boolean) => void,
 };
 
@@ -48,6 +49,7 @@ const Card = ({
     dragRef,
     panZoom,
     selectAllWith,
+    currentHover,
 }: Props) => {
     const pos = offset
         ? clamp(addPos(card.position, offset), card.size, BOUNDS)
@@ -56,6 +58,12 @@ const Card = ({
     return (
         <div
             key={card.id}
+            onMouseOver={evt => (currentHover.current = card.id)}
+            onMouseOut={evt => {
+                if (currentHover.current === card.id) {
+                    currentHover.current = null;
+                }
+            }}
             onDoubleClick={evt => {
                 if (evt.metaKey || evt.shiftKey) {
                     return;
@@ -258,7 +266,7 @@ const tagStyle = {
     padding: '2px 4px',
     fontSize: '80%',
     borderRadius: 4,
-    backgroundColor: 'white',
+    // backgroundColor: 'white',
 };
 
 const createTagStyle = tag => {
@@ -273,9 +281,15 @@ const createTagStyle = tag => {
 const digits = '0123456789';
 const letters = 'abcdefghijklmnopqrstuvwxyz';
 const tagStyles = {};
-[...(digits + letters)].forEach((tag, i) => {
+[...letters].forEach((tag, i) => {
     if (i < 10) {
-        tagStyles[tag] = { color: colors[i], fontWeight: 'bold' };
+        tagStyles[tag] = {
+            color: colors[i],
+            fontWeight: 'bold',
+            borderColor: 'black',
+            borderWidth: 1,
+            borderStyle: 'solid',
+        };
     } else if (i < 20) {
         tagStyles[tag] = {
             backgroundColor: colors[i - 10],

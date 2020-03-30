@@ -474,6 +474,8 @@ const Whiteboard = () => {
     const panZoom = React.useRef({ pan: state.pan, zoom: state.zoom });
     panZoom.current = { pan: state.pan, zoom: state.zoom };
 
+    const currentHover = React.useRef(null);
+
     React.useEffect(() => {
         if (currentState.current.drag) {
             const timer = setInterval(() => {
@@ -553,6 +555,9 @@ const Whiteboard = () => {
                 return;
             }
             const keys = Object.keys(currentState.current.selection);
+            if (!keys.length && currentHover.current) {
+                keys.push(currentHover.current);
+            }
             if (!keys.length) return;
 
             const digits = '0123456789';
@@ -730,6 +735,9 @@ const Whiteboard = () => {
                             zoom: zoomLevels[evt.target.value],
                         });
                     }}
+                    onMouseUp={evt => {
+                        evt.target.blur();
+                    }}
                 />
                 {Object.keys(state.selection).length > 1 ? (
                     <div>
@@ -774,6 +782,7 @@ const Whiteboard = () => {
                     .map(id => cards[id])
                     .map(card => (
                         <Card
+                            currentHover={currentHover}
                             selectAllWith={selectAllWith}
                             key={card.id}
                             dragRef={dragRef}
