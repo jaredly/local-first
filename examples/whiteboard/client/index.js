@@ -557,10 +557,11 @@ const Whiteboard = () => {
             if (evt.metaKey || evt.shiftKey) {
                 return;
             }
-            const keys = Object.keys(currentState.current.selection);
-            if (!keys.length && currentHover.current) {
-                keys.push(currentHover.current);
-            }
+            const keys =
+                currentHover.current &&
+                !currentState.current.selection[currentHover.current]
+                    ? [currentHover.current]
+                    : Object.keys(currentState.current.selection);
             if (!keys.length) return;
 
             const digits = '0123456789';
@@ -729,18 +730,23 @@ const Whiteboard = () => {
                 onClick={evt => evt.stopPropagation()}
                 onMouseDown={evt => evt.stopPropagation()}
             >
-                <button
-                    onClick={() => {
-                        makeDefaultHeadings(client.getStamp).forEach(card => {
-                            col.save(card.id, card);
-                        });
-                        makeDefaultCards(client.getStamp).forEach(card => {
-                            col.save(card.id, card);
+                <input
+                    type="range"
+                    min="0"
+                    max={zoomLevels.length - 1}
+                    value={zoomLevels.indexOf(state.zoom)}
+                    onMouseDown={evt => evt.stopPropagation()}
+                    onClick={evt => evt.stopPropagation()}
+                    onChange={evt => {
+                        dispatch({
+                            type: 'zoom',
+                            zoom: zoomLevels[evt.target.value],
                         });
                     }}
-                >
-                    Add default cards
-                </button>
+                    onMouseUp={evt => {
+                        evt.target.blur();
+                    }}
+                />
                 <AddCard
                     heading="Add a custom card"
                     onAdd={(title, description) => {
@@ -772,56 +778,72 @@ const Whiteboard = () => {
                                 x: state.pan.x + DEFAULT_MARGIN * 4,
                                 y: state.pan.y + DEFAULT_MARGIN * 4,
                             },
-                            size: { y: DEFAULT_HEIGHT, x: DEFAULT_WIDTH },
+                            size: { y: DEFAULT_HEIGHT, x: DEFAULT_WIDTH * 2 },
                             disabled: false,
                         };
                         col.save(id, card);
                     }}
                 />
                 {/* <AddHeader col={col} /> */}
-                <input
-                    type="range"
-                    min="0"
-                    max={zoomLevels.length - 1}
-                    value={zoomLevels.indexOf(state.zoom)}
-                    onMouseDown={evt => evt.stopPropagation()}
-                    onClick={evt => evt.stopPropagation()}
-                    onChange={evt => {
-                        dispatch({
-                            type: 'zoom',
-                            zoom: zoomLevels[evt.target.value],
-                        });
-                    }}
-                    onMouseUp={evt => {
-                        evt.target.blur();
-                    }}
-                />
-                {Object.keys(state.selection).length > 1 ? (
-                    <div>
-                        <button
-                            onClick={() => {
-                                arrangeCards(cards, state.selection, 1, col);
-                            }}
-                        >
-                            1
-                        </button>
-                        <button
-                            onClick={() => {
-                                arrangeCards(cards, state.selection, 2, col);
-                            }}
-                        >
-                            2
-                        </button>
-                        <button
-                            onClick={() => {
-                                arrangeCards(cards, state.selection, 3, col);
-                            }}
-                        >
-                            3
-                        </button>
-                    </div>
-                ) : null}
             </div>
+            {Object.keys(state.selection).length > 1 ? (
+                <div
+                    style={{
+                        position: 'absolute',
+                        zIndex: 1000,
+                        left: '50%',
+                        // marginLeft: '-50%',
+                        top: 0,
+                    }}
+                    onClick={evt => evt.stopPropagation()}
+                    onMouseDown={evt => evt.stopPropagation()}
+                >
+                    <button
+                        style={{
+                            border: '1px solid #ccc',
+                            padding: '4px 12px',
+                            backgroundColor: 'white',
+                            fontSize: 24,
+                        }}
+                        onClick={() => {
+                            arrangeCards(cards, state.selection, 1, col);
+                        }}
+                    >
+                        {/* 1 column */}
+                        ||
+                    </button>
+                    <button
+                        style={{
+                            border: '1px solid #ccc',
+                            padding: '4px 12px',
+                            backgroundColor: 'white',
+                            fontSize: 24,
+                            marginLeft: 12,
+                        }}
+                        onClick={() => {
+                            arrangeCards(cards, state.selection, 2, col);
+                        }}
+                    >
+                        {/* 2 columns */}
+                        |||
+                    </button>
+                    <button
+                        style={{
+                            border: '1px solid #ccc',
+                            padding: '4px 12px',
+                            backgroundColor: 'white',
+                            fontSize: 24,
+                            marginLeft: 12,
+                        }}
+                        onClick={() => {
+                            arrangeCards(cards, state.selection, 3, col);
+                        }}
+                    >
+                        {/* 3 columns */}
+                        ||||
+                    </button>
+                </div>
+            ) : null}
             <div
                 style={{
                     position: 'absolute',
