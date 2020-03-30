@@ -49,7 +49,8 @@ Not Important to Me
         id: genId(),
         title,
         description: '',
-        color: null,
+        number: null,
+        letter: null,
         position: {
             x: DEFAULT_MARGIN + i * (DEFAULT_WIDTH * 2.0 + DEFAULT_MARGIN),
             y: DEFAULT_MARGIN + 50,
@@ -68,10 +69,13 @@ const shuffle = array => {
 };
 
 const makeDefaultCards = (genId): Array<CardT> => {
-    return shuffle(defaultCards).map(({ description, title }, i) => ({
+    return shuffle(defaultCards).map(({ description, title }, i): CardT => ({
         id: genId(),
         title,
         description,
+        number: null,
+        letter: null,
+        header: null,
         position: {
             x:
                 DEFAULT_MARGIN +
@@ -327,7 +331,10 @@ const onMouseUp = (evt, state, cards, dispatch, col) => {
         dispatch({ type: 'set_select', dragSelect: null });
         if (anySelected) {
             dispatch({
-                type: evt.metaKey ? 'add_selection' : 'replace_selection',
+                type:
+                    evt.metaKey || evt.shiftKey
+                        ? 'add_selection'
+                        : 'replace_selection',
                 selection: newSelection,
             });
         }
@@ -532,7 +539,7 @@ const Whiteboard = () => {
             dragRef.current = false;
         };
         const click = evt => {
-            if (!dragRef.current && !evt.metaKey) {
+            if (!dragRef.current && !evt.metaKey && !evt.shiftKey) {
                 dispatch({ type: 'replace_selection', selection: {} });
             }
         };

@@ -25,7 +25,7 @@ export const create = () => {
                 pending = [];
             }
             if (history.length) {
-                const last = history.shift();
+                const last = history.pop();
                 last.forEach(fn => fn());
             }
         },

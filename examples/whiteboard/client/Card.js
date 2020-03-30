@@ -53,8 +53,10 @@ const Card = ({
     return (
         <div
             key={card.id}
-            onDoubleClick={() => {
-                console.log('double click');
+            onDoubleClick={evt => {
+                if (evt.metaKey || evt.shiftKey) {
+                    return;
+                }
                 setEditing({
                     title: card.title,
                     description: card.description,
@@ -67,27 +69,30 @@ const Card = ({
                 height: card.size.y,
                 backgroundColor: selected || hovered ? 'aliceblue' : undefined,
             }}
-            css={
+            css={[
+                {
+                    position: 'absolute',
+                    cursor: 'pointer',
+                    padding: '4px 12px',
+                    ':hover': {
+                        boxShadow: '0 0 5px #0af',
+                    },
+                },
                 card.header == null
                     ? {
-                          padding: '4px 12px',
                           boxShadow: '0 0 3px #ccc',
                           backgroundColor: 'white',
-                          position: 'absolute',
-                          cursor: 'pointer',
                       }
                     : {
-                          cursor: 'pointer',
-                          padding: '4px 12px',
                           fontSize:
                               fontSizes[
                                   Math.min(card.header, fontSizes.length - 1)
                               ],
                           backgroundColor: 'transparent',
-                          position: 'absolute',
-                      }
-            }
+                      },
+            ]}
             onMouseDown={evt => {
+                evt.preventDefault();
                 const screenPos = evtPos(evt);
                 const pos = fromScreen(
                     screenPos,
@@ -103,7 +108,7 @@ const Card = ({
                 // downPos.current = pos;
                 if (!selected) {
                     dispatch(
-                        evt.metaKey
+                        evt.metaKey || evt.shiftKey
                             ? {
                                   type: 'add_selection',
                                   selection: { [card.id]: true },
@@ -113,7 +118,7 @@ const Card = ({
                                   selection: { [card.id]: true },
                               },
                     );
-                } else if (evt.metaKey) {
+                } else if (evt.metaKey || evt.shiftKey) {
                     dispatch({
                         type: 'remove_selection',
                         selection: { [card.id]: true },
@@ -126,7 +131,7 @@ const Card = ({
                 if (dragRef.current) {
                     return;
                 }
-                if (selected && !evt.metaKey) {
+                if (selected && !evt.metaKey && !evt.shiftKey) {
                     dispatch({
                         type: 'replace_selection',
                         selection: { [card.id]: true },
