@@ -13,6 +13,7 @@ import { useCollection } from '../../../packages/client-react';
 import { type Schema, type Collection } from '../../../packages/client-bundle';
 
 import FlashcardMode from './FlashcardMode';
+import Key from './Key';
 
 import {
     type pos,
@@ -640,6 +641,9 @@ const Whiteboard = () => {
             );
         };
         const down = evt => {
+            if (document.activeElement !== document.body) {
+                return;
+            }
             evt.preventDefault();
             // const pos = evtPos(evt);
             const pos = fromScreen(
@@ -924,6 +928,25 @@ const Whiteboard = () => {
                 ) : null}
             </div>
             <MiniMap zoom={state.zoom} pan={state.pan} />
+            {!flashcard && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        zIndex: 100,
+                        backgroundColor: 'white',
+                        padding: 12,
+                        border: '1px solid #ccc',
+                        top: 10,
+                        left: 10,
+                    }}
+                >
+                    <Key
+                        cards={cards}
+                        settings={settings.default}
+                        settingsCol={settingsCol}
+                    />
+                </div>
+            )}
             {flashcard ? (
                 <FlashcardMode
                     cards={cards}

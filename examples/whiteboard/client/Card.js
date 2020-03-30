@@ -31,6 +31,7 @@ type Props = {
     card: CardT,
     col: Collection<CardT>,
     panZoom: { current: { pan: pos, zoom: number } },
+    settings: ?SettingsT,
     selected: boolean,
     hovered: ?boolean,
     dispatch: Action => void,
@@ -41,6 +42,13 @@ type Props = {
 
 const fontSizes = ['1.1em', '1.5em', '1.7em', '2em', '2.2em'];
 
+export const tagName = (settings: ?SettingsT, tag: string) => {
+    if (settings && settings.tagNames[tag]) {
+        return settings.tagNames[tag];
+    }
+    return tag.toUpperCase();
+};
+
 const Card = ({
     offset,
     card,
@@ -50,6 +58,7 @@ const Card = ({
     dispatch,
     dragRef,
     panZoom,
+    settings,
     selectAllWith,
     currentHover,
 }: Props) => {
@@ -262,7 +271,7 @@ const Card = ({
                             );
                         }}
                     >
-                        {card.letter.toUpperCase()}
+                        {tagName(settings, card.letter)}
                     </span>
                 ) : null}
             </div>

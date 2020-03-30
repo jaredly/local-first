@@ -3,7 +3,8 @@
 import { jsx } from '@emotion/core';
 import React from 'react';
 
-import { tagStyle, createTagStyle } from './Card';
+import { tagStyle, createTagStyle, tagName } from './Card';
+import Key from './Key';
 
 const FlashcardMode = ({ col, cards, onDone, settings, settingsCol }) => {
     const idsInOrder = React.useMemo(() => {
@@ -32,6 +33,12 @@ const FlashcardMode = ({ col, cards, onDone, settings, settingsCol }) => {
 
     React.useEffect(() => {
         const key = evt => {
+            if (evt.target !== document.body) {
+                return;
+            }
+            if (evt.metaKey || evt.ctrlKey || evt.shiftKey) {
+                return;
+            }
             evt.stopPropagation();
             evt.preventDefault();
             const card = currentCards.current[currentId.current];
@@ -72,21 +79,6 @@ const FlashcardMode = ({ col, cards, onDone, settings, settingsCol }) => {
         };
     }, []);
 
-    const tagsByUse = React.useMemo(() => {
-        const tagsByUse = {};
-        idsInOrder.forEach(id => {
-            const card = cards[id];
-            if (card.letter != null) {
-                tagsByUse[card.letter] = (tagsByUse[card.letter] || 0) + 1;
-            }
-            if (card.number != null) {
-                tagsByUse[card.number + ''] =
-                    (tagsByUse[card.number + ''] || 0) + 1;
-            }
-        });
-        return tagsByUse;
-    }, [cards]);
-
     return (
         <div
             style={{
@@ -121,32 +113,11 @@ const FlashcardMode = ({ col, cards, onDone, settings, settingsCol }) => {
                     fontSize: 24,
                 }}
             >
-                {Object.keys(tagsByUse).map(tag => (
-                    <div style={{ display: 'flex' }}>
-                        <div
-                            style={{
-                                width: '1.5em',
-                                textAlign: 'right',
-                                marginRight: 12,
-                            }}
-                        >
-                            {tagsByUse[tag]}
-                        </div>
-                        <div
-                            css={[
-                                tagStyle,
-                                {
-                                    width: '1.5em',
-                                    textAlign: 'center',
-                                    display: 'inline-block',
-                                },
-                            ]}
-                            style={createTagStyle(tag)}
-                        >
-                            {tag.toUpperCase()}
-                        </div>
-                    </div>
-                ))}
+                <Key
+                    cards={cards}
+                    settings={settings}
+                    settingsCol={settingsCol}
+                />
             </div>
             <div style={{ fontWeight: 'bold', marginBottom: 32 }}>
                 {card.title}
