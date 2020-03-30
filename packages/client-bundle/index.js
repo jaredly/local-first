@@ -93,17 +93,36 @@ export const clientCrdtImpl: CRDTImpl<Delta, Data> = {
     },
 };
 
+const nullNetwork = (_, __, ___) => ({
+    initial: { status: 'disconnected' },
+    createSync: (_, __, ___) => () => {},
+});
+
+export const createPersistedBlobClient = (
+    name: string,
+    schemas: { [key: string]: Schema },
+    url: ?string,
+): Client<SyncStatus> => {
+    return createBlobClient(
+        clientCrdtImpl,
+        schemas,
+        new PersistentClock(localStorageClockPersist(name)),
+        makeBlobPersistence(name, Object.keys(schemas)),
+        url ? createBasicBlobNetwork(url) : nullNetwork,
+    );
+};
+
 export const createPersistedDeltaClient = (
     name: string,
     schemas: { [key: string]: Schema },
-    url: string,
+    url: ?string,
 ): Client<SyncStatus> => {
     return createDeltaClient(
         clientCrdtImpl,
         schemas,
         new PersistentClock(localStorageClockPersist(name)),
         makeDeltaPersistence(name, Object.keys(schemas)),
-        createWebSocketNetwork(url),
+        url ? createWebSocketNetwork(url) : nullNetwork,
     );
 };
 
