@@ -33,6 +33,7 @@ type Props = {
     hovered: ?boolean,
     dispatch: Action => void,
     dragRef: { current: boolean },
+    selectAllWith: ((CardT) => boolean) => void,
 };
 
 const fontSizes = ['1.1em', '1.5em', '1.7em', '2em', '2.2em'];
@@ -46,6 +47,7 @@ const Card = ({
     dispatch,
     dragRef,
     panZoom,
+    selectAllWith,
 }: Props) => {
     const pos = offset
         ? clamp(addPos(card.position, offset), card.size, BOUNDS)
@@ -225,12 +227,23 @@ const Card = ({
                     <span
                         css={tagStyle}
                         style={createTagStyle(card.number + '')}
+                        onClick={evt => {
+                            evt.stopPropagation();
+                            selectAllWith(c => c.number === card.number);
+                        }}
                     >
                         {card.number}
                     </span>
                 ) : null}
                 {card.letter != null ? (
-                    <span css={tagStyle} style={createTagStyle(card.letter)}>
+                    <span
+                        css={tagStyle}
+                        style={createTagStyle(card.letter)}
+                        onClick={evt => {
+                            evt.stopPropagation();
+                            selectAllWith(c => c.letter === card.letter);
+                        }}
+                    >
                         {card.letter.toUpperCase()}
                     </span>
                 ) : null}

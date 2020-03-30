@@ -349,6 +349,9 @@ const arrangeCards = (
 ) => {
     // if they're already roughly in a grid, it would be nice to maintain that...
     const selectedCards = Object.keys(selection).map(key => cards[key]);
+    if (!selectedCards.length) {
+        return;
+    }
     selectedCards.sort((c1, c2) => {
         if ((c1.header || 0) > (c2.header || 0)) {
             return -1;
@@ -519,6 +522,33 @@ const Whiteboard = () => {
             if (evt.key === 'z' && evt.metaKey) {
                 client.undo();
             }
+
+            if (evt.key === '!') {
+                return arrangeCards(
+                    currentCards.current,
+                    currentState.current.selection,
+                    1,
+                    col,
+                );
+            }
+            if (evt.key === '@') {
+                return arrangeCards(
+                    currentCards.current,
+                    currentState.current.selection,
+                    2,
+                    col,
+                );
+            }
+            if (evt.key === '#') {
+                return arrangeCards(
+                    currentCards.current,
+                    currentState.current.selection,
+                    3,
+                    col,
+                );
+            }
+
+            // The Tags!
             if (evt.metaKey || evt.shiftKey) {
                 return;
             }
@@ -613,6 +643,16 @@ const Whiteboard = () => {
     const dragSelect = state.dragSelect
         ? normalizedRect(state.dragSelect)
         : null;
+
+    const selectAllWith = React.useCallback(selector => {
+        const matching = {};
+        Object.keys(currentCards.current).forEach(k => {
+            if (selector(currentCards.current[k])) {
+                matching[k] = true;
+            }
+        });
+        dispatch({ type: 'replace_selection', selection: matching });
+    }, []);
 
     return (
         <div>
@@ -734,6 +774,7 @@ const Whiteboard = () => {
                     .map(id => cards[id])
                     .map(card => (
                         <Card
+                            selectAllWith={selectAllWith}
                             key={card.id}
                             dragRef={dragRef}
                             panZoom={panZoom}
