@@ -66,16 +66,69 @@ export const rectIntersect = (one: rect, two: rect) => {
     );
 };
 
-export type SettingsT = {
+import { type Schema } from '../../../packages/client-bundle';
+
+export type TagT = {
+    id: string,
     title: string,
-    tagNames: { [key: string]: string },
+    color: string,
+    style: string, // background, border, color, underline
+    createdDate: number,
 };
 
-export const SettingsSchema: Schema = {
+export const TagSchema: Schema = {
     type: 'object',
     attributes: {
+        id: 'string',
         title: 'string',
-        tagNames: { type: 'map', value: 'string' },
+        color: 'string',
+        style: 'string',
+        createdDate: 'int',
+    },
+};
+
+export type ScaleT = {
+    id: string,
+    title: string,
+    color: string,
+    // like 1 to 5 or whatnot
+    min: number,
+    max: number,
+    createdDate: number,
+};
+
+export const ScaleSchema: Schema = {
+    type: 'object',
+    attributes: {
+        id: 'string',
+        title: 'string',
+        color: 'string',
+        min: 'int',
+        max: 'int',
+        createdDate: 'int',
+    },
+};
+
+export type CommentT = {
+    id: string,
+    card: string,
+    parentComment: ?string,
+    text: string,
+    authorId: string,
+    createdDate: number,
+    deleted: boolean,
+};
+
+export const CommentSchema: Schema = {
+    type: 'object',
+    attributes: {
+        id: 'string',
+        card: 'string',
+        parentComment: { type: 'optional', value: 'string' },
+        text: 'string',
+        authorId: 'string',
+        createdDate: 'int',
+        deleted: 'boolean',
     },
 };
 
@@ -83,15 +136,23 @@ export type CardT = {
     id: string,
     title: string,
     description: string,
-    position: {| x: number, y: number |},
-    size: {| x: number, y: number |},
-    letter: ?string,
-    number: ?number,
-    header: ?number,
+    position: {|
+        x: number,
+        y: number,
+    |},
+    size: {|
+        x: number,
+        y: number,
+    |},
+    // added date, for ordering
+    tags: { [tagId: string]: number },
+    // these will just be sorted by ID or something
+    scales: { [scaleId: string]: number },
+    parent?: ?{ id: string, sort: Array<number> },
+    header?: ?number,
     disabled: boolean,
 };
 
-import { type Schema } from '../../../packages/client-bundle';
 export const CardSchema: Schema = {
     type: 'object',
     attributes: {
@@ -103,6 +164,16 @@ export const CardSchema: Schema = {
             attributes: {
                 x: 'number',
                 y: 'number',
+            },
+        },
+        parent: {
+            type: 'optional',
+            value: {
+                type: 'object',
+                attributes: {
+                    id: 'string',
+                    sort: { type: 'array', item: 'number' },
+                },
             },
         },
         size: {

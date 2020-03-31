@@ -492,7 +492,7 @@ const Whiteboard = () => {
     const client = React.useMemo(
         () =>
             createPersistedBlobClient(
-                'hello',
+                'miller-values-sort',
                 { cards: CardSchema, settings: SettingsSchema },
                 null,
                 2,
