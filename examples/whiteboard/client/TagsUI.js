@@ -169,6 +169,7 @@ const TagsUI = ({
     const selectedCards = Object.keys(selection).map(k => cards[k]);
 
     const [addingTag, setAddingTag] = React.useState(null);
+    const [addingScale, setAddingScale] = React.useState(null);
 
     if (!Object.keys(selection)) {
         return (
@@ -188,7 +189,17 @@ const TagsUI = ({
     }
     return (
         <div css={styles.container}>
-            <div css={styles.header}>Scales</div>
+            <div css={styles.header}>
+                Scales
+                <button
+                    css={{ marginLeft: 16 }}
+                    onClick={() => {
+                        setAddingTag('');
+                    }}
+                >
+                    +
+                </button>
+            </div>
             {allScales.map(scale => (
                 <Scale
                     setKey={setKey}
@@ -199,6 +210,34 @@ const TagsUI = ({
                     cards={selectedCards}
                 />
             ))}
+            {addingScale != null ? (
+                <input
+                    value={addingScale}
+                    css={{
+                        fontSize: 'inherit',
+                    }}
+                    autoFocus
+                    onChange={evt => setAddingScale(evt.target.value)}
+                    onBlur={() => setAddingScale(null)}
+                    onKeyDown={evt => {
+                        evt.stopPropagation();
+                        if (evt.key === 'Enter') {
+                            if (addingScale.trim()) {
+                                const id = genId();
+                                scalesCol.save(id, {
+                                    id,
+                                    title: addingScale,
+                                    color: colors[parseInt(Math.random() * colors.length)],
+                                    min: 1,
+                                    max: 5,
+                                    createdDate: Date.now(),
+                                });
+                            }
+                            setAddingScale(null);
+                        }
+                    }}
+                />
+            ) : null}
             <div css={styles.header}>
                 Tags
                 <button
