@@ -11,6 +11,44 @@ const ScaleSummary = ({ scale }: { scale: ScaleT }) => {
     return <div css={styles.item}>{scale.title}</div>;
 };
 
+const Tag = ({
+    tag,
+    cards,
+    cardsCol,
+}: {
+    tag: TagT,
+    cards: Array<CardT>,
+    cardsCol: Collection<CardT>,
+}) => {
+    const cardsWithout = cards.filter(card => card.tags[tag.id] == null);
+    return (
+        <div
+            css={styles.item}
+            style={{
+                cursor: 'pointer',
+                backgroundColor:
+                    cardsWithout.length === 0
+                        ? '#0af'
+                        : cardsWithout.length === cards.length
+                        ? null
+                        : 'aliceblue',
+            }}
+            onClick={() => {
+                if (!cardsWithout.length) {
+                    cards.forEach(card => cardsCol.setAttribute(card.id, ['tags', tag.id], null));
+                } else {
+                    const time = Date.now();
+                    cardsWithout.forEach(card =>
+                        cardsCol.setAttribute(card.id, ['tags', tag.id], time),
+                    );
+                }
+            }}
+        >
+            {tag.title}
+        </div>
+    );
+};
+
 const Scale = ({
     scale,
     cards,
@@ -71,9 +109,6 @@ const Scale = ({
                             cards.forEach(card =>
                                 cardsCol.setAttribute(card.id, ['scales', scale.id], value),
                             );
-                            // cards.forEach(card =>
-                            //     cardsCol.setAttribute(card.id, ['scales', scale.id], i + scale.min),
-                            // );
                         }}
                         css={[
                             {
@@ -111,6 +146,7 @@ const TagsUI = ({
     selection,
     setKey,
     clearKey,
+    genId,
 }: {
     cardsCol: Collection<CardT>,
     cards: { [key: string]: CardT },
@@ -121,6 +157,7 @@ const TagsUI = ({
     selection: { [key: string]: boolean },
     setKey: ((KeyboardEvent) => ?boolean) => void,
     clearKey: () => void,
+    genId: () => string,
 }) => {
     const allScales = Object.keys(scales)
         .sort()
@@ -130,6 +167,8 @@ const TagsUI = ({
         .map(key => tags[key]);
 
     const selectedCards = Object.keys(selection).map(k => cards[k]);
+
+    const [addingTag, setAddingTag] = React.useState(null);
 
     if (!Object.keys(selection)) {
         return (
@@ -160,12 +199,47 @@ const TagsUI = ({
                     cards={selectedCards}
                 />
             ))}
-            <div css={styles.header}>Tags</div>
+            <div css={styles.header}>
+                Tags
+                <button
+                    css={{ marginLeft: 16 }}
+                    onClick={() => {
+                        setAddingTag('');
+                    }}
+                >
+                    +
+                </button>
+            </div>
             {allTags.map(tag => (
-                <div css={styles.item} key={tag.id}>
-                    {tag.title}
-                </div>
+                <Tag tag={tag} cards={selectedCards} cardsCol={cardsCol} key={tag.id} />
             ))}
+            {addingTag != null ? (
+                <input
+                    value={addingTag}
+                    css={{
+                        fontSize: 'inherit',
+                    }}
+                    autoFocus
+                    onChange={evt => setAddingTag(evt.target.value)}
+                    onBlur={() => setAddingTag(null)}
+                    onKeyDown={evt => {
+                        evt.stopPropagation();
+                        if (evt.key === 'Enter') {
+                            if (addingTag.trim()) {
+                                const id = genId();
+                                tagsCol.save(id, {
+                                    id,
+                                    title: addingTag,
+                                    color: colors[parseInt(Math.random() * colors.length)],
+                                    style: 'background',
+                                    createdDate: Date.now(),
+                                });
+                            }
+                            setAddingTag(null);
+                        }
+                    }}
+                />
+            ) : null}
         </div>
     );
 };
@@ -177,7 +251,12 @@ const styles = {
             backgroundColor: 'aliceblue',
         },
     },
-    header: { fontWeight: 'bold', padding: '4px 8px' },
+    header: {
+        display: 'flex',
+        alignItems: 'center',
+        fontWeight: 'bold',
+        padding: '4px 8px',
+    },
     container: {
         fontSize: 24,
         position: 'absolute',

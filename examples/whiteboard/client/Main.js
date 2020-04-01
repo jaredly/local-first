@@ -158,6 +158,7 @@ const Whiteboard = ({
                 scalesCol={scalesCol}
                 setKey={() => {}}
                 clearKey={() => {}}
+                genId={client.getStamp}
             />
         </div>
     );
@@ -202,6 +203,7 @@ const Main = ({ client }: { client: Client<SyncStatus> }) => {
                 scales={scales}
                 scalesCol={scalesCol}
                 onDone={() => setFlashcard(false)}
+                genId={client.getStamp}
             />
         );
     } else {

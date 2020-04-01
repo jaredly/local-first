@@ -17,6 +17,7 @@ const FlashcardMode = ({
     scales,
     tagsCol,
     scalesCol,
+    genId,
 }: {
     onDone: () => void,
     col: Collection<CardT>,
@@ -25,6 +26,7 @@ const FlashcardMode = ({
     tags: { [key: string]: TagT },
     scalesCol: Collection<ScaleT>,
     scales: { [key: string]: ScaleT },
+    genId: () => string,
 }) => {
     const idsInOrder = React.useMemo(() => {
         return Object.keys(cards).filter(id => cards[id].header == null);
@@ -161,6 +163,7 @@ const FlashcardMode = ({
                 clearKey={() => {
                     key.current = null;
                 }}
+                genId={genId}
             />
             <div style={{ fontWeight: 'bold', marginBottom: 32 }}>{card.title}</div>
             <div style={{ marginBottom: 32 }}>{card.description}</div>
