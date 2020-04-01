@@ -110,6 +110,7 @@ const Scale = ({
             <div css={{ display: 'flex', justifyContent: 'space-between' }}>
                 {values.map((v, i) => (
                     <div
+                        key={i}
                         onClick={() => {
                             const n = i + scale.min;
                             const value =
@@ -162,6 +163,19 @@ const Scale = ({
     );
 };
 
+type Props = {
+    cardsCol: Collection<CardT>,
+    cards: { [key: string]: CardT },
+    tagsCol: Collection<TagT>,
+    tags: { [key: string]: TagT },
+    scalesCol: Collection<ScaleT>,
+    scales: { [key: string]: ScaleT },
+    selection: { [key: string]: boolean },
+    setKey: ((KeyboardEvent) => ?boolean) => void,
+    clearKey: () => void,
+    genId: () => string,
+};
+
 const TagsUI = ({
     cards,
     cardsCol,
@@ -173,18 +187,7 @@ const TagsUI = ({
     setKey,
     clearKey,
     genId,
-}: {
-    cardsCol: Collection<CardT>,
-    cards: { [key: string]: CardT },
-    tagsCol: Collection<TagT>,
-    tags: { [key: string]: TagT },
-    scalesCol: Collection<ScaleT>,
-    scales: { [key: string]: ScaleT },
-    selection: { [key: string]: boolean },
-    setKey: ((KeyboardEvent) => ?boolean) => void,
-    clearKey: () => void,
-    genId: () => string,
-}) => {
+}: Props) => {
     const allScales = Object.keys(scales)
         .sort()
         .map(key => scales[key]);
@@ -341,4 +344,4 @@ const styles = {
     },
 };
 
-export default TagsUI;
+export default React.memo<Props>(TagsUI);

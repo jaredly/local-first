@@ -238,6 +238,10 @@ const Card = ({
                     .map(scale => (
                         <div
                             key={scale.id}
+                            onClick={evt => {
+                                evt.stopPropagation();
+                                selectAllWith(c => c.scales[scale.id] === card.scales[scale.id]);
+                            }}
                             css={{
                                 padding: '4px 8px',
                                 borderRadius: 3,

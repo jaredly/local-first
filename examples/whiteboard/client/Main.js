@@ -166,13 +166,15 @@ const Whiteboard = ({
                 tagsCol={tagsCol}
                 scales={scales}
                 scalesCol={scalesCol}
-                setKey={() => {}}
-                clearKey={() => {}}
+                setKey={noop}
+                clearKey={noop}
                 genId={client.getStamp}
             />
         </div>
     );
 };
+
+const noop = () => {};
 
 const Main = ({ client }: { client: Client<SyncStatus> }) => {
     const [col, cards] = useCollection<CardT, SyncStatus>(React, client, 'cards');
