@@ -6,10 +6,10 @@ import React from 'react';
 import { tagStyle, createTagStyle, tagName } from './Card';
 import Key from './Key';
 
-const FlashcardMode = ({ col, cards, onDone, settings, settingsCol }) => {
+const FlashcardMode = ({ col, cards, onDone }) => {
     const idsInOrder = React.useMemo(() => {
-        return Object.keys(cards).filter(id => cards[id].header === null);
-    }, []);
+        return Object.keys(cards).filter(id => cards[id].header == null);
+    }, [cards]);
     const [index, dispatch] = React.useReducer((state, action) => {
         if (action === 'next') {
             return state >= idsInOrder.length - 1 ? 0 : state + 1;
@@ -21,15 +21,15 @@ const FlashcardMode = ({ col, cards, onDone, settings, settingsCol }) => {
     }, 0);
 
     const card = cards[idsInOrder[index]];
-    const currentId = React.useRef(card.id);
-    currentId.current = card.id;
-    const currentCards = React.useRef(cards);
-    currentCards.current = cards;
 
     if (!card) {
         // TODO
         return <div />;
     }
+    const currentId = React.useRef(card.id);
+    currentId.current = card.id;
+    const currentCards = React.useRef(cards);
+    currentCards.current = cards;
 
     React.useEffect(() => {
         const key = evt => {
@@ -113,12 +113,12 @@ const FlashcardMode = ({ col, cards, onDone, settings, settingsCol }) => {
                     fontSize: 24,
                 }}
             >
-                <Key
+                {/* <Key
                     cards={cards}
                     settings={settings}
                     settingsCol={settingsCol}
                     selectByTag={() => {}}
-                />
+                /> */}
             </div>
             <div style={{ fontWeight: 'bold', marginBottom: 32 }}>
                 {card.title}

@@ -8,10 +8,9 @@ import { type Schema, type Collection } from '../../../packages/client-bundle';
 import {
     type pos,
     type rect,
-    type SettingsT,
+    type TagT,
+    type ScaleT,
     type CardT,
-    CardSchema,
-    SettingsSchema,
     evtPos,
     addPos,
     normalizedRect,
@@ -31,7 +30,8 @@ type Props = {
     card: CardT,
     col: Collection<CardT>,
     panZoom: { current: { pan: pos, zoom: number } },
-    settings: ?SettingsT,
+    tags: { [key: string]: TagT },
+    scales: { [key: string]: ScaleT },
     selected: boolean,
     hovered: ?boolean,
     dispatch: Action => void,
@@ -42,12 +42,12 @@ type Props = {
 
 const fontSizes = ['1.1em', '1.5em', '1.7em', '2em', '2.2em'];
 
-export const tagName = (settings: ?SettingsT, tag: string) => {
-    if (settings && settings.tagNames[tag]) {
-        return settings.tagNames[tag];
-    }
-    return tag.toUpperCase();
-};
+// export const tagName = (settings: ?SettingsT, tag: string) => {
+//     if (settings && settings.tagNames[tag]) {
+//         return settings.tagNames[tag];
+//     }
+//     return tag.toUpperCase();
+// };
 
 const Card = ({
     offset,
@@ -58,7 +58,8 @@ const Card = ({
     dispatch,
     dragRef,
     panZoom,
-    settings,
+    tags,
+    scales,
     selectAllWith,
     currentHover,
 }: Props) => {
@@ -235,54 +236,6 @@ const Card = ({
                     <button onClick={() => setEditing(null)}>Cancel</button>
                 </div>
             ) : null}
-            <div
-                css={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                }}
-            >
-                {card.number != null ? (
-                    <span
-                        css={tagStyle}
-                        style={createTagStyle(card.number + '')}
-                        onClick={evt => {
-                            evt.stopPropagation();
-                            selectAllWith(
-                                c =>
-                                    c.number === card.number &&
-                                    c.header === card.header,
-                            );
-                        }}
-                    >
-                        {card.number}
-                    </span>
-                ) : null}
-            </div>
-            <div
-                css={{
-                    position: 'absolute',
-                    bottom: 0,
-                    right: 0,
-                }}
-            >
-                {card.letter != null ? (
-                    <span
-                        css={tagStyle}
-                        style={createTagStyle(card.letter)}
-                        onClick={evt => {
-                            evt.stopPropagation();
-                            selectAllWith(
-                                c =>
-                                    c.letter === card.letter &&
-                                    c.header === card.header,
-                            );
-                        }}
-                    >
-                        {tagName(settings, card.letter)}
-                    </span>
-                ) : null}
-            </div>
         </div>
     );
 };

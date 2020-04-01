@@ -14,14 +14,21 @@ import { type Schema, type Collection } from '../../../packages/client-bundle';
 
 import FlashcardMode from './FlashcardMode';
 import Key from './Key';
+import Welcome from './Welcome';
+
+import { reducer, initialState } from './state';
 
 import {
     type pos,
     type rect,
-    type SettingsT,
+    type TagT,
+    TagSchema,
+    type ScaleT,
+    ScaleSchema,
+    type CommentT,
+    CommentSchema,
     type CardT,
     CardSchema,
-    SettingsSchema,
     evtPos,
     addPos,
     normalizedRect,
@@ -38,7 +45,7 @@ import Card from './Card';
 
 const defaultCards = require('./data.json');
 
-const DEFAULT_HEIGHT = 70;
+const DEFAULT_HEIGHT = 100;
 const DEFAULT_WIDTH = 200;
 const DEFAULT_MARGIN = 12;
 1;
@@ -57,8 +64,8 @@ Not Important to Me
         id: genId(),
         title,
         description: '',
-        number: null,
-        letter: null,
+        tags: {},
+        scales: {},
         position: {
             x: DEFAULT_MARGIN + i * (DEFAULT_WIDTH * 2.0 + DEFAULT_MARGIN),
             y: DEFAULT_MARGIN + 50,
@@ -81,9 +88,8 @@ const makeDefaultCards = (genId): Array<CardT> => {
         id: genId(),
         title,
         description,
-        number: null,
-        letter: null,
-        header: null,
+        tags: {},
+        scales: {},
         position: {
             x:
                 DEFAULT_MARGIN +
@@ -96,159 +102,6 @@ const makeDefaultCards = (genId): Array<CardT> => {
         size: { y: DEFAULT_HEIGHT, x: DEFAULT_WIDTH },
         disabled: false,
     }));
-};
-
-const objDiff = (one, two) => {
-    const res = {};
-    Object.keys(one).forEach(key => {
-        if (!(key in two)) {
-            res[key] = one[key];
-        }
-    });
-    return res;
-};
-
-const reducer = (state: State, action): State => {
-    switch (action.type) {
-        case 'replace_selection':
-            return { ...state, selection: action.selection };
-        case 'add_selection':
-            return {
-                ...state,
-                // $FlowFixMe
-                selection: { ...state.selection, ...action.selection },
-            };
-        case 'remove_selection':
-            return {
-                ...state,
-                selection: objDiff(state.selection, action.selection),
-            };
-        case 'start_drag':
-            return {
-                ...state,
-                drag: {
-                    offset: action.pos,
-                    mouse: action.pos,
-                    enough: false,
-                    screenPos: action.screenPos,
-                },
-                dragSelect: null,
-            };
-        case 'set_drag':
-            return {
-                ...state,
-                drag: action.drag,
-                dragSelect: null,
-            };
-        case 'start_select':
-            return {
-                ...state,
-                dragSelect: { position: action.pos, size: { x: 0, y: 0 } },
-                drag: null,
-            };
-        case 'set_select':
-            return {
-                ...state,
-                dragSelect: action.dragSelect,
-                drag: null,
-            };
-        case 'scroll':
-            return {
-                ...state,
-                pan: clamp(
-                    addPos(state.pan, action.delta),
-                    {
-                        x: window.innerWidth / state.zoom,
-                        y: window.innerHeight / state.zoom,
-                    },
-                    BOUNDS,
-                ),
-            };
-        case 'drag_scroll':
-            const pan = clamp(
-                addPos(state.pan, action.delta),
-                {
-                    x: window.innerWidth / state.zoom,
-                    y: window.innerHeight / state.zoom,
-                },
-                BOUNDS,
-            );
-            const diff = posDiff(state.pan, pan);
-            return {
-                ...state,
-                pan,
-                drag: {
-                    ...action.drag,
-                    mouse: addPos(action.drag.mouse, diff),
-                },
-            };
-        case 'zoom':
-            return {
-                ...state,
-                zoom: action.zoom,
-                pan: clamp(
-                    state.pan,
-                    {
-                        x: window.innerWidth / action.zoom,
-                        y: window.innerHeight / action.zoom,
-                    },
-                    BOUNDS,
-                ),
-            };
-        default:
-            return state;
-    }
-};
-
-export type Drag = { offset: pos, mouse: pos, enough: boolean, screenPos: pos };
-export type State = {
-    selection: { [key: string]: boolean },
-    pan: pos,
-    zoom: number,
-    drag?: ?Drag,
-    dragSelect?: ?rect,
-};
-
-export type Action =
-    | {|
-          type: 'set_drag',
-          drag: ?Drag,
-      |}
-    | {|
-          type: 'set_select',
-          dragSelect: ?rect,
-      |}
-    | {|
-          type: 'start_drag',
-          pos: {| x: number, y: number |},
-          screenPos: pos,
-      |}
-    | {|
-          type: 'start_select',
-          pos: {| x: number, y: number |},
-      |}
-    | {|
-          type: 'add_selection',
-          selection: { [key: string]: boolean },
-      |}
-    | {|
-          type: 'remove_selection',
-          selection: { [key: string]: boolean },
-      |}
-    | {| type: 'scroll', delta: pos |}
-    | {| type: 'drag_scroll', delta: pos, drag: Drag |}
-    | {| type: 'zoom', zoom: number |}
-    | {|
-          type: 'replace_selection',
-          selection: { [key: string]: boolean },
-      |};
-
-const initialState = {
-    selection: {},
-    pan: { x: 0, y: 0 },
-    zoom: 1,
-    drag: null,
-    dragSelect: null,
 };
 
 const MIN_MOVEMENT = 5;
@@ -276,9 +129,6 @@ const onMove = (evt, state, dispatch, dragRef) => {
                 screenPos,
             },
         });
-        if (screenPos.x > window.innerWidth - 50) {
-            dispatch({ type: 'pan' });
-        }
     } else if (state.dragSelect) {
         const { dragSelect } = state;
         evt.preventDefault();
@@ -338,13 +188,17 @@ const onMouseUp = (evt, state, cards, dispatch, col) => {
         });
         dispatch({ type: 'set_select', dragSelect: null });
         if (anySelected) {
-            dispatch({
-                type:
-                    evt.metaKey || evt.shiftKey
-                        ? 'add_selection'
-                        : 'replace_selection',
-                selection: newSelection,
-            });
+            dispatch(
+                evt.metaKey || evt.shiftKey
+                    ? {
+                          type: 'add_selection',
+                          selection: newSelection,
+                      }
+                    : {
+                          type: 'replace_selection',
+                          selection: newSelection,
+                      },
+            );
         }
     }
 };
@@ -491,20 +345,27 @@ const Whiteboard = () => {
     // we're assuming we're authed, and cookies are taking care of things.
     const client = React.useMemo(
         () =>
-            createPersistedBlobClient(
-                'miller-values-sort',
-                { cards: CardSchema, settings: SettingsSchema },
-                null,
-                2,
+            // createPersistedBlobClient(
+            //     'miller-values-sort',
+            //     { cards: CardSchema, settings: SettingsSchema },
+            //     null,
+            //     1,
+            // ),
+            createInMemoryDeltaClient(
+                {
+                    cards: CardSchema,
+                    comments: CommentSchema,
+                    tags: TagSchema,
+                    scales: ScaleSchema,
+                },
+                `ws://localhost:9090/ephemeral/sync`,
             ),
-        // createInMemoryDeltaClient(
-        //     { cards: CardSchema },
-        //     `ws://localhost:9090/ephemeral/sync`,
-        // ),
         [],
     );
     const [col, cards] = useCollection(React, client, 'cards');
-    const [settingsCol, settings] = useCollection(React, client, 'settings');
+    const [tagsCol, tags] = useCollection(React, client, 'tags');
+    const [commentsCol, comments] = useCollection(React, client, 'comments');
+    const [scalesCol, scales] = useCollection(React, client, 'scales');
 
     const [state, dispatch] = React.useReducer(reducer, initialState);
     const currentState = React.useRef(state);
@@ -708,116 +569,81 @@ const Whiteboard = () => {
 
     if (!Object.keys(cards).length) {
         return (
-            <div
-                css={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    bottom: 0,
-                    right: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
-                <h1>Welcome to the Miller Card Sort!</h1>
-                <h4>Instructions</h4>
-                <ul>
-                    <li>Drag cards around</li>
-                    <li>
-                        Hover a card &amp; press a number or letter key to "tag"
-                        the card
-                    </li>
-                    <li>Click a tag to select all cards with that tag</li>
-                    <li>
-                        use shift+1, shift+2, and shift+3 to organize selected
-                        cards into 1, 2 or 3 columns
-                    </li>
-                </ul>
-                <button
-                    css={{
-                        marginTop: 32,
-                        fontSize: '2em',
-                        border: 'none',
-                        backgroundColor: '#0af',
-                        padding: '8px 16px',
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                    }}
-                    onClick={() => {
+            <Welcome
+                onStart={() => {
+                    () => {
                         makeDefaultHeadings(client.getStamp).forEach(card => {
                             col.save(card.id, card);
                         });
                         makeDefaultCards(client.getStamp).forEach(card => {
                             col.save(card.id, card);
                         });
-                    }}
-                >
-                    Click here to get started
-                </button>
-            </div>
+                    };
+                }}
+            />
         );
     }
 
     return (
         <div>
-            <div
-                style={{
-                    position: 'absolute',
-                    zIndex: 10000,
-                    boxShadow: '0 0 2px #666',
-                    backgroundColor: 'white',
-                    padding: 4,
-                    bottom: 10,
-                    left: 10,
-                }}
-                onClick={evt => evt.stopPropagation()}
-                onMouseDown={evt => evt.stopPropagation()}
-            >
-                <input
-                    type="range"
-                    min="0"
-                    max={zoomLevels.length - 1}
-                    value={zoomLevels.indexOf(state.zoom)}
-                    onMouseDown={evt => evt.stopPropagation()}
+            {!flashcard ? (
+                <div
+                    style={{
+                        position: 'absolute',
+                        zIndex: 10000,
+                        boxShadow: '0 0 2px #666',
+                        backgroundColor: 'white',
+                        padding: 4,
+                        bottom: 10,
+                        left: 10,
+                    }}
                     onClick={evt => evt.stopPropagation()}
-                    onChange={evt => {
-                        dispatch({
-                            type: 'zoom',
-                            zoom: zoomLevels[evt.target.value],
-                        });
-                    }}
-                    onMouseUp={evt => {
-                        evt.target.blur();
-                    }}
-                />
-                <button onClick={() => setFlashcard(true)}>
-                    Flashcard Mode
-                </button>
-                <AddCard
-                    onAdd={(title, description, header) => {
-                        const id = client.getStamp();
-                        const card = {
-                            id,
-                            title,
-                            description,
-                            header,
-                            position: {
-                                x: state.pan.x + DEFAULT_MARGIN * 4,
-                                y: state.pan.y + DEFAULT_MARGIN * 4,
-                            },
-                            size: {
-                                y: DEFAULT_HEIGHT,
-                                x: DEFAULT_WIDTH * (header != null ? 2 : 1),
-                            },
-                            disabled: false,
-                        };
-                        col.save(id, card);
-                    }}
-                />
-                {/* <AddHeader col={col} /> */}
-            </div>
+                    onMouseDown={evt => evt.stopPropagation()}
+                >
+                    <input
+                        type="range"
+                        min="0"
+                        max={zoomLevels.length - 1}
+                        value={zoomLevels.indexOf(state.zoom)}
+                        onMouseDown={evt => evt.stopPropagation()}
+                        onClick={evt => evt.stopPropagation()}
+                        onChange={evt => {
+                            dispatch({
+                                type: 'zoom',
+                                zoom: zoomLevels[evt.target.value],
+                            });
+                        }}
+                        onMouseUp={evt => {
+                            evt.target.blur();
+                        }}
+                    />
+                    <button onClick={() => setFlashcard(true)}>
+                        Flashcard Mode
+                    </button>
+                    <AddCard
+                        onAdd={(title, description, header) => {
+                            const id = client.getStamp();
+                            const card = {
+                                id,
+                                title,
+                                description,
+                                header,
+                                position: {
+                                    x: state.pan.x + DEFAULT_MARGIN * 4,
+                                    y: state.pan.y + DEFAULT_MARGIN * 4,
+                                },
+                                size: {
+                                    y: DEFAULT_HEIGHT,
+                                    x: DEFAULT_WIDTH * (header != null ? 2 : 1),
+                                },
+                                disabled: false,
+                            };
+                            col.save(id, card);
+                        }}
+                    />
+                    {/* <AddHeader col={col} /> */}
+                </div>
+            ) : null}
             {Object.keys(state.selection).length > 1 ? (
                 <div
                     style={{
@@ -898,7 +724,8 @@ const Whiteboard = () => {
                             key={card.id}
                             dragRef={dragRef}
                             panZoom={panZoom}
-                            settings={settings.default}
+                            tags={tags}
+                            scales={scales}
                             offset={
                                 dragOffset && state.selection[card.id]
                                     ? dragOffset
@@ -928,7 +755,7 @@ const Whiteboard = () => {
                 ) : null}
             </div>
             <MiniMap zoom={state.zoom} pan={state.pan} />
-            {!flashcard && (
+            {/* {!flashcard && (
                 <div
                     style={{
                         position: 'absolute',
@@ -953,13 +780,13 @@ const Whiteboard = () => {
                         }
                     />
                 </div>
-            )}
+            )} */}
             {flashcard ? (
                 <FlashcardMode
                     cards={cards}
                     col={col}
-                    settings={settings.default}
-                    settingsCol={settingsCol}
+                    tags={tags}
+                    scales={scales}
                     onDone={() => setFlashcard(false)}
                 />
             ) : null}
