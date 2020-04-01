@@ -15,6 +15,8 @@ import { type Schema, type Collection } from '../../../packages/client-bundle';
 import FlashcardMode from './FlashcardMode';
 import Key from './Key';
 import Welcome from './Welcome';
+import AddCard from './AddCard';
+import ColumnButtons from './Columns';
 
 import { reducer, initialState } from './state';
 
@@ -42,304 +44,15 @@ import {
 } from './types';
 
 import Card from './Card';
+import {
+    makeDefaultCards,
+    makeDefaultHeadings,
+    DEFAULT_HEIGHT,
+    DEFAULT_WIDTH,
+    DEFAULT_MARGIN,
+} from './defaults';
 
-const defaultCards = require('./data.json');
-
-const DEFAULT_HEIGHT = 100;
-const DEFAULT_WIDTH = 200;
-const DEFAULT_MARGIN = 12;
-1;
-const makeDefaultHeadings = (genId): Array<CardT> => {
-    const titles = `
-Most Important to Me
-Very Important To Me
-Important To Me
-Somewhat Important to Me
-Not Important to Me
-`
-        .trim()
-        .split('\n')
-        .map(title => title.trim());
-    return titles.map((title, i) => ({
-        id: genId(),
-        title,
-        description: '',
-        tags: {},
-        scales: {},
-        position: {
-            x: DEFAULT_MARGIN + i * (DEFAULT_WIDTH * 2.0 + DEFAULT_MARGIN),
-            y: DEFAULT_MARGIN + 50,
-        },
-        size: { y: DEFAULT_HEIGHT, x: DEFAULT_WIDTH * 2.0 },
-        header: 1,
-        disabled: false,
-    }));
-};
-
-const shuffle = array => {
-    return array
-        .map(item => [Math.random(), item])
-        .sort((a, b) => a[0] - b[0])
-        .map(item => item[1]);
-};
-
-const makeDefaultCards = (genId): Array<CardT> => {
-    return shuffle(defaultCards).map(({ description, title }, i): CardT => ({
-        id: genId(),
-        title,
-        description,
-        tags: {},
-        scales: {},
-        position: {
-            x:
-                DEFAULT_MARGIN +
-                parseInt(i / 10) * (DEFAULT_WIDTH + DEFAULT_MARGIN),
-            y:
-                DEFAULT_MARGIN +
-                500 +
-                (i % 10) * (DEFAULT_HEIGHT + DEFAULT_MARGIN),
-        },
-        size: { y: DEFAULT_HEIGHT, x: DEFAULT_WIDTH },
-        disabled: false,
-    }));
-};
-
-const MIN_MOVEMENT = 5;
-
-const onMove = (evt, state, dispatch, dragRef) => {
-    if (state.drag) {
-        const drag = state.drag;
-        evt.preventDefault();
-        evt.stopPropagation();
-        const screenPos = evtPos(evt);
-        const pos = fromScreen(screenPos, state.pan, state.zoom);
-        const diff = posDiff(drag.offset, pos);
-        const enough =
-            drag.enough ||
-            Math.max(Math.abs(diff.x), Math.abs(diff.y)) > MIN_MOVEMENT;
-        if (enough) {
-            dragRef.current = true;
-        }
-        dispatch({
-            type: 'set_drag',
-            drag: {
-                offset: drag.offset,
-                mouse: pos,
-                enough: enough,
-                screenPos,
-            },
-        });
-    } else if (state.dragSelect) {
-        const { dragSelect } = state;
-        evt.preventDefault();
-        evt.stopPropagation();
-        const pos = fromScreen(evtPos(evt), state.pan, state.zoom);
-        const enough = absMax(posDiff(dragSelect.position, pos)) > MIN_MOVEMENT;
-        if (enough) {
-            dragRef.current = true;
-        }
-        dispatch({
-            type: 'set_select',
-            dragSelect: {
-                position: dragSelect.position,
-                size: posDiff(dragSelect.position, pos),
-            },
-        });
-    }
-};
-
-const onMouseUp = (evt, state, cards, dispatch, col) => {
-    if (state.drag) {
-        const drag = state.drag;
-        if (drag.enough) {
-            const diff = posDiff(drag.offset, drag.mouse);
-            Object.keys(state.selection).forEach(key => {
-                col.setAttribute(
-                    key,
-                    ['position'],
-                    clamp(
-                        addPos(cards[key].position, diff),
-                        cards[key].size,
-                        BOUNDS,
-                    ),
-                );
-            });
-        }
-        evt.preventDefault();
-        evt.stopPropagation();
-        dispatch({ type: 'set_drag', drag: null });
-    } else if (state.dragSelect) {
-        const { dragSelect } = state;
-        const newSelection = {};
-        let anySelected = false;
-        Object.keys(cards).forEach(key => {
-            if (
-                rectIntersect(
-                    {
-                        position: cards[key].position,
-                        size: cards[key].size,
-                    },
-                    normalizedRect(dragSelect),
-                )
-            ) {
-                anySelected = true;
-                newSelection[key] = true;
-            }
-        });
-        dispatch({ type: 'set_select', dragSelect: null });
-        if (anySelected) {
-            dispatch(
-                evt.metaKey || evt.shiftKey
-                    ? {
-                          type: 'add_selection',
-                          selection: newSelection,
-                      }
-                    : {
-                          type: 'replace_selection',
-                          selection: newSelection,
-                      },
-            );
-        }
-    }
-};
-
-const arrangeCards = (
-    cards: { [key: string]: CardT },
-    selection,
-    columns,
-    collection,
-) => {
-    // if they're already roughly in a grid, it would be nice to maintain that...
-    const selectedCards = Object.keys(selection).map(key => cards[key]);
-    if (!selectedCards.length) {
-        return;
-    }
-    selectedCards.sort((c1, c2) => {
-        if ((c1.header || 0) > (c2.header || 0)) {
-            return -1;
-        }
-        if ((c2.header || 0) > (c1.header || 0)) {
-            return 1;
-        }
-        // if one is *definitely* higher than the other (more than 50% of the height), then it's before
-        // otherwise, if one is *definiely* to the left of the other one, it's before
-        // otherwise, compare dx & dy, whichever's bigger?
-        if (c1.position.y + c1.size.y * 0.75 < c2.position.y) {
-            return -1;
-        }
-        if (c2.position.y + c2.size.y * 0.75 < c1.position.y) {
-            return 1;
-        }
-        if (c1.position.x + c1.size.x * 0.75 < c2.position.x) {
-            return -1;
-        }
-        if (c2.position.x + c2.size.x * 0.75 < c1.position.x) {
-            return 1;
-        }
-        const dx = c1.position.x - c2.position.x;
-        const dy = c1.position.y - c2.position.y;
-        if (Math.abs(dx) > Math.abs(dy)) {
-            return dx;
-        } else {
-            return dy;
-        }
-    });
-    let minX = selectedCards[0].position.x;
-    let minY = selectedCards[0].position.y;
-    selectedCards.forEach(card => {
-        minX = Math.min(minX, card.position.x);
-        minY = Math.min(minY, card.position.y);
-    });
-    const rows = Math.ceil(selectedCards.length / columns);
-    let x = minX;
-    let y = minY;
-    let rowHeight = 0;
-    selectedCards.forEach((card, i) => {
-        if (i % columns === 0 && i !== 0) {
-            x = minX;
-            y += rowHeight + DEFAULT_MARGIN;
-            rowHeight = 0;
-        }
-        rowHeight = Math.max(rowHeight, card.size.y);
-        if (x !== card.position.x || y !== card.position.y) {
-            collection.setAttribute(card.id, ['position'], { x, y });
-        }
-
-        x += card.size.x + DEFAULT_MARGIN;
-    });
-};
-
-const AddCard = ({ onAdd }) => {
-    const [adding, setAdding] = React.useState(false);
-    const [title, setTitle] = React.useState('');
-    const [description, setDescription] = React.useState('');
-    const [header, setHeader] = React.useState(null);
-    return (
-        <div>
-            <button onClick={() => setAdding(true)}>+ Card</button>
-            {adding ? (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: '50%',
-                        left: '50%',
-                        width: 300,
-                        height: 200,
-                        marginLet: -150,
-                        marginTop: -100,
-                        backgroundColor: 'white',
-                        margin: 32,
-                        boxShadow: '0 0 5px #666',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <strong>
-                        Add a {header === null ? 'normal' : 'header'} card
-                    </strong>
-                    <button
-                        onClick={() => setHeader(header === null ? 1 : null)}
-                    >
-                        {header !== null ? 'Header card' : 'Normal card'}
-                    </button>
-                    <input
-                        style={{ display: 'block' }}
-                        onChange={evt => setTitle(evt.target.value)}
-                        value={title}
-                        placeholder="Title"
-                    />
-                    <input
-                        style={{ display: 'block' }}
-                        onChange={evt => setDescription(evt.target.value)}
-                        value={description}
-                        placeholder="Description"
-                    />
-                    <button
-                        onClick={() => {
-                            onAdd(title, description, header);
-                            setAdding(false);
-                            setTitle('');
-                            setDescription('');
-                        }}
-                    >
-                        Save
-                    </button>
-                    <button
-                        onClick={() => {
-                            setAdding(false);
-                            setTitle('');
-                            setDescription('');
-                        }}
-                    >
-                        Cancel
-                    </button>
-                </div>
-            ) : null}
-        </div>
-    );
-};
+import { onMove, onMouseUp } from './dragUtils';
 
 const Whiteboard = () => {
     // we're assuming we're authed, and cookies are taking care of things.
@@ -425,31 +138,6 @@ const Whiteboard = () => {
             }
             if (evt.key === 'z' && (evt.metaKey || evt.ctrlKey)) {
                 client.undo();
-            }
-
-            if (evt.key === '!') {
-                return arrangeCards(
-                    currentCards.current,
-                    currentState.current.selection,
-                    1,
-                    col,
-                );
-            }
-            if (evt.key === '@') {
-                return arrangeCards(
-                    currentCards.current,
-                    currentState.current.selection,
-                    2,
-                    col,
-                );
-            }
-            if (evt.key === '#') {
-                return arrangeCards(
-                    currentCards.current,
-                    currentState.current.selection,
-                    3,
-                    col,
-                );
             }
 
             // The Tags!
@@ -571,14 +259,12 @@ const Whiteboard = () => {
         return (
             <Welcome
                 onStart={() => {
-                    () => {
-                        makeDefaultHeadings(client.getStamp).forEach(card => {
-                            col.save(card.id, card);
-                        });
-                        makeDefaultCards(client.getStamp).forEach(card => {
-                            col.save(card.id, card);
-                        });
-                    };
+                    makeDefaultHeadings(client.getStamp).forEach(card => {
+                        col.save(card.id, card);
+                    });
+                    makeDefaultCards(client.getStamp).forEach(card => {
+                        col.save(card.id, card);
+                    });
                 }}
             />
         );
@@ -641,66 +327,14 @@ const Whiteboard = () => {
                             col.save(id, card);
                         }}
                     />
-                    {/* <AddHeader col={col} /> */}
                 </div>
             ) : null}
             {Object.keys(state.selection).length > 1 ? (
-                <div
-                    style={{
-                        position: 'absolute',
-                        zIndex: 1000,
-                        left: '50%',
-                        // marginLeft: '-50%',
-                        top: 0,
-                    }}
-                    onClick={evt => evt.stopPropagation()}
-                    onMouseDown={evt => evt.stopPropagation()}
-                >
-                    <button
-                        style={{
-                            border: '1px solid #ccc',
-                            padding: '4px 12px',
-                            backgroundColor: 'white',
-                            fontSize: 24,
-                        }}
-                        onClick={() => {
-                            arrangeCards(cards, state.selection, 1, col);
-                        }}
-                    >
-                        {/* 1 column */}
-                        ||
-                    </button>
-                    <button
-                        style={{
-                            border: '1px solid #ccc',
-                            padding: '4px 12px',
-                            backgroundColor: 'white',
-                            fontSize: 24,
-                            marginLeft: 12,
-                        }}
-                        onClick={() => {
-                            arrangeCards(cards, state.selection, 2, col);
-                        }}
-                    >
-                        {/* 2 columns */}
-                        |||
-                    </button>
-                    <button
-                        style={{
-                            border: '1px solid #ccc',
-                            padding: '4px 12px',
-                            backgroundColor: 'white',
-                            fontSize: 24,
-                            marginLeft: 12,
-                        }}
-                        onClick={() => {
-                            arrangeCards(cards, state.selection, 3, col);
-                        }}
-                    >
-                        {/* 3 columns */}
-                        ||||
-                    </button>
-                </div>
+                <ColumnButtons
+                    cards={cards}
+                    col={col}
+                    selection={state.selection}
+                />
             ) : null}
             <div
                 style={{
@@ -794,13 +428,15 @@ const Whiteboard = () => {
     );
 };
 
+const styles = {};
+
 const MiniMap = ({ zoom, pan }) => {
     const width = 100;
     const height = (BOUNDS.size.y / BOUNDS.size.x) * width;
     const iw = window.innerWidth / zoom / BOUNDS.size.x;
     const ih = window.innerHeight / zoom / BOUNDS.size.y;
-    const x = (pan.x - BOUNDS.position.x) / BOUNDS.size.x; // - window.innerWidth);
-    const y = (pan.y - BOUNDS.position.y) / BOUNDS.size.y; // - window.innerHeight);
+    const x = (pan.x - BOUNDS.position.x) / BOUNDS.size.x;
+    const y = (pan.y - BOUNDS.position.y) / BOUNDS.size.y;
     return (
         <div
             style={{
@@ -835,13 +471,3 @@ if (document.body) {
     document.body.appendChild(root);
     render(<App />, root);
 }
-
-// const setupDelta = () => {
-//     return createDeltaClient(
-//         newCrdt,
-//         schemas,
-//         new PersistentClock(localStorageClockPersist('local-first')),
-//         makeDeltaPersistence('local-first', ['tasks', 'notes']),
-//         createWebSocketNetwork('ws://localhost:9900/sync'),
-//     );
-// };
