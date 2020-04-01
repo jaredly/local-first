@@ -1,17 +1,9 @@
 // @flow
 import React from 'react';
 
-import type { pos, rect } from './types';
+import type { pos, rect } from '../types';
 
-const MiniMap = ({
-    zoom,
-    pan,
-    BOUNDS,
-}: {
-    zoom: number,
-    pan: pos,
-    BOUNDS: rect,
-}) => {
+const MiniMap = ({ zoom, pan, BOUNDS }: { zoom: number, pan: pos, BOUNDS: rect }) => {
     const width = 100;
     const height = (BOUNDS.size.y / BOUNDS.size.x) * width;
     const iw = window.innerWidth / zoom / BOUNDS.size.x;

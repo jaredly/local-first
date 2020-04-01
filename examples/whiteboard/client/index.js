@@ -9,36 +9,32 @@ import {
 } from '../../../packages/client-bundle';
 import { default as makeDeltaInMemoryPersistence } from '../../../packages/idb/src/delta-mem';
 
-import { reducer, initialState, type State, type Action } from './state';
+import { reducer, initialState, type State, type Action } from './whiteboard/state';
 
-import MiniMap from './MiniMap';
+import MiniMap from './whiteboard/MiniMap';
 
 import { TagSchema, ScaleSchema, CommentSchema, CardSchema } from './types';
 
-import Whiteboard from './Whiteboard';
+import Main from './Main';
+
+const schemas = {
+    cards: CardSchema,
+    comments: CommentSchema,
+    tags: TagSchema,
+    scales: ScaleSchema,
+};
 
 const App = () => {
     // We're assuming we're authed, and cookies are taking care of things.
     const client = React.useMemo(
-        () =>
-            // createPersistedBlobClient(
-            //     'miller-values-sort',
-            //     { cards: CardSchema, settings: SettingsSchema },
-            //     null,
-            //     1,
-            // ),
-            createInMemoryDeltaClient(
-                {
-                    cards: CardSchema,
-                    comments: CommentSchema,
-                    tags: TagSchema,
-                    scales: ScaleSchema,
-                },
-                `ws://localhost:9090/ephemeral/sync`,
-            ),
+        () => createPersistedBlobClient('miller-values-sort', schemas, null, 1),
+        // createInMemoryDeltaClient(
+        // schemas,
+        //     `ws://localhost:9090/ephemeral/sync`,
+        // ),
         [],
     );
-    return <Whiteboard client={client} />;
+    return <Main client={client} />;
 };
 
 const root = document.createElement('div');

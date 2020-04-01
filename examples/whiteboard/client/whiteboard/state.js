@@ -13,7 +13,7 @@ import {
     toScreen,
     fromScreen,
     BOUNDS,
-} from './types';
+} from '../types';
 
 export type State = {
     selection: { [key: string]: boolean },

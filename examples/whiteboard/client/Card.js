@@ -23,7 +23,7 @@ import {
     BOUNDS,
 } from './types';
 
-import type { Action } from './state';
+import type { Action } from './whiteboard/state';
 
 type Props = {
     offset: ?pos,
@@ -63,9 +63,7 @@ const Card = ({
     selectAllWith,
     currentHover,
 }: Props) => {
-    const pos = offset
-        ? clamp(addPos(card.position, offset), card.size, BOUNDS)
-        : card.position;
+    const pos = offset ? clamp(addPos(card.position, offset), card.size, BOUNDS) : card.position;
     const [editing, setEditing] = React.useState(null);
     return (
         <div
@@ -107,21 +105,14 @@ const Card = ({
                           backgroundColor: 'white',
                       }
                     : {
-                          fontSize:
-                              fontSizes[
-                                  Math.min(card.header, fontSizes.length - 1)
-                              ],
+                          fontSize: fontSizes[Math.min(card.header, fontSizes.length - 1)],
                           backgroundColor: 'transparent',
                       },
             ]}
             onMouseDown={evt => {
                 evt.preventDefault();
                 const screenPos = evtPos(evt);
-                const pos = fromScreen(
-                    screenPos,
-                    panZoom.current.pan,
-                    panZoom.current.zoom,
-                );
+                const pos = fromScreen(screenPos, panZoom.current.pan, panZoom.current.zoom);
                 dispatch({
                     type: 'start_drag',
                     pos,
@@ -174,9 +165,7 @@ const Card = ({
                         onMouseDown={evt => evt.stopPropagation()}
                         onClick={evt => evt.stopPropagation()}
                         value={editing.title}
-                        onChange={evt =>
-                            setEditing({ ...editing, title: evt.target.value })
-                        }
+                        onChange={evt => setEditing({ ...editing, title: evt.target.value })}
                         style={{
                             fontWeight: 'inherit',
                             fontFamily: 'inherit',
@@ -223,11 +212,7 @@ const Card = ({
                     <button
                         onClick={() => {
                             col.setAttribute(card.id, ['title'], editing.title);
-                            col.setAttribute(
-                                card.id,
-                                ['description'],
-                                editing.description,
-                            );
+                            col.setAttribute(card.id, ['description'], editing.description);
                             setEditing(null);
                         }}
                     >

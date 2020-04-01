@@ -1,6 +1,6 @@
 // @flow
 
-import { type Drag, type State, type Action } from './state';
+import { type Drag, type State, type Action } from './whiteboard/state';
 import { type CardT } from './types';
 
 import { type Collection } from '../../../packages/client-bundle';
@@ -61,9 +61,7 @@ export const onMove = (
         const screenPos = evtPos(evt);
         const pos = fromScreen(screenPos, state.pan, state.zoom);
         const diff = posDiff(drag.offset, pos);
-        const enough =
-            drag.enough ||
-            Math.max(Math.abs(diff.x), Math.abs(diff.y)) > MIN_MOVEMENT;
+        const enough = drag.enough || Math.max(Math.abs(diff.x), Math.abs(diff.y)) > MIN_MOVEMENT;
         if (enough) {
             dragRef.current = true;
         }
@@ -110,11 +108,7 @@ export const onMouseUp = (
                 col.setAttribute(
                     key,
                     ['position'],
-                    clamp(
-                        addPos(cards[key].position, diff),
-                        cards[key].size,
-                        BOUNDS,
-                    ),
+                    clamp(addPos(cards[key].position, diff), cards[key].size, BOUNDS),
                 );
             });
         }

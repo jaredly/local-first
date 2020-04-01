@@ -22,14 +22,11 @@ const Welcome = ({ onStart }: { onStart: () => void }) => {
             <h4>Instructions</h4>
             <ul>
                 <li>Drag cards around</li>
-                <li>
-                    Hover a card &amp; press a number or letter key to "tag" the
-                    card
-                </li>
+                <li>Hover a card &amp; press a number or letter key to "tag" the card</li>
                 <li>Click a tag to select all cards with that tag</li>
                 <li>
-                    use shift+1, shift+2, and shift+3 to organize selected cards
-                    into 1, 2 or 3 columns
+                    use shift+1, shift+2, and shift+3 to organize selected cards into 1, 2 or 3
+                    columns
                 </li>
             </ul>
             <button

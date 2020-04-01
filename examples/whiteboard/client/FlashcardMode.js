@@ -3,10 +3,29 @@
 import { jsx } from '@emotion/core';
 import React from 'react';
 
-import { tagStyle, createTagStyle, tagName } from './Card';
+import { tagStyle, createTagStyle } from './Card';
 import Key from './Key';
+import TagsUI from './TagsUI';
+import { type Collection } from '../../../packages/client-bundle';
+import { type CardT, type TagT, type ScaleT, colors } from './types';
 
-const FlashcardMode = ({ col, cards, onDone }) => {
+const FlashcardMode = ({
+    col,
+    cards,
+    onDone,
+    tags,
+    scales,
+    tagsCol,
+    scalesCol,
+}: {
+    onDone: () => void,
+    col: Collection<CardT>,
+    cards: { [key: string]: CardT },
+    tagsCol: Collection<TagT>,
+    tags: { [key: string]: TagT },
+    scalesCol: Collection<ScaleT>,
+    scales: { [key: string]: ScaleT },
+}) => {
     const idsInOrder = React.useMemo(() => {
         return Object.keys(cards).filter(id => cards[id].header == null);
     }, [cards]);
@@ -20,67 +39,90 @@ const FlashcardMode = ({ col, cards, onDone }) => {
         }
     }, 0);
 
-    const card = cards[idsInOrder[index]];
+    // const currentId = React.useRef('');
+    // const currentCards = React.useRef({});
 
+    // React.useEffect(() => {
+    //     const key = evt => ;
+    //     window.addEventListener('keydown', key, true);
+    //     // window.addEventListener('keydown', key, true)
+    //     return () => {
+    //         window.removeEventListener('keydown', key, true);
+    //         // window.removeEventListener('keydown', key, true)
+    //     };
+    // }, []);
+
+    const key = React.useRef(null);
+
+    const mounted = React.useRef(false);
+
+    const card = cards[idsInOrder[index]];
     if (!card) {
+        console.log('nope');
         // TODO
         return <div />;
     }
-    const currentId = React.useRef(card.id);
-    currentId.current = card.id;
-    const currentCards = React.useRef(cards);
-    currentCards.current = cards;
 
-    React.useEffect(() => {
-        const key = evt => {
-            if (evt.target !== document.body) {
-                return;
-            }
-            if (evt.metaKey || evt.ctrlKey || evt.shiftKey) {
-                return;
-            }
-            evt.stopPropagation();
-            evt.preventDefault();
-            const card = currentCards.current[currentId.current];
-            const digits = '0123456789';
-            if (digits.includes(evt.key)) {
-                const number = +evt.key;
-                if (card.number === number) {
-                    col.setAttribute(card.id, ['number'], null);
-                } else if (card.number !== number) {
-                    col.setAttribute(card.id, ['number'], number);
-                }
-            }
-            const letters = 'abcdefghijklmnopqrstuvwxyz';
-            if (letters.includes(evt.key)) {
-                const letter = evt.key;
-                if (card.letter === letter) {
-                    col.setAttribute(card.id, ['letter'], null);
-                } else if (card.letter !== letter) {
-                    col.setAttribute(card.id, ['letter'], letter);
-                }
-            }
-            if (
-                evt.key === 'Enter' ||
-                evt.key === ' ' ||
-                evt.key === 'ArrowRight'
-            ) {
-                dispatch('next');
-            }
-            if (evt.key === 'ArrowLeft') {
-                dispatch('prev');
-            }
-        };
-        window.addEventListener('keydown', key, true);
-        // window.addEventListener('keydown', key, true)
-        return () => {
-            window.removeEventListener('keydown', key, true);
-            // window.removeEventListener('keydown', key, true)
-        };
-    }, []);
+    // currentId.current = card.id;
+    // currentCards.current = cards;
 
     return (
         <div
+            tabIndex="0"
+            ref={node => {
+                if (node && !mounted.current) {
+                    mounted.current = true;
+                    node.focus();
+                }
+            }}
+            onKeyDown={evt => {
+                if (evt.key === 'Tab' && evt.shiftKey) {
+                    dispatch('prev');
+                    evt.stopPropagation();
+                    evt.preventDefault();
+                    return;
+                }
+                if (evt.metaKey || evt.ctrlKey || evt.shiftKey) {
+                    return;
+                }
+                evt.stopPropagation();
+                evt.preventDefault();
+                if (key.current) {
+                    if (key.current(evt)) {
+                        return;
+                    }
+                }
+                // const card = cards[.current];
+                // const digits = '0123456789';
+                // if (digits.includes(evt.key)) {
+                //     const number = +evt.key;
+                //     if (card.number === number) {
+                //         col.setAttribute(card.id, ['number'], null);
+                //     } else if (card.number !== number) {
+                //         col.setAttribute(card.id, ['number'], number);
+                //     }
+                // }
+                // const letters = 'abcdefghijklmnopqrstuvwxyz';
+                // if (letters.includes(evt.key)) {
+                //     const letter = evt.key;
+                //     if (card.letter === letter) {
+                //         col.setAttribute(card.id, ['letter'], null);
+                //     } else if (card.letter !== letter) {
+                //         col.setAttribute(card.id, ['letter'], letter);
+                //     }
+                // }
+                if (
+                    evt.key === 'Tab' ||
+                    evt.key === 'Enter' ||
+                    evt.key === ' ' ||
+                    evt.key === 'ArrowRight'
+                ) {
+                    dispatch('next');
+                }
+                if (evt.key === 'ArrowLeft') {
+                    dispatch('prev');
+                }
+            }}
             style={{
                 position: 'absolute',
                 top: 0,
@@ -105,40 +147,23 @@ const FlashcardMode = ({ col, cards, onDone }) => {
             >
                 Close
             </button>
-            <div
-                style={{
-                    position: 'absolute',
-                    left: 10,
-                    top: 50,
-                    fontSize: 24,
+            <TagsUI
+                selection={{ [card.id]: true }}
+                cards={cards}
+                cardsCol={col}
+                tags={tags}
+                tagsCol={tagsCol}
+                scales={scales}
+                scalesCol={scalesCol}
+                setKey={fn => {
+                    key.current = fn;
                 }}
-            >
-                {/* <Key
-                    cards={cards}
-                    settings={settings}
-                    settingsCol={settingsCol}
-                    selectByTag={() => {}}
-                /> */}
-            </div>
-            <div style={{ fontWeight: 'bold', marginBottom: 32 }}>
-                {card.title}
-            </div>
+                clearKey={() => {
+                    key.current = null;
+                }}
+            />
+            <div style={{ fontWeight: 'bold', marginBottom: 32 }}>{card.title}</div>
             <div style={{ marginBottom: 32 }}>{card.description}</div>
-            <div style={{ marginBottom: 64, height: '1.5em' }}>
-                {card.number != null ? (
-                    <span
-                        css={[tagStyle, { marginRight: 12 }]}
-                        style={createTagStyle(card.number + '')}
-                    >
-                        {card.number}
-                    </span>
-                ) : null}
-                {card.letter != null ? (
-                    <span css={tagStyle} style={createTagStyle(card.letter)}>
-                        {card.letter.toUpperCase()}
-                    </span>
-                ) : null}
-            </div>
             <div>
                 {index + 1} / {idsInOrder.length}
             </div>

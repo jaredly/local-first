@@ -9,14 +9,8 @@ export type rect = { position: pos, size: pos };
 
 export const clamp = (pos: pos, size: pos, range: rect) => {
     return {
-        x: Math.min(
-            Math.max(range.position.x, pos.x),
-            range.position.x + range.size.x - size.x,
-        ),
-        y: Math.min(
-            Math.max(range.position.y, pos.y),
-            range.position.y + range.size.y - size.y,
-        ),
+        x: Math.min(Math.max(range.position.x, pos.x), range.position.x + range.size.x - size.x),
+        y: Math.min(Math.max(range.position.y, pos.y), range.position.y + range.size.y - size.y),
     };
 };
 
@@ -55,14 +49,10 @@ export const evtPos = (evt: { clientX: number, clientY: number }): pos => ({
 
 export const rectIntersect = (one: rect, two: rect) => {
     return (
-        ((two.position.x <= one.position.x &&
-            one.position.x <= two.position.x + two.size.x) ||
-            (one.position.x <= two.position.x &&
-                two.position.x <= one.position.x + one.size.x)) &&
-        ((two.position.y <= one.position.y &&
-            one.position.y <= two.position.y + two.size.y) ||
-            (one.position.y <= two.position.y &&
-                two.position.y <= one.position.y + one.size.y))
+        ((two.position.x <= one.position.x && one.position.x <= two.position.x + two.size.x) ||
+            (one.position.x <= two.position.x && two.position.x <= one.position.x + one.size.x)) &&
+        ((two.position.y <= one.position.y && one.position.y <= two.position.y + two.size.y) ||
+            (one.position.y <= two.position.y && two.position.y <= one.position.y + one.size.y))
     );
 };
 
@@ -188,8 +178,7 @@ export const CardSchema: Schema = {
 };
 export type pos = {| x: number, y: number |};
 
-const colorsRaw =
-    '1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf';
+const colorsRaw = '1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf';
 export const colors = [];
 for (let i = 0; i < colorsRaw.length; i += 6) {
     colors.push('#' + colorsRaw.slice(i, i + 6));

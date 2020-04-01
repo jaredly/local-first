@@ -8,19 +8,12 @@ import {
     type Collection,
     type Client,
     type SyncStatus,
-} from '../../../packages/client-bundle';
+} from '../../../../packages/client-bundle';
 
-import {
-    type pos,
-    type rect,
-    type CardT,
-    CardSchema,
-    evtPos,
-    fromScreen,
-} from './types';
+import { type pos, type rect, type CardT, CardSchema, evtPos, fromScreen } from '../types';
 
-import { onMove, onMouseUp, dragScroll } from './dragUtils';
-import { keyboardTags } from './keyboard';
+import { onMove, onMouseUp, dragScroll } from '../dragUtils';
+import { keyboardTags } from '../keyboard';
 
 const useWhiteboardEvents = ({
     client,
@@ -72,24 +65,16 @@ const useWhiteboardEvents = ({
                 return;
             }
             const keys =
-                currentHover.current &&
-                !currentState.current.selection[currentHover.current]
+                currentHover.current && !currentState.current.selection[currentHover.current]
                     ? [currentHover.current]
                     : Object.keys(currentState.current.selection);
             if (!keys.length) return;
 
             keyboardTags(evt.key, keys, currentCards.current, col);
         };
-        const move = evt =>
-            onMove(evt, currentState.current, dispatch, dragRef);
+        const move = evt => onMove(evt, currentState.current, dispatch, dragRef);
         const up = evt => {
-            onMouseUp(
-                evt,
-                currentState.current,
-                currentCards.current,
-                dispatch,
-                col,
-            );
+            onMouseUp(evt, currentState.current, currentCards.current, dispatch, col);
         };
         const down = evt => {
             if (document.activeElement !== document.body) {
