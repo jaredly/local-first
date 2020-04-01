@@ -23,7 +23,7 @@ import {
     BOUNDS,
 } from './types';
 
-import type { Action } from '.';
+import type { Action } from './state';
 
 type Props = {
     offset: ?pos,

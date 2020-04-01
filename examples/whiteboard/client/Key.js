@@ -6,7 +6,7 @@ import React from 'react';
 import { tagStyle, createTagStyle, tagName } from './Card';
 
 import { type Schema, type Collection } from '../../../packages/client-bundle';
-import { type SettingsT, type CardT, SettingsSchema } from './types';
+import { type CardT } from './types';
 
 const Key = ({
     cards,
