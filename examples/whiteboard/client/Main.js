@@ -67,7 +67,7 @@ const Whiteboard = ({
     const panZoom = React.useRef({ pan: state.pan, zoom: state.zoom });
     panZoom.current = { pan: state.pan, zoom: state.zoom };
 
-    const { currentHover, dragRef } = useWhiteboardEvents({
+    const { currentHover, dragRef, backgroundRef } = useWhiteboardEvents({
         client,
         state,
         cards,
@@ -93,7 +93,16 @@ const Whiteboard = ({
     );
 
     return (
-        <div>
+        <div
+            ref={node => (backgroundRef.current = node)}
+            style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                bottom: 0,
+                right: 0,
+            }}
+        >
             <Hud
                 state={state}
                 dispatch={dispatch}
@@ -112,6 +121,7 @@ const Whiteboard = ({
                     top: -state.pan.y * state.zoom,
                     left: -state.pan.x * state.zoom,
                     transform: `scale(${state.zoom.toFixed(2)})`,
+                    mouseEvents: 'none',
                 }}
             >
                 {Object.keys(cards)

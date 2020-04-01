@@ -2,6 +2,7 @@
 /** @jsx jsx */
 import { jsx } from '@emotion/core';
 import React from 'react';
+import parseColor from 'parse-color';
 
 import { type Collection } from '../../../packages/client-bundle';
 
@@ -76,6 +77,8 @@ const Scale = ({
             values[at] += 1;
         }
     });
+    const color = parseColor(scale.color);
+    const maxV = Math.max(1, ...values);
 
     return (
         <div
@@ -129,14 +132,29 @@ const Scale = ({
                                     borderColor: '#0af',
                                 },
                             },
-                            v ? { backgroundColor: '#0af' } : {},
                         ]}
-                        style={v ? { backgroundColor: scale.color } : null}
+                        style={
+                            v
+                                ? {
+                                      backgroundColor: `rgba(${color.rgb[0]},${color.rgb[1]},${
+                                          color.rgb[2]
+                                      },${v / maxV})`,
+                                  }
+                                : null
+                        }
                     >
-                        {i + scale.min}
-                        {cards.length !== 1 ? (
-                            <div css={{ position: 'absolute', fontSize: '60%' }}>{v}</div>
-                        ) : null}
+                        {cards.length === 1 ? (
+                            i + scale.min
+                        ) : (
+                            <React.Fragment>
+                                <div
+                                    css={{ position: 'absolute', fontSize: '60%', top: 4, left: 4 }}
+                                >
+                                    {i + scale.min}
+                                </div>
+                                {v}
+                            </React.Fragment>
+                        )}
                     </div>
                 ))}
             </div>
@@ -174,7 +192,10 @@ const TagsUI = ({
         .sort()
         .map(key => tags[key]);
 
-    const selectedCards = Object.keys(selection).map(k => cards[k]);
+    const selectedIds = Object.keys(selection);
+    const selectedCards = (selectedIds.length ? selectedIds : Object.keys(cards)).map(
+        k => cards[k],
+    );
 
     const [addingTag, setAddingTag] = React.useState(null);
     const [addingScale, setAddingScale] = React.useState(null);

@@ -4,6 +4,8 @@ import { jsx } from '@emotion/core';
 import { render } from 'react-dom';
 import React from 'react';
 
+import parseColor from 'parse-color';
+
 import { type Schema, type Collection } from '../../../packages/client-bundle';
 import {
     type pos,
@@ -49,6 +51,9 @@ const fontSizes = ['1.1em', '1.5em', '1.7em', '2em', '2.2em'];
 //     return tag.toUpperCase();
 // };
 
+const colorWithAlpha = (color, alpha) =>
+    `rgba(${color.rgb[0]},${color.rgb[1]},${color.rgb[2]},${alpha})`;
+
 const Card = ({
     offset,
     card,
@@ -88,6 +93,8 @@ const Card = ({
                 left: pos.x,
                 width: card.size.x,
                 height: card.size.y,
+                display: 'flex',
+                flexDirection: 'column',
                 backgroundColor: selected || hovered ? 'aliceblue' : undefined,
             }}
             css={[
@@ -221,6 +228,34 @@ const Card = ({
                     <button onClick={() => setEditing(null)}>Cancel</button>
                 </div>
             ) : null}
+            <div style={{ flex: 1 }} />
+            <div style={{ display: 'flex' }}>
+                {Object.keys(card.scales)
+                    .filter(sid => card.scales[sid] != null)
+                    .sort()
+                    .map(sid => scales[sid])
+                    .filter(Boolean)
+                    .map(scale => (
+                        <div
+                            key={scale.id}
+                            css={{
+                                padding: '4px 8px',
+                                borderRadius: 3,
+                            }}
+                            style={{
+                                backgroundColor: colorWithAlpha(
+                                    parseColor(scale.color),
+                                    ((card.scales[scale.id] - scale.min) /
+                                        (scale.max - scale.min)) *
+                                        0.5 +
+                                        0.5,
+                                ),
+                            }}
+                        >
+                            {card.scales[scale.id]}
+                        </div>
+                    ))}
+            </div>
         </div>
     );
 };

@@ -7,6 +7,7 @@
         "broadcast-channel": "^3.0.3",
         "idb": "^5.0.1",
         "parcel": "^1.12.4",
+        "parse-color": "^1.0.0",
         "react": "^16.13.1",
         "react-dom": "^16.13.1"
     },

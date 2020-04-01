@@ -34,6 +34,8 @@ const useWhiteboardEvents = ({
     currentCards.current = cards;
     const dragRef = React.useRef<boolean>(false);
 
+    const backgroundRef = React.useRef<?Node>(null);
+
     const currentHover = React.useRef<?string>(null);
 
     React.useEffect(() => {
@@ -80,6 +82,9 @@ const useWhiteboardEvents = ({
             if (document.activeElement !== document.body) {
                 return;
             }
+            if (evt.target !== backgroundRef.current) {
+                return;
+            }
             evt.preventDefault();
             const pos = fromScreen(
                 evtPos(evt),
@@ -90,6 +95,9 @@ const useWhiteboardEvents = ({
             dragRef.current = false;
         };
         const click = evt => {
+            if (evt.target !== backgroundRef.current) {
+                return;
+            }
             if (!dragRef.current && !evt.metaKey && !evt.shiftKey) {
                 dispatch({ type: 'replace_selection', selection: {} });
             }
@@ -119,7 +127,7 @@ const useWhiteboardEvents = ({
         };
     }, []);
 
-    return { currentHover, dragRef };
+    return { currentHover, dragRef, backgroundRef };
 };
 
 export default useWhiteboardEvents;

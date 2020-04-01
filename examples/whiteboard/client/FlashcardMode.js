@@ -94,25 +94,6 @@ const FlashcardMode = ({
                         return;
                     }
                 }
-                // const card = cards[.current];
-                // const digits = '0123456789';
-                // if (digits.includes(evt.key)) {
-                //     const number = +evt.key;
-                //     if (card.number === number) {
-                //         col.setAttribute(card.id, ['number'], null);
-                //     } else if (card.number !== number) {
-                //         col.setAttribute(card.id, ['number'], number);
-                //     }
-                // }
-                // const letters = 'abcdefghijklmnopqrstuvwxyz';
-                // if (letters.includes(evt.key)) {
-                //     const letter = evt.key;
-                //     if (card.letter === letter) {
-                //         col.setAttribute(card.id, ['letter'], null);
-                //     } else if (card.letter !== letter) {
-                //         col.setAttribute(card.id, ['letter'], letter);
-                //     }
-                // }
                 if (
                     evt.key === 'Tab' ||
                     evt.key === 'Enter' ||
@@ -144,10 +125,15 @@ const FlashcardMode = ({
                 style={{
                     position: 'absolute',
                     top: 10,
-                    left: 10,
+                    right: 10,
+                    border: 'none',
+                    backgroundColor: 'white',
+                    fontSize: 64,
+                    padding: 16,
+                    cursor: 'pointer',
                 }}
             >
-                Close
+                ╳
             </button>
             <TagsUI
                 selection={{ [card.id]: true }}
