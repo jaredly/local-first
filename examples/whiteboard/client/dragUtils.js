@@ -1,6 +1,6 @@
 // @flow
 
-import { type State, type Action } from './state';
+import { type Drag, type State, type Action } from './state';
 import { type CardT } from './types';
 
 import { type Collection } from '../../../packages/client-bundle';
@@ -18,6 +18,35 @@ import {
 } from './types';
 
 const MIN_MOVEMENT = 5;
+
+export const dragScroll = (drag: Drag, dispatch: Action => void) => {
+    let dx = 0;
+    let dy = 0;
+    const margin = 50;
+    if (drag.screenPos.x <= margin) {
+        dx = drag.screenPos.x - margin;
+    }
+    if (drag.screenPos.y <= margin) {
+        dy = drag.screenPos.y - margin;
+    }
+    if (drag.screenPos.x >= window.innerWidth - margin) {
+        dx = drag.screenPos.x - (window.innerWidth - margin);
+    }
+    if (drag.screenPos.y >= window.innerHeight - margin) {
+        dy = drag.screenPos.y - (window.innerHeight - margin);
+    }
+    if (dx !== 0 || dy !== 0) {
+        // TODO maybe square the deltas
+        dispatch({
+            type: 'drag_scroll',
+            delta: {
+                x: dx / 2,
+                y: dy / 2,
+            },
+            drag,
+        });
+    }
+};
 
 export const onMove = (
     evt: MouseEvent,

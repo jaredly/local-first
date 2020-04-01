@@ -10,7 +10,12 @@ import {
 import { default as makeDeltaInMemoryPersistence } from '../../../packages/idb/src/delta-mem';
 import { useCollection } from '../../../packages/client-react';
 
-import { type Schema, type Collection } from '../../../packages/client-bundle';
+import {
+    type Schema,
+    type Collection,
+    type Client,
+    type SyncStatus,
+} from '../../../packages/client-bundle';
 
 import FlashcardMode from './FlashcardMode';
 import Key from './Key';
@@ -18,7 +23,8 @@ import Welcome from './Welcome';
 import AddCard from './AddCard';
 import ColumnButtons from './Columns';
 
-import { reducer, initialState } from './state';
+import { reducer, initialState, type State, type Action } from './state';
+import { keyboardTags } from './keyboard';
 
 import {
     type pos,
@@ -52,7 +58,80 @@ import {
     DEFAULT_MARGIN,
 } from './defaults';
 
-import { onMove, onMouseUp } from './dragUtils';
+import { onMove, onMouseUp, dragScroll } from './dragUtils';
+
+const Hud = ({
+    state,
+    dispatch,
+    setFlashcard,
+    client,
+    col,
+}: {
+    state: State,
+    setFlashcard: boolean => void,
+    dispatch: Action => void,
+    client: Client<SyncStatus>,
+    col: Collection<CardT>,
+}) => {
+    const zoomLevels = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0];
+    return (
+        <div
+            style={{
+                position: 'absolute',
+                zIndex: 10000,
+                boxShadow: '0 0 2px #666',
+                backgroundColor: 'white',
+                padding: 4,
+                bottom: 10,
+                left: 10,
+            }}
+            onClick={evt => evt.stopPropagation()}
+            onMouseDown={evt => evt.stopPropagation()}
+        >
+            <input
+                type="range"
+                min="0"
+                max={zoomLevels.length - 1}
+                value={zoomLevels.indexOf(state.zoom)}
+                onMouseDown={evt => evt.stopPropagation()}
+                onClick={evt => evt.stopPropagation()}
+                onChange={evt => {
+                    dispatch({
+                        type: 'zoom',
+                        zoom: zoomLevels[evt.target.value],
+                    });
+                }}
+                onMouseUp={evt => {
+                    evt.target.blur();
+                }}
+            />
+            <button onClick={() => setFlashcard(true)}>Flashcard Mode</button>
+            <AddCard
+                onAdd={(title, description, header) => {
+                    const id = client.getStamp();
+                    const card: CardT = {
+                        id,
+                        title,
+                        description,
+                        header,
+                        scales: {},
+                        tags: {},
+                        position: {
+                            x: state.pan.x + DEFAULT_MARGIN * 4,
+                            y: state.pan.y + DEFAULT_MARGIN * 4,
+                        },
+                        size: {
+                            y: DEFAULT_HEIGHT,
+                            x: DEFAULT_WIDTH * (header != null ? 2 : 1),
+                        },
+                        disabled: false,
+                    };
+                    col.save(id, card);
+                }}
+            />
+        </div>
+    );
+};
 
 const Whiteboard = () => {
     // we're assuming we're authed, and cookies are taking care of things.
@@ -96,32 +175,7 @@ const Whiteboard = () => {
             const timer = setInterval(() => {
                 const drag = currentState.current.drag;
                 if (drag) {
-                    let dx = 0;
-                    let dy = 0;
-                    const margin = 50;
-                    if (drag.screenPos.x <= margin) {
-                        dx = drag.screenPos.x - margin;
-                    }
-                    if (drag.screenPos.y <= margin) {
-                        dy = drag.screenPos.y - margin;
-                    }
-                    if (drag.screenPos.x >= window.innerWidth - margin) {
-                        dx = drag.screenPos.x - (window.innerWidth - margin);
-                    }
-                    if (drag.screenPos.y >= window.innerHeight - margin) {
-                        dy = drag.screenPos.y - (window.innerHeight - margin);
-                    }
-                    if (dx !== 0 || dy !== 0) {
-                        // TODO maybe square the deltas
-                        dispatch({
-                            type: 'drag_scroll',
-                            delta: {
-                                x: dx / 2,
-                                y: dy / 2,
-                            },
-                            drag,
-                        });
-                    }
+                    dragScroll(drag, dispatch);
                 }
             }, 20);
             return () => {
@@ -151,32 +205,7 @@ const Whiteboard = () => {
                     : Object.keys(currentState.current.selection);
             if (!keys.length) return;
 
-            const digits = '0123456789';
-            if (digits.includes(evt.key)) {
-                const number = +evt.key;
-                const cards = keys.map(key => currentCards.current[key]);
-                let remove = !cards.some(card => card.number !== number);
-                cards.forEach(card => {
-                    if (remove) {
-                        col.setAttribute(card.id, ['number'], null);
-                    } else if (card.number !== number) {
-                        col.setAttribute(card.id, ['number'], number);
-                    }
-                });
-            }
-            const letters = 'abcdefghijklmnopqrstuvwxyz';
-            if (letters.includes(evt.key)) {
-                const letter = evt.key;
-                const cards = keys.map(key => currentCards.current[key]);
-                let remove = !cards.some(card => card.letter !== letter);
-                cards.forEach(card => {
-                    if (remove) {
-                        col.setAttribute(card.id, ['letter'], null);
-                    } else if (card.letter !== letter) {
-                        col.setAttribute(card.id, ['letter'], letter);
-                    }
-                });
-            }
+            keyboardTags(evt.key, keys, currentCards.current, col);
         };
         const move = evt =>
             onMove(evt, currentState.current, dispatch, dragRef);
@@ -194,7 +223,6 @@ const Whiteboard = () => {
                 return;
             }
             evt.preventDefault();
-            // const pos = evtPos(evt);
             const pos = fromScreen(
                 evtPos(evt),
                 currentState.current.pan,
@@ -232,8 +260,6 @@ const Whiteboard = () => {
             window.removeEventListener('keydown', key);
         };
     }, []);
-
-    const zoomLevels = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0];
 
     const dragOffset =
         state.drag && state.drag.enough
@@ -273,61 +299,13 @@ const Whiteboard = () => {
     return (
         <div>
             {!flashcard ? (
-                <div
-                    style={{
-                        position: 'absolute',
-                        zIndex: 10000,
-                        boxShadow: '0 0 2px #666',
-                        backgroundColor: 'white',
-                        padding: 4,
-                        bottom: 10,
-                        left: 10,
-                    }}
-                    onClick={evt => evt.stopPropagation()}
-                    onMouseDown={evt => evt.stopPropagation()}
-                >
-                    <input
-                        type="range"
-                        min="0"
-                        max={zoomLevels.length - 1}
-                        value={zoomLevels.indexOf(state.zoom)}
-                        onMouseDown={evt => evt.stopPropagation()}
-                        onClick={evt => evt.stopPropagation()}
-                        onChange={evt => {
-                            dispatch({
-                                type: 'zoom',
-                                zoom: zoomLevels[evt.target.value],
-                            });
-                        }}
-                        onMouseUp={evt => {
-                            evt.target.blur();
-                        }}
-                    />
-                    <button onClick={() => setFlashcard(true)}>
-                        Flashcard Mode
-                    </button>
-                    <AddCard
-                        onAdd={(title, description, header) => {
-                            const id = client.getStamp();
-                            const card = {
-                                id,
-                                title,
-                                description,
-                                header,
-                                position: {
-                                    x: state.pan.x + DEFAULT_MARGIN * 4,
-                                    y: state.pan.y + DEFAULT_MARGIN * 4,
-                                },
-                                size: {
-                                    y: DEFAULT_HEIGHT,
-                                    x: DEFAULT_WIDTH * (header != null ? 2 : 1),
-                                },
-                                disabled: false,
-                            };
-                            col.save(id, card);
-                        }}
-                    />
-                </div>
+                <Hud
+                    state={state}
+                    dispatch={dispatch}
+                    setFlashcard={setFlashcard}
+                    client={client}
+                    col={col}
+                />
             ) : null}
             {Object.keys(state.selection).length > 1 ? (
                 <ColumnButtons
