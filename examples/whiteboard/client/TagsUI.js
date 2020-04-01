@@ -96,7 +96,14 @@ const Scale = ({
                 clearKey();
             }}
         >
-            {scale.title}
+            <div
+                style={{
+                    borderBottom: `2px solid ${scale.color}`,
+                    marginBottom: 4,
+                }}
+            >
+                {scale.title}
+            </div>
             <div css={{ display: 'flex', justifyContent: 'space-between' }}>
                 {values.map((v, i) => (
                     <div
@@ -124,6 +131,7 @@ const Scale = ({
                             },
                             v ? { backgroundColor: '#0af' } : {},
                         ]}
+                        style={v ? { backgroundColor: scale.color } : null}
                     >
                         {i + scale.min}
                         {cards.length !== 1 ? (
@@ -194,7 +202,7 @@ const TagsUI = ({
                 <button
                     css={{ marginLeft: 16 }}
                     onClick={() => {
-                        setAddingTag('');
+                        setAddingScale('');
                     }}
                 >
                     +
@@ -221,6 +229,9 @@ const TagsUI = ({
                     onBlur={() => setAddingScale(null)}
                     onKeyDown={evt => {
                         evt.stopPropagation();
+                        if (evt.key === 'Escape') {
+                            setAddingScale(null);
+                        }
                         if (evt.key === 'Enter') {
                             if (addingScale.trim()) {
                                 const id = genId();
@@ -263,6 +274,9 @@ const TagsUI = ({
                     onBlur={() => setAddingTag(null)}
                     onKeyDown={evt => {
                         evt.stopPropagation();
+                        if (evt.key === 'Escape') {
+                            setAddingTag(null);
+                        }
                         if (evt.key === 'Enter') {
                             if (addingTag.trim()) {
                                 const id = genId();
