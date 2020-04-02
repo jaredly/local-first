@@ -55,11 +55,13 @@ const Whiteboard = ({
         selection,
         setSelection,
     });
-
+    const windowSize = backgroundRef.current
+        ? getNodeSize(backgroundRef.current)
+        : { x: window.innerWidth, y: window.innerHeight };
     return (
         <div
             ref={node => (backgroundRef.current = node)}
-            style={{ ...style, overflow: 'hidden', zIndex: 0 }}
+            style={{ ...style, overflow: 'hidden', zIndex: 0, position: 'relative' }}
             onClick={evt => {
                 if (!dragRef.current) {
                     setSelection({});
@@ -93,12 +95,9 @@ const Whiteboard = ({
                 ) : null}
             </div>
             <MiniMap
-                windowSize={
-                    backgroundRef.current
-                        ? getNodeSize(backgroundRef.current)
-                        : { x: window.innerWidth, y: window.innerHeight }
-                }
+                windowSize={windowSize}
                 zoom={state.zoom}
+                setZoom={zoom => dispatch({ type: 'zoom', zoom, windowSize })}
                 pan={state.pan}
                 BOUNDS={BOUNDS}
             />
