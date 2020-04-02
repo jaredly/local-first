@@ -64,6 +64,12 @@ const Whiteboard = ({
                 bottom: 0,
                 right: 0,
             }}
+            onClick={evt => {
+                if (!dragRef.current) {
+                    setSelection({});
+                }
+                dragRef.current = false;
+            }}
         >
             {/* the movable board */}
             <div

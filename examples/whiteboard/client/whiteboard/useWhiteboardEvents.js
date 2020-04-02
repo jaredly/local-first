@@ -76,7 +76,7 @@ const useWhiteboardEvents = ({
             if (evt.target !== backgroundRef.current) {
                 return;
             }
-            evt.preventDefault();
+            // evt.preventDefault();
             const pos = fromScreen(
                 evtPos(evt),
                 currentState.current.pan,

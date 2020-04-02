@@ -205,7 +205,7 @@ const Main = ({ client }: { client: Client<SyncStatus> }) => {
     const [scalesCol, scales] = useCollection<ScaleT, SyncStatus>(React, client, 'scales');
     const [commentsCol, comments] = useCollection<CommentT, SyncStatus>(React, client, 'comments');
 
-    const [flashcard, setFlashcard] = React.useState(true);
+    const [flashcard, setFlashcard] = React.useState(false);
 
     if (!Object.keys(cards).length) {
         return (

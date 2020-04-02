@@ -62,6 +62,7 @@ export const onMove = (
         const diff = posDiff(drag.offset, pos);
         const enough = drag.enough || Math.max(Math.abs(diff.x), Math.abs(diff.y)) > MIN_MOVEMENT;
         if (enough) {
+            console.log('onMove drag enough');
             dragRef.current = true;
         }
         dispatch({
@@ -80,6 +81,7 @@ export const onMove = (
         const pos = fromScreen(evtPos(evt), state.pan, state.zoom);
         const enough = absMax(posDiff(dragSelect.position, pos)) > MIN_MOVEMENT;
         if (enough) {
+            console.log('moved enough');
             dragRef.current = true;
         }
         dispatch({
@@ -116,8 +118,8 @@ export const onMouseUp = (
             Object.keys(selection).forEach(key => {
                 onMove(key, clamp(addPos(bounds[key].position, diff), bounds[key].size, BOUNDS));
             });
+            evt.preventDefault();
         }
-        evt.preventDefault();
         evt.stopPropagation();
         dispatch({ type: 'set_drag', drag: null });
     } else if (state.dragSelect) {
@@ -130,7 +132,10 @@ export const onMouseUp = (
                 newSelection[key] = true;
             }
         });
-        dispatch({ type: 'set_select', dragSelect: null });
+        // Suuper weird bug-looking thing, if this is called
+        // synchronously, the react event doesn't bubble to the Whiteboard's
+        // onClick handler
+        setTimeout(() => dispatch({ type: 'set_select', dragSelect: null }), 0);
         if (anySelected) {
             if (evt.metaKey || evt.shiftKey) {
                 setSelection(mergeSelection(selection, newSelection));
