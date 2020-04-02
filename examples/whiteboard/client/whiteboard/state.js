@@ -51,17 +51,9 @@ export type Action =
           type: 'start_select',
           pos: {| x: number, y: number |},
       |}
-    // | {|
-    //       type: 'add_selection',
-    //       selection: { [key: string]: boolean },
-    //   |}
-    // | {|
-    //       type: 'remove_selection',
-    //       selection: { [key: string]: boolean },
-    //   |}
-    | {| type: 'scroll', delta: pos |}
-    | {| type: 'drag_scroll', delta: pos, drag: Drag |}
-    | {| type: 'zoom', zoom: number |};
+    | {| type: 'scroll', delta: pos, windowSize: pos |}
+    | {| type: 'drag_scroll', delta: pos, drag: Drag, windowSize: pos |}
+    | {| type: 'zoom', zoom: number, windowSize: pos |};
 // | {|
 //       type: 'replace_selection',
 //       selection: { [key: string]: boolean },
@@ -79,19 +71,6 @@ const objDiff = (one, two) => {
 
 export const reducer = (state: State, action: Action): State => {
     switch (action.type) {
-        // case 'replace_selection':
-        //     return { ...state, selection: action.selection };
-        // case 'add_selection':
-        //     return {
-        //         ...state,
-        //         // $FlowFixMe
-        //         selection: { ...state.selection, ...action.selection },
-        //     };
-        // case 'remove_selection':
-        //     return {
-        //         ...state,
-        //         selection: objDiff(state.selection, action.selection),
-        //     };
         case 'start_drag':
             return {
                 ...state,
@@ -127,8 +106,8 @@ export const reducer = (state: State, action: Action): State => {
                 pan: clamp(
                     addPos(state.pan, action.delta),
                     {
-                        x: window.innerWidth / state.zoom,
-                        y: window.innerHeight / state.zoom,
+                        x: action.windowSize.x / state.zoom,
+                        y: action.windowSize.y / state.zoom,
                     },
                     BOUNDS,
                 ),
@@ -137,8 +116,8 @@ export const reducer = (state: State, action: Action): State => {
             const pan = clamp(
                 addPos(state.pan, action.delta),
                 {
-                    x: window.innerWidth / state.zoom,
-                    y: window.innerHeight / state.zoom,
+                    x: action.windowSize.x / state.zoom,
+                    y: action.windowSize.y / state.zoom,
                 },
                 BOUNDS,
             );
@@ -158,8 +137,8 @@ export const reducer = (state: State, action: Action): State => {
                 pan: clamp(
                     state.pan,
                     {
-                        x: window.innerWidth / action.zoom,
-                        y: window.innerHeight / action.zoom,
+                        x: action.windowSize.x / action.zoom,
+                        y: action.windowSize.y / action.zoom,
                     },
                     BOUNDS,
                 ),

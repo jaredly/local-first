@@ -336,9 +336,10 @@ const styles = {
     },
     container: {
         fontSize: 24,
-        position: 'absolute',
-        top: 12,
-        left: 12,
+        // position: 'absolute',
+        // top: 12,
+        // left: 12,
+        zIndex: 1,
         backgroundColor: 'white',
         boxShadow: '0 0 5px #aaa',
     },

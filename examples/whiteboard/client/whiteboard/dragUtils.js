@@ -18,26 +18,31 @@ import {
 
 const MIN_MOVEMENT = 5;
 
-export const dragScroll = (drag: Drag, dispatch: Action => void) => {
+export const dragScroll = (windowBounds: rect, drag: Drag, dispatch: Action => void) => {
     let dx = 0;
     let dy = 0;
     const margin = 50;
-    if (drag.screenPos.x <= margin) {
-        dx = drag.screenPos.x - margin;
+    const left = windowBounds.position.x;
+    if (drag.screenPos.x <= margin + left) {
+        dx = drag.screenPos.x - margin - left;
     }
-    if (drag.screenPos.y <= margin) {
-        dy = drag.screenPos.y - margin;
+    const top = windowBounds.position.y;
+    if (drag.screenPos.y <= margin + top) {
+        dy = drag.screenPos.y - margin - top;
     }
-    if (drag.screenPos.x >= window.innerWidth - margin) {
-        dx = drag.screenPos.x - (window.innerWidth - margin);
+    const right = windowBounds.position.x + windowBounds.size.x;
+    if (drag.screenPos.x >= right - margin) {
+        dx = drag.screenPos.x - (right - margin);
     }
-    if (drag.screenPos.y >= window.innerHeight - margin) {
-        dy = drag.screenPos.y - (window.innerHeight - margin);
+    const bottom = windowBounds.position.y + windowBounds.size.y;
+    if (drag.screenPos.y >= bottom - margin) {
+        dy = drag.screenPos.y - (bottom - margin);
     }
     if (dx !== 0 || dy !== 0) {
         // TODO maybe square the deltas
         dispatch({
             type: 'drag_scroll',
+            windowSize: windowBounds.size,
             delta: {
                 x: dx / 2,
                 y: dy / 2,

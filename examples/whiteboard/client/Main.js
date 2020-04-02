@@ -81,7 +81,7 @@ const selectionReducer = (state: { [key: string]: boolean }, action: SelectionAc
     }
 };
 
-const WhiteboardWrapper = ({
+const WhiteboardScreen = ({
     client,
     cards,
     setFlashcard,
@@ -123,8 +123,22 @@ const WhiteboardWrapper = ({
                 left: 0,
                 bottom: 0,
                 right: 0,
+                display: 'flex',
+                flexDirection: 'row',
             }}
         >
+            <TagsUI
+                cards={cards}
+                cardsCol={col}
+                selection={selection}
+                tags={tags}
+                tagsCol={tagsCol}
+                scales={scales}
+                scalesCol={scalesCol}
+                setKey={noop}
+                clearKey={noop}
+                genId={client.getStamp}
+            />
             {/* <Hud
                 setFlashcard={setFlashcard}
                 client={client}
@@ -134,6 +148,14 @@ const WhiteboardWrapper = ({
                 <ColumnButtons cards={cards} col={col} selection={selection} />
             ) : null}
             <Whiteboard
+                style={{
+                    flex: 1,
+                    // position: 'absolute',
+                    // top: 0,
+                    // left: 0,
+                    // bottom: 0,
+                    // right: 0,
+                }}
                 selection={selection}
                 setSelection={selection => dispatchSelection({ type: 'replace', selection })}
                 onMoveItem={(id, pos) => {
@@ -180,18 +202,6 @@ const WhiteboardWrapper = ({
                         bounds,
                     };
                 }}
-            />
-            <TagsUI
-                cards={cards}
-                cardsCol={col}
-                selection={selection}
-                tags={tags}
-                tagsCol={tagsCol}
-                scales={scales}
-                scalesCol={scalesCol}
-                setKey={noop}
-                clearKey={noop}
-                genId={client.getStamp}
             />
         </div>
     );
@@ -243,7 +253,7 @@ const Main = ({ client }: { client: Client<SyncStatus> }) => {
         );
     } else {
         return (
-            <WhiteboardWrapper
+            <WhiteboardScreen
                 setFlashcard={setFlashcard}
                 client={client}
                 cards={cards}

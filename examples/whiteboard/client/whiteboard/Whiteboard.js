@@ -3,7 +3,7 @@
 import { jsx } from '@emotion/core';
 import * as React from 'react';
 
-import useWhiteboardEvents from './useWhiteboardEvents';
+import useWhiteboardEvents, { getNodeSize } from './useWhiteboardEvents';
 
 import { reducer, initialState, type State, type Action, type Selection } from './state';
 
@@ -18,7 +18,9 @@ const Whiteboard = ({
     selection,
     setSelection,
     onMoveItem,
+    style,
 }: {
+    style: {},
     render: ({
         dragRef: { current: boolean },
         panZoom: { current: { pan: pos, zoom: number } },
@@ -57,13 +59,7 @@ const Whiteboard = ({
     return (
         <div
             ref={node => (backgroundRef.current = node)}
-            style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                bottom: 0,
-                right: 0,
-            }}
+            style={{ ...style, overflow: 'hidden', zIndex: 0 }}
             onClick={evt => {
                 if (!dragRef.current) {
                     setSelection({});
@@ -96,7 +92,16 @@ const Whiteboard = ({
                     />
                 ) : null}
             </div>
-            <MiniMap zoom={state.zoom} pan={state.pan} BOUNDS={BOUNDS} />
+            <MiniMap
+                windowSize={
+                    backgroundRef.current
+                        ? getNodeSize(backgroundRef.current)
+                        : { x: window.innerWidth, y: window.innerHeight }
+                }
+                zoom={state.zoom}
+                pan={state.pan}
+                BOUNDS={BOUNDS}
+            />
         </div>
     );
 };

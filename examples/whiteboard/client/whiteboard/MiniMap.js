@@ -3,11 +3,21 @@ import React from 'react';
 
 import type { pos, rect } from '../types';
 
-const MiniMap = ({ zoom, pan, BOUNDS }: { zoom: number, pan: pos, BOUNDS: rect }) => {
+const MiniMap = ({
+    windowSize,
+    zoom,
+    pan,
+    BOUNDS,
+}: {
+    windowSize: pos,
+    zoom: number,
+    pan: pos,
+    BOUNDS: rect,
+}) => {
     const width = 100;
     const height = (BOUNDS.size.y / BOUNDS.size.x) * width;
-    const iw = window.innerWidth / zoom / BOUNDS.size.x;
-    const ih = window.innerHeight / zoom / BOUNDS.size.y;
+    const iw = windowSize.x / zoom / BOUNDS.size.x;
+    const ih = windowSize.y / zoom / BOUNDS.size.y;
     const x = (pan.x - BOUNDS.position.x) / BOUNDS.size.x;
     const y = (pan.y - BOUNDS.position.y) / BOUNDS.size.y;
     return (

@@ -46,8 +46,14 @@ const useWhiteboardEvents = ({
         if (currentState.current.drag) {
             const timer = setInterval(() => {
                 const drag = currentState.current.drag;
-                if (drag) {
-                    dragScroll(drag, dispatch);
+                if (drag && backgroundRef.current) {
+                    // $FlowFixMe
+                    const rect = backgroundRef.current.getBoundingClientRect();
+                    const windowBounds = {
+                        position: { x: rect.left, y: rect.top },
+                        size: { x: rect.width, y: rect.height },
+                    };
+                    dragScroll(windowBounds, drag, dispatch);
                 }
             }, 20);
             return () => {
@@ -86,13 +92,16 @@ const useWhiteboardEvents = ({
             dragRef.current = false;
         };
         const mousewheel = evt => {
-            dispatch({
-                type: 'scroll',
-                delta: {
-                    x: evt.deltaX / state.zoom,
-                    y: evt.deltaY / state.zoom,
-                },
-            });
+            if (backgroundRef.current) {
+                dispatch({
+                    type: 'scroll',
+                    windowSize: getNodeSize(backgroundRef.current),
+                    delta: {
+                        x: evt.deltaX / state.zoom,
+                        y: evt.deltaY / state.zoom,
+                    },
+                });
+            }
         };
         window.addEventListener('mousedown', down);
         window.addEventListener('mousemove', move, true);
@@ -107,6 +116,11 @@ const useWhiteboardEvents = ({
     }, []);
 
     return { currentHover, backgroundRef };
+};
+
+export const getNodeSize = node => {
+    const rect = node.getBoundingClientRect();
+    return { x: rect.width, y: rect.height };
 };
 
 export default useWhiteboardEvents;
