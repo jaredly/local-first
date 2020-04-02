@@ -335,7 +335,7 @@ const styles = {
         padding: '4px 8px',
     },
     container: {
-        fontSize: 24,
+        // fontSize: 24,
         // position: 'absolute',
         // top: 12,
         // left: 12,
