@@ -57,6 +57,7 @@ export const onMove = (
     state: State,
     dispatch: Action => void,
     dragRef: { current: boolean },
+    baseNode: Node,
 ) => {
     if (state.drag) {
         const drag = state.drag;
@@ -83,7 +84,12 @@ export const onMove = (
         const { dragSelect } = state;
         evt.preventDefault();
         evt.stopPropagation();
-        const pos = fromScreen(evtPos(evt), state.pan, state.zoom);
+        const box = baseNode.getBoundingClientRect();
+        const pos = fromScreen(
+            posDiff({ x: box.left, y: box.top }, evtPos(evt)),
+            state.pan,
+            state.zoom,
+        );
         const enough = absMax(posDiff(dragSelect.position, pos)) > MIN_MOVEMENT;
         if (enough) {
             console.log('moved enough');

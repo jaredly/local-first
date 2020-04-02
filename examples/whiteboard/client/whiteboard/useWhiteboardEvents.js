@@ -10,7 +10,7 @@ import {
     type SyncStatus,
 } from '../../../../packages/client-bundle';
 
-import { type pos, type rect, type CardT, CardSchema, evtPos, fromScreen } from '../types';
+import { type pos, type rect, type CardT, CardSchema, evtPos, fromScreen, posDiff } from '../types';
 
 import { onMove, onMouseUp, dragScroll } from './dragUtils';
 
@@ -63,7 +63,15 @@ const useWhiteboardEvents = ({
     }, [!!state.drag]);
 
     React.useEffect(() => {
-        const move = evt => onMove(evt, currentState.current, dispatch, dragRef);
+        const move = evt =>
+            onMove(
+                evt,
+                currentState.current,
+                dispatch,
+                dragRef,
+                // $FlowFixMe
+                backgroundRef.current,
+            );
         const up = evt => {
             onMouseUp(
                 evt,
@@ -76,15 +84,16 @@ const useWhiteboardEvents = ({
             );
         };
         const down = evt => {
-            if (document.activeElement !== document.body) {
-                return;
-            }
+            // if (document.activeElement !== document.body) {
+            //     return;
+            // }
             if (evt.target !== backgroundRef.current) {
                 return;
             }
             // evt.preventDefault();
+            const box = evt.target.getBoundingClientRect();
             const pos = fromScreen(
-                evtPos(evt),
+                posDiff({ x: box.left, y: box.top }, evtPos(evt)),
                 currentState.current.pan,
                 currentState.current.zoom,
             );
