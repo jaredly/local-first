@@ -13,7 +13,6 @@ import {
 import { type pos, type rect, type CardT, CardSchema, evtPos, fromScreen } from '../types';
 
 import { onMove, onMouseUp, dragScroll } from './dragUtils2';
-import { keyboardTags } from '../keyboard';
 
 const useWhiteboardEvents = ({
     state,

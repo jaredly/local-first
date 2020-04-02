@@ -9,10 +9,6 @@ import {
 } from '../../../packages/client-bundle';
 import { default as makeDeltaInMemoryPersistence } from '../../../packages/idb/src/delta-mem';
 
-import { reducer, initialState, type State, type Action } from './whiteboard/state';
-
-import MiniMap from './whiteboard/MiniMap';
-
 import { TagSchema, ScaleSchema, CommentSchema, CardSchema } from './types';
 
 import Main from './Main';

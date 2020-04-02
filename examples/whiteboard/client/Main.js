@@ -6,16 +6,11 @@ import { useCollection } from '../../../packages/client-react';
 
 import { type Client, type SyncStatus } from '../../../packages/client-bundle';
 
-import useWhiteboardEvents from './whiteboard/useWhiteboardEvents';
 import FlashcardMode from './FlashcardMode';
-import Key from './Key';
 import Welcome from './Welcome';
 import ColumnButtons from './Columns';
 import Hud from './Hud';
 
-import { reducer, initialState, type State, type Action } from './whiteboard/state';
-
-import MiniMap from './whiteboard/MiniMap';
 import TagsUI from './TagsUI';
 
 import {
@@ -33,7 +28,7 @@ import {
     BOUNDS,
 } from './types';
 
-import Card from './Card';
+// import Card from './Card';
 import Card2 from './Card2';
 import {
     makeDefaultCards,
@@ -44,7 +39,7 @@ import {
 import { type Collection } from '../../../packages/client-bundle';
 
 import Whiteboard from './whiteboard/Whiteboard';
-import { onMove, onMouseUp, dragScroll } from './dragUtils';
+// import { onMove, onMouseUp, dragScroll } from './dragUtils';
 
 const objDiff = (one, two) => {
     const res = {};
@@ -70,13 +65,13 @@ export type SelectionAction =
           selection: { [key: string]: boolean },
       |};
 
-const selectionReducer = (state, action: SelectionAction) => {
+const selectionReducer = (state: { [key: string]: boolean }, action: SelectionAction) => {
     switch (action.type) {
         case 'replace':
             return action.selection;
         case 'add':
             return {
-                ...state.selection,
+                ...state,
                 ...action.selection,
             };
         case 'remove':
@@ -190,136 +185,6 @@ const WhiteboardWrapper = ({
                 cards={cards}
                 cardsCol={col}
                 selection={selection}
-                tags={tags}
-                tagsCol={tagsCol}
-                scales={scales}
-                scalesCol={scalesCol}
-                setKey={noop}
-                clearKey={noop}
-                genId={client.getStamp}
-            />
-        </div>
-    );
-};
-
-const Whiteboard_old = ({
-    client,
-    cards,
-    setFlashcard,
-    col,
-    tagsCol,
-    scalesCol,
-    scales,
-    tags,
-}: {
-    col: Collection<CardT>,
-    cards: { [key: string]: CardT },
-    tagsCol: Collection<TagT>,
-    tags: { [key: string]: TagT },
-    scalesCol: Collection<ScaleT>,
-    scales: { [key: string]: ScaleT },
-    client: Client<SyncStatus>,
-    setFlashcard: boolean => void,
-}) => {
-    const [state, dispatch] = React.useReducer(reducer, initialState);
-    const panZoom = React.useRef({ pan: state.pan, zoom: state.zoom });
-    panZoom.current = { pan: state.pan, zoom: state.zoom };
-
-    const { currentHover, dragRef, backgroundRef } = useWhiteboardEvents({
-        client,
-        state,
-        cards,
-        dispatch,
-        col,
-    });
-
-    const dragOffset =
-        state.drag && state.drag.enough ? posDiff(state.drag.offset, state.drag.mouse) : null;
-    const dragSelect = state.dragSelect ? normalizedRect(state.dragSelect) : null;
-
-    const selectAllWith = React.useCallback(
-        selector => {
-            const matching = {};
-            Object.keys(cards).forEach(k => {
-                if (selector(cards[k])) {
-                    matching[k] = true;
-                }
-            });
-            dispatch({ type: 'replace_selection', selection: matching });
-        },
-        [cards],
-    );
-
-    return (
-        <div
-            ref={node => (backgroundRef.current = node)}
-            style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                bottom: 0,
-                right: 0,
-            }}
-        >
-            <Hud
-                state={state}
-                dispatch={dispatch}
-                setFlashcard={setFlashcard}
-                client={client}
-                col={col}
-            />
-            {Object.keys(state.selection).length > 1 ? (
-                <ColumnButtons cards={cards} col={col} selection={state.selection} />
-            ) : null}
-
-            {/* the movable board */}
-            <div
-                style={{
-                    position: 'absolute',
-                    top: -state.pan.y * state.zoom,
-                    left: -state.pan.x * state.zoom,
-                    transform: `scale(${state.zoom.toFixed(2)})`,
-                    mouseEvents: 'none',
-                }}
-            >
-                {Object.keys(cards)
-                    .map(id => cards[id])
-                    .map(card => (
-                        <Card
-                            currentHover={currentHover}
-                            selectAllWith={selectAllWith}
-                            key={card.id}
-                            dragRef={dragRef}
-                            panZoom={panZoom}
-                            tags={tags}
-                            scales={scales}
-                            offset={dragOffset && state.selection[card.id] ? dragOffset : null}
-                            selected={state.selection[card.id]}
-                            hovered={dragSelect && rectIntersect(dragSelect, card)}
-                            dispatch={dispatch}
-                            card={card}
-                            col={col}
-                        />
-                    ))}
-                {dragSelect ? (
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: dragSelect.position.y,
-                            left: dragSelect.position.x,
-                            width: dragSelect.size.x,
-                            height: dragSelect.size.y,
-                            mouseEvents: 'none',
-                            backgroundColor: 'rgba(100, 100, 255, 0.1)',
-                        }}
-                    />
-                ) : null}
-            </div>
-            <MiniMap zoom={state.zoom} pan={state.pan} BOUNDS={BOUNDS} />
-            <TagsUI
-                cards={cards}
-                cardsCol={col}
-                selection={state.selection}
                 tags={tags}
                 tagsCol={tagsCol}
                 scales={scales}

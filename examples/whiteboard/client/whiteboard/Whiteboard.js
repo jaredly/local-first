@@ -11,7 +11,7 @@ import MiniMap from './MiniMap';
 
 import { normalizedRect, posDiff, rectIntersect, BOUNDS, type rect, type pos } from '../types';
 
-import { onMove, onMouseUp, dragScroll } from '../dragUtils';
+import { onMove, onMouseUp, dragScroll } from './dragUtils2';
 
 const Whiteboard = ({
     render,

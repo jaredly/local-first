@@ -76,12 +76,6 @@ Props) => {
     return (
         <div
             key={card.id}
-            // onMouseOver={evt => (currentHover.current = card.id)}
-            // onMouseOut={evt => {
-            //     if (currentHover.current === card.id) {
-            //         currentHover.current = null;
-            //     }
-            // }}
             onDoubleClick={evt => {
                 if (evt.metaKey || evt.shiftKey) {
                     return;

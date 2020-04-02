@@ -3,8 +3,7 @@
 import { jsx } from '@emotion/core';
 import React from 'react';
 
-import { tagStyle, createTagStyle } from './Card';
-import Key from './Key';
+import { tagStyle, createTagStyle } from './Card2';
 import TagsUI from './TagsUI';
 import { type Collection } from '../../../packages/client-bundle';
 import { type CardT, type TagT, type ScaleT, colors } from './types';
