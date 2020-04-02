@@ -24,7 +24,11 @@ const Whiteboard = ({
         panZoom: { current: { pan: pos, zoom: number } },
         dragOffset: ?pos,
         dragSelect: ?rect,
-    }) => Array<{ id: string, node: React.Node, bounds: rect }>,
+        dispatch: Action => void,
+    }) => {
+        children: React.Node,
+        bounds: { [id: string]: rect },
+    },
     selection: Selection,
     setSelection: Selection => void,
     onMoveItem: (string, pos) => void,
@@ -38,10 +42,7 @@ const Whiteboard = ({
     const dragSelect = state.dragSelect ? normalizedRect(state.dragSelect) : null;
 
     const dragRef = React.useRef<boolean>(false);
-    const rendered = render({ dragRef, panZoom, dragOffset, dragSelect });
-
-    const bounds = {};
-    rendered.forEach(node => (bounds[node.id] = node.bounds));
+    const { children, bounds } = render({ dragRef, panZoom, dragOffset, dragSelect, dispatch });
 
     const { currentHover, backgroundRef } = useWhiteboardEvents({
         dragRef,
@@ -74,15 +75,15 @@ const Whiteboard = ({
                     mouseEvents: 'none',
                 }}
             >
-                {rendered.map(node => node.node)}
+                {children}
                 {dragSelect ? (
                     <div
                         style={{
                             position: 'absolute',
                             top: dragSelect.position.y,
                             left: dragSelect.position.x,
-                            width: dragSelect.size.x,
-                            height: dragSelect.size.y,
+                            width: Math.max(5, dragSelect.size.x),
+                            height: Math.max(5, dragSelect.size.y),
                             mouseEvents: 'none',
                             backgroundColor: 'rgba(100, 100, 255, 0.1)',
                         }}
