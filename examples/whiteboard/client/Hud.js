@@ -47,15 +47,11 @@ import {
 import { type State, type Action } from './whiteboard/state';
 
 const Hud = ({
-    state,
-    dispatch,
     setFlashcard,
     client,
     col,
 }: {
-    state: State,
     setFlashcard: boolean => void,
-    dispatch: Action => void,
     client: Client<SyncStatus>,
     col: Collection<CardT>,
 }) => {
@@ -74,23 +70,6 @@ const Hud = ({
             onClick={evt => evt.stopPropagation()}
             onMouseDown={evt => evt.stopPropagation()}
         >
-            <input
-                type="range"
-                min="0"
-                max={zoomLevels.length - 1}
-                value={zoomLevels.indexOf(state.zoom)}
-                onMouseDown={evt => evt.stopPropagation()}
-                onClick={evt => evt.stopPropagation()}
-                onChange={evt => {
-                    dispatch({
-                        type: 'zoom',
-                        zoom: zoomLevels[evt.target.value],
-                    });
-                }}
-                onMouseUp={evt => {
-                    evt.target.blur();
-                }}
-            />
             <button onClick={() => setFlashcard(true)}>Flashcard Mode</button>
             <AddCard
                 onAdd={(title, description, header) => {

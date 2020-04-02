@@ -84,6 +84,7 @@ export const onMove = (
         const { dragSelect } = state;
         evt.preventDefault();
         evt.stopPropagation();
+        // $FlowFixMe
         const box = baseNode.getBoundingClientRect();
         const pos = fromScreen(
             posDiff({ x: box.left, y: box.top }, evtPos(evt)),

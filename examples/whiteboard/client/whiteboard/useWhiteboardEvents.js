@@ -127,7 +127,8 @@ const useWhiteboardEvents = ({
     return { currentHover, backgroundRef };
 };
 
-export const getNodeSize = node => {
+export const getNodeSize = (node: Node) => {
+    // $FlowFixMe
     const rect = node.getBoundingClientRect();
     return { x: rect.width, y: rect.height };
 };

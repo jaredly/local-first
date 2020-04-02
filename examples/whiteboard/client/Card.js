@@ -26,7 +26,7 @@ import {
 } from './types';
 
 import type { Action } from './whiteboard/state';
-import type { SelectionAction } from './Main';
+import type { SelectionAction } from './screens/WhiteboardScreen';
 
 type Props = {
     offset: ?pos,
