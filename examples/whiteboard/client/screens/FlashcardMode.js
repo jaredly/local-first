@@ -3,10 +3,10 @@
 import { jsx } from '@emotion/core';
 import React from 'react';
 
-import { tagStyle, createTagStyle } from './Card';
-import TagsUI from './TagsUI';
-import { type Collection } from '../../../packages/client-bundle';
-import { type CardT, type TagT, type ScaleT, colors } from './types';
+import { tagStyle, createTagStyle } from '../Card';
+import TagsUI from '../TagsUI';
+import { type Collection } from '../../../../packages/client-bundle';
+import { type CardT, type TagT, type ScaleT, colors } from '../types';
 
 const FlashcardMode = ({
     col,
@@ -112,10 +112,9 @@ const FlashcardMode = ({
                 right: 0,
                 bottom: 0,
                 display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                fontSize: 36,
+                flexDirection: 'row',
+                // justifyContent: 'center',
+                // alignItems: 'center',
                 backgroundColor: 'white',
             }}
         >
@@ -127,7 +126,7 @@ const FlashcardMode = ({
                     right: 10,
                     border: 'none',
                     backgroundColor: 'white',
-                    fontSize: 64,
+                    fontSize: 32,
                     padding: 16,
                     cursor: 'pointer',
                 }}
@@ -150,10 +149,21 @@ const FlashcardMode = ({
                 }}
                 genId={genId}
             />
-            <div style={{ fontWeight: 'bold', marginBottom: 32 }}>{card.title}</div>
-            <div style={{ marginBottom: 32 }}>{card.description}</div>
-            <div>
-                {index + 1} / {idsInOrder.length}
+            <div
+                style={{
+                    display: 'flex',
+                    flex: 1,
+                    fontSize: 36,
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}
+            >
+                <div style={{ fontWeight: 'bold', marginBottom: 32 }}>{card.title}</div>
+                <div style={{ marginBottom: 32 }}>{card.description}</div>
+                <div>
+                    {index + 1} / {idsInOrder.length}
+                </div>
             </div>
         </div>
     );

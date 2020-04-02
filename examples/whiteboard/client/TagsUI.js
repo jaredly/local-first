@@ -83,21 +83,19 @@ const Scale = ({
     return (
         <div
             css={styles.item}
-            onMouseOver={() => {
-                setKey(evt => {
-                    const n = parseInt(evt.key);
-                    if (!isNaN(n) && n >= scale.min && n <= scale.max) {
-                        const value =
-                            numWithValue === 1 && values[n - scale.min] === cards.length ? null : n;
-                        cards.forEach(card =>
-                            cardsCol.setAttribute(card.id, ['scales', scale.id], value),
-                        );
-                    }
-                });
-            }}
-            onMouseOut={() => {
-                clearKey();
-            }}
+            // tabIndex="0"
+            // onKeyDown={evt => {
+            //     if (+evt.key == evt.key) {
+            //         const n = parseInt(evt.key);
+            //         if (!isNaN(n) && n >= scale.min && n <= scale.max) {
+            //             const value =
+            //                 numWithValue === 1 && values[n - scale.min] === cards.length ? null : n;
+            //             cards.forEach(card =>
+            //                 cardsCol.setAttribute(card.id, ['scales', scale.id], value),
+            //             );
+            //         }
+            //     }
+            // }}
         >
             <div
                 style={{
