@@ -29,7 +29,7 @@ import {
 } from './types';
 
 // import Card from './Card';
-import Card2 from './Card2';
+import Card2 from './Card';
 import {
     makeDefaultCards,
     makeDefaultHeadings,

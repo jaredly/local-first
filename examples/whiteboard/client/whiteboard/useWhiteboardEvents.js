@@ -1,7 +1,7 @@
 // @flow
 import React from 'react';
 
-import type { State, Action, Selection } from './state2';
+import type { State, Action, Selection } from './state';
 
 import {
     type Schema,
@@ -12,7 +12,7 @@ import {
 
 import { type pos, type rect, type CardT, CardSchema, evtPos, fromScreen } from '../types';
 
-import { onMove, onMouseUp, dragScroll } from './dragUtils2';
+import { onMove, onMouseUp, dragScroll } from './dragUtils';
 
 const useWhiteboardEvents = ({
     state,

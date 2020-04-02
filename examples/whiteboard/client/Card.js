@@ -25,7 +25,7 @@ import {
     BOUNDS,
 } from './types';
 
-import type { Action } from './whiteboard/state2';
+import type { Action } from './whiteboard/state';
 import type { SelectionAction } from './Main';
 
 type Props = {

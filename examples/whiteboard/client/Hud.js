@@ -44,7 +44,7 @@ import {
     BOUNDS,
 } from './types';
 
-import { reducer, initialState, type State, type Action } from './whiteboard/state2';
+import { type State, type Action } from './whiteboard/state';
 
 const Hud = ({
     state,

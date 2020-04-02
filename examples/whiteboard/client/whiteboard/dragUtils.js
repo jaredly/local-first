@@ -1,6 +1,6 @@
 // @flow
 
-import { type Drag, type State, type Action, type Selection } from './state2';
+import { type Drag, type State, type Action, type Selection } from './state';
 
 import {
     type rect,

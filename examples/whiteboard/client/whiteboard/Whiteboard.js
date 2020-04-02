@@ -3,15 +3,15 @@
 import { jsx } from '@emotion/core';
 import * as React from 'react';
 
-import useWhiteboardEvents from './useWhiteboardEvents2';
+import useWhiteboardEvents from './useWhiteboardEvents';
 
-import { reducer, initialState, type State, type Action, type Selection } from './state2';
+import { reducer, initialState, type State, type Action, type Selection } from './state';
 
 import MiniMap from './MiniMap';
 
 import { normalizedRect, posDiff, rectIntersect, BOUNDS, type rect, type pos } from '../types';
 
-import { onMove, onMouseUp, dragScroll } from './dragUtils2';
+import { onMove, onMouseUp, dragScroll } from './dragUtils';
 
 const Whiteboard = ({
     render,
