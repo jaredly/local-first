@@ -68,7 +68,6 @@ export const onMove = (
         const diff = posDiff(drag.offset, pos);
         const enough = drag.enough || Math.max(Math.abs(diff.x), Math.abs(diff.y)) > MIN_MOVEMENT;
         if (enough) {
-            console.log('onMove drag enough');
             dragRef.current = true;
         }
         dispatch({
@@ -93,7 +92,6 @@ export const onMove = (
         );
         const enough = absMax(posDiff(dragSelect.position, pos)) > MIN_MOVEMENT;
         if (enough) {
-            console.log('moved enough');
             dragRef.current = true;
         }
         dispatch({

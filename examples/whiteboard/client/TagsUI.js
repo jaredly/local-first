@@ -54,14 +54,12 @@ const Scale = ({
     scale,
     cards,
     cardsCol,
-    setKey,
-    clearKey,
+    onClick,
 }: {
     scale: ScaleT,
     cards: Array<CardT>,
     cardsCol: Collection<CardT>,
-    setKey: ((KeyboardEvent) => ?boolean) => void,
-    clearKey: () => void,
+    onClick: () => void,
 }) => {
     const values = [];
     let numWithValue = 0;
@@ -101,7 +99,9 @@ const Scale = ({
                 style={{
                     borderBottom: `2px solid ${scale.color}`,
                     marginBottom: 4,
+                    cursor: 'pointer',
                 }}
+                onClick={() => onClick()}
             >
                 {scale.title}
             </div>
@@ -147,7 +147,7 @@ const Scale = ({
                         ) : (
                             <React.Fragment>
                                 <div
-                                    css={{ position: 'absolute', fontSize: '60%', top: 4, left: 4 }}
+                                    css={{ position: 'absolute', fontSize: '60%', top: 0, left: 0 }}
                                 >
                                     {i + scale.min}
                                 </div>
@@ -169,8 +169,8 @@ type Props = {
     scalesCol: Collection<ScaleT>,
     scales: { [key: string]: ScaleT },
     selection: { [key: string]: boolean },
-    setKey: ((KeyboardEvent) => ?boolean) => void,
-    clearKey: () => void,
+    onFocusScale: ScaleT => void,
+    setSelection: ({ [key: string]: boolean }) => void,
     genId: () => string,
 };
 
@@ -182,8 +182,8 @@ const TagsUI = ({
     tags,
     scales,
     selection,
-    setKey,
-    clearKey,
+    setSelection,
+    onFocusScale,
     genId,
 }: Props) => {
     const allScales = Object.keys(scales)
@@ -201,22 +201,6 @@ const TagsUI = ({
     const [addingTag, setAddingTag] = React.useState(null);
     const [addingScale, setAddingScale] = React.useState(null);
 
-    if (!Object.keys(selection)) {
-        return (
-            <div css={styles.container}>
-                <div css={styles.header}>Scales</div>
-                {allScales.map(scale => (
-                    <ScaleSummary scale={scale} key={scale.id} />
-                ))}
-                <div css={styles.header}>Tags</div>
-                {allTags.map(tag => (
-                    <div css={styles.item} key={tag.id}>
-                        {tag.title}
-                    </div>
-                ))}
-            </div>
-        );
-    }
     return (
         <div css={styles.container}>
             <div css={styles.header}>
@@ -232,8 +216,7 @@ const TagsUI = ({
             </div>
             {allScales.map(scale => (
                 <Scale
-                    setKey={setKey}
-                    clearKey={clearKey}
+                    onClick={() => onFocusScale(scale)}
                     cardsCol={cardsCol}
                     scale={scale}
                     key={scale.id}

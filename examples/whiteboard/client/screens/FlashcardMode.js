@@ -43,13 +43,15 @@ const FlashcardMode = ({
     // const currentId = React.useRef('');
     // const currentCards = React.useRef({});
 
+    const [focus, setFocus] = React.useState(null);
+
     // React.useEffect(() => {
-    //     const key = evt => ;
+    //     const key = evt => {
+
+    //     };
     //     window.addEventListener('keydown', key, true);
-    //     // window.addEventListener('keydown', key, true)
     //     return () => {
     //         window.removeEventListener('keydown', key, true);
-    //         // window.removeEventListener('keydown', key, true)
     //     };
     // }, []);
 
@@ -88,8 +90,14 @@ const FlashcardMode = ({
                 }
                 evt.stopPropagation();
                 evt.preventDefault();
-                if (key.current) {
-                    if (key.current(evt)) {
+                if (focus && +evt.key == evt.key) {
+                    const scale = focus;
+                    const n = parseInt(evt.key);
+                    if (!isNaN(n) && n >= scale.min && n <= scale.max) {
+                        if (n !== card.scales[scale.id]) {
+                            col.setAttribute(card.id, ['scales', scale.id], n);
+                        }
+                        dispatch('next');
                         return;
                     }
                 }
@@ -133,38 +141,106 @@ const FlashcardMode = ({
             >
                 ╳
             </button>
+            {/* {focus === null ? ( */}
             <TagsUI
                 selection={{ [card.id]: true }}
+                setSelection={() => {}}
                 cards={cards}
                 cardsCol={col}
                 tags={tags}
                 tagsCol={tagsCol}
                 scales={scales}
                 scalesCol={scalesCol}
-                setKey={fn => {
-                    key.current = fn;
-                }}
-                clearKey={() => {
-                    key.current = null;
-                }}
+                onFocusScale={scale => setFocus(scale)}
                 genId={genId}
             />
+            {/* ) : null} */}
             <div
                 style={{
                     display: 'flex',
                     flex: 1,
                     fontSize: 36,
                     flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
                 }}
             >
-                <div style={{ fontWeight: 'bold', marginBottom: 32 }}>{card.title}</div>
-                <div style={{ marginBottom: 32 }}>{card.description}</div>
-                <div>
-                    {index + 1} / {idsInOrder.length}
+                {focus !== null ? (
+                    <FocusScale
+                        clear={() => setFocus(null)}
+                        scale={focus}
+                        current={card.scales[focus.id]}
+                        onClick={v => {
+                            col.setAttribute(
+                                card.id,
+                                ['scales', focus.id],
+                                card.scales[focus.id] === v ? null : v,
+                            );
+                        }}
+                    />
+                ) : null}
+                <div
+                    css={{
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        display: 'flex',
+                        flex: 1,
+                    }}
+                >
+                    <div style={{ fontWeight: 'bold', marginBottom: 32 }}>{card.title}</div>
+                    <div style={{ marginBottom: 32 }}>{card.description}</div>
+                    <div>
+                        {index + 1} / {idsInOrder.length}
+                    </div>
                 </div>
             </div>
+        </div>
+    );
+};
+
+const FocusScale = ({ scale, current, onClick, clear }) => {
+    const nodes = [];
+    for (let i = scale.min; i <= scale.max; i++) {
+        nodes.push(
+            <div
+                style={
+                    current === i
+                        ? {
+                              backgroundColor: scale.color,
+                          }
+                        : {}
+                }
+                css={{
+                    position: 'relative',
+                    cursor: 'pointer',
+                    flex: 1,
+                    width: '2em',
+                    textAlign: 'center',
+                    border: '2px solid transparent',
+                    borderRadius: 4,
+                    ':hover': {
+                        borderColor: '#0af',
+                    },
+                }}
+                key={i}
+                onClick={() => onClick(i)}
+            >
+                {i}
+            </div>,
+        );
+    }
+    return (
+        <div css={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div>{scale.title}</div>
+            <div
+                css={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                }}
+            >
+                {nodes}
+            </div>
+            <div css={{ fontSize: 12 }}>Use keyboard for rapid rating</div>
+            <button onClick={() => clear()}>Clear focused scale</button>
         </div>
     );
 };

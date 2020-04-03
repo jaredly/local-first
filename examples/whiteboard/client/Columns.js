@@ -1,5 +1,4 @@
 // @flow
-// @flow
 /** @jsx jsx */
 import { jsx } from '@emotion/core';
 import React from 'react';
@@ -46,12 +45,7 @@ const ColumnButtons = ({
     );
 };
 
-const arrangeCards = (
-    cards: { [key: string]: CardT },
-    selection,
-    columns,
-    collection,
-) => {
+const arrangeCards = (cards: { [key: string]: CardT }, selection, columns, collection) => {
     // if they're already roughly in a grid, it would be nice to maintain that...
     const selectedCards = Object.keys(selection).map(key => cards[key]);
     if (!selectedCards.length) {
