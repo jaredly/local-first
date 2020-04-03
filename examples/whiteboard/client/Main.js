@@ -8,6 +8,7 @@ import { type Client, type SyncStatus } from '../../../packages/client-bundle';
 
 import WhiteboardScreen from './screens/WhiteboardScreen';
 import FlashcardMode from './screens/FlashcardMode';
+import SortMode from './screens/SortModeMergeSort';
 import Welcome from './Welcome';
 
 import {
@@ -39,7 +40,8 @@ const Main = ({ client }: { client: Client<SyncStatus> }) => {
     const [scalesCol, scales] = useCollection<ScaleT, SyncStatus>(React, client, 'scales');
     const [commentsCol, comments] = useCollection<CommentT, SyncStatus>(React, client, 'comments');
 
-    const [flashcard, setFlashcard] = React.useState(true);
+    // const [flashcard, setFlashcard] = React.useState(true);
+    const [screen, setScreen] = React.useState('flashcard');
 
     if (!Object.keys(cards).length) {
         return (
@@ -62,7 +64,7 @@ const Main = ({ client }: { client: Client<SyncStatus> }) => {
         );
     }
 
-    if (flashcard) {
+    if (screen === 'flashcard') {
         return (
             <FlashcardMode
                 cards={cards}
@@ -71,14 +73,27 @@ const Main = ({ client }: { client: Client<SyncStatus> }) => {
                 tagsCol={tagsCol}
                 scales={scales}
                 scalesCol={scalesCol}
-                onDone={() => setFlashcard(false)}
+                onDone={() => setScreen('whiteboard')}
+                genId={client.getStamp}
+            />
+        );
+    } else if (screen === 'sort') {
+        return (
+            <SortMode
+                cards={cards}
+                col={col}
+                tags={tags}
+                tagsCol={tagsCol}
+                scales={scales}
+                scalesCol={scalesCol}
+                onDone={() => setScreen('whiteboard')}
                 genId={client.getStamp}
             />
         );
     } else {
         return (
             <WhiteboardScreen
-                setFlashcard={setFlashcard}
+                setFlashcard={() => setScreen('flashcard')}
                 client={client}
                 cards={cards}
                 col={col}
