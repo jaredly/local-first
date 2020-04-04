@@ -101,6 +101,8 @@ const PilesMode = ({
 
     const pilePositions = state.piles.map(() => React.useRef(null));
 
+    const baseY = window.innerHeight / 2 - CARD_HEIGHT / 2;
+
     let x = 0;
     const MARGIN = 24;
     let firstCard = null;
@@ -115,9 +117,10 @@ const PilesMode = ({
         if (firstCard === null) {
             firstCard = i;
         }
+        const xPos = window.innerWidth / 2 - CARD_WIDTH / 2 + x * (CARD_WIDTH + MARGIN);
         const pos = {
-            x: window.innerWidth / 2 - CARD_WIDTH / 2 + x * (CARD_WIDTH + MARGIN),
-            y: window.innerHeight / 2 - CARD_HEIGHT / 2,
+            x: Math.min(xPos, window.innerWidth - CARD_WIDTH / 2),
+            y: baseY,
         };
         x += 1;
         return pos;
@@ -125,9 +128,7 @@ const PilesMode = ({
 
     const springs = state.cards.map((card, i) => {
         return useSpring({
-            x: positions[i].x,
-            y: positions[i].y,
-            tilt: card.pile != null ? card.tilt : 0,
+            xyt: [positions[i].x, positions[i].y, card.pile != null ? card.tilt : 0],
             opacity: card.pile != null ? 0.8 : 1,
         });
     });
@@ -143,12 +144,22 @@ const PilesMode = ({
 
     React.useEffect(() => {
         if (state.firstRef.current) {
-            state.firstRef.current.focus();
+            const div = state.firstRef.current;
+            div.focus();
         }
     }, [state]);
 
     return (
-        <div>
+        <div
+            style={{
+                overflow: 'hidden',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+            }}
+        >
             <div
                 style={{
                     display: 'flex',
@@ -193,13 +204,14 @@ const PilesMode = ({
                     css={styles.card}
                     style={{
                         position: 'absolute',
-                        top: springs[i].y,
-                        left: springs[i].x,
+                        top: 0, //springs[i].y,
+                        left: 0, //springs[i].x,
                         marginTop: -CARD_HEIGHT / 2,
                         marginLeft: -CARD_WIDTH / 2,
                         opacity: springs[i].opacity,
-                        transform: springs[i].tilt.interpolate(
-                            (tilt) => `rotate(${parseInt(tilt * 30)}deg)`,
+                        transform: springs[i].xyt.interpolate(
+                            (x, y, tilt) =>
+                                `translate(${x}px, ${y}px) rotate(${parseInt(tilt * 30)}deg)`,
                         ),
                     }}
                     onKeyDown={(evt) => {
@@ -216,9 +228,30 @@ const PilesMode = ({
                     <div>{cards[item.id].description}</div>
                 </animated.div>
             ))}
+            <div
+                style={{
+                    position: 'absolute',
+                    backgroundColor: 'aliceblue',
+                    top: baseY,
+                    left: window.innerWidth - (CARD_WIDTH * boxSize) / 2,
+                    marginLeft: (-CARD_WIDTH / 2) * boxSize,
+                    marginTop: (-CARD_HEIGHT / 2) * boxSize,
+                    width: CARD_WIDTH * boxSize,
+                    height: CARD_HEIGHT * boxSize,
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    border: '1px solid #ccc',
+                }}
+            >
+                Miller Value Sort
+            </div>
         </div>
     );
 };
+
+const boxSize = 1.3;
 
 const styles = {
     title: {
@@ -233,7 +266,8 @@ const styles = {
         height: CARD_HEIGHT,
         backgroundColor: 'white',
         padding: 8,
-        boxShadow: '0 0 3px #555',
+        // boxShadow: '0 0 3px #555',
+        border: '1px solid #ccc',
         margin: 8,
     },
 };
