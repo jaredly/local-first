@@ -10,12 +10,12 @@ import { type CardT, type TagT, type ScaleT, colors } from '../types';
 import { useSprings, animated } from 'react-spring';
 
 type State = {
-    firstRef: { current: ?Node },
+    firstRef: { current: ?HTMLDivElement },
     piles: Array<{ title: string }>,
     cards: Array<Card>,
 };
 
-type Card = { x: number, y: number, id: string, pile?: ?number };
+type Card = { x: number, y: number, id: string, pile?: ?number, tilt: number };
 
 const initialState = (ids): State => ({
     firstRef: { current: null },
@@ -188,6 +188,8 @@ const PilesMode = ({
                         left: positions[i].x,
                         marginTop: -CARD_HEIGHT / 2,
                         marginLeft: -CARD_WIDTH / 2,
+                        transform:
+                            item.pile != null ? `rotate(${parseInt(item.tilt * 30)}deg)` : null,
                     }}
                     onKeyDown={(evt) => {
                         if (
@@ -196,10 +198,6 @@ const PilesMode = ({
                             +evt.key >= 1
                         ) {
                             dispatch({ type: 'key', pile: +evt.key - 1, card: i });
-                            // } else if (evt.key === 'ArrowRight') {
-                            //     dispatch('punt');
-                            //     evt.preventDefault();
-                            //     evt.stopPropagation();
                         }
                     }}
                 >
