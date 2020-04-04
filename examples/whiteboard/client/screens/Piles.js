@@ -10,7 +10,7 @@ import { type CardT, type TagT, type ScaleT, colors } from '../types';
 import { useSpring, animated } from 'react-spring';
 
 type State = {
-    firstRef: { current: ?Node },
+    firstRef: { current: ?HTMLDivElement },
     piles: Array<{ cards: Array<Card>, title: string }>,
     waiting: Array<Card>,
 };

@@ -7,7 +7,7 @@ import { tagStyle, createTagStyle } from '../Card';
 import TagsUI from '../TagsUI';
 import { type Collection } from '../../../../packages/client-bundle';
 import { type CardT, type TagT, type ScaleT, colors } from '../types';
-import { useSprings, animated } from 'react-spring';
+import { useSpring, animated } from 'react-spring';
 
 type State = {
     firstRef: { current: ?HTMLDivElement },
@@ -123,6 +123,15 @@ const PilesMode = ({
         return pos;
     });
 
+    const springs = state.cards.map((card, i) => {
+        return useSpring({
+            x: positions[i].x,
+            y: positions[i].y,
+            tilt: card.pile != null ? card.tilt : 0,
+            opacity: card.pile != null ? 0.8 : 1,
+        });
+    });
+
     // const [props, set] = useSprings(state.cards.length, (i) => ({
     //     from: {
     //         x: window.innerWidth / 2 + i * CARD_WIDTH,
@@ -177,19 +186,21 @@ const PilesMode = ({
                 ))}
             </div>
             {state.cards.map((item, i) => (
-                <div
+                <animated.div
                     key={item.id}
                     ref={i === firstCard ? (node) => (state.firstRef.current = node) : null}
                     tabIndex={i === firstCard ? '0' : null}
                     css={styles.card}
                     style={{
                         position: 'absolute',
-                        top: positions[i].y,
-                        left: positions[i].x,
+                        top: springs[i].y,
+                        left: springs[i].x,
                         marginTop: -CARD_HEIGHT / 2,
                         marginLeft: -CARD_WIDTH / 2,
-                        transform:
-                            item.pile != null ? `rotate(${parseInt(item.tilt * 30)}deg)` : null,
+                        opacity: springs[i].opacity,
+                        transform: springs[i].tilt.interpolate(
+                            (tilt) => `rotate(${parseInt(tilt * 30)}deg)`,
+                        ),
                     }}
                     onKeyDown={(evt) => {
                         if (
@@ -203,7 +214,7 @@ const PilesMode = ({
                 >
                     <div css={styles.title}>{cards[item.id].title}</div>
                     <div>{cards[item.id].description}</div>
-                </div>
+                </animated.div>
             ))}
         </div>
     );
