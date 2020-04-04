@@ -7,12 +7,15 @@ import { tagStyle, createTagStyle } from '../Card';
 import TagsUI from '../TagsUI';
 import { type Collection } from '../../../../packages/client-bundle';
 import { type CardT, type TagT, type ScaleT, colors } from '../types';
+import { useSpring, animated } from 'react-spring';
 
 type State = {
     firstRef: { current: ?Node },
-    piles: Array<{ cards: Array<{ x: number, y: number, id: string }>, title: string }>,
-    waiting: Array<string>,
+    piles: Array<{ cards: Array<Card>, title: string }>,
+    waiting: Array<Card>,
 };
+
+type Card = { x: number, y: number, id: string };
 
 const initialState = (ids) => ({
     firstRef: { current: null },
@@ -23,7 +26,12 @@ const initialState = (ids) => ({
         { cards: [], title: 'Less important' },
         { cards: [], title: 'Not important' },
     ],
-    waiting: ids,
+    waiting: ids.map((id) => ({
+        id,
+        x: Math.random() - 0.5,
+        y: Math.random() - 0.5,
+        tilt: Math.random() - 0.5,
+    })),
 });
 
 const reduce = (state, action) => {
@@ -38,14 +46,7 @@ const reduce = (state, action) => {
         const piles = state.piles.slice();
         piles[action.pile] = {
             ...piles[action.pile],
-            cards: piles[action.pile].cards.concat([
-                {
-                    x: Math.random() - 0.5,
-                    y: Math.random() - 0.5,
-                    tilt: Math.random() - 0.5,
-                    id: state.waiting[0],
-                },
-            ]),
+            cards: piles[action.pile].cards.concat([state.waiting[0]]),
         };
         return {
             ...state,
@@ -53,7 +54,6 @@ const reduce = (state, action) => {
             waiting: state.waiting.slice(1),
         };
     }
-    return state;
 };
 
 const CARD_WIDTH = 200;
@@ -162,9 +162,9 @@ const PilesMode = ({
                         flex: 1,
                     }}
                 >
-                    {state.waiting.map((id, i) => (
+                    {state.waiting.map((item, i) => (
                         <div
-                            key={id}
+                            key={item.id}
                             ref={i === 0 ? (node) => (state.firstRef.current = node) : null}
                             tabIndex="0"
                             css={styles.card}
@@ -182,8 +182,8 @@ const PilesMode = ({
                                 }
                             }}
                         >
-                            <div css={styles.title}>{cards[id].title}</div>
-                            <div>{cards[id].description}</div>
+                            <div css={styles.title}>{cards[item.id].title}</div>
+                            <div>{cards[item.id].description}</div>
                         </div>
                     ))}
                 </div>

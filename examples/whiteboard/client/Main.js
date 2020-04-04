@@ -9,7 +9,7 @@ import { type Client, type SyncStatus } from '../../../packages/client-bundle';
 import WhiteboardScreen from './screens/WhiteboardScreen';
 import FlashcardMode from './screens/FlashcardMode';
 import SortMode from './screens/SortModeMergeSort';
-import PilesMode from './screens/Piles';
+import PilesMode from './screens/AnimatedPiles';
 import Welcome from './Welcome';
 
 import {
