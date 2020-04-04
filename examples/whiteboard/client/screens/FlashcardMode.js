@@ -28,7 +28,7 @@ const FlashcardMode = ({
     genId: () => string,
 }) => {
     const idsInOrder = React.useMemo(() => {
-        return Object.keys(cards).filter(id => cards[id].header == null);
+        return Object.keys(cards).filter((id) => cards[id].header == null);
     }, [cards]);
     const [index, dispatch] = React.useReducer((state, action) => {
         if (action === 'next') {
@@ -40,23 +40,8 @@ const FlashcardMode = ({
         }
     }, 0);
 
-    // const currentId = React.useRef('');
-    // const currentCards = React.useRef({});
-
     const [focus, setFocus] = React.useState(null);
-
-    // React.useEffect(() => {
-    //     const key = evt => {
-
-    //     };
-    //     window.addEventListener('keydown', key, true);
-    //     return () => {
-    //         window.removeEventListener('keydown', key, true);
-    //     };
-    // }, []);
-
     const key = React.useRef(null);
-
     const mounted = React.useRef(false);
 
     const card = cards[idsInOrder[index]];
@@ -66,19 +51,16 @@ const FlashcardMode = ({
         return <div />;
     }
 
-    // currentId.current = card.id;
-    // currentCards.current = cards;
-
     return (
         <div
             tabIndex="0"
-            ref={node => {
+            ref={(node) => {
                 if (node && !mounted.current) {
                     mounted.current = true;
                     node.focus();
                 }
             }}
-            onKeyDown={evt => {
+            onKeyDown={(evt) => {
                 if (evt.key === 'Tab' && evt.shiftKey) {
                     dispatch('prev');
                     evt.stopPropagation();
@@ -141,7 +123,6 @@ const FlashcardMode = ({
             >
                 ╳
             </button>
-            {/* {focus === null ? ( */}
             <TagsUI
                 selection={{ [card.id]: true }}
                 setSelection={() => {}}
@@ -151,10 +132,9 @@ const FlashcardMode = ({
                 tagsCol={tagsCol}
                 scales={scales}
                 scalesCol={scalesCol}
-                onFocusScale={scale => setFocus(scale)}
+                onFocusScale={(scale) => setFocus(scale)}
                 genId={genId}
             />
-            {/* ) : null} */}
             <div
                 style={{
                     display: 'flex',
@@ -168,7 +148,7 @@ const FlashcardMode = ({
                         clear={() => setFocus(null)}
                         scale={focus}
                         current={card.scales[focus.id]}
-                        onClick={v => {
+                        onClick={(v) => {
                             col.setAttribute(
                                 card.id,
                                 ['scales', focus.id],

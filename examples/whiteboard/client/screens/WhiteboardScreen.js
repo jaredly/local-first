@@ -30,7 +30,6 @@ import Card2 from '../Card';
 import { type Collection } from '../../../../packages/client-bundle';
 
 import Whiteboard from '../whiteboard/Whiteboard';
-// import { onMove, onMouseUp, dragScroll } from './dragUtils';
 
 const objDiff = (one, two) => {
     const res = {};
@@ -128,8 +127,8 @@ const WhiteboardScreen = ({
                     tagsCol={tagsCol}
                     scales={scales}
                     scalesCol={scalesCol}
-                    setKey={noop}
-                    clearKey={noop}
+                    setSelection={selection => dispatchSelection({ type: 'replace', selection })}
+                    onFocusScale={() => {}}
                     genId={client.getStamp}
                 />
             </div>

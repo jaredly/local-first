@@ -9,6 +9,7 @@ import { type Client, type SyncStatus } from '../../../packages/client-bundle';
 import WhiteboardScreen from './screens/WhiteboardScreen';
 import FlashcardMode from './screens/FlashcardMode';
 import SortMode from './screens/SortModeMergeSort';
+import PilesMode from './screens/Piles';
 import Welcome from './Welcome';
 
 import {
@@ -41,22 +42,22 @@ const Main = ({ client }: { client: Client<SyncStatus> }) => {
     const [commentsCol, comments] = useCollection<CommentT, SyncStatus>(React, client, 'comments');
 
     // const [flashcard, setFlashcard] = React.useState(true);
-    const [screen, setScreen] = React.useState('flashcard');
+    const [screen, setScreen] = React.useState('piles');
 
     if (!Object.keys(cards).length) {
         return (
             <Welcome
                 onStart={() => {
-                    makeDefaultTags(client.getStamp).forEach(tag => {
+                    makeDefaultTags(client.getStamp).forEach((tag) => {
                         tagsCol.save(tag.id, tag);
                     });
-                    makeDefaultScales(client.getStamp).forEach(scale => {
+                    makeDefaultScales(client.getStamp).forEach((scale) => {
                         scalesCol.save(scale.id, scale);
                     });
-                    makeDefaultHeadings(client.getStamp).forEach(card => {
+                    makeDefaultHeadings(client.getStamp).forEach((card) => {
                         col.save(card.id, card);
                     });
-                    makeDefaultCards(client.getStamp).forEach(card => {
+                    makeDefaultCards(client.getStamp).forEach((card) => {
                         col.save(card.id, card);
                     });
                 }}
@@ -67,6 +68,19 @@ const Main = ({ client }: { client: Client<SyncStatus> }) => {
     if (screen === 'flashcard') {
         return (
             <FlashcardMode
+                cards={cards}
+                col={col}
+                tags={tags}
+                tagsCol={tagsCol}
+                scales={scales}
+                scalesCol={scalesCol}
+                onDone={() => setScreen('whiteboard')}
+                genId={client.getStamp}
+            />
+        );
+    } else if (screen === 'piles') {
+        return (
+            <PilesMode
                 cards={cards}
                 col={col}
                 tags={tags}
