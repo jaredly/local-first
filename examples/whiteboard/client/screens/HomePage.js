@@ -40,7 +40,7 @@ const HomePage = ({
                     const piles = {
                         '0': { title: 'Most important', color: colors[0] },
                         '1': { title: 'Very important', color: colors[1] },
-                        '2': { title: 'important', color: colors[2] },
+                        '2': { title: 'Important', color: colors[2] },
                         '3': { title: 'Less important', color: colors[3] },
                         '4': { title: 'Not important', color: colors[4] },
                     };

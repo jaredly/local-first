@@ -56,6 +56,9 @@ const shuffle = (array) => {
         .map((item) => item[1]);
 };
 
+const dist = (pos) => Math.sqrt(pos.x * pos.x + pos.y * pos.y);
+const distTo = (p1, p2) => dist({ x: p2.x - p1.x, y: p2.y - p1.y });
+
 const PilesMode = ({
     col,
     cards,
@@ -95,7 +98,7 @@ const PilesMode = ({
     Object.keys(sort.piles).forEach((k) => {
         pilePositions[k] = React.useRef(null);
     });
-    // pilesInOrder.map(() => React.useRef(null));
+    const deckPosition = React.useRef(null);
 
     const baseY = window.innerHeight / 2 - CARD_HEIGHT / 2;
 
@@ -127,6 +130,28 @@ const PilesMode = ({
         return pos;
     });
 
+    const currentDrag = React.useRef(null);
+
+    const getClosestTarget = (pos, pile) => {
+        let closest = null;
+        if (pile && deckPosition.current) {
+            closest = { dist: Math.abs(pos.y - deckPosition.current.y), deck: true };
+            // console.log(closest)
+        }
+        Object.keys(pilePositions).forEach((pid) => {
+            if (pile && pile.pile === pid) {
+                return;
+            }
+            const ppos = pilePositions[pid].current;
+            if (!ppos) return;
+            const d = distTo(pos, ppos);
+            if (!closest || d < closest.dist) {
+                closest = { dist: d, pile: pid };
+            }
+        });
+        return closest;
+    };
+
     const springs = cardPositions.map((card, i) => {
         const dest = {
             x: positions[i].x,
@@ -136,8 +161,9 @@ const PilesMode = ({
             immediate: false,
         };
         const [props, set] = useSpring(() => dest);
-        console.log(props);
-        set(dest);
+        if (currentDrag.current !== i) {
+            set(dest);
+        }
         return [props, set, dest];
     });
     const currentSprings = React.useRef(springs);
@@ -145,33 +171,46 @@ const PilesMode = ({
 
     const pileContainerRef = React.useRef(null);
 
-    const currentDrag = React.useRef(null);
-
     const bind = useDrag(({ args: [i], down, movement: [x, y], event, vxvy }) => {
         event.stopPropagation();
+
+        const dest = currentSprings.current[i][2];
+        const cdist = dist({ x, y });
+        const current = { x: x + dest.x, y: y + dest.y };
+        const closestTarget = getClosestTarget(
+            current,
+            // includes current pile thing you know
+            sort.cards[cardPositions[i].id],
+        );
         if (!down) {
-            const dest = currentSprings.current[i][2];
-            const offset = [x + dest.x, y + dest.y, dest.tilt];
-            console.log(vxvy);
-            springs[i][1]({
-                x: dest.x,
-                y: dest.y,
-                tilt: dest.tilt,
-                immediate: false,
-                // config: (key) =>
-                //     key === 'x'
-                //         ? { velocity: vxvy[0] * 5 }
-                //         : key === 'y'
-                //         ? { velocity: vxvy[1] * 5 }
-                //         : {},
-                // TODO TODO velocity preservation here
-            });
+            if (currentDrag.current === i) {
+                currentDrag.current = null;
+            }
+            if (closestTarget && closestTarget.dist < cdist) {
+                if (closestTarget.deck) {
+                    sortsCol.clearAttribute(sort.id, ['cards', cardPositions[i].id]);
+                } else {
+                    sortsCol.setAttribute(sort.id, ['cards', cardPositions[i].id], {
+                        pile: +closestTarget.pile,
+                        placementTime: Date.now(),
+                    });
+                }
+            } else {
+                // if (cdist < 20)
+                // console.log(vxvy);
+                springs[i][1]({
+                    x: dest.x,
+                    y: dest.y,
+                    tilt: dest.tilt,
+                    immediate: false,
+                });
+            }
             return;
         }
-        const dest = currentSprings.current[i][2];
+        currentDrag.current = i;
         springs[i][1]({
-            x: x + dest.x,
-            y: y + dest.y,
+            x: current.x,
+            y: current.y,
             immediate: true,
         });
     });
@@ -182,7 +221,6 @@ const PilesMode = ({
             div.focus();
         }
     }, [firstRef.current, sort]);
-    // console.log('drag', drag);
 
     return (
         <div
@@ -262,7 +300,6 @@ const PilesMode = ({
                     }}
                     onKeyDown={(evt) => {
                         if (+evt.key == evt.key && sort.piles[+evt.key - 1]) {
-                            // dispatch({ type: 'key', pile: +evt.key - 1, card: i });
                             sortsCol.setAttribute(sort.id, ['cards', item.id], {
                                 pile: +evt.key - 1,
                                 placementTime: Date.now(),
@@ -275,6 +312,16 @@ const PilesMode = ({
                 </animated.div>
             ))}
             <div
+                ref={(node) => {
+                    if (node) {
+                        const box = node.getBoundingClientRect();
+                        const pos = {
+                            y: box.top + box.height / 2,
+                            x: box.left + box.width / 2,
+                        };
+                        deckPosition.current = pos;
+                    }
+                }}
                 style={{
                     position: 'absolute',
                     backgroundColor: 'aliceblue',
