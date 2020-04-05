@@ -58,44 +58,34 @@ export const rectIntersect = (one: rect, two: rect) => {
 
 import { type Schema } from '../../../packages/client-bundle';
 
-export type TagT = {
+export type SortT = {
     id: string,
     title: string,
-    color: string,
-    style: string, // background, border, color, underline
     createdDate: number,
+    completedDate: ?number,
+    // piles are actually keyed by number
+    piles: { [key: number]: { title: string, color: string } },
+    cards: { [key: string]: { pile: number, sort: ?Array<number> } },
 };
 
-export const TagSchema: Schema = {
+export const SortSchema = {
     type: 'object',
     attributes: {
         id: 'string',
         title: 'string',
-        color: 'string',
-        style: 'string',
-        createdDate: 'int',
-    },
-};
-
-export type ScaleT = {
-    id: string,
-    title: string,
-    color: string,
-    // like 1 to 5 or whatnot
-    min: number,
-    max: number,
-    createdDate: number,
-};
-
-export const ScaleSchema: Schema = {
-    type: 'object',
-    attributes: {
-        id: 'string',
-        title: 'string',
-        color: 'string',
-        min: 'int',
-        max: 'int',
-        createdDate: 'int',
+        createdDate: 'number',
+        completedDate: { type: 'optional', value: 'number' },
+        piles: {
+            type: 'map',
+            value: { type: 'object', attributes: { title: 'string', color: 'string' } },
+        },
+        cards: {
+            type: 'map',
+            value: {
+                type: 'object',
+                attributes: { pile: 'number', sort: { type: 'optional', value: 'any' } },
+            },
+        },
     },
 };
 
@@ -126,20 +116,6 @@ export type CardT = {
     id: string,
     title: string,
     description: string,
-    position: {|
-        x: number,
-        y: number,
-    |},
-    size: {|
-        x: number,
-        y: number,
-    |},
-    // added date, for ordering
-    tags: { [tagId: string]: number },
-    // these will just be sorted by ID or something
-    scales: { [scaleId: string]: number },
-    parent?: ?{ id: string, sort: Array<number> },
-    header?: ?number,
     disabled: boolean,
 };
 
@@ -149,30 +125,6 @@ export const CardSchema: Schema = {
         id: 'string',
         title: 'string',
         description: 'string',
-        position: {
-            type: 'object',
-            attributes: {
-                x: 'number',
-                y: 'number',
-            },
-        },
-        parent: {
-            type: 'optional',
-            value: {
-                type: 'object',
-                attributes: {
-                    id: 'string',
-                    sort: { type: 'array', item: 'number' },
-                },
-            },
-        },
-        size: {
-            type: 'object',
-            attributes: { x: 'number', y: 'number' },
-        },
-        tags: { type: 'map', value: 'number' },
-        scales: { type: 'map', value: 'number' },
-        header: { type: 'optional', value: 'number' },
         disabled: 'boolean',
     },
 };

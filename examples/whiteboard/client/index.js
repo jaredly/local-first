@@ -9,21 +9,20 @@ import {
 } from '../../../packages/client-bundle';
 import { default as makeDeltaInMemoryPersistence } from '../../../packages/idb/src/delta-mem';
 
-import { TagSchema, ScaleSchema, CommentSchema, CardSchema } from './types';
+import { SortSchema, CommentSchema, CardSchema } from './types';
 
 import Main from './Main';
 
 const schemas = {
     cards: CardSchema,
     comments: CommentSchema,
-    tags: TagSchema,
-    scales: ScaleSchema,
+    sorts: SortSchema,
 };
 
 const App = () => {
     // We're assuming we're authed, and cookies are taking care of things.
     const client = React.useMemo(
-        () => createPersistedBlobClient('miller-values-sort', schemas, null, 1),
+        () => createPersistedBlobClient('miller-values-sort', schemas, null, 2),
         // createInMemoryDeltaClient(
         // schemas,
         //     `ws://localhost:9090/ephemeral/sync`,

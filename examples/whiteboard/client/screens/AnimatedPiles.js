@@ -3,10 +3,8 @@
 import { jsx } from '@emotion/core';
 import React from 'react';
 
-import { tagStyle, createTagStyle } from '../Card';
-import TagsUI from '../TagsUI';
 import { type Collection } from '../../../../packages/client-bundle';
-import { type CardT, type TagT, type ScaleT, colors } from '../types';
+import { type CardT, type SortT, colors } from '../types';
 import { useSpring, animated } from 'react-spring';
 
 type State = {
@@ -67,20 +65,16 @@ const PilesMode = ({
     col,
     cards,
     onDone,
-    tags,
-    scales,
-    tagsCol,
-    scalesCol,
     genId,
+    sort,
+    sortsCol,
 }: {
     onDone: () => void,
     col: Collection<CardT>,
     cards: { [key: string]: CardT },
-    tagsCol: Collection<TagT>,
-    tags: { [key: string]: TagT },
-    scalesCol: Collection<ScaleT>,
-    scales: { [key: string]: ScaleT },
     genId: () => string,
+    sort: SortT,
+    sortsCol: Collection<SortT>,
 }) => {
     // focus management folks.
 
@@ -93,10 +87,7 @@ const PilesMode = ({
     // So we've got a list of cards that are yet to be sorted into piles
     // and a set of piles.
 
-    const initial = React.useMemo(
-        () => initialState(Object.keys(cards).filter((id) => cards[id].header == null)),
-        [],
-    );
+    const initial = React.useMemo(() => initialState(Object.keys(cards)), []);
     const [state, dispatch] = React.useReducer(reduce, initial);
 
     const pilePositions = state.piles.map(() => React.useRef(null));
@@ -132,13 +123,6 @@ const PilesMode = ({
             opacity: card.pile != null ? 0.8 : 1,
         });
     });
-
-    // const [props, set] = useSprings(state.cards.length, (i) => ({
-    //     from: {
-    //         x: window.innerWidth / 2 + i * CARD_WIDTH,
-    //         y: window.innerHeight / 2 - CARD_WIDTH / 2,
-    //     },
-    // }));
 
     const pileContainerRef = React.useRef(null);
 
@@ -204,8 +188,8 @@ const PilesMode = ({
                     css={styles.card}
                     style={{
                         position: 'absolute',
-                        top: 0, //springs[i].y,
-                        left: 0, //springs[i].x,
+                        top: 0,
+                        left: 0,
                         marginTop: -CARD_HEIGHT / 2,
                         marginLeft: -CARD_WIDTH / 2,
                         opacity: springs[i].opacity,
