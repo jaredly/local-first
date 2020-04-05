@@ -33,24 +33,11 @@ const initialState = (ids): State => ({
 });
 
 const reduce = (state, action) => {
-    // if (action === 'punt') {
-    //     const waiting = state.waiting.slice();
-    //     waiting.push(waiting.shift());
-    //     return {
-    //         ...state,
-    //         waiting,
-    //     };
-    // } else {
     const cards = state.cards.slice();
     cards[action.card] = {
         ...cards[action.card],
         pile: action.pile,
     };
-    // const piles = state.piles.slice();
-    // piles[action.pile] = {
-    //     ...piles[action.pile],
-    //     cards: piles[action.pile].cards.concat([state.waiting[0]]),
-    // };
     return {
         ...state,
         cards,
@@ -60,6 +47,13 @@ const reduce = (state, action) => {
 
 const CARD_WIDTH = 200;
 const CARD_HEIGHT = 100;
+
+const shuffle = (array) => {
+    return array
+        .map((item) => [Math.random(), item])
+        .sort((a, b) => a[0] - b[0])
+        .map((item) => item[1]);
+};
 
 const PilesMode = ({
     col,
@@ -76,62 +70,77 @@ const PilesMode = ({
     sort: SortT,
     sortsCol: Collection<SortT>,
 }) => {
-    // focus management folks.
+    const cardPositions = React.useMemo(() => {
+        const keys = Object.keys(cards);
+        const sorted = keys
+            .filter((k) => !!sort.cards[k])
+            .sort((a, b) => sort.cards[a].placementTime - sort.cards[b].placementTime);
+        const unsorted = shuffle(keys.filter((k) => !sort.cards[k]));
 
-    // baisc plan:
-    // have "piles" to put the cards in
-    // look into animation solutions probably.
-    // maybe react-motion?
-    // ok I guess react-spring is where it's at these days
+        return sorted.concat(unsorted).map((id) => ({
+            id,
+            x: Math.random() * 2 - 1,
+            y: Math.random() * 2 - 1,
+            tilt: Math.random() * 2 - 1,
+        }));
+    }, []);
+    // const [state, dispatch] = React.useReducer(reduce, initial);
+    const firstRef = React.useRef(null);
+    const pilesInOrder = Object.keys(sort.piles)
+        .sort()
+        .map((id) => ({ id, pile: sort.piles[+id] }));
 
-    // So we've got a list of cards that are yet to be sorted into piles
-    // and a set of piles.
-
-    const initial = React.useMemo(() => initialState(Object.keys(cards)), []);
-    const [state, dispatch] = React.useReducer(reduce, initial);
-
-    const pilePositions = state.piles.map(() => React.useRef(null));
+    const pilePositions = {};
+    Object.keys(sort.piles).forEach((k) => {
+        pilePositions[k] = React.useRef(null);
+    });
+    // pilesInOrder.map(() => React.useRef(null));
 
     const baseY = window.innerHeight / 2 - CARD_HEIGHT / 2;
 
-    let x = 0;
+    // const cardIds = Object.keys(cards)
+
+    let leftPos = 0;
     const MARGIN = 24;
     let firstCard = null;
-    const positions = state.cards.map((card, i) => {
-        if (card.pile != null) {
-            if (pilePositions[card.pile].current) {
-                const { x, y } = pilePositions[card.pile].current;
-                return { x: x + (card.x * CARD_WIDTH) / 2, y: y + (card.y * CARD_HEIGHT) / 2 };
+    const positions = cardPositions.map(({ x, y, tilt, id }, i) => {
+        if (sort.cards[id] != null) {
+            if (pilePositions[sort.cards[id].pile].current) {
+                const pilePos = pilePositions[sort.cards[id].pile].current;
+                return {
+                    x: pilePos.x + (x * CARD_WIDTH) / 4,
+                    y: pilePos.y + (y * CARD_HEIGHT) / 4,
+                };
             }
             return { x: 0, y: 0 };
         }
         if (firstCard === null) {
-            firstCard = i;
+            firstCard = id;
         }
-        const xPos = window.innerWidth / 2 - CARD_WIDTH / 2 + x * (CARD_WIDTH + MARGIN);
+        const xPos = window.innerWidth / 2 - CARD_WIDTH / 2 + leftPos * (CARD_WIDTH + MARGIN);
         const pos = {
             x: Math.min(xPos, window.innerWidth - CARD_WIDTH / 2),
             y: baseY,
         };
-        x += 1;
+        leftPos += 1;
         return pos;
     });
 
-    const springs = state.cards.map((card, i) => {
+    const springs = cardPositions.map((card, i) => {
         return useSpring({
-            xyt: [positions[i].x, positions[i].y, card.pile != null ? card.tilt : 0],
-            opacity: card.pile != null ? 0.8 : 1,
+            xyt: [positions[i].x, positions[i].y, sort.cards[card.id] != null ? card.tilt : 0],
+            opacity: sort.cards[card.id] != null ? 0.8 : 1,
         });
     });
 
     const pileContainerRef = React.useRef(null);
 
     React.useEffect(() => {
-        if (state.firstRef.current) {
-            const div = state.firstRef.current;
+        if (firstRef.current) {
+            const div = firstRef.current;
             div.focus();
         }
-    }, [state]);
+    }, [firstRef.current, sort]);
 
     return (
         <div
@@ -144,13 +153,21 @@ const PilesMode = ({
                 bottom: 0,
             }}
         >
+            <div>{sort.title}</div>
+            <button
+                onClick={() => {
+                    sortsCol.setAttribute(sort.id, ['cards'], {});
+                }}
+            >
+                Reset the sort
+            </button>
             <div
                 style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                 }}
             >
-                {state.piles.map((pile, i) => (
+                {pilesInOrder.map(({ id, pile }, i) => (
                     <div
                         key={i}
                         ref={(node) => {
@@ -160,7 +177,7 @@ const PilesMode = ({
                                     y: box.top + box.height / 2,
                                     x: box.left + box.width / 2,
                                 };
-                                pilePositions[i].current = pos;
+                                pilePositions[id].current = pos;
                             }
                         }}
                         style={{
@@ -180,11 +197,11 @@ const PilesMode = ({
                     </div>
                 ))}
             </div>
-            {state.cards.map((item, i) => (
+            {cardPositions.map((item, i) => (
                 <animated.div
                     key={item.id}
-                    ref={i === firstCard ? (node) => (state.firstRef.current = node) : null}
-                    tabIndex={i === firstCard ? '0' : null}
+                    ref={item.id === firstCard ? (node) => (firstRef.current = node) : null}
+                    tabIndex={item.id === firstCard ? '0' : null}
                     css={styles.card}
                     style={{
                         position: 'absolute',
@@ -195,16 +212,16 @@ const PilesMode = ({
                         opacity: springs[i].opacity,
                         transform: springs[i].xyt.interpolate(
                             (x, y, tilt) =>
-                                `translate(${x}px, ${y}px) rotate(${parseInt(tilt * 30)}deg)`,
+                                `translate(${x}px, ${y}px) rotate(${parseInt(tilt * 15)}deg)`,
                         ),
                     }}
                     onKeyDown={(evt) => {
-                        if (
-                            +evt.key == evt.key &&
-                            +evt.key <= state.piles.length &&
-                            +evt.key >= 1
-                        ) {
-                            dispatch({ type: 'key', pile: +evt.key - 1, card: i });
+                        if (+evt.key == evt.key && sort.piles[+evt.key - 1]) {
+                            // dispatch({ type: 'key', pile: +evt.key - 1, card: i });
+                            sortsCol.setAttribute(sort.id, ['cards', item.id], {
+                                pile: +evt.key - 1,
+                                placementTime: Date.now(),
+                            });
                         }
                     }}
                 >
