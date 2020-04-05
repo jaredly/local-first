@@ -5,7 +5,8 @@ import React from 'react';
 
 import { type Collection } from '../../../../packages/client-bundle';
 import { type CardT, type SortT, colors } from '../types';
-import { useSpring, animated } from 'react-spring';
+import { useSpring, animated, interpolate } from 'react-spring';
+import { useDrag } from 'react-use-gesture';
 
 type State = {
     firstRef: { current: ?HTMLDivElement },
@@ -127,13 +128,53 @@ const PilesMode = ({
     });
 
     const springs = cardPositions.map((card, i) => {
-        return useSpring({
-            xyt: [positions[i].x, positions[i].y, sort.cards[card.id] != null ? card.tilt : 0],
+        const dest = {
+            x: positions[i].x,
+            y: positions[i].y,
+            tilt: sort.cards[card.id] != null ? card.tilt : 0,
             opacity: sort.cards[card.id] != null ? 0.8 : 1,
-        });
+            immediate: false,
+        };
+        const [props, set] = useSpring(() => dest);
+        console.log(props);
+        set(dest);
+        return [props, set, dest];
     });
+    const currentSprings = React.useRef(springs);
+    currentSprings.current = springs;
 
     const pileContainerRef = React.useRef(null);
+
+    const currentDrag = React.useRef(null);
+
+    const bind = useDrag(({ args: [i], down, movement: [x, y], event, vxvy }) => {
+        event.stopPropagation();
+        if (!down) {
+            const dest = currentSprings.current[i][2];
+            const offset = [x + dest.x, y + dest.y, dest.tilt];
+            console.log(vxvy);
+            springs[i][1]({
+                x: dest.x,
+                y: dest.y,
+                tilt: dest.tilt,
+                immediate: false,
+                // config: (key) =>
+                //     key === 'x'
+                //         ? { velocity: vxvy[0] * 5 }
+                //         : key === 'y'
+                //         ? { velocity: vxvy[1] * 5 }
+                //         : {},
+                // TODO TODO velocity preservation here
+            });
+            return;
+        }
+        const dest = currentSprings.current[i][2];
+        springs[i][1]({
+            x: x + dest.x,
+            y: y + dest.y,
+            immediate: true,
+        });
+    });
 
     React.useEffect(() => {
         if (firstRef.current) {
@@ -141,6 +182,7 @@ const PilesMode = ({
             div.focus();
         }
     }, [firstRef.current, sort]);
+    // console.log('drag', drag);
 
     return (
         <div
@@ -203,14 +245,17 @@ const PilesMode = ({
                     ref={item.id === firstCard ? (node) => (firstRef.current = node) : null}
                     tabIndex={item.id === firstCard ? '0' : null}
                     css={styles.card}
+                    {...bind(i)}
                     style={{
                         position: 'absolute',
+                        userSelect: 'none',
                         top: 0,
                         left: 0,
                         marginTop: -CARD_HEIGHT / 2,
                         marginLeft: -CARD_WIDTH / 2,
-                        opacity: springs[i].opacity,
-                        transform: springs[i].xyt.interpolate(
+                        opacity: springs[i][0].opacity,
+                        transform: interpolate(
+                            [springs[i][0].x, springs[i][0].y, springs[i][0].tilt],
                             (x, y, tilt) =>
                                 `translate(${x}px, ${y}px) rotate(${parseInt(tilt * 15)}deg)`,
                         ),
