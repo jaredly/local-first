@@ -16,7 +16,6 @@ const HomePage = ({
     openSort,
     genId,
 }: {
-    onStart: () => void,
     cards: { [key: string]: CardT },
     cardsCol: Collection<SortT>,
     sorts: { [key: string]: SortT },

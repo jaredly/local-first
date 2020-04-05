@@ -25,17 +25,38 @@ import {
 
 import { type Collection } from '../../../packages/client-bundle';
 
+const trimmedHash = () => (window.location.hash ? window.location.hash.slice(1) : null);
+
+const useHash = () => {
+    const [hash, setHash] = React.useState(() => {
+        return trimmedHash();
+    });
+    React.useEffect(() => {
+        const fn = () => {
+            setHash(trimmedHash());
+        };
+        window.addEventListener('hashchange', fn);
+        return () => {
+            window.removeEventListener('hashchange', fn);
+        };
+    }, []);
+    const setter = React.useCallback((newHash) => {
+        // that'll trigger it
+        window.location.hash = newHash;
+    }, []);
+    return [hash, setter];
+};
+
 const Main = ({ client }: { client: Client<SyncStatus> }) => {
     const [col, cards] = useCollection<CardT, SyncStatus>(React, client, 'cards');
     const [sortsCol, sorts] = useCollection<SortT, SyncStatus>(React, client, 'sorts');
-    // const [tagsCol, tags] = useCollection<TagT, SyncStatus>(React, client, 'tags');
-    // const [scalesCol, scales] = useCollection<ScaleT, SyncStatus>(React, client, 'scales');
     const [commentsCol, comments] = useCollection<CommentT, SyncStatus>(React, client, 'comments');
 
-    // const [flashcard, setFlashcard] = React.useState(true);
     const [screen, setScreen] = React.useState('piles');
 
-    const [sort, setSort] = React.useState(null);
+    // const [sort, setSort] = React.useState(null);
+    const [sortId, setSortId] = useHash();
+    const sort = sortId ? sorts[sortId] : null;
 
     if (sort) {
         return (
@@ -51,10 +72,10 @@ const Main = ({ client }: { client: Client<SyncStatus> }) => {
     } else {
         return (
             <HomePage
-                openSort={(sort) => setSort(sort)}
+                openSort={(sort) => setSortId(sort.id)}
                 genId={client.getStamp}
                 cards={cards}
-                col={col}
+                cardsCol={col}
                 sorts={sorts}
                 sortsCol={sortsCol}
             />
