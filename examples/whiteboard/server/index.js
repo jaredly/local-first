@@ -31,13 +31,17 @@ export const run = (dataPath: string, port: number = 9090) => {
 
         const userServers = {};
 
+        const sqlite3 = require('better-sqlite3');
         const authDb = sqlite3(path.join(dataPath, 'users.db'));
         auth.createTables(authDb);
 
         const state = runServer(
-            port,
+            // port,
             (req) => path.join(dataPath, req.auth.id, 'blobs'),
             (req) => {
+                if (!req.auth) {
+                    throw new Error(`No auth`);
+                }
                 if (!userServers[req.auth.id]) {
                     userServers[req.auth.id] = make<Delta, Data>(
                         crdtImpl,

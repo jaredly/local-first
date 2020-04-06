@@ -8,7 +8,7 @@ const reconnectingSocket = (
     url,
     onOpen,
     onMessage: (string, (string) => void) => mixed,
-    updateStatus: SyncStatus => mixed,
+    updateStatus: (SyncStatus) => mixed,
 ) => {
     const state: { socket: ?WebSocket } = {
         socket: null,
@@ -21,24 +21,28 @@ const reconnectingSocket = (
                 new Promise((res, rej) => {
                     const socket = new WebSocket(url);
                     let opened = false;
+                    let closed = false;
                     socket.addEventListener('open', () => {
                         state.socket = socket;
-                        opened = true;
-                        res(true);
-                        updateStatus({ status: 'connected' });
-                        onOpen();
+                        setTimeout(() => {
+                            if (!closed) {
+                                opened = true;
+                                res(true);
+                                updateStatus({ status: 'connected' });
+                                onOpen();
+                            }
+                        }, 50);
                     });
                     socket.addEventListener('close', () => {
+                        closed = true;
                         if (opened) {
                             reconnect();
                         } else {
                             res(false);
                         }
                     });
-                    socket.addEventListener(
-                        'message',
-                        ({ data }: { data: any }) =>
-                            onMessage(data, response => socket.send(response)),
+                    socket.addEventListener('message', ({ data }: { data: any }) =>
+                        onMessage(data, (response) => socket.send(response)),
                     );
                 }),
             500,
@@ -70,14 +74,11 @@ const createWebSocketNetwork = <Delta, Data>(
                     const responseMessages = await handleMessages(
                         messages,
                         sendCrossTabChange,
-                    ).catch(err => {
+                    ).catch((err) => {
                         console.log('Failed to handle messages!');
                         console.error(err);
                     });
-                    if (
-                        responseMessages != null &&
-                        responseMessages.length > 0
-                    ) {
+                    if (responseMessages != null && responseMessages.length > 0) {
                         respond(JSON.stringify(responseMessages));
                     }
                 },
@@ -88,14 +89,14 @@ const createWebSocketNetwork = <Delta, Data>(
                 if (state.socket) {
                     const socket = state.socket;
                     getMessages(!softSync).then(
-                        messages => {
+                        (messages) => {
                             if (messages.length) {
                                 socket.send(JSON.stringify(messages));
                             } else {
                                 console.log('nothing to sync here');
                             }
                         },
-                        err => {
+                        (err) => {
                             console.error('Failed to sync messages folks');
                             console.error(err);
                         },

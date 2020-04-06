@@ -1,10 +1,5 @@
 // @flow
-import type {
-    ClientMessage,
-    ServerMessage,
-    CursorType,
-    ServerState,
-} from '../core/src/server';
+import type { ClientMessage, ServerMessage, CursorType, ServerState } from '../core/src/server';
 
 import path from 'path';
 import fs from 'fs';
@@ -21,7 +16,7 @@ type Middleware = Array<(req, *, () => void) => void>;
 
 export const setupBlob = (
     app: express,
-    getDataPath: req => string,
+    getDataPath: (req) => string,
     middleware: Middleware = [],
     prefix: string = '/blob',
 ) => {
@@ -38,7 +33,7 @@ export const setupBlob = (
 
 export const setupPolling = function<Delta, Data>(
     app: express,
-    getServer: req => ServerState<Data, Delta>,
+    getServer: (req) => ServerState<Data, Delta>,
     middleware: Middleware = [],
     path: string = '/sync',
 ) {
@@ -52,21 +47,24 @@ export const setupPolling = function<Delta, Data>(
 
 export const setupWebsocket = function<Delta, Data>(
     app: express,
-    getServer: express.Request => ServerState<Data, Delta>,
-    // middleware: Middleware = [],
+    getServer: (express.Request) => ServerState<Data, Delta>,
+    middleware: Middleware = [],
     path: string = '/sync',
 ) {
     const clients = {};
 
     console.log('websocketing on', path);
+    if (middleware.length) {
+        app.use(path, middleware);
+    }
     app.ws(path, function(ws, req) {
         console.log('ws connect');
-        if (!req.query.siteId) {
-            console.log('not');
-            ws.close();
-            console.log('no siteId');
-            throw new Error('No siteId');
-        }
+        // if (!req.query.siteId) {
+        //     console.log('not');
+        //     ws.close();
+        //     console.log('no siteId');
+        //     throw new Error('No siteId');
+        // }
         console.log('got');
         try {
             const server = getServer(req);
@@ -80,8 +78,8 @@ export const setupWebsocket = function<Delta, Data>(
 
 export const runServer = <Delta, Data>(
     // port: number,
-    getBlobDataPath: req => string,
-    getServer: req => ServerState<Delta, Data>,
+    getBlobDataPath: (req) => string,
+    getServer: (req) => ServerState<Delta, Data>,
     middleware: Middleware = [],
 ) => {
     const app = express();
@@ -91,7 +89,7 @@ export const runServer = <Delta, Data>(
 
     setupBlob(app, getBlobDataPath, middleware);
     setupPolling(app, getServer, middleware);
-    setupWebsocket(app, getServer);
+    setupWebsocket(app, getServer, middleware);
 
     // const http = app.listen(port);
     return { app, wsInst };

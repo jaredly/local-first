@@ -93,6 +93,7 @@ export const setupAuth = (
 };
 
 export const middleware = (db: DB, secret: string) => (req: *, res: *, next: *) => {
+    console.log('MIDDD');
     if (req.query.token) {
         // TODO validateSessionToken should ... issue a new token?
         // if we're getting close to the end...

@@ -22,11 +22,8 @@ const schemas = {
 const App = () => {
     // We're assuming we're authed, and cookies are taking care of things.
     const client = React.useMemo(
-        () => createPersistedBlobClient('miller-values-sort', schemas, null, 2),
-        // createInMemoryDeltaClient(
-        // schemas,
-        //     `ws://localhost:9090/ephemeral/sync`,
-        // ),
+        // () => createPersistedBlobClient('miller-values-sort', schemas, null, 2),
+        () => createInMemoryDeltaClient(schemas, `ws://localhost:9090/sync`),
         [],
     );
     return <Main client={client} />;

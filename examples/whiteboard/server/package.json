@@ -5,5 +5,8 @@
     "@babel/preset-env": "^7.9.0",
     "@babel/preset-flow": "^7.9.0",
     "@babel/register": "^7.9.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^6.0.1"
   }
 }
