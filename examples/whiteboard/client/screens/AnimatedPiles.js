@@ -88,7 +88,6 @@ const PilesMode = ({
             tilt: Math.random() * 2 - 1,
         }));
     }, []);
-    // const [state, dispatch] = React.useReducer(reduce, initial);
     const firstRef = React.useRef(null);
     const pilesInOrder = Object.keys(sort.piles)
         .sort()
@@ -103,8 +102,6 @@ const PilesMode = ({
     const deckPosition = React.useRef(null);
 
     const baseY = window.innerHeight / 2 - CARD_HEIGHT / 2;
-
-    // const cardIds = Object.keys(cards)
 
     let leftPos = 0;
     const MARGIN = 24;
@@ -184,10 +181,9 @@ const PilesMode = ({
 
     const springs = cardPositions.map((card, i) => {
         const dest = {
-            x: positions[i].x,
-            y: positions[i].y,
-            tilt: sort.cards[card.id] != null ? card.tilt : 0,
-            opacity: sort.cards[card.id] != null ? 0.8 : 1,
+            pos: [positions[i].x, positions[i].y],
+            // tilt: sort.cards[card.id] != null ? card.tilt : 0,
+            // opacity: sort.cards[card.id] != null ? 0.8 : 1,
             immediate: false,
             // config: { velocity: 100 },
         };
@@ -207,21 +203,14 @@ const PilesMode = ({
             event.stopPropagation();
 
             const dest = currentSprings.current[i][2];
-            const current = { x: x + dest.x, y: y + dest.y };
+            const current = { x: x + dest.pos[0], y: y + dest.pos[1] };
             const mul = 100;
-            const projected = { x: x + dest.x + vxvy[0] * mul, y: y + dest.y + vxvy[1] * mul };
+            const projected = {
+                x: x + dest.pos[0] + vxvy[0] * mul,
+                y: y + dest.pos[1] + vxvy[1] * mul,
+            };
             const cdist = dist({ x: x + vxvy[0] * mul, y: x + vxvy[1] * mul });
-            const closestTarget = getClosestTarget(
-                projected,
-                // current,
-                // includes current pile thing you know
-                sort.cards[cardPositions[i].id],
-            );
-            // console.log('current, projected', current, projected, vxvy);
-            // if (closestTarget) {
-            //     current.x -= (current.x - closestTarget.pos.x) / 10;
-            //     current.y -= (current.y - closestTarget.pos.y) / 10;
-            // }
+            const closestTarget = getClosestTarget(projected, sort.cards[cardPositions[i].id]);
             if (!down) {
                 setCurrentTarget(null);
                 if (currentDrag.current === i) {
@@ -238,34 +227,30 @@ const PilesMode = ({
                     }
                     const newPos = getNewPos(i, closestTarget.deck ? null : +closestTarget.pile);
                     if (newPos) {
-                        console.log(vxvy, direction, velocity);
+                        // console.log(vxvy, direction, velocity);
                         springs[i][1]({
-                            config: (key) =>
-                                key === 'x'
-                                    ? { velocity: vxvy[0] * 100 }
-                                    : key === 'y'
-                                    ? { velocity: vxvy[1] * 100 }
-                                    : {},
+                            // config: {
+                            //     velocity: [direction[0] * velocity, direction[1] * velocity],
+                            // },
                             // config: { velocity: 100 },
-                            x: newPos.x,
-                            y: newPos.y,
-                            tilt: closestTarget.deck ? 0 : cardPositions[i].tilt,
+                            config: { velocity: vxvy },
+                            pos: [newPos.x, newPos.y],
                             immediate: false,
                             // reset: true,
                         });
                     }
                     // TODO, we want to
                 } else {
-                    console.log(vxvy, projected, current);
+                    // console.log(vxvy, projected, current);
                     // if (cdist < 20)
                     // console.log(vxvy);
+                    const dvel = [direction[0] * velocity, direction[1] * velocity];
+                    // console.log(dvel, vxvy);
                     springs[i][1]({
                         // config: (key) => (key === 'x' ? { velocity: 100 } : {}),
                         // config: { velocity: 100 },
-                        config: { velocity },
-                        x: dest.x,
-                        y: dest.y,
-                        tilt: dest.tilt,
+                        config: { velocity: dvel },
+                        pos: dest.pos,
                         immediate: false,
                         // reset: true,
                     });
@@ -279,10 +264,8 @@ const PilesMode = ({
             }
             currentDrag.current = i;
             springs[i][1]({
-                x: current.x,
-                y: current.y,
+                pos: [current.x, current.y],
                 immediate: true,
-                // config: { velocity: 100 },
             });
         },
     );
@@ -366,9 +349,11 @@ const PilesMode = ({
                         marginLeft: -CARD_WIDTH / 2,
                         opacity: springs[i][0].opacity,
                         transform: interpolate(
-                            [springs[i][0].x, springs[i][0].y, springs[i][0].tilt],
-                            (x, y, tilt) =>
-                                `translate(${x}px, ${y}px) rotate(${parseInt(tilt * 15)}deg)`,
+                            [springs[i][0].pos],
+                            (pos) =>
+                                `translate(${pos[0]}px, ${pos[1]}px) rotate(${parseInt(
+                                    0 * 15,
+                                )}deg)`,
                         ),
                     }}
                     onKeyDown={(evt) => {
