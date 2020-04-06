@@ -28,7 +28,7 @@ const createUsersTableQuery = `
 `;
 
 const createSessionsTableQuery = `
-    CREATE TABLE IF NOT EXISTS users (
+    CREATE TABLE IF NOT EXISTS sessions (
     id integer PRIMARY KEY,
     userId integer NOT NULL,
     createdDate integer NOT NULL,
@@ -74,7 +74,7 @@ export type User = { info: UserInfo, passwordHash: string };
 export const createUser = (db: DB, { info: { name, email, createdDate }, password }: UserInput) => {
     const passwordHash = bcrypt.hashSync(password);
     const stmt = db.prepare(`INSERT INTO users
-    (name, email, passwordHash, createDate)
+    (name, email, passwordHash, createdDate)
     VALUES (@name, @email, @passwordHash, @createdDate)`);
     const info = stmt.run({ name, email, createdDate, passwordHash });
     if (info.changes !== 1) {
@@ -106,6 +106,7 @@ export const loginUser = (
 };
 
 export const createUserSession = (db: DB, secret: string, userId: number, ipAddress: string) => {
+    const expirationDate = Date.now() + 365 * 24 * 60 * 60 * 1000;
     const stmt = db.prepare(`INSERT INTO sessions
     (userId, createdDate, ipAddress, expirationDate)
     VALUES (@userId, @createdDate, @ipAddress, @expirationDate)`);
@@ -114,13 +115,20 @@ export const createUserSession = (db: DB, secret: string, userId: number, ipAddr
         ipAddress,
         createdDate: Date.now(),
         // valid for a year
-        expirationDate: Date.now() + 365 * 24 * 60 * 60 * 1000,
+        expirationDate,
     });
     if (info.changes !== 1) {
         throw new Error(`Unexpected sqlite response: ${info.changes} should be '1'`);
     }
-    const sessionId = info.lastInsertRowId;
-    const token = jwt.sign(sessionId, secret, { expiresIn: '30d' });
+    const sessionId = info.lastInsertRowid;
+    console.log('sessionId', sessionId, info);
+    const token = jwt.sign(
+        {
+            data: sessionId + '',
+            exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30,
+        },
+        secret,
+    );
     return token;
 };
 
@@ -157,7 +165,7 @@ export const validateSessionToken = (
         return null;
     }
     const stmt = db.prepare(`SELECT * FROM sessions WHERE id = @id`);
-    const session = stmt.get(sessionId);
+    const session = stmt.get({ id: sessionId.data });
     if (!session) {
         return null;
     }

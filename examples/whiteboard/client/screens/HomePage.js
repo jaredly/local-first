@@ -17,7 +17,7 @@ const HomePage = ({
     genId,
 }: {
     cards: { [key: string]: CardT },
-    cardsCol: Collection<SortT>,
+    cardsCol: Collection<CardT>,
     sorts: { [key: string]: SortT },
     sortsCol: Collection<SortT>,
     openSort: (SortT) => void,
@@ -27,7 +27,7 @@ const HomePage = ({
         return (
             <Welcome
                 onStart={() => {
-                    makeDefaultCards(genId);
+                    makeDefaultCards(genId).forEach((card) => cardsCol.save(card.id, card));
                 }}
             />
         );

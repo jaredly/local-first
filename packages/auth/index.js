@@ -36,6 +36,7 @@ export const setupAuth = (
                 // 30 days
                 maxAge: 30 * 24 * 3600 * 1000,
             });
+            res.set('X-Session', token);
             res.status(200).json(user);
         }
     });
@@ -44,9 +45,10 @@ export const setupAuth = (
             return res.status(400).send('required fields: email, password, name');
         }
         const { email, password, name } = req.body;
+        const createdDate = Date.now();
         const userId = createUser(db, {
             password,
-            info: { email, name, createdDate: Date.now() },
+            info: { email, name, createdDate },
         });
         const token = createUserSession(db, secret, userId, req.ip);
         res.cookie('token', token, {
@@ -54,7 +56,8 @@ export const setupAuth = (
             // 30 days
             maxAge: 30 * 24 * 3600 * 1000,
         });
-        res.status(204);
+        res.set('X-Session', token);
+        res.status(200).json({ id: userId, info: { email, name, createdDate } });
     });
     const mid = middleware(db, secret);
     app.post(prefix + (paths.logout || '/logout'), mid, (req, res) => {
@@ -93,7 +96,6 @@ export const setupAuth = (
 };
 
 export const middleware = (db: DB, secret: string) => (req: *, res: *, next: *) => {
-    console.log('MIDDD');
     if (req.query.token) {
         // TODO validateSessionToken should ... issue a new token?
         // if we're getting close to the end...

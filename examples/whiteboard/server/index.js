@@ -45,7 +45,7 @@ export const run = (dataPath: string, port: number = 9090) => {
                 if (!userServers[req.auth.id]) {
                     userServers[req.auth.id] = make<Delta, Data>(
                         crdtImpl,
-                        setupPersistence(path.join(dataPath, req.auth.id)),
+                        setupPersistence(path.join(dataPath, '' + req.auth.id)),
                     );
                 }
                 return userServers[req.auth.id];

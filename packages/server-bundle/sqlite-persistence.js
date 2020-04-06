@@ -1,6 +1,8 @@
 // @flow
 
 import type { CursorType, Persistence } from '../core/src/server';
+import fs from 'fs';
+import path from 'path';
 const sqlite3 = require('better-sqlite3');
 
 function queryAll(db, sql, params = []) {
@@ -19,21 +21,27 @@ function queryRun(db, sql, params = []) {
     return stmt.run(...params);
 }
 
-const setupPersistence = function<Delta, Data>(
-    baseDir: string,
-): Persistence<Delta, Data> {
+const mkdirp = (dir) => {
+    if (fs.existsSync(dir)) {
+        return;
+    }
+    mkdirp(path.dirname(dir));
+    fs.mkdirSync(dir);
+};
+
+const setupPersistence = function<Delta, Data>(baseDir: string): Persistence<Delta, Data> {
+    mkdirp(baseDir);
     const db = sqlite3(baseDir + '/data.db');
     const dbs = {};
-    const tableName = col => col + ':messages';
-    const escapedTableName = col => JSON.stringify(tableName(col));
-    const setupDb = col => {
+    const tableName = (col) => col + ':messages';
+    const escapedTableName = (col) => JSON.stringify(tableName(col));
+    const setupDb = (col) => {
         if (dbs[col]) {
             return;
         }
         if (
-            queryAll(db, 'select name from sqlite_master where name = ?', [
-                col + ':messages',
-            ]).length === 0
+            queryAll(db, 'select name from sqlite_master where name = ?', [col + ':messages'])
+                .length === 0
         ) {
             queryRun(
                 db,
@@ -49,11 +57,7 @@ const setupPersistence = function<Delta, Data>(
         return;
     };
     return {
-        compact(
-            collection: string,
-            date: number,
-            merge: (Delta, Delta) => Delta,
-        ) {
+        compact(collection: string, date: number, merge: (Delta, Delta) => Delta) {
             setupDb(collection);
             const tx = db.transaction((collection, date) => {
                 const rows = queryAll(
@@ -86,13 +90,7 @@ const setupPersistence = function<Delta, Data>(
                     });
                 });
                 // delete the rows we got
-                queryRun(
-                    db,
-                    `DELETE FROM ${escapedTableName(
-                        collection,
-                    )} where date < ?`,
-                    [date],
-                );
+                queryRun(db, `DELETE FROM ${escapedTableName(collection)} where date < ?`, [date]);
                 queryRun(
                     db,
                     `INSERT INTO ${escapedTableName(
@@ -102,7 +100,7 @@ const setupPersistence = function<Delta, Data>(
                         {
                             id: maxId,
                             changes: JSON.stringify(
-                                Object.keys(byNode).map(node => ({
+                                Object.keys(byNode).map((node) => ({
                                     node,
                                     delta: byNode[node],
                                 })),
@@ -134,11 +132,7 @@ const setupPersistence = function<Delta, Data>(
                 changes: JSON.stringify(deltas),
             });
         },
-        deltasSince(
-            collection: string,
-            lastSeen: ?CursorType,
-            sessionId: string,
-        ) {
+        deltasSince(collection: string, lastSeen: ?CursorType, sessionId: string) {
             setupDb(collection);
             const transaction = db.transaction((lastSeen, sessionId) => {
                 const rows = lastSeen
@@ -158,14 +152,10 @@ const setupPersistence = function<Delta, Data>(
                       );
                 // console.log('db', escapedTableName(collection));
                 // console.log('getting deltas', rows, lastSeen, sessionId);
-                const deltas = [].concat(
-                    ...rows.map(({ changes }) => JSON.parse(changes)),
-                );
+                const deltas = [].concat(...rows.map(({ changes }) => JSON.parse(changes)));
                 const cursor = queryGet(
                     db,
-                    `SELECT max(id) as maxId from ${escapedTableName(
-                        collection,
-                    )}`,
+                    `SELECT max(id) as maxId from ${escapedTableName(collection)}`,
                     [],
                 );
                 if (!cursor) {

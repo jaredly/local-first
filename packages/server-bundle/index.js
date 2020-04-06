@@ -58,14 +58,10 @@ export const setupWebsocket = function<Delta, Data>(
         app.use(path, middleware);
     }
     app.ws(path, function(ws, req) {
-        console.log('ws connect');
-        // if (!req.query.siteId) {
-        //     console.log('not');
-        //     ws.close();
-        //     console.log('no siteId');
-        //     throw new Error('No siteId');
-        // }
-        console.log('got');
+        if (!req.query.siteId) {
+            ws.close();
+            throw new Error('No siteId');
+        }
         try {
             const server = getServer(req);
             onWebsocket(server, clients, req.query.siteId, ws);
@@ -84,7 +80,7 @@ export const runServer = <Delta, Data>(
 ) => {
     const app = express();
     const wsInst = ws(app);
-    app.use(require('cors')({ exposedHeaders: ['etag'] }));
+    app.use(require('cors')({ exposedHeaders: ['etag', 'X-Session'] }));
     app.use(require('body-parser').json());
 
     setupBlob(app, getBlobDataPath, middleware);

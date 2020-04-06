@@ -46,21 +46,14 @@ const newCrdt = {
         }));
     },
     latestStamp: ncrdt.latestStamp,
-    value: d => d.value,
+    value: (d) => d.value,
     deltas: {
         ...ncrdt.deltas,
-        stamp: data => ncrdt.deltas.stamp(data, () => null),
-        apply: (base, delta) =>
-            ncrdt.applyDelta(base, delta, applyOtherDelta, otherMerge),
+        stamp: (data) => ncrdt.deltas.stamp(data, () => null),
+        apply: (base, delta) => ncrdt.applyDelta(base, delta, applyOtherDelta, otherMerge),
     },
     createValue: (value, stamp, getStamp, schema) => {
-        return ncrdt.createWithSchema(
-            value,
-            stamp,
-            getStamp,
-            schema,
-            value => null,
-        );
+        return ncrdt.createWithSchema(value, stamp, getStamp, schema, (value) => null);
     },
 };
 
@@ -112,12 +105,12 @@ const useCollection = function<T: {}>(client, name) {
     const col = React.useMemo(() => client.getCollection(name), []);
     const [data, setData] = React.useState(({}: { [key: string]: T }));
     React.useEffect(() => {
-        col.loadAll().then(data => {
+        col.loadAll().then((data) => {
             // console.log('loaded all', data);
-            setData(a => ({ ...a, ...data }));
-            col.onChanges(changes => {
+            setData((a) => ({ ...a, ...data }));
+            col.onChanges((changes) => {
                 // console.log('changes', changes);
-                setData(data => {
+                setData((data) => {
                     const n = { ...data };
                     changes.forEach(({ value, id }) => {
                         if (value) {
@@ -141,15 +134,13 @@ const App = () => {
     const [noteCol, noteData] = useCollection<NoteT>(client, 'notes');
     const [connected, setConnected] = React.useState(false);
     React.useEffect(() => {
-        client.onSyncStatus(status => setConnected(status));
+        client.onSyncStatus((status) => setConnected(status));
     }, []);
     return (
         <div style={{ margin: '32px 64px' }}>
             <div>
                 Hello! We are{' '}
-                {connected && connected.status !== 'disconnected'
-                    ? 'Online'
-                    : 'Offline'}{' '}
+                {connected && connected.status !== 'disconnected' ? 'Online' : 'Offline'}{' '}
                 {client.sessionId}
             </div>
             <button
@@ -157,7 +148,7 @@ const App = () => {
                     const id = client.getStamp();
                     noteCol.save(id, {
                         title: 'New note',
-                        createDate: Date.now(),
+                        createdDate: Date.now(),
                         body: rich.init(client.sessionId),
                     });
                 }}
@@ -178,10 +169,8 @@ const App = () => {
                 Add a thing
             </button>
             {Object.keys(noteData)
-                .sort(
-                    (a, b) => noteData[a].createdDate - noteData[b].createdDate,
-                )
-                .map(id => (
+                .sort((a, b) => noteData[a].createdDate - noteData[b].createdDate)
+                .map((id) => (
                     <Note
                         key={id}
                         sessionId={client.sessionId}
@@ -192,7 +181,7 @@ const App = () => {
                 ))}
             {Object.keys(data)
                 .sort((a, b) => data[a].createdDate - data[b].createdDate)
-                .map(id => (
+                .map((id) => (
                     <Item
                         key={id}
                         item={data[id]}
@@ -211,7 +200,7 @@ const CRDTTextarea = ({ sessionId, value, onChange }) => {
     const currentText = rich.toString(value);
     const initial = React.useRef(true);
 
-    const sync = React.useCallback(newValue => {
+    const sync = React.useCallback((newValue) => {
         if (newValue === savedValue.current && !initial.current) {
             return;
         }
@@ -232,12 +221,7 @@ const CRDTTextarea = ({ sessionId, value, onChange }) => {
                 const oldText = rich.toString(oldValue);
                 checkConsistency(oldValue);
                 checkConsistency(newValue);
-                const transformed = rich.adjustSelection(
-                    oldValue,
-                    newValue,
-                    start,
-                    end,
-                );
+                const transformed = rich.adjustSelection(oldValue, newValue, start, end);
                 console.log('New selection', transformed);
                 node.selectionStart = transformed.start;
                 node.selectionEnd = transformed.end;
@@ -253,13 +237,13 @@ const CRDTTextarea = ({ sessionId, value, onChange }) => {
 
     return (
         <textarea
-            ref={node => {
+            ref={(node) => {
                 if (node) {
                     ref.current = node;
                     sync(value);
                 }
             }}
-            onChange={e => {
+            onChange={(e) => {
                 const newValue = e.target.value;
                 const change = textBinding.inferChange(
                     currentText,
@@ -272,11 +256,7 @@ const CRDTTextarea = ({ sessionId, value, onChange }) => {
                 const deltas = [];
                 if (change.removed) {
                     deltas.push(
-                        rich.del(
-                            savedValue.current,
-                            change.removed.at,
-                            change.removed.len,
-                        ),
+                        rich.del(savedValue.current, change.removed.at, change.removed.len),
                     );
                 }
                 if (change.added) {
@@ -317,22 +297,14 @@ const Note = ({
                 <CRDTTextarea
                     sessionId={sessionId}
                     value={item.body}
-                    onChange={deltas =>
-                        col.applyRichTextDelta(id, ['body'], deltas)
-                    }
+                    onChange={(deltas) => col.applyRichTextDelta(id, ['body'], deltas)}
                 />
             </div>
         </div>
     );
 };
 
-const Item = ({
-    item,
-    onChange,
-}: {
-    item: Task,
-    onChange: (string, any) => void,
-}) => {
+const Item = ({ item, onChange }: { item: Task, onChange: (string, any) => void }) => {
     const [text, setText] = React.useState(null);
     return (
         <div
@@ -346,7 +318,7 @@ const Item = ({
             <input
                 type="checkbox"
                 style={{ cursor: 'pointer' }}
-                onChange={evt => {
+                onChange={(evt) => {
                     onChange('completed', !item.completed);
                 }}
                 checked={item.completed}
@@ -358,8 +330,8 @@ const Item = ({
                         padding: '4px 8px',
                         cursor: 'text',
                     }}
-                    onClick={evt => evt.stopPropagation()}
-                    onMouseDown={evt => {
+                    onClick={(evt) => evt.stopPropagation()}
+                    onMouseDown={(evt) => {
                         evt.preventDefault();
                         setText(item.title);
                     }}
@@ -378,16 +350,16 @@ const Item = ({
                         border: 'none',
                     }}
                     autoFocus
-                    onClick={evt => {
+                    onClick={(evt) => {
                         evt.target.selectionStart = 0;
                         evt.target.selectionEnd = evt.target.value.length;
                     }}
-                    onChange={evt => setText(evt.target.value)}
+                    onChange={(evt) => setText(evt.target.value)}
                     onBlur={() => {
                         setText(null);
                         onChange('title', text);
                     }}
-                    onKeyDown={evt => {
+                    onKeyDown={(evt) => {
                         if (evt.key === 'Enter') {
                             setText(null);
                             onChange('title', text);

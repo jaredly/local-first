@@ -12,6 +12,7 @@ import { default as makeDeltaInMemoryPersistence } from '../../../packages/idb/s
 import { SortSchema, CommentSchema, CardSchema } from './types';
 
 import Main from './Main';
+import Auth, { useAuthStatus } from './Auth';
 
 const schemas = {
     cards: CardSchema,
@@ -19,11 +20,24 @@ const schemas = {
     sorts: SortSchema,
 };
 
-const App = () => {
+const AppWithAuth = ({ host }) => {
+    const status = useAuthStatus(host);
+    if (status === null) {
+        // Waiting
+        return <div />;
+    } else if (status === false) {
+        return <Auth host={host} />;
+    } else {
+        return <App host={host} token={status.token} />;
+    }
+};
+
+const App = ({ host, token }: { host: string, token: string }) => {
     // We're assuming we're authed, and cookies are taking care of things.
     const client = React.useMemo(
-        // () => createPersistedBlobClient('miller-values-sort', schemas, null, 2),
-        () => createInMemoryDeltaClient(schemas, `ws://localhost:9090/sync`),
+        token
+            ? () => createInMemoryDeltaClient(schemas, `ws://${host}/sync?token=${token}`)
+            : () => createPersistedBlobClient('miller-values-sort', schemas, null, 2),
         [],
     );
     return <Main client={client} />;
@@ -32,5 +46,6 @@ const App = () => {
 const root = document.createElement('div');
 if (document.body) {
     document.body.appendChild(root);
-    render(<App />, root);
+    const host = 'localhost:9090';
+    render(<AppWithAuth host={host} />, root);
 }
