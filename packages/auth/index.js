@@ -8,6 +8,8 @@ import {
     completeUserSession,
 } from './db';
 
+export { createTables } from './db';
+
 type express = any;
 type DB = any;
 
@@ -20,9 +22,7 @@ export const setupAuth = (
 ) => {
     app.post(prefix + (paths.login || '/login'), (req, res) => {
         if (!req.body || !req.body.email || !req.body.password) {
-            return res
-                .status(400)
-                .send('username + password as JSON body required');
+            return res.status(400).send('username + password as JSON body required');
         }
         const user = loginUser(db, req.body.email, req.body.password);
         if (user == null) {
@@ -40,15 +40,8 @@ export const setupAuth = (
         }
     });
     app.post(prefix + (paths.signup || '/signup'), (req, res) => {
-        if (
-            !req.body ||
-            !req.body.email ||
-            !req.body.password ||
-            !req.body.name
-        ) {
-            return res
-                .status(400)
-                .send('required fields: email, password, name');
+        if (!req.body || !req.body.email || !req.body.password || !req.body.name) {
+            return res.status(400).send('required fields: email, password, name');
         }
         const { email, password, name } = req.body;
         const userId = createUser(db, {
@@ -99,11 +92,7 @@ export const setupAuth = (
     // https://www.npmjs.com/package/juice might be useful
 };
 
-export const middleware = (db: DB, secret: string) => (
-    req: *,
-    res: *,
-    next: *,
-) => {
+export const middleware = (db: DB, secret: string) => (req: *, res: *, next: *) => {
     if (req.query.token) {
         // TODO validateSessionToken should ... issue a new token?
         // if we're getting close to the end...

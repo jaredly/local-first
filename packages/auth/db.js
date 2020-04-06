@@ -4,6 +4,16 @@ const bcrypt = require('bcryptjs');
 
 export const ADMIN_ROLE = 9;
 
+const createInvitesTableQuery = `
+    CREATE TABLE IF NOT EXISTS invites (
+        id integer PRIMARY KEY,
+        stringId text UNIQUE NOT NULL,
+        createdDate integer NOT NULL,
+        -- the date it was fulfilled
+        fulfilledDate integer
+    )
+`;
+
 const createUsersTableQuery = `
     CREATE TABLE IF NOT EXISTS users (
     id integer PRIMARY KEY,
@@ -38,6 +48,7 @@ type DB = any;
 export const createTables = (db: DB) => {
     run(db, createUsersTableQuery);
     run(db, createSessionsTableQuery);
+    run(db, createInvitesTableQuery);
 };
 
 // export const findUserByEmail = (db: DB, email: string) => {
@@ -60,19 +71,14 @@ export type UserInfo = {
 export type UserInput = { info: UserInfo, password: string };
 export type User = { info: UserInfo, passwordHash: string };
 
-export const createUser = (
-    db: DB,
-    { info: { name, email, createdDate }, password }: UserInput,
-) => {
+export const createUser = (db: DB, { info: { name, email, createdDate }, password }: UserInput) => {
     const passwordHash = bcrypt.hashSync(password);
     const stmt = db.prepare(`INSERT INTO users
     (name, email, passwordHash, createDate)
     VALUES (@name, @email, @passwordHash, @createdDate)`);
     const info = stmt.run({ name, email, createdDate, passwordHash });
     if (info.changes !== 1) {
-        throw new Error(
-            `Unexpected sqlite response: ${info.changes} should be '1'`,
-        );
+        throw new Error(`Unexpected sqlite response: ${info.changes} should be '1'`);
     }
     return info.lastInsertRowId;
 };
@@ -99,12 +105,7 @@ export const loginUser = (
     }
 };
 
-export const createUserSession = (
-    db: DB,
-    secret: string,
-    userId: number,
-    ipAddress: string,
-) => {
+export const createUserSession = (db: DB, secret: string, userId: number, ipAddress: string) => {
     const stmt = db.prepare(`INSERT INTO sessions
     (userId, createdDate, ipAddress, expirationDate)
     VALUES (@userId, @createdDate, @ipAddress, @expirationDate)`);
@@ -116,9 +117,7 @@ export const createUserSession = (
         expirationDate: Date.now() + 365 * 24 * 60 * 60 * 1000,
     });
     if (info.changes !== 1) {
-        throw new Error(
-            `Unexpected sqlite response: ${info.changes} should be '1'`,
-        );
+        throw new Error(`Unexpected sqlite response: ${info.changes} should be '1'`);
     }
     const sessionId = info.lastInsertRowId;
     const token = jwt.sign(sessionId, secret, { expiresIn: '30d' });
@@ -131,9 +130,7 @@ export const completeUserSession = (db: DB, sessionId: number) => {
     WHERE rowid = @id`);
     const info = stmt.run({ logoutDate: Date.now(), id: sessionId });
     if (info.changes !== 1) {
-        throw new Error(
-            `Unexpected sqlite response: ${info.changes} should be '1'`,
-        );
+        throw new Error(`Unexpected sqlite response: ${info.changes} should be '1'`);
     }
 };
 

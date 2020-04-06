@@ -43,7 +43,6 @@ const reduce = (state, action) => {
         ...state,
         cards,
     };
-    // }
 };
 
 const CARD_WIDTH = 200;
@@ -101,7 +100,9 @@ const PilesMode = ({
     });
     const deckPosition = React.useRef(null);
 
-    const baseY = window.innerHeight / 2 - CARD_HEIGHT / 2;
+    const middleY = window.innerHeight / 2 - CARD_HEIGHT / 2;
+    const baseY =
+        middleY < CARD_HEIGHT * 3 ? window.innerHeight - (CARD_HEIGHT / 2) * 1.5 : middleY;
 
     let leftPos = 0;
     const MARGIN = 24;
@@ -391,7 +392,7 @@ const PilesMode = ({
                     flexDirection: 'column',
                     justifyContent: 'center',
                     border: '1px solid #ccc',
-                    backgroundColor: currentTarget == 'deck' ? 'red' : 'aliceblue',
+                    borderColor: currentTarget === 'deck' ? '#05a' : '#ccc',
                 }}
             >
                 Miller Value Sort
