@@ -99,6 +99,7 @@ const PilesMode = ({
         pilePositions[k] = React.useRef(null);
     });
     const deckPosition = React.useRef(null);
+    const [fullyRendered, setFullyRendered] = React.useState(false);
 
     const middleY = window.innerHeight / 2 - CARD_HEIGHT / 2;
     const baseY =
@@ -183,10 +184,7 @@ const PilesMode = ({
     const springs = cardPositions.map((card, i) => {
         const dest = {
             pos: [positions[i].x, positions[i].y],
-            // tilt: sort.cards[card.id] != null ? card.tilt : 0,
-            // opacity: sort.cards[card.id] != null ? 0.8 : 1,
             immediate: false,
-            // config: { velocity: 100 },
         };
         const [props, set] = useSpring(() => dest);
         if (currentDrag.current !== i) {
@@ -231,6 +229,12 @@ const PilesMode = ({
                     if (closestTarget.deck) {
                         sortsCol.clearAttribute(sort.id, ['cards', cardPositions[i].id]);
                     } else {
+                        const missing = cardPositions.some(
+                            (card, idx) => idx !== i && sort.cards[card.id] == null,
+                        );
+                        if (!missing && sort.completedDate == null) {
+                            sortsCol.setAttribute(sort.id, ['completedDate'], Date.now());
+                        }
                         sortsCol.setAttribute(sort.id, ['cards', cardPositions[i].id], {
                             pile: +closestTarget.pile,
                             placementTime: Date.now(),
@@ -286,14 +290,30 @@ const PilesMode = ({
                 bottom: 0,
             }}
         >
-            <div>{sort.title}</div>
-            <button
-                onClick={() => {
-                    sortsCol.setAttribute(sort.id, ['cards'], {});
-                }}
-            >
-                Reset the sort
-            </button>
+            <div css={{ textAlign: 'center', padding: 16 }}>
+                <a
+                    href="/#"
+                    css={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        fontSize: 32,
+                        transform: `scaleX(-1)`,
+                        textDecoration: 'none',
+                        padding: '4px 16px',
+                    }}
+                >
+                    →
+                </a>
+                <div css={{ fontSize: 32 }}>{sort.title}</div>
+                {/* <button
+                    onClick={() => {
+                        sortsCol.setAttribute(sort.id, ['cards'], {});
+                    }}
+                >
+                    Reset the sort
+                </button> */}
+            </div>
             <div
                 style={{
                     display: 'flex',
@@ -310,7 +330,11 @@ const PilesMode = ({
                                     y: box.top + box.height / 2,
                                     x: box.left + box.width / 2,
                                 };
+                                const prevNot = !pilePositions[id].current;
                                 pilePositions[id].current = pos;
+                                if (prevNot && isFullyRendered(pilePositions, deckPosition)) {
+                                    setFullyRendered(true);
+                                }
                             }
                         }}
                         style={{
@@ -331,42 +355,51 @@ const PilesMode = ({
                     </div>
                 ))}
             </div>
-            {cardPositions.map((item, i) => (
-                <animated.div
-                    key={item.id}
-                    ref={item.id === firstCard ? (node) => (firstRef.current = node) : null}
-                    tabIndex={item.id === firstCard ? '0' : null}
-                    css={styles.card}
-                    {...bind(i)}
-                    style={{
-                        position: 'absolute',
-                        userSelect: 'none',
-                        top: 0,
-                        left: 0,
-                        marginTop: -CARD_HEIGHT / 2,
-                        marginLeft: -CARD_WIDTH / 2,
-                        opacity: tiltSprings[i].opacity,
-                        transform: interpolate(
-                            [springs[i][0].pos, tiltSprings[i].tilt],
-                            (pos, tilt) =>
-                                `translate(${pos[0]}px, ${pos[1]}px) rotate(${parseInt(
-                                    tilt * 15,
-                                )}deg)`,
-                        ),
-                    }}
-                    onKeyDown={(evt) => {
-                        if (+evt.key == evt.key && sort.piles[+evt.key - 1]) {
-                            sortsCol.setAttribute(sort.id, ['cards', item.id], {
-                                pile: +evt.key - 1,
-                                placementTime: Date.now(),
-                            });
-                        }
-                    }}
-                >
-                    <div css={styles.title}>{cards[item.id].title}</div>
-                    <div>{cards[item.id].description}</div>
-                </animated.div>
-            ))}
+            {fullyRendered
+                ? cardPositions.map((item, i) => (
+                      <animated.div
+                          key={item.id}
+                          ref={item.id === firstCard ? (node) => (firstRef.current = node) : null}
+                          tabIndex={item.id === firstCard ? '0' : null}
+                          css={styles.card}
+                          {...bind(i)}
+                          style={{
+                              position: 'absolute',
+                              userSelect: 'none',
+                              top: 0,
+                              left: 0,
+                              marginTop: -CARD_HEIGHT / 2,
+                              marginLeft: -CARD_WIDTH / 2,
+                              opacity: tiltSprings[i].opacity,
+                              transform: interpolate(
+                                  [springs[i][0].pos, tiltSprings[i].tilt],
+                                  (pos, tilt) =>
+                                      `translate(${pos[0]}px, ${pos[1]}px) rotate(${parseInt(
+                                          tilt * 15,
+                                      )}deg)`,
+                              ),
+                          }}
+                          onKeyDown={(evt) => {
+                              if (+evt.key == evt.key && sort.piles[+evt.key - 1]) {
+                                  const missing = cardPositions.some(
+                                      (card, idx) => idx !== i && sort.cards[card.id] == null,
+                                  );
+                                  if (!missing && sort.completedDate == null) {
+                                      sortsCol.setAttribute(sort.id, ['completedDate'], Date.now());
+                                  }
+
+                                  sortsCol.setAttribute(sort.id, ['cards', item.id], {
+                                      pile: +evt.key - 1,
+                                      placementTime: Date.now(),
+                                  });
+                              }
+                          }}
+                      >
+                          <div css={styles.title}>{cards[item.id].title}</div>
+                          <div>{cards[item.id].description}</div>
+                      </animated.div>
+                  ))
+                : null}
             <div
                 ref={(node) => {
                     if (node) {
@@ -375,7 +408,11 @@ const PilesMode = ({
                             y: box.top + box.height / 2,
                             x: box.left + box.width / 2,
                         };
+                        const prevNot = !deckPosition.current;
                         deckPosition.current = pos;
+                        if (prevNot && isFullyRendered(pilePositions, deckPosition)) {
+                            setFullyRendered(true);
+                        }
                     }
                 }}
                 style={{
@@ -399,6 +436,10 @@ const PilesMode = ({
             </div>
         </div>
     );
+};
+
+const isFullyRendered = (piles, deck) => {
+    return deck.current && !Object.keys(piles).some((k) => !piles[k].current);
 };
 
 const boxSize = 1.3;
