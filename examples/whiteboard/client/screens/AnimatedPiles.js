@@ -305,7 +305,10 @@ const PilesMode = ({
                 >
                     →
                 </a>
-                <div css={{ fontSize: 32 }}>{sort.title}</div>
+                <EditableTitle
+                    title={sort.title}
+                    onChange={(newTitle) => sortsCol.setAttribute(sort.id, ['title'], newTitle)}
+                />
                 {/* <button
                     onClick={() => {
                         sortsCol.setAttribute(sort.id, ['cards'], {});
@@ -434,6 +437,45 @@ const PilesMode = ({
             >
                 Miller Value Sort
             </div>
+        </div>
+    );
+};
+
+const EditableTitle = ({ title, onChange }) => {
+    const [wip, setWip] = React.useState(null);
+    if (wip != null) {
+        return (
+            <div>
+                <input
+                    value={wip}
+                    onChange={(evt) => setWip(evt.target.value)}
+                    onKeyDown={(evt) => {
+                        if (evt.key === 'Enter' && wip.trim() != '') {
+                            onChange(wip);
+                            setWip(null);
+                        }
+                    }}
+                    onBlur={() => setWip(null)}
+                    css={{
+                        fontSize: 32,
+                        padding: 0,
+                        fontWeight: 'inherit',
+                        border: 'none',
+                        textAlign: 'center',
+                    }}
+                    autoFocus
+                />
+            </div>
+        );
+    }
+    return (
+        <div
+            onDoubleClick={(evt) => {
+                setWip(title);
+            }}
+            css={{ fontSize: 32 }}
+        >
+            {title}
         </div>
     );
 };

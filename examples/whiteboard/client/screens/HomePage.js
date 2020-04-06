@@ -8,6 +8,151 @@ import { type CardT, type SortT, colors } from '../types';
 
 import { makeDefaultCards } from '../defaults';
 
+const basicPiles = [
+    'Most important',
+    'Very important',
+    'Important',
+    'Less important',
+    'Not important',
+];
+const timePiles = ['Hours per day', 'Daily', 'Weekly', 'Monthly', 'Less than monthly', 'N/A'];
+const amountPines = [
+    'More than I want',
+    'As much as I want',
+    'A bit less than I want',
+    'Much less than I want',
+    'N/A',
+];
+
+const stockTitles = [
+    { title: 'What I value', piles: basicPiles },
+    { title: 'What I want to value', piles: basicPiles },
+    { title: 'How I spend my time', piles: timePiles },
+    { title: 'What I have in life', piles: amountPines },
+];
+
+const CreateSort = ({ sortsCol, genId }: { genId: () => string, sortsCol: Collection<SortT> }) => {
+    const [title, setTitle] = React.useState(null);
+    if (title === null) {
+        return (
+            <button
+                css={{
+                    cursor: 'pointer',
+                    backgroundColor: 'white',
+                    fontSize: 'inherit',
+                    padding: 16,
+                    display: 'block',
+                    width: '100%',
+                    border: 'none',
+                    ':hover': {
+                        backgroundColor: '#eee',
+                    },
+                }}
+                onClick={() => {
+                    setTitle(0);
+                }}
+            >
+                Create new Sort
+            </button>
+        );
+    }
+    return (
+        <div
+            css={{
+                padding: 8,
+                display: 'flex',
+                alignItems: 'center',
+            }}
+        >
+            {typeof title === 'number' ? (
+                <select
+                    value={title}
+                    css={{
+                        fontSize: 'inherit',
+                        margin: 6,
+                        marginBottom: 7,
+                        flex: 1,
+                        border: 'none',
+                        // padding: 8,
+                    }}
+                    onChange={(evt) => {
+                        if (evt.target.value === '') {
+                            setTitle(evt.target.value);
+                        } else {
+                            setTitle(+evt.target.value);
+                        }
+                    }}
+                >
+                    {stockTitles.map((stock, i) => (
+                        <option value={i} key={i}>
+                            {stock.title}
+                        </option>
+                    ))}
+                    <option value="">Custom</option>
+                </select>
+            ) : (
+                <input
+                    value={title}
+                    onChange={(evt) => setTitle(evt.target.value)}
+                    placeholder="Title"
+                    autoFocus
+                    css={{
+                        // textAlign: 'center',
+                        margin: 0,
+                        padding: 8,
+                        flex: 1,
+                        border: 'none',
+                        fontSize: 'inherit',
+                        fontWeight: 'inherit',
+                    }}
+                />
+            )}
+            <button
+                css={styles.button}
+                style={{ marginLeft: 8 }}
+                onClick={() => {
+                    if (typeof title === 'string' && !title.length) {
+                        return;
+                    }
+                    const newTitle = typeof title === 'number' ? stockTitles[title].title : title;
+                    const id = genId();
+                    const piles = {};
+                    const pileNames =
+                        typeof title === 'number' ? stockTitles[title].piles : basicPiles;
+                    pileNames.forEach((title, i) => (piles[i] = { title, color: colors[i] }));
+                    sortsCol.save(id, {
+                        id,
+                        title: newTitle,
+                        cards: {},
+                        createdDate: Date.now(),
+                        completedDate: null,
+                        // $FlowFixMe
+                        piles,
+                    });
+                }}
+            >
+                Create
+            </button>
+            <button css={styles.button} style={{ marginLeft: 8 }} onClick={() => setTitle(null)}>
+                Cancel
+            </button>
+        </div>
+    );
+};
+
+const styles = {
+    button: {
+        border: 'none',
+        backgroundColor: 'transparent',
+        cursor: 'pointer',
+        ':hover': {
+            backgroundColor: '#eee',
+        },
+        fontSize: 'inherit',
+        fontWeight: 'inherit',
+    },
+};
+
 const Sorts = ({
     sorts,
     sortsCol,
@@ -19,7 +164,6 @@ const Sorts = ({
     openSort: (SortT) => void,
     genId: () => string,
 }) => {
-    const [title, setTitle] = React.useState(null);
     return (
         <div
             css={{
@@ -40,79 +184,58 @@ const Sorts = ({
                     width: 800,
                     maxHeight: '100%',
                     height: 800,
-                    backgroundColor: 'aliceblue',
+                    border: '2px solid aliceblue',
                     borderRadius: 24,
                     textAlign: 'center',
                     display: 'flex',
                     flexDirection: 'column',
                     flexShrink: 1,
+                    overflow: 'hidden',
                 }}
             >
-                <h1>My Sorts</h1>
-                <div css={{ overflow: 'auto', flex: 1 }}>
-                    {title === null ? (
-                        <button
-                            css={{
-                                cursor: 'pointer',
-                            }}
-                            onClick={() => {
-                                setTitle('');
-                            }}
-                        >
-                            Create new Sort
-                        </button>
-                    ) : (
-                        <div>
-                            <input
-                                value={title}
-                                onChange={(evt) => setTitle(evt.target.value)}
-                                placeholder="Title"
-                            />
-                            <button
-                                onClick={() => {
-                                    const id = genId();
-                                    const piles = {
-                                        '0': { title: 'Most important', color: colors[0] },
-                                        '1': { title: 'Very important', color: colors[1] },
-                                        '2': { title: 'Important', color: colors[2] },
-                                        '3': { title: 'Less important', color: colors[3] },
-                                        '4': { title: 'Not important', color: colors[4] },
-                                    };
-                                    sortsCol.save(id, {
-                                        id,
-                                        title,
-                                        cards: {},
-                                        createdDate: Date.now(),
-                                        completedDate: null,
-                                        // $FlowFixMe
-                                        piles,
-                                    });
-                                }}
-                            >
-                                Create
-                            </button>
-                        </div>
-                    )}
+                <h1
+                    css={{
+                        backgroundColor: 'aliceblue',
+                        margin: 0,
+                        padding: '8px 0',
+                    }}
+                >
+                    My Sorts
+                </h1>
+                <div css={{ overflow: 'auto', flex: 1, fontSize: 32 }}>
+                    <CreateSort genId={genId} sortsCol={sortsCol} />
                     {Object.keys(sorts)
                         .sort((a, b) => sorts[b].createdDate - sorts[a].createdDate)
                         .map((key) => (
                             <div
                                 css={{
                                     cursor: 'pointer',
-                                    fontSize: 32,
                                     ':hover': {
-                                        backgroundColor: '#ccc',
+                                        backgroundColor: '#eee',
                                     },
+                                    display: 'flex',
+                                    padding: 16,
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
                                 }}
                                 key={key}
                                 onClick={() => openSort(sorts[key])}
                             >
                                 <div>{sorts[key].title}</div>
-                                <div>{new Date(sorts[key].createdDate).toLocaleString()}</div>
-                                <div>
+                                <div
+                                    css={{ fontSize: 16 }}
+                                    title={
+                                        `Created ${new Date(sorts[key].createdDate).toString()}` +
+                                        (sorts[key].completedDate != null
+                                            ? '\nCompleted ' +
+                                              new Date(sorts[key].completedDate).toString()
+                                            : '')
+                                    }
+                                >
                                     {sorts[key].completedDate != null
-                                        ? new Date(sorts[key].completedDate).toLocaleString()
-                                        : 'Incomplete'}
+                                        ? 'Completed ' + relativeTime(sorts[key].completedDate)
+                                        : 'Incomplete, started ' +
+                                          relativeTime(sorts[key].createdDate)}
                                 </div>
                             </div>
                         ))}
@@ -120,6 +243,24 @@ const Sorts = ({
             </div>
         </div>
     );
+};
+
+const atMorning = (d) => {
+    d.setHours(0, 0, 0, 0);
+    return d;
+};
+
+const relativeTime = (time) => {
+    const now = Date.now();
+    const thisMorning = atMorning(new Date());
+    const yesterdayMorning = atMorning(new Date(thisMorning.getTime() - 3600 * 1000));
+    if (time > thisMorning.getTime()) {
+        return new Date(time).toLocaleTimeString();
+    }
+    if (time > yesterdayMorning.getTime()) {
+        return 'Yesterday, ' + new Date(time).toLocaleTimeString();
+    }
+    return new Date(time).toLocaleDateString();
 };
 
 const HomePage = ({
