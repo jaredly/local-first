@@ -7,6 +7,7 @@ import { type Collection } from '../../../../packages/client-bundle';
 import { type CardT, type SortT, colors } from '../types';
 import { useSpring, animated, interpolate } from 'react-spring';
 import { useDrag } from 'react-use-gesture';
+import { Colors } from '../Styles';
 
 type State = {
     firstRef: { current: ?HTMLDivElement },
@@ -219,8 +220,8 @@ const PilesMode = ({
             };
             // console.log(projected);
             const cdist = dist({ x: dest.pos[0] - projected.x, y: dest.pos[1] - projected.y });
-            const closestTarget = getClosestTarget(projected, sort.cards[cardPositions[i].id]);
             if (!down) {
+                const closestTarget = getClosestTarget(projected, sort.cards[cardPositions[i].id]);
                 setCurrentTarget(null);
                 if (currentDrag.current === i) {
                     currentDrag.current = null;
@@ -259,6 +260,7 @@ const PilesMode = ({
                 }
                 return;
             }
+            const closestTarget = getClosestTarget(current, sort.cards[cardPositions[i].id]);
             if (closestTarget && closestTarget.dist < cdist) {
                 setCurrentTarget(closestTarget.deck ? 'deck' : closestTarget.pile);
             } else {
@@ -290,7 +292,7 @@ const PilesMode = ({
                 bottom: 0,
             }}
         >
-            <div css={{ textAlign: 'center', padding: 16 }}>
+            <div css={{ textAlign: 'center', padding: 16, color: Colors.offBlack }}>
                 <a
                     href="/#"
                     css={{
@@ -343,7 +345,7 @@ const PilesMode = ({
                         style={{
                             padding: 8,
                             textAlign: 'center',
-                            backgroundColor: currentTarget == id ? 'aliceblue' : null,
+                            backgroundColor: currentTarget == id ? Colors.pink : null,
                         }}
                     >
                         <div style={styles.title}>{pile.title}</div>
@@ -420,7 +422,9 @@ const PilesMode = ({
                 }}
                 style={{
                     position: 'absolute',
-                    backgroundColor: 'aliceblue',
+                    backgroundColor: Colors.darkPink,
+                    color: Colors.offBlack,
+                    fontWeight: 'bold',
                     top: baseY,
                     left: window.innerWidth - (CARD_WIDTH * boxSize) / 2,
                     marginLeft: (-CARD_WIDTH / 2) * boxSize,
@@ -432,7 +436,8 @@ const PilesMode = ({
                     flexDirection: 'column',
                     justifyContent: 'center',
                     border: '1px solid #ccc',
-                    borderColor: currentTarget === 'deck' ? '#05a' : '#ccc',
+                    outline: currentTarget === 'deck' ? `3px solid ${Colors.offBlack}` : null,
+                    borderColor: Colors.darkestPink,
                 }}
             >
                 Miller Value Sort

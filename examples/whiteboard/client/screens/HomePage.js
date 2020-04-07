@@ -5,6 +5,7 @@ import React from 'react';
 
 import { type Collection } from '../../../../packages/client-bundle';
 import { type CardT, type SortT, colors } from '../types';
+import { Colors } from '../Styles';
 
 import { makeDefaultCards } from '../defaults';
 
@@ -18,7 +19,7 @@ const basicPiles = [
 const timePiles = ['Hours per day', 'Daily', 'Weekly', 'Monthly', 'Less than monthly', 'N/A'];
 const amountPines = [
     'More than I want',
-    'As much as I want',
+    'About as much as I want',
     'A bit less than I want',
     'Much less than I want',
     'N/A',
@@ -44,8 +45,10 @@ const CreateSort = ({ sortsCol, genId }: { genId: () => string, sortsCol: Collec
                     display: 'block',
                     width: '100%',
                     border: 'none',
+                    transition: '0.3s ease background-color',
+
                     ':hover': {
-                        backgroundColor: '#eee',
+                        backgroundColor: Colors.darkPink,
                     },
                 }}
                 onClick={() => {
@@ -129,6 +132,7 @@ const CreateSort = ({ sortsCol, genId }: { genId: () => string, sortsCol: Collec
                         // $FlowFixMe
                         piles,
                     });
+                    setTitle(null);
                 }}
             >
                 Create
@@ -184,7 +188,7 @@ const Sorts = ({
                     width: 800,
                     maxHeight: '100%',
                     height: 800,
-                    border: '2px solid aliceblue',
+                    border: `2px solid ${Colors.pink}`,
                     borderRadius: 24,
                     textAlign: 'center',
                     display: 'flex',
@@ -195,7 +199,7 @@ const Sorts = ({
             >
                 <h1
                     css={{
-                        backgroundColor: 'aliceblue',
+                        backgroundColor: Colors.pink,
                         margin: 0,
                         padding: '8px 0',
                     }}
@@ -211,8 +215,9 @@ const Sorts = ({
                                 css={{
                                     cursor: 'pointer',
                                     ':hover': {
-                                        backgroundColor: '#eee',
+                                        backgroundColor: Colors.darkPink,
                                     },
+                                    transition: '.3s ease background-color',
                                     display: 'flex',
                                     padding: 16,
                                     alignItems: 'center',
