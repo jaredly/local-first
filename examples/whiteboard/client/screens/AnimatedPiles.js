@@ -17,35 +17,6 @@ type State = {
 
 type Card = { x: number, y: number, id: string, pile?: ?number, tilt: number };
 
-const initialState = (ids): State => ({
-    firstRef: { current: null },
-    piles: [
-        { title: 'Most important' },
-        { title: 'Very important' },
-        { title: 'Important' },
-        { title: 'Less important' },
-        { title: 'Not important' },
-    ],
-    cards: ids.map((id) => ({
-        id,
-        x: Math.random() - 0.5,
-        y: Math.random() - 0.5,
-        tilt: Math.random() - 0.5,
-    })),
-});
-
-const reduce = (state, action) => {
-    const cards = state.cards.slice();
-    cards[action.card] = {
-        ...cards[action.card],
-        pile: action.pile,
-    };
-    return {
-        ...state,
-        cards,
-    };
-};
-
 const CARD_WIDTH = 200;
 const CARD_HEIGHT = 100;
 
@@ -323,29 +294,9 @@ const PilesMode = ({
     }, [firstRef.current, sort]);
 
     return (
-        <div
-            style={{
-                overflow: 'hidden',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-            }}
-        >
+        <div style={styles.container}>
             <div css={{ textAlign: 'center', padding: 16, color: Colors.offBlack }}>
-                <a
-                    href="/#"
-                    css={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        fontSize: 32,
-                        transform: `scaleX(-1)`,
-                        textDecoration: 'none',
-                        padding: '4px 16px',
-                    }}
-                >
+                <a href="/#" css={styles.backArrow}>
                     →
                 </a>
                 <EditableTitle
@@ -410,12 +361,6 @@ const PilesMode = ({
                           css={styles.card}
                           {...bind(i)}
                           style={{
-                              position: 'absolute',
-                              userSelect: 'none',
-                              top: 0,
-                              left: 0,
-                              marginTop: -CARD_HEIGHT / 2,
-                              marginLeft: -CARD_WIDTH / 2,
                               opacity: tiltSprings[i].opacity,
                               transform: interpolate(
                                   [springs[i][0].pos, tiltSprings[i].tilt],
@@ -461,24 +406,10 @@ const PilesMode = ({
                         }
                     }
                 }}
+                css={styles.deck}
                 style={{
-                    position: 'absolute',
-                    backgroundColor: Colors.darkPink,
-                    color: Colors.offBlack,
-                    fontWeight: 'bold',
                     top: baseY,
-                    left: window.innerWidth - (CARD_WIDTH * boxSize) / 2,
-                    marginLeft: (-CARD_WIDTH / 2) * boxSize,
-                    marginTop: (-CARD_HEIGHT / 2) * boxSize,
-                    width: CARD_WIDTH * boxSize,
-                    height: CARD_HEIGHT * boxSize,
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    border: '1px solid #ccc',
                     outline: currentTarget === 'deck' ? `3px solid ${Colors.offBlack}` : null,
-                    borderColor: Colors.darkestPink,
                 }}
             >
                 Miller Value Sort
@@ -502,13 +433,7 @@ const EditableTitle = ({ title, onChange }) => {
                         }
                     }}
                     onBlur={() => setWip(null)}
-                    css={{
-                        fontSize: 32,
-                        padding: 0,
-                        fontWeight: 'inherit',
-                        border: 'none',
-                        textAlign: 'center',
-                    }}
+                    css={styles.titleInput}
                     autoFocus
                 />
             </div>
@@ -533,10 +458,18 @@ const isFullyRendered = (piles, deck) => {
 const boxSize = 1.3;
 
 const styles = {
+    titleInput: {
+        fontSize: 32,
+        padding: 0,
+        fontWeight: 'inherit',
+        border: 'none',
+        textAlign: 'center',
+    },
     title: {
         fontWeight: 'bold',
         marginBottom: 8,
     },
+
     card: {
         overflow: 'hidden',
         textAlign: 'center',
@@ -545,9 +478,51 @@ const styles = {
         height: CARD_HEIGHT,
         backgroundColor: 'white',
         padding: 8,
-        // boxShadow: '0 0 3px #555',
         border: '1px solid #ccc',
         margin: 8,
+        position: 'absolute',
+        userSelect: 'none',
+        top: 0,
+        left: 0,
+        marginTop: -CARD_HEIGHT / 2,
+        marginLeft: -CARD_WIDTH / 2,
+    },
+
+    deck: {
+        position: 'absolute',
+        backgroundColor: Colors.darkPink,
+        color: Colors.offBlack,
+        fontWeight: 'bold',
+        left: window.innerWidth - (CARD_WIDTH * boxSize) / 2,
+        marginLeft: (-CARD_WIDTH / 2) * boxSize,
+        marginTop: (-CARD_HEIGHT / 2) * boxSize,
+        width: CARD_WIDTH * boxSize,
+        height: CARD_HEIGHT * boxSize,
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        border: '1px solid #ccc',
+        borderColor: Colors.darkestPink,
+    },
+
+    backArrow: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        fontSize: 32,
+        transform: `scaleX(-1)`,
+        textDecoration: 'none',
+        padding: '4px 16px',
+    },
+
+    container: {
+        overflow: 'hidden',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
     },
 };
 
