@@ -6,7 +6,8 @@ import { useCollection } from '../../../packages/client-react';
 
 import { type Client, type SyncStatus } from '../../../packages/client-bundle';
 
-import PilesMode from './screens/AnimatedPiles';
+import PilesMode, { PILE_WIDTH } from './screens/AnimatedPiles';
+import PhonePilesMode from './screens/PhonePiles';
 import HomePage from './screens/HomePage';
 
 import {
@@ -59,6 +60,18 @@ const Main = ({ client }: { client: Client<SyncStatus> }) => {
     const sort = sortId ? sorts[sortId] : null;
 
     if (sort) {
+        if (window.innerWidth < PILE_WIDTH * Object.keys(sort.piles).length) {
+            return (
+                <PhonePilesMode
+                    cards={cards}
+                    col={col}
+                    onDone={() => setScreen('whiteboard')}
+                    genId={client.getStamp}
+                    sort={sort}
+                    sortsCol={sortsCol}
+                />
+            );
+        }
         return (
             <PilesMode
                 cards={cards}

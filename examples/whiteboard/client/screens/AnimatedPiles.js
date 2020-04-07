@@ -9,18 +9,14 @@ import { useSpring, animated, interpolate } from 'react-spring';
 import { useDrag } from 'react-use-gesture';
 import { Colors } from '../Styles';
 
-type State = {
-    firstRef: { current: ?HTMLDivElement },
-    piles: Array<{ title: string }>,
-    cards: Array<Card>,
-};
-
 type Card = { x: number, y: number, id: string, pile?: ?number, tilt: number };
 
-const CARD_WIDTH = 200;
-const CARD_HEIGHT = 100;
+export const CARD_WIDTH = 200;
+export const PILE_WIDTH = CARD_WIDTH * 1.5;
+export const CARD_HEIGHT = 100;
+export const PILE_HEIGHT = CARD_HEIGHT * 2;
 
-const shuffle = (array) => {
+export const shuffle = function<T>(array: Array<T>): Array<T> {
     return array
         .map((item) => [Math.random(), item])
         .sort((a, b) => a[0] - b[0])
@@ -405,8 +401,8 @@ const PilesMode = ({
                             style={{
                                 backgroundColor: currentTarget == id ? Colors.lightPink : null,
                                 border: '1px solid #aaa',
-                                width: CARD_WIDTH * 1.5,
-                                height: CARD_HEIGHT * 2,
+                                width: PILE_WIDTH,
+                                height: PILE_HEIGHT,
                                 position: 'relative',
                             }}
                         />
@@ -483,7 +479,13 @@ const PilesMode = ({
     );
 };
 
-const EditableTitle = ({ title, onChange }) => {
+export const EditableTitle = ({
+    title,
+    onChange,
+}: {
+    title: string,
+    onChange: (string) => mixed,
+}) => {
     const [wip, setWip] = React.useState(null);
     if (wip != null) {
         return (
