@@ -31,13 +31,22 @@ const dist = (pos) => Math.sqrt(pos.x * pos.x + pos.y * pos.y);
 const distTo = (p1, p2) => dist({ x: p2.x - p1.x, y: p2.y - p1.y });
 
 const MARGIN = 24;
-const currentPositions = (baseY, cardPositions, sort, pilePositions) => {
+const currentPositions = (baseY, cardPositions, sort, pilePositions, openPile) => {
     let leftPos = 0;
     let firstCard = null;
+    let openY = 0;
     const positions = cardPositions.map(({ x, y, tilt, id }, i) => {
         if (sort.cards[id] != null) {
-            if (pilePositions[sort.cards[id].pile].current) {
-                const pilePos = pilePositions[sort.cards[id].pile].current;
+            const pile = sort.cards[id].pile;
+            if (pilePositions[pile].current) {
+                const pilePos = pilePositions[pile].current;
+                if (openPile != null && pile === openPile) {
+                    openY += 1;
+                    return {
+                        x: pilePos.x,
+                        y: pilePos.y - CARD_HEIGHT / 2 + (openY * CARD_HEIGHT) / 2,
+                    };
+                }
                 return {
                     x: pilePos.x + (x * CARD_WIDTH) / 4,
                     y: pilePos.y + (y * CARD_HEIGHT) / 4,
@@ -64,6 +73,7 @@ const dragHandler = ({
     pilePositions,
     baseY,
     down,
+    openPile,
     movement: [x, y],
     vxvy,
     cardPositions,
@@ -111,6 +121,7 @@ const dragHandler = ({
                 pilePositions,
                 sort,
                 baseY,
+                openPile,
             );
             if (newPos) {
                 springs[i][1]({
@@ -142,11 +153,27 @@ const dragHandler = ({
     });
 };
 
-const getNewPos = (i, pile, cardPositions, pilePositions, sort, baseY) => {
+const getNewPos = (i, pile, cardPositions, pilePositions, sort, baseY, openPile) => {
     const { x, y } = cardPositions[i];
     if (pile != null) {
         if (pilePositions[pile].current) {
             const pilePos = pilePositions[pile].current;
+            if (openPile && pile === openPile) {
+                let openY = 0;
+                for (let j = 0; j < i; j++) {
+                    if (
+                        sort.cards[cardPositions[j].id] &&
+                        sort.cards[cardPositions[j].id].pile === pile
+                    ) {
+                        openY += 1;
+                    }
+                }
+                openY += 1;
+                return {
+                    x: pilePos.x,
+                    y: pilePos.y - CARD_HEIGHT / 2 + (openY * CARD_HEIGHT) / 2,
+                };
+            }
             return {
                 x: pilePos.x + (x * CARD_WIDTH) / 4,
                 y: pilePos.y + (y * CARD_HEIGHT) / 4,
@@ -203,6 +230,8 @@ const PilesMode = ({
 
     const [currentTarget, setCurrentTarget] = React.useState(null);
 
+    const [openPile, setOpenPile] = React.useState(null);
+
     const pilePositions = {};
     Object.keys(sort.piles).forEach((k) => {
         pilePositions[k] = React.useRef(null);
@@ -214,7 +243,13 @@ const PilesMode = ({
     const baseY =
         middleY < CARD_HEIGHT * 3 ? window.innerHeight - (CARD_HEIGHT / 2) * 1.5 : middleY;
 
-    const { positions, firstCard } = currentPositions(baseY, cardPositions, sort, pilePositions);
+    const { positions, firstCard } = currentPositions(
+        baseY,
+        cardPositions,
+        sort,
+        pilePositions,
+        openPile,
+    );
 
     const currentDrag = React.useRef(null);
 
@@ -272,6 +307,7 @@ const PilesMode = ({
             i,
             down,
             baseY,
+            openPile,
             pilePositions,
             movement: [x, y],
             vxvy,
@@ -320,6 +356,7 @@ const PilesMode = ({
                 {pilesInOrder.map(({ id, pile }, i) => (
                     <div
                         key={i}
+                        onClick={() => (openPile === +id ? setOpenPile(null) : setOpenPile(+id))}
                         ref={(node) => {
                             if (node) {
                                 const box = node.getBoundingClientRect();
@@ -335,14 +372,21 @@ const PilesMode = ({
                             }
                         }}
                         style={{
+                            outline: openPile === +id ? `2px solid ${Colors.darkPink}` : null,
+                        }}
+                        css={{
                             padding: 8,
+                            cursor: 'pointer',
                             textAlign: 'center',
-                            backgroundColor: currentTarget == id ? Colors.pink : null,
+                            ':hover': {
+                                outline: `2px solid ${Colors.pink}`,
+                            },
                         }}
                     >
                         <div style={styles.title}>{pile.title}</div>
                         <div
                             style={{
+                                backgroundColor: currentTarget == id ? Colors.lightPink : null,
                                 border: '1px solid #aaa',
                                 width: CARD_WIDTH * 1.5,
                                 height: CARD_HEIGHT * 2,
@@ -362,6 +406,10 @@ const PilesMode = ({
                           {...bind(i)}
                           style={{
                               opacity: tiltSprings[i].opacity,
+                              zIndex:
+                                  sort.cards[item.id] && sort.cards[item.id].pile === openPile
+                                      ? 10
+                                      : undefined,
                               transform: interpolate(
                                   [springs[i][0].pos, tiltSprings[i].tilt],
                                   (pos, tilt) =>
