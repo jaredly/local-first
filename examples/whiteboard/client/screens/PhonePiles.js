@@ -11,8 +11,6 @@ import { Colors } from '../Styles';
 
 import { EditableTitle, shuffle, CARD_HEIGHT, CARD_WIDTH } from './AnimatedPiles';
 
-const PILE_HEIGHT = CARD_HEIGHT * 0.8;
-
 const PhonePiles = ({
     col,
     cards,
@@ -46,12 +44,21 @@ const PhonePiles = ({
     let top = 0;
     let firstCard = null;
 
+    const topMargin = 50;
+    const PILE_HEIGHT = Math.min(
+        CARD_HEIGHT * 0.8,
+        (window.innerHeight - CARD_HEIGHT - topMargin - 20) / pilesInOrder.length,
+    );
+
     const countsPerPile = {};
     pilesInOrder.forEach((id) => (countsPerPile[id] = 0));
     Object.keys(sort.cards).forEach((id) => {
         countsPerPile[sort.cards[id].pile] += 1;
     });
     const numOfPile = { ...countsPerPile };
+
+    const deckTop =
+        (window.innerHeight - pilesInOrder.length * PILE_HEIGHT - topMargin) / 2 + topMargin;
 
     const positions = cardsInOrder.map((id, i) => {
         if (sort.cards[id]) {
@@ -66,6 +73,8 @@ const PhonePiles = ({
                     // window.innerWidth / 2 + Math.min(num, 5) * 10,
                     (at + 2) * SEP + CARD_WIDTH / 2,
                     10 +
+                        CARD_HEIGHT / 2 +
+                        -(PILE_HEIGHT - 35) +
                         window.innerHeight -
                         PILE_HEIGHT * pilesInOrder.indexOf(sort.cards[id].pile) -
                         dy * at,
@@ -77,11 +86,16 @@ const PhonePiles = ({
             if (firstCard === null) {
                 firstCard = id;
             }
-            const max = 100 + 6 * 25;
+            const SEP = 50;
+            const max = 100 + 6 * SEP;
             const off = Math.min(top, 5);
-            const pos = off * 25;
+            const pos = off * SEP;
             top = Math.min(top + 1, 6);
-            return { pos: [window.innerWidth / 2 + off * 1 - 3, max - pos], at: top };
+            // return { pos: [window.innerWidth / 2 + off * 1 - 3, max - pos], at: top };
+            return {
+                pos: [window.innerWidth - CARD_WIDTH / 2 - pos - 8, deckTop],
+                at: top,
+            };
         }
     });
     const springs = positions.map(({ pos }, i) => {
@@ -132,11 +146,15 @@ const PhonePiles = ({
                 css={{
                     zIndex: 10,
                     position: 'absolute',
-                    top: 100 - CARD_HEIGHT / 2,
-                    left: '50%',
-                    marginLeft: (-CARD_WIDTH / 2) * 1.1,
-                    width: CARD_WIDTH * 1.1,
-                    height: CARD_HEIGHT,
+                    // top: 100 - CARD_HEIGHT / 2,
+                    top: deckTop - (CARD_HEIGHT / 2) * 1.1,
+                    // left: '50%',
+                    // left: (CARD_WIDTH / 2) * 1.1 + 8,
+                    left: 0,
+                    textAlign: 'center',
+                    // marginLeft: (-CARD_WIDTH / 2) * 1.1,
+                    width: 120,
+                    height: CARD_HEIGHT * 1.1,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -165,6 +183,7 @@ const PhonePiles = ({
                         style={{
                             zIndex: (pilesInOrder.length - i) * 2,
                             bottom: i * PILE_HEIGHT,
+                            height: PILE_HEIGHT,
                         }}
                     >
                         <div css={styles.pileTitle}>
@@ -235,7 +254,6 @@ const styles = {
         textAlign: 'center',
         backgroundColor: Colors.lightPink,
         borderTop: `1px solid ${Colors.offBlack}`,
-        height: PILE_HEIGHT,
     },
 
     title: {
