@@ -96,6 +96,7 @@ export const SortSchema = {
 export type CommentT = {
     id: string,
     card: string,
+    sort: string,
     parentComment: ?string,
     text: string,
     authorId: string,
@@ -108,6 +109,7 @@ export const CommentSchema: Schema = {
     attributes: {
         id: 'string',
         card: 'string',
+        sort: 'string',
         parentComment: { type: 'optional', value: 'string' },
         text: 'string',
         authorId: 'string',
