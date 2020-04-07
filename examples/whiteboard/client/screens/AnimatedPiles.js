@@ -30,13 +30,13 @@ const shuffle = (array) => {
 const dist = (pos) => Math.sqrt(pos.x * pos.x + pos.y * pos.y);
 const distTo = (p1, p2) => dist({ x: p2.x - p1.x, y: p2.y - p1.y });
 
+const openInc = CARD_HEIGHT / 2;
 const MARGIN = 24;
 const currentPositions = (baseY, cardPositions, sort, pilePositions, openPile) => {
     let leftPos = 0;
     let firstCard = null;
     let openY = 0;
     let openX = 0;
-    let openInc = CARD_HEIGHT / 2;
     const positions = cardPositions.map(({ x, y, tilt, id }, i) => {
         if (sort.cards[id] != null) {
             const pile = sort.cards[id].pile;
@@ -82,18 +82,28 @@ const getNewPos = (i, pile, cardPositions, pilePositions, sort, baseY, openPile)
             const pilePos = pilePositions[pile].current;
             if (openPile && pile === openPile) {
                 let openY = 0;
+                let openX = 0;
+                let maxY = (window.innerHeight - pilePos.y - CARD_HEIGHT) / openInc;
                 for (let j = 0; j < i; j++) {
                     if (
                         sort.cards[cardPositions[j].id] &&
                         sort.cards[cardPositions[j].id].pile === pile
                     ) {
                         openY += 1;
+                        if (openY > maxY) {
+                            openY = 1;
+                            openX += 1;
+                        }
                     }
                 }
                 openY += 1;
+                if (openY > maxY) {
+                    openY = 1;
+                    openX += 1;
+                }
                 return {
-                    x: pilePos.x,
-                    y: pilePos.y - CARD_HEIGHT / 2 + (openY * CARD_HEIGHT) / 2,
+                    x: pilePos.x + openX * CARD_WIDTH * 0.9,
+                    y: pilePos.y - CARD_HEIGHT / 2 + openY * openInc,
                 };
             }
             return {
@@ -531,6 +541,9 @@ const styles = {
         outlineColor: 'transparent',
         ':hover': {
             outline: `2px solid ${Colors.darkPink}`,
+        },
+        ':focus': {
+            outline: `2px solid ${Colors.focusBlue}`,
         },
         overflow: 'hidden',
         textAlign: 'center',

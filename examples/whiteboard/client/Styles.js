@@ -6,4 +6,5 @@ export const Colors = {
     darkPink: '#e7a2ff',
     darkestPink: '#ca31ff',
     offBlack: '#3a004e',
+    focusBlue: '#5af',
 };
