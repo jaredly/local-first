@@ -35,16 +35,23 @@ const currentPositions = (baseY, cardPositions, sort, pilePositions, openPile) =
     let leftPos = 0;
     let firstCard = null;
     let openY = 0;
+    let openX = 0;
+    let openInc = CARD_HEIGHT / 2;
     const positions = cardPositions.map(({ x, y, tilt, id }, i) => {
         if (sort.cards[id] != null) {
             const pile = sort.cards[id].pile;
             if (pilePositions[pile].current) {
                 const pilePos = pilePositions[pile].current;
+                let maxY = (window.innerHeight - pilePos.y - CARD_HEIGHT) / openInc;
                 if (openPile != null && pile === openPile) {
                     openY += 1;
+                    if (openY > maxY) {
+                        openY = 1;
+                        openX += 1;
+                    }
                     return {
-                        x: pilePos.x,
-                        y: pilePos.y - CARD_HEIGHT / 2 + (openY * CARD_HEIGHT) / 2,
+                        x: pilePos.x + openX * CARD_WIDTH * 0.9,
+                        y: pilePos.y - CARD_HEIGHT / 2 + openY * openInc,
                     };
                 }
                 return {
@@ -66,6 +73,47 @@ const currentPositions = (baseY, cardPositions, sort, pilePositions, openPile) =
         return pos;
     });
     return { positions, firstCard };
+};
+
+const getNewPos = (i, pile, cardPositions, pilePositions, sort, baseY, openPile) => {
+    const { x, y } = cardPositions[i];
+    if (pile != null) {
+        if (pilePositions[pile].current) {
+            const pilePos = pilePositions[pile].current;
+            if (openPile && pile === openPile) {
+                let openY = 0;
+                for (let j = 0; j < i; j++) {
+                    if (
+                        sort.cards[cardPositions[j].id] &&
+                        sort.cards[cardPositions[j].id].pile === pile
+                    ) {
+                        openY += 1;
+                    }
+                }
+                openY += 1;
+                return {
+                    x: pilePos.x,
+                    y: pilePos.y - CARD_HEIGHT / 2 + (openY * CARD_HEIGHT) / 2,
+                };
+            }
+            return {
+                x: pilePos.x + (x * CARD_WIDTH) / 4,
+                y: pilePos.y + (y * CARD_HEIGHT) / 4,
+            };
+        }
+        return null;
+    }
+    let leftPos = 0;
+    for (let j = 0; j < i; j++) {
+        if (sort.cards[cardPositions[j].id] == null) {
+            leftPos += 1;
+        }
+    }
+    const xPos = window.innerWidth / 2 - CARD_WIDTH / 2 + leftPos * (CARD_WIDTH + MARGIN);
+    return {
+        x: Math.min(xPos, window.innerWidth - CARD_WIDTH / 2),
+        y: baseY,
+    };
 };
 
 const dragHandler = ({
@@ -151,47 +199,6 @@ const dragHandler = ({
         pos: [current.x, current.y],
         immediate: true,
     });
-};
-
-const getNewPos = (i, pile, cardPositions, pilePositions, sort, baseY, openPile) => {
-    const { x, y } = cardPositions[i];
-    if (pile != null) {
-        if (pilePositions[pile].current) {
-            const pilePos = pilePositions[pile].current;
-            if (openPile && pile === openPile) {
-                let openY = 0;
-                for (let j = 0; j < i; j++) {
-                    if (
-                        sort.cards[cardPositions[j].id] &&
-                        sort.cards[cardPositions[j].id].pile === pile
-                    ) {
-                        openY += 1;
-                    }
-                }
-                openY += 1;
-                return {
-                    x: pilePos.x,
-                    y: pilePos.y - CARD_HEIGHT / 2 + (openY * CARD_HEIGHT) / 2,
-                };
-            }
-            return {
-                x: pilePos.x + (x * CARD_WIDTH) / 4,
-                y: pilePos.y + (y * CARD_HEIGHT) / 4,
-            };
-        }
-        return null;
-    }
-    let leftPos = 0;
-    for (let j = 0; j < i; j++) {
-        if (sort.cards[cardPositions[j].id] == null) {
-            leftPos += 1;
-        }
-    }
-    const xPos = window.innerWidth / 2 - CARD_WIDTH / 2 + leftPos * (CARD_WIDTH + MARGIN);
-    return {
-        x: Math.min(xPos, window.innerWidth - CARD_WIDTH / 2),
-        y: baseY,
-    };
 };
 
 const PilesMode = ({
@@ -405,7 +412,7 @@ const PilesMode = ({
                           css={styles.card}
                           {...bind(i)}
                           style={{
-                              opacity: tiltSprings[i].opacity,
+                              //   opacity: tiltSprings[i].opacity,
                               zIndex:
                                   sort.cards[item.id] && sort.cards[item.id].pile === openPile
                                       ? 10
@@ -519,6 +526,12 @@ const styles = {
     },
 
     card: {
+        cursor: 'pointer',
+        transition: '.2s ease outline-color',
+        outlineColor: 'transparent',
+        ':hover': {
+            outline: `2px solid ${Colors.darkPink}`,
+        },
         overflow: 'hidden',
         textAlign: 'center',
         flexShrink: 0,
