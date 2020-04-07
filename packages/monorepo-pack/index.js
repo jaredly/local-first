@@ -13,10 +13,10 @@ const asExternal = (config, full) => {
     return null; // no external support yet
 };
 
-const requireRewriter = (currentPath, config, onInternalFile) => babel => {
+const requireRewriter = (currentPath, config, onInternalFile) => (babel) => {
     const { types: t } = babel;
 
-    const checkImport = name => {
+    const checkImport = (name) => {
         if (name.startsWith('.')) {
             const preres = path.resolve(path.dirname(currentPath), name);
             const full = require.resolve(preres);
@@ -70,15 +70,12 @@ const processFile = (path, config, addFile) => {
     const plugin = requireRewriter(path, config, addFile);
     const { code: es5 } = transform(code, {
         plugins: [plugin],
-        presets: [
-            require.resolve('@babel/preset-env'),
-            require.resolve('@babel/preset-flow'),
-        ],
+        presets: [require.resolve('@babel/preset-env'), require.resolve('@babel/preset-flow')],
     });
 
     const ast = recast.parse(code, {
         parser: {
-            parse: code =>
+            parse: (code) =>
                 parser.parse(code, {
                     sourceType: 'module',
                     plugins: ['flow'],
@@ -91,7 +88,7 @@ const processFile = (path, config, addFile) => {
     return { es5, flow };
 };
 
-const mkdirp = dir => {
+const mkdirp = (dir) => {
     if (fs.existsSync(dir)) {
         return;
     }
@@ -112,9 +109,9 @@ const greatestCommonSubpath = (path1, path2) => {
     return parts.slice(0, parts.length - i).join(path.sep);
 };
 
-const basePath = files => {
+const basePath = (files) => {
     let base = null;
-    files.forEach(file => {
+    files.forEach((file) => {
         if (base === null) {
             base = file;
         } else if (!file.startsWith(base)) {
@@ -124,7 +121,7 @@ const basePath = files => {
     return base;
 };
 
-const packageJsonsFor = file => {
+const packageJsonsFor = (file) => {
     const found = [];
     while (file.length && file !== '/' && file !== '.') {
         file = path.dirname(file);
@@ -137,15 +134,15 @@ const packageJsonsFor = file => {
     return found;
 };
 
-const collectPackageJsons = files => {
+const collectPackageJsons = (files) => {
     const all = {};
-    Object.keys(files).forEach(name => {
-        packageJsonsFor(name).forEach(p => (all[p] = true));
+    Object.keys(files).forEach((name) => {
+        packageJsonsFor(name).forEach((p) => (all[p] = true));
     });
     return Object.keys(all);
 };
 
-module.exports = config => {
+module.exports = (config) => {
     const files = {};
     const toProcess = [path.resolve(config.entry)];
     mkdirp(config.dest);
@@ -154,7 +151,7 @@ module.exports = config => {
         const next = toProcess.shift();
         files[next] = null;
         console.log(next);
-        const output = processFile(next, config, fileName => {
+        const output = processFile(next, config, (fileName) => {
             if (files[fileName] === undefined) {
                 files[fileName] = null;
                 toProcess.push(fileName);
@@ -172,12 +169,12 @@ module.exports = config => {
     if (!packageJson.dependencies) {
         packageJson.dependencies = {};
     }
-    packageJsons.forEach(cpath => {
+    packageJsons.forEach((cpath) => {
         if (cpath !== main) {
             const data = require(path.resolve(cpath));
             console.log('json', cpath); //, Object.keys(data.dependencies))
             if (data.dependencies) {
-                Object.keys(data.dependencies).forEach(k => {
+                Object.keys(data.dependencies).forEach((k) => {
                     if (
                         packageJson.dependencies[k] &&
                         packageJson.dependencies[k] !== data.dependencies[k]
@@ -192,7 +189,7 @@ module.exports = config => {
         }
     });
 
-    Object.keys(files).forEach(file => {
+    Object.keys(files).forEach((file) => {
         const rel = path.relative(base, file);
         const full = path.join(config.dest, rel);
         mkdirp(path.dirname(full));
@@ -201,6 +198,12 @@ module.exports = config => {
         fs.writeFileSync(full + '.flow', files[file].flow, 'utf8');
     });
     packageJson.main = path.relative(base, config.entry);
+    if (config.start) {
+        packageJson.scripts = {
+            ...packageJson.scripts,
+            start: `node ${packageJson.main}`,
+        };
+    }
     fs.writeFileSync(
         path.join(config.dest, 'package.json'),
         JSON.stringify(packageJson, null, 2),

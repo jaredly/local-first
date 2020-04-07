@@ -18,6 +18,15 @@ const pack = require('./packages/monorepo-pack');
 
 pack({
     name: 'example',
+    entry: 'examples/whiteboard/server/glitch.js',
+    dest: 'public/whiteboard-server',
+    start: true,
+});
+
+fail;
+
+pack({
+    name: 'example',
     entry: 'packages/server-bundle/index.js',
     dest: 'public/server-bundle',
 });
