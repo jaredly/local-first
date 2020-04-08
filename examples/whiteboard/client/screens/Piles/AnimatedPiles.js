@@ -16,7 +16,7 @@ import { CARD_WIDTH, CARD_HEIGHT } from './consts';
 
 export { shuffle } from './Cards';
 import Cards from './Cards';
-
+import EditableTitle from './EditableTitle';
 import Piles from './Piles';
 
 const useWindowSize = () => {
@@ -54,10 +54,13 @@ const PilesMode = ({
     const [fullyRendered, setFullyRendered] = React.useState(false);
     const deckPosition = React.useRef(null);
 
-    const pilePositions = {};
-    Object.keys(sort.piles).forEach((k) => {
-        pilePositions[k] = React.useRef(null);
-    });
+    const pilePositions: { [key: string]: ?{ x: number, y: number } } = React.useMemo(
+        () => ({}),
+        [],
+    );
+    // Object.keys(sort.piles).forEach((k) => {
+    //     pilePositions.current[k] = null
+    // });
 
     const pileContainerRef = React.useRef(null);
     const middleY = window.innerHeight / 2 - CARD_HEIGHT / 2;
@@ -66,7 +69,15 @@ const PilesMode = ({
 
     return (
         <div style={styles.container}>
-            <div css={{ textAlign: 'center', padding: 16, color: Colors.offBlack }}>
+            <div
+                css={{
+                    textAlign: 'center',
+                    color: Colors.offBlack,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                }}
+            >
                 <a href="/#" css={styles.backArrow}>
                     →
                 </a>
@@ -74,12 +85,14 @@ const PilesMode = ({
                     title={sort.title}
                     onChange={(newTitle) => sortsCol.setAttribute(sort.id, ['title'], newTitle)}
                 />
+                <div />
                 {/* <button
                     onClick={() => {
-                        sortsCol.setAttribute(sort.id, ['cards'], {});
+                        sortsCol.delete(sort.id);
+                        window.location.hash = '#';
                     }}
                 >
-                    Reset the sort
+                    🗑
                 </button> */}
             </div>
             <Piles
@@ -91,8 +104,8 @@ const PilesMode = ({
                         y: box.top + box.height / 2,
                         x: box.left + box.width / 2,
                     };
-                    const prevNot = !pilePositions[id].current;
-                    pilePositions[id].current = pos;
+                    const prevNot = !pilePositions['' + id];
+                    pilePositions['' + id] = pos;
                     if (prevNot && isFullyRendered(pilePositions, deckPosition)) {
                         setFullyRendered(true);
                     }
@@ -112,76 +125,47 @@ const PilesMode = ({
                     baseY={baseY}
                 />
             ) : null}
-            {/* <div style={{ flex: 1 }} /> */}
-            <div
-                ref={(node) => {
-                    if (node) {
-                        const box = node.getBoundingClientRect();
-                        const pos = {
-                            y: box.top + box.height / 2,
-                            x: box.left + box.width / 2,
-                        };
-                        const prevNot = !deckPosition.current;
-                        deckPosition.current = pos;
-                        if (prevNot && isFullyRendered(pilePositions, deckPosition)) {
-                            setFullyRendered(true);
-                        }
-                    }
-                }}
-                css={styles.deck}
-                style={{
-                    // top: baseY,
-                    outline: currentTarget === 'deck' ? `3px solid ${Colors.offBlack}` : null,
-                }}
-            >
-                Miller Value Sort
-            </div>
+            <Deck
+                hovered={currentTarget === 'deck'}
+                deckPosition={deckPosition}
+                pilePositions={pilePositions}
+                setFullyRendered={setFullyRendered}
+            />
             <div style={{ flex: 1 }} />
         </div>
     );
 };
 
-export const EditableTitle = ({
-    title,
-    onChange,
-}: {
-    title: string,
-    onChange: (string) => mixed,
-}) => {
-    const [wip, setWip] = React.useState(null);
-    if (wip != null) {
-        return (
-            <div>
-                <input
-                    value={wip}
-                    onChange={(evt) => setWip(evt.target.value)}
-                    onKeyDown={(evt) => {
-                        if (evt.key === 'Enter' && wip.trim() != '') {
-                            onChange(wip);
-                            setWip(null);
-                        }
-                    }}
-                    onBlur={() => setWip(null)}
-                    css={styles.titleInput}
-                    autoFocus
-                />
-            </div>
-        );
-    }
+const Deck = ({ deckPosition, pilePositions, setFullyRendered, hovered }) => {
     return (
         <div
-            onDoubleClick={(evt) => {
-                setWip(title);
+            ref={(node) => {
+                if (node) {
+                    const box = node.getBoundingClientRect();
+                    const pos = {
+                        y: box.top + box.height / 2,
+                        x: box.left + box.width / 2,
+                    };
+                    const prevNot = !deckPosition.current;
+                    deckPosition.current = pos;
+                    if (prevNot && isFullyRendered(pilePositions, deckPosition)) {
+                        setFullyRendered(true);
+                    }
+                }
             }}
-            css={{ fontSize: 32 }}
+            css={styles.deck}
+            style={{
+                // top: baseY,
+                outline: hovered ? `3px solid ${Colors.offBlack}` : null,
+            }}
         >
-            {title}
+            Miller Value Sort
         </div>
     );
 };
 
 const isFullyRendered = (piles, deck) => {
-    return deck.current && !Object.keys(piles).some((k) => !piles[k].current);
+    return deck.current && !Object.keys(piles).some((k) => !piles[k]);
 };
 
 const boxSize = 1.3;
@@ -196,14 +180,6 @@ const styles = {
         left: 0,
         right: 0,
         bottom: 0,
-    },
-
-    titleInput: {
-        fontSize: 32,
-        padding: 0,
-        fontWeight: 'inherit',
-        border: 'none',
-        textAlign: 'center',
     },
 
     deck: {
@@ -224,9 +200,9 @@ const styles = {
     },
 
     backArrow: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
+        // position: 'absolute',
+        // top: 0,
+        // left: 0,
         fontSize: 32,
         transform: `scaleX(-1)`,
         textDecoration: 'none',

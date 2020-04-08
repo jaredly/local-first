@@ -20,26 +20,43 @@ import { CARD_HEIGHT, CARD_WIDTH } from './consts';
 const openInc = CARD_HEIGHT / 2;
 const MARGIN = 24;
 
+const countInPile = (positions, sort, pile) => {
+    let x = 0;
+    positions.forEach(({ id }) => {
+        if (sort.cards[id] && sort.cards[id].pile === pile) {
+            x += 1;
+        }
+    });
+    return x;
+};
+
 const currentPositions = (deckPosition, cardPositions, sort, pilePositions, openPile) => {
     let leftPos = 0;
     let firstCard = null;
     let secondCard = null;
     let openY = 0;
     let openX = 0;
+
+    const openPileCount = openPile != null ? countInPile(cardPositions, sort, openPile) : 0;
+
     const positions = cardPositions.map(({ x, y, tilt, id }, i) => {
         if (sort.cards[id] != null) {
             const pile = sort.cards[id].pile;
-            if (pilePositions[pile].current) {
-                const pilePos = pilePositions[pile].current;
+            const pileKey = '' + pile;
+            if (pilePositions[pileKey]) {
+                const pilePos = pilePositions[pileKey];
                 let maxY = (window.innerHeight - pilePos.y - CARD_HEIGHT) / openInc;
                 if (openPile != null && pile === openPile) {
+                    const columns = Math.ceil(openPileCount / maxY);
+                    const xOffset = (columns / 2) * CARD_WIDTH * 0.9 - CARD_WIDTH * 0.9 * 0.5;
+
                     openY += 1;
                     if (openY > maxY) {
                         openY = 1;
                         openX += 1;
                     }
                     return {
-                        x: pilePos.x + openX * CARD_WIDTH * 0.9,
+                        x: pilePos.x + openX * CARD_WIDTH * 0.9 - xOffset,
                         y: pilePos.y - CARD_HEIGHT / 2 + openY * openInc,
                     };
                 }
@@ -69,12 +86,18 @@ const currentPositions = (deckPosition, cardPositions, sort, pilePositions, open
 const getNewPos = (i, pile, cardPositions, pilePositions, sort, deckPosition, openPile) => {
     const { x, y } = cardPositions[i];
     if (pile != null) {
-        if (pilePositions[pile].current) {
-            const pilePos = pilePositions[pile].current;
+        const pileKey = '' + pile;
+        if (pilePositions[pileKey]) {
+            const pilePos = pilePositions[pileKey];
             if (openPile && pile === openPile) {
                 let openY = 0;
                 let openX = 0;
                 let maxY = (window.innerHeight - pilePos.y - CARD_HEIGHT) / openInc;
+
+                const openPileCount = countInPile(cardPositions, sort, openPile);
+                const columns = Math.ceil(openPileCount / maxY);
+                const xOffset = (columns / 2) * CARD_WIDTH * 0.9 - CARD_WIDTH * 0.9 * 0.5;
+
                 for (let j = 0; j < i; j++) {
                     if (
                         sort.cards[cardPositions[j].id] &&
@@ -93,7 +116,7 @@ const getNewPos = (i, pile, cardPositions, pilePositions, sort, deckPosition, op
                     openX += 1;
                 }
                 return {
-                    x: pilePos.x + openX * CARD_WIDTH * 0.9,
+                    x: pilePos.x + openX * CARD_WIDTH * 0.9 - xOffset,
                     y: pilePos.y - CARD_HEIGHT / 2 + openY * openInc,
                 };
             }
@@ -218,7 +241,7 @@ const Cards = ({
     cards: { [key: string]: CardT },
     sort: SortT,
     sortsCol: Collection<SortT>,
-    pilePositions: { [key: number]: { current: ?{ x: number, y: number } } },
+    pilePositions: { [key: string]: ?{ x: number, y: number } },
     openPile: ?number,
     setCurrentTarget: (?(number | 'deck')) => void,
     deckPosition: { current: ?{ x: number, y: number } },
@@ -262,7 +285,7 @@ const Cards = ({
             if (pile && pile.pile === +pid) {
                 return;
             }
-            const ppos = pilePositions[+pid].current;
+            const ppos = pilePositions[pid];
             if (!ppos) return;
             const d = distTo(pos, ppos);
             if (!closest || d < closest.dist) {
@@ -272,6 +295,7 @@ const Cards = ({
         return closest;
     };
 
+    // TODO useSprings
     const springs = cardPositions.map((card, i) => {
         const dest = {
             pos: [positions[i].x, positions[i].y],
@@ -284,6 +308,7 @@ const Cards = ({
         return [props, set, dest];
     });
 
+    // TODO useSprtings
     const tiltSprings = cardPositions.map((card, i) => {
         const dest = {
             tilt: sort.cards[card.id] != null ? card.tilt : 0,
@@ -322,8 +347,8 @@ const Cards = ({
     //         div.focus();
     //     }
     // }, [firstRef.current, sort]);
-    const cardRefs = {};
-    cardPositions.forEach((item) => (cardRefs[item.id] = React.useRef(null)));
+    const cardRefs: { [key: string]: HTMLDivElement } = React.useMemo(() => ({}), []);
+    // cardPositions.forEach((item) => (cardRefs[item.id] = React.useRef(null)));
 
     return (
         <div>
@@ -333,10 +358,10 @@ const Cards = ({
                     // ref={item.id === firstCard ? (node) => (firstRef.current = node) : null}
                     ref={(node) => {
                         if (node) {
-                            if (cardRefs[item.id].current && cardRefs[item.id].current !== node) {
+                            if (cardRefs[item.id] && cardRefs[item.id] !== node) {
                                 console.log('replace', item.id, node, cardRefs[item.id]);
                             }
-                            cardRefs[item.id].current = node;
+                            cardRefs[item.id] = node;
                         }
                         // console.log(item.id, node);
                     }}
@@ -370,8 +395,8 @@ const Cards = ({
                                 placementTime: Date.now(),
                             });
                             const target = item.id === firstCard ? secondCard : firstCard;
-                            if (target && cardRefs[target].current) {
-                                cardRefs[target].current.focus();
+                            if (target && cardRefs[target]) {
+                                cardRefs[target].focus();
                             }
                         }
                     }}

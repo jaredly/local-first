@@ -9,7 +9,8 @@ import { useSpring, animated, interpolate } from 'react-spring';
 import { useDrag } from 'react-use-gesture';
 import { Colors } from '../Styles';
 
-import { EditableTitle, shuffle, CARD_HEIGHT, CARD_WIDTH } from './Piles/AnimatedPiles';
+import { shuffle, CARD_HEIGHT, CARD_WIDTH } from './Piles/AnimatedPiles';
+import EditableTitle from './Piles/EditableTitle';
 
 const PhonePiles = ({
     col,
