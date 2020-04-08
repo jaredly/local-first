@@ -60,7 +60,7 @@ const Main = ({ client }: { client: Client<SyncStatus> }) => {
     const sort = sortId ? sorts[sortId] : null;
 
     if (sort) {
-        if (window.innerWidth < PILE_WIDTH * Object.keys(sort.piles).length) {
+        if (window.innerWidth < PILE_WIDTH * ((Object.keys(sort.piles).length / 2) | 0)) {
             return (
                 <PhonePilesMode
                     cards={cards}

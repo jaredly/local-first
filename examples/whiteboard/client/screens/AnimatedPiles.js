@@ -207,20 +207,90 @@ const dragHandler = ({
     });
 };
 
-const PilesMode = ({
-    col,
+// const calcPilePositions = (numPiles) => {
+//     const totalWidth = window.innerWidth
+//     const positions = []
+//     const numPerLine = Math.min(numPiles, totalWidth / PILE_WIDTH | 0)
+//     const margin = Math.min(24, (totalWidth - numPiles * PILE_WIDTH) / numPerLine)
+//     const sideMargin = (totalWidth - numPerLine * (PILE_WIDTH + margin) - margin) / 2
+//     const topMargin = 50;
+//     let y = 0;
+//     for (let i=0; i<numPiles; i++) {
+
+//     }
+//     return positions
+// }
+
+const Piles = ({
+    sort,
+    onClick,
+    onRef,
+    hovered,
+    selected,
+}: {
+    sort: SortT,
+    onClick: (number) => void,
+    onRef: (number, HTMLDivElement) => void,
+    hovered: ?number,
+    selected: ?number,
+}) => {
+    const pilesInOrder = Object.keys(sort.piles)
+        .sort()
+        .map((id) => ({ id, pile: sort.piles[+id] }));
+
+    return (
+        <div
+            style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+            }}
+        >
+            {pilesInOrder.map(({ id, pile }, i) => (
+                <div
+                    key={i}
+                    onClick={() => onClick(+id)}
+                    ref={(node) => {
+                        if (node) {
+                            onRef(+id, node);
+                        }
+                    }}
+                    style={{
+                        outline: selected === +id ? `2px solid ${Colors.darkPink}` : null,
+                    }}
+                    css={{
+                        padding: 8,
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        ':hover': {
+                            outline: `2px solid ${Colors.pink}`,
+                        },
+                    }}
+                >
+                    <div style={styles.title}>{pile.title}</div>
+                    <div
+                        style={{
+                            backgroundColor: hovered == +id ? Colors.lightPink : null,
+                            border: '1px solid #aaa',
+                            width: PILE_WIDTH,
+                            height: PILE_HEIGHT,
+                            position: 'relative',
+                        }}
+                    />
+                </div>
+            ))}
+        </div>
+    );
+};
+
+const Cards = ({
     cards,
-    onDone,
-    genId,
     sort,
     sortsCol,
-}: {
-    onDone: () => void,
-    col: Collection<CardT>,
-    cards: { [key: string]: CardT },
-    genId: () => string,
-    sort: SortT,
-    sortsCol: Collection<SortT>,
+    pilePositions,
+    openPile,
+    setCurrentTarget,
+    deckPosition,
+    baseY,
 }) => {
     const cardPositions = React.useMemo(() => {
         const keys = Object.keys(cards);
@@ -237,24 +307,6 @@ const PilesMode = ({
         }));
     }, []);
     const firstRef = React.useRef(null);
-    const pilesInOrder = Object.keys(sort.piles)
-        .sort()
-        .map((id) => ({ id, pile: sort.piles[+id] }));
-
-    const [currentTarget, setCurrentTarget] = React.useState(null);
-
-    const [openPile, setOpenPile] = React.useState(null);
-
-    const pilePositions = {};
-    Object.keys(sort.piles).forEach((k) => {
-        pilePositions[k] = React.useRef(null);
-    });
-    const deckPosition = React.useRef(null);
-    const [fullyRendered, setFullyRendered] = React.useState(false);
-
-    const middleY = window.innerHeight / 2 - CARD_HEIGHT / 2;
-    const baseY =
-        middleY < CARD_HEIGHT * 3 ? window.innerHeight - (CARD_HEIGHT / 2) * 1.5 : middleY;
 
     const { positions, firstCard } = currentPositions(
         baseY,
@@ -312,8 +364,6 @@ const PilesMode = ({
     const currentSprings = React.useRef(springs);
     currentSprings.current = springs;
 
-    const pileContainerRef = React.useRef(null);
-
     const bind = useDrag(({ args: [i], down, movement: [x, y], event, vxvy }) => {
         event.stopPropagation();
         dragHandler({
@@ -335,12 +385,81 @@ const PilesMode = ({
         });
     });
 
-    React.useEffect(() => {
-        if (firstRef.current && !currentDrag.current) {
-            const div = firstRef.current;
-            div.focus();
-        }
-    }, [firstRef.current, sort]);
+    // React.useEffect(() => {
+    //     if (firstRef.current && !currentDrag.current) {
+    //         const div = firstRef.current;
+    //         div.focus();
+    //     }
+    // }, [firstRef.current, sort]);
+
+    return cardPositions.map((item, i) => (
+        <animated.div
+            key={item.id}
+            ref={item.id === firstCard ? (node) => (firstRef.current = node) : null}
+            tabIndex={item.id === firstCard ? '0' : null}
+            css={styles.card}
+            {...bind(i)}
+            style={{
+                zIndex:
+                    sort.cards[item.id] && sort.cards[item.id].pile === openPile ? 10 : undefined,
+                transform: interpolate(
+                    [springs[i][0].pos, tiltSprings[i].tilt],
+                    (pos, tilt) =>
+                        `translate(${pos[0]}px, ${pos[1]}px) rotate(${parseInt(tilt * 15)}deg)`,
+                ),
+            }}
+            onKeyDown={(evt) => {
+                if (+evt.key == evt.key && sort.piles[+evt.key - 1]) {
+                    const missing = cardPositions.some(
+                        (card, idx) => idx !== i && sort.cards[card.id] == null,
+                    );
+                    if (!missing && sort.completedDate == null) {
+                        sortsCol.setAttribute(sort.id, ['completedDate'], Date.now());
+                    }
+
+                    sortsCol.setAttribute(sort.id, ['cards', item.id], {
+                        pile: +evt.key - 1,
+                        placementTime: Date.now(),
+                    });
+                }
+            }}
+        >
+            <div css={styles.title}>{cards[item.id].title}</div>
+            <div>{cards[item.id].description}</div>
+        </animated.div>
+    ));
+};
+
+const PilesMode = ({
+    col,
+    cards,
+    onDone,
+    genId,
+    sort,
+    sortsCol,
+}: {
+    onDone: () => void,
+    col: Collection<CardT>,
+    cards: { [key: string]: CardT },
+    genId: () => string,
+    sort: SortT,
+    sortsCol: Collection<SortT>,
+}) => {
+    const [currentTarget, setCurrentTarget] = React.useState(null);
+
+    const [openPile, setOpenPile] = React.useState(null);
+    const [fullyRendered, setFullyRendered] = React.useState(false);
+    const deckPosition = React.useRef(null);
+
+    const pilePositions = {};
+    Object.keys(sort.piles).forEach((k) => {
+        pilePositions[k] = React.useRef(null);
+    });
+
+    const pileContainerRef = React.useRef(null);
+    const middleY = window.innerHeight / 2 - CARD_HEIGHT / 2;
+    const baseY =
+        middleY < CARD_HEIGHT * 3 ? window.innerHeight - (CARD_HEIGHT / 2) * 1.5 : middleY;
 
     return (
         <div style={styles.container}>
@@ -360,98 +479,36 @@ const PilesMode = ({
                     Reset the sort
                 </button> */}
             </div>
-            <div
-                style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
+            <Piles
+                sort={sort}
+                onClick={(id) => (id === openPile ? setOpenPile(null) : setOpenPile(id))}
+                onRef={(id, node) => {
+                    const box = node.getBoundingClientRect();
+                    const pos = {
+                        y: box.top + box.height / 2,
+                        x: box.left + box.width / 2,
+                    };
+                    const prevNot = !pilePositions[id].current;
+                    pilePositions[id].current = pos;
+                    if (prevNot && isFullyRendered(pilePositions, deckPosition)) {
+                        setFullyRendered(true);
+                    }
                 }}
-            >
-                {pilesInOrder.map(({ id, pile }, i) => (
-                    <div
-                        key={i}
-                        onClick={() => (openPile === +id ? setOpenPile(null) : setOpenPile(+id))}
-                        ref={(node) => {
-                            if (node) {
-                                const box = node.getBoundingClientRect();
-                                const pos = {
-                                    y: box.top + box.height / 2,
-                                    x: box.left + box.width / 2,
-                                };
-                                const prevNot = !pilePositions[id].current;
-                                pilePositions[id].current = pos;
-                                if (prevNot && isFullyRendered(pilePositions, deckPosition)) {
-                                    setFullyRendered(true);
-                                }
-                            }
-                        }}
-                        style={{
-                            outline: openPile === +id ? `2px solid ${Colors.darkPink}` : null,
-                        }}
-                        css={{
-                            padding: 8,
-                            cursor: 'pointer',
-                            textAlign: 'center',
-                            ':hover': {
-                                outline: `2px solid ${Colors.pink}`,
-                            },
-                        }}
-                    >
-                        <div style={styles.title}>{pile.title}</div>
-                        <div
-                            style={{
-                                backgroundColor: currentTarget == id ? Colors.lightPink : null,
-                                border: '1px solid #aaa',
-                                width: PILE_WIDTH,
-                                height: PILE_HEIGHT,
-                                position: 'relative',
-                            }}
-                        />
-                    </div>
-                ))}
-            </div>
-            {fullyRendered
-                ? cardPositions.map((item, i) => (
-                      <animated.div
-                          key={item.id}
-                          ref={item.id === firstCard ? (node) => (firstRef.current = node) : null}
-                          tabIndex={item.id === firstCard ? '0' : null}
-                          css={styles.card}
-                          {...bind(i)}
-                          style={{
-                              //   opacity: tiltSprings[i].opacity,
-                              zIndex:
-                                  sort.cards[item.id] && sort.cards[item.id].pile === openPile
-                                      ? 10
-                                      : undefined,
-                              transform: interpolate(
-                                  [springs[i][0].pos, tiltSprings[i].tilt],
-                                  (pos, tilt) =>
-                                      `translate(${pos[0]}px, ${pos[1]}px) rotate(${parseInt(
-                                          tilt * 15,
-                                      )}deg)`,
-                              ),
-                          }}
-                          onKeyDown={(evt) => {
-                              if (+evt.key == evt.key && sort.piles[+evt.key - 1]) {
-                                  const missing = cardPositions.some(
-                                      (card, idx) => idx !== i && sort.cards[card.id] == null,
-                                  );
-                                  if (!missing && sort.completedDate == null) {
-                                      sortsCol.setAttribute(sort.id, ['completedDate'], Date.now());
-                                  }
-
-                                  sortsCol.setAttribute(sort.id, ['cards', item.id], {
-                                      pile: +evt.key - 1,
-                                      placementTime: Date.now(),
-                                  });
-                              }
-                          }}
-                      >
-                          <div css={styles.title}>{cards[item.id].title}</div>
-                          <div>{cards[item.id].description}</div>
-                      </animated.div>
-                  ))
-                : null}
+                hovered={currentTarget ? +currentTarget : null}
+                selected={openPile}
+            />
+            {fullyRendered ? (
+                <Cards
+                    cards={cards}
+                    sort={sort}
+                    sortsCol={sortsCol}
+                    pilePositions={pilePositions}
+                    openPile={openPile}
+                    setCurrentTarget={setCurrentTarget}
+                    deckPosition={deckPosition}
+                    baseY={baseY}
+                />
+            ) : null}
             <div
                 ref={(node) => {
                     if (node) {
