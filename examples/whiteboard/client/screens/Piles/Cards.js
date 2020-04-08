@@ -39,9 +39,10 @@ const currentPositions = (deckPosition, cardPositions, sort, pilePositions, open
 
     const openPileCount = openPile != null ? countInPile(cardPositions, sort, openPile) : 0;
 
-    const positions = cardPositions.map(({ x, y, tilt, id }, i) => {
+    const positions = cardPositions.map(({ id }, i) => {
         if (sort.cards[id] != null) {
             const pile = sort.cards[id].pile;
+            const { x, y } = sort.cards[id].jitter || { x: 0, y: 0 };
             const pileKey = '' + pile;
             if (pilePositions[pileKey]) {
                 const pilePos = pilePositions[pileKey];
@@ -84,7 +85,8 @@ const currentPositions = (deckPosition, cardPositions, sort, pilePositions, open
 };
 
 const getNewPos = (i, pile, cardPositions, pilePositions, sort, deckPosition, openPile) => {
-    const { x, y } = cardPositions[i];
+    const { id } = cardPositions[i];
+    const { x, y } = (sort.cards[id] && sort.cards[id].jitter) || { x: 0, y: 0 };
     if (pile != null) {
         const pileKey = '' + pile;
         if (pilePositions[pileKey]) {
@@ -94,7 +96,7 @@ const getNewPos = (i, pile, cardPositions, pilePositions, sort, deckPosition, op
                 let openX = 0;
                 let maxY = (window.innerHeight - pilePos.y - CARD_HEIGHT) / openInc;
 
-                const openPileCount = countInPile(cardPositions, sort, openPile);
+                const openPileCount = countInPile(cardPositions, sort, openPile) + 1;
                 const columns = Math.ceil(openPileCount / maxY);
                 const xOffset = (columns / 2) * CARD_WIDTH * 0.9 - CARD_WIDTH * 0.9 * 0.5;
 
@@ -187,6 +189,11 @@ const dragHandler = ({
                 sortsCol.setAttribute(sort.id, ['cards', cardPositions[i].id], {
                     pile: +closestTarget.pile,
                     placementTime: Date.now(),
+                    jitter: {
+                        x: Math.random() * 2 - 1,
+                        y: Math.random() * 2 - 1,
+                        tilt: Math.random() * 2 - 1,
+                    },
                 });
             }
             const newPos = getNewPos(
@@ -256,9 +263,9 @@ const Cards = ({
 
         return sorted.concat(unsorted).map((id) => ({
             id,
-            x: Math.random() * 2 - 1,
-            y: Math.random() * 2 - 1,
-            tilt: Math.random() * 2 - 1,
+            // x: Math.random() * 2 - 1,
+            // y: Math.random() * 2 - 1,
+            // tilt: Math.random() * 2 - 1,
         }));
     }, []);
 
@@ -311,7 +318,12 @@ const Cards = ({
     // TODO useSprtings
     const tiltSprings = cardPositions.map((card, i) => {
         const dest = {
-            tilt: sort.cards[card.id] != null ? card.tilt : 0,
+            tilt:
+                sort.cards[card.id] != null
+                    ? sort.cards[card.id].jitter
+                        ? sort.cards[card.id].jitter.tilt
+                        : 0
+                    : 0,
             opacity: sort.cards[card.id] != null ? 0.8 : 1,
         };
         return useSpring(dest);
@@ -393,6 +405,11 @@ const Cards = ({
                             sortsCol.setAttribute(sort.id, ['cards', item.id], {
                                 pile: +evt.key - 1,
                                 placementTime: Date.now(),
+                                jitter: {
+                                    x: Math.random() * 2 - 1,
+                                    y: Math.random() * 2 - 1,
+                                    tilt: Math.random() * 2 - 1,
+                                },
                             });
                             const target = item.id === firstCard ? secondCard : firstCard;
                             if (target && cardRefs[target]) {

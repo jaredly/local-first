@@ -65,7 +65,14 @@ export type SortT = {
     completedDate: ?number,
     // piles are actually keyed by number
     piles: { [key: number]: { title: string, color: string } },
-    cards: { [key: string]: { pile: number, sort: ?Array<number>, placementTime: number } },
+    cards: {
+        [key: string]: {
+            pile: number,
+            sort: ?Array<number>,
+            placementTime: number,
+            jitter: ?{ x: number, y: number, tilt: number },
+        },
+    },
 };
 
 export const SortSchema = {
@@ -85,6 +92,14 @@ export const SortSchema = {
                 type: 'object',
                 attributes: {
                     pile: 'number',
+                    jitter: {
+                        type: 'object',
+                        attributes: {
+                            x: 'number',
+                            y: 'number',
+                            tilt: 'number',
+                        },
+                    },
                     placementTime: 'number',
                     sort: { type: 'optional', value: 'any' },
                 },
