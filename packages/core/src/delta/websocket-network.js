@@ -15,7 +15,7 @@ const reconnectingSocket = (
     };
     const reconnect = () => {
         state.socket = null;
-        updateStatus({ status: 'disconnected' });
+        updateStatus({ status: 'pending' });
         backOff(
             () =>
                 new Promise((res, rej) => {
@@ -34,6 +34,7 @@ const reconnectingSocket = (
                         }, 50);
                     });
                     socket.addEventListener('close', () => {
+                        updateStatus({ status: 'disconnected' });
                         closed = true;
                         if (opened) {
                             reconnect();
@@ -53,7 +54,10 @@ const reconnectingSocket = (
     return state;
 };
 
-export type SyncStatus = { status: 'connected' } | { status: 'disconnected' };
+export type SyncStatus =
+    | { status: 'pending' }
+    | { status: 'connected' }
+    | { status: 'disconnected' };
 
 const createWebSocketNetwork = <Delta, Data>(
     url: string,
@@ -63,7 +67,7 @@ const createWebSocketNetwork = <Delta, Data>(
     handleMessages,
 ): Network<SyncStatus> => {
     return {
-        initial: { status: 'disconnected' },
+        initial: { status: 'pending' },
         createSync: (sendCrossTabChange, updateStatus, softResync) => {
             console.log('Im the leader (websocket)');
             const state = reconnectingSocket(

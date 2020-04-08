@@ -48,7 +48,13 @@ const useHash = () => {
     return [hash, setter];
 };
 
-const Main = ({ client }: { client: Client<SyncStatus> }) => {
+const Main = ({
+    client,
+    user,
+}: {
+    client: Client<SyncStatus>,
+    user: ?{ name: string, email: string },
+}) => {
     const [col, cards] = useCollection<CardT, SyncStatus>(React, client, 'cards');
     const [sortsCol, sorts] = useCollection<SortT, SyncStatus>(React, client, 'sorts');
     const [commentsCol, comments] = useCollection<CommentT, SyncStatus>(React, client, 'comments');
@@ -85,6 +91,8 @@ const Main = ({ client }: { client: Client<SyncStatus> }) => {
     } else {
         return (
             <HomePage
+                client={client}
+                user={user}
                 openSort={(sort) => setSortId(sort.id)}
                 genId={client.getStamp}
                 cards={cards}

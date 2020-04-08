@@ -3,9 +3,11 @@
 import { jsx } from '@emotion/core';
 import React from 'react';
 
-import { type Collection } from '../../../../packages/client-bundle';
+import { type Collection, type Client, type SyncStatus } from '../../../../packages/client-bundle';
 import { type CardT, type SortT, colors } from '../types';
 import { Colors } from '../Styles';
+import { useSyncStatus } from '../../../../packages/client-react';
+import gravatarUrl from 'gravatar-url';
 
 import { makeDefaultCards } from '../defaults';
 
@@ -162,11 +164,14 @@ const Sorts = ({
     sortsCol,
     openSort,
     genId,
+    status,
+    user,
 }: {
     sorts: { [key: string]: SortT },
     sortsCol: Collection<SortT>,
     openSort: (SortT) => void,
     genId: () => string,
+    status: SyncStatus,
 }) => {
     return (
         <div
@@ -182,6 +187,36 @@ const Sorts = ({
                 justifyContent: 'center',
             }}
         >
+            <div
+                css={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginBottom: 16,
+                }}
+            >
+                <img
+                    src={gravatarUrl(user.email)}
+                    css={{
+                        borderRadius: '50%',
+                        width: 50,
+                        height: 50,
+                        marginRight: 8,
+                    }}
+                />
+                <div>
+                    <div>{user.name}</div>
+                    <div
+                        css={{
+                            color: { connected: 'green', pending: '#aaa', disconnected: 'red' }[
+                                status.status
+                            ],
+                        }}
+                    >
+                        {status.status}
+                    </div>
+                </div>
+            </div>
             <div
                 css={{
                     maxWidth: '100%',
@@ -209,6 +244,7 @@ const Sorts = ({
                 <div css={{ overflow: 'auto', flex: 1, fontSize: 32 }}>
                     <CreateSort genId={genId} sortsCol={sortsCol} />
                     {Object.keys(sorts)
+                        .filter((k) => sorts[k])
                         .sort((a, b) => sorts[b].createdDate - sorts[a].createdDate)
                         .map((key) => (
                             <div
@@ -275,14 +311,20 @@ const HomePage = ({
     sortsCol,
     openSort,
     genId,
+    client,
+    user,
 }: {
+    client: Client<SyncStatus>,
     cards: { [key: string]: CardT },
     cardsCol: Collection<CardT>,
     sorts: { [key: string]: SortT },
     sortsCol: Collection<SortT>,
     openSort: (SortT) => void,
     genId: () => string,
+    user: ?{ name: string, email: string },
 }) => {
+    const status = useSyncStatus(React, client);
+
     if (!Object.keys(cards).length) {
         return (
             <Welcome
@@ -292,7 +334,16 @@ const HomePage = ({
             />
         );
     }
-    return <Sorts sorts={sorts} sortsCol={sortsCol} openSort={openSort} genId={genId} />;
+    return (
+        <Sorts
+            status={status}
+            user={user}
+            sorts={sorts}
+            sortsCol={sortsCol}
+            openSort={openSort}
+            genId={genId}
+        />
+    );
 };
 
 const Welcome = ({ onStart }: { onStart: () => void }) => {

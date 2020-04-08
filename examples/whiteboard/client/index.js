@@ -5,6 +5,7 @@ import { render } from 'react-dom';
 import React from 'react';
 import {
     createInMemoryDeltaClient,
+    createPersistedDeltaClient,
     createPersistedBlobClient,
 } from '../../../packages/client-bundle';
 import { default as makeDeltaInMemoryPersistence } from '../../../packages/idb/src/delta-mem';
@@ -28,25 +29,32 @@ const AppWithAuth = ({ host }) => {
     } else if (status === false) {
         return <Auth host={host} />;
     } else {
-        return <App host={host} token={status.token} />;
+        return <App host={host} auth={status} />;
     }
 };
 
-const App = ({ host, token }: { host: string, token: ?string }) => {
+const App = ({
+    host,
+    auth,
+}: {
+    host: string,
+    auth: ?{ token: string, user: { name: string, email: string } },
+}) => {
     // We're assuming we're authed, and cookies are taking care of things.
     const client = React.useMemo(
-        token
+        auth
             ? () =>
-                  createInMemoryDeltaClient(
+                  createPersistedDeltaClient(
+                      'value-sort',
                       schemas,
-                      `${
-                          host.startsWith('localhost:') ? 'ws' : 'wss'
-                      }://${host}/sync?token=${token}`,
+                      `${host.startsWith('localhost:') ? 'ws' : 'wss'}://${host}/sync?token=${
+                          auth.token
+                      }`,
                   )
             : () => createPersistedBlobClient('miller-values-sort', schemas, null, 2),
         [],
     );
-    return <Main client={client} />;
+    return <Main client={client} user={auth ? auth.user : null} />;
 };
 
 const root = document.createElement('div');
