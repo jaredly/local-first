@@ -103,6 +103,73 @@ const PhonePiles = ({
         return useSpring({ pos });
     });
 
+    const [focus, setFocus] = React.useState(false);
+
+    if (focus) {
+        const focusedCards = cardsInOrder.filter(
+            (id) => sort.cards[id] && sort.cards[id].pile === focus,
+        );
+        return (
+            <div css={styles.container}>
+                <div
+                    css={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        backgroundColor: Colors.pink,
+                    }}
+                >
+                    <button
+                        css={{
+                            cursor: 'pointer',
+                            border: 'none',
+                            padding: 16,
+                            marginRight: 16,
+                            backgroundColor: 'transparent',
+                        }}
+                        onClick={() => setFocus(null)}
+                    >
+                        ╳
+                    </button>
+                    <div
+                        css={{
+                            fontSize: '2em',
+                            padding: '8px 16px',
+                        }}
+                    >
+                        {sort.piles[focus].title}
+                    </div>
+                </div>
+                <div style={{ flex: 1, overflow: 'auto' }}>
+                    {focusedCards.map((id) => (
+                        <div
+                            key={id}
+                            style={{
+                                display: 'flex',
+                            }}
+                        >
+                            <div style={{ flex: 1, padding: 8 }}>
+                                <div css={styles.title}>{cards[id].title}</div>
+                                <div>{cards[id].description}</div>
+                            </div>
+                            <button
+                                css={{
+                                    cursor: 'pointer',
+                                    border: 'none',
+                                    padding: 16,
+                                    marginRight: 16,
+                                    backgroundColor: 'transparent',
+                                }}
+                                onClick={() => sortsCol.clearAttribute(sort.id, ['cards', id])}
+                            >
+                                ╳
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div css={styles.container}>
             <div css={{ textAlign: 'center', padding: 16, color: Colors.offBlack }}>
@@ -201,6 +268,21 @@ const PhonePiles = ({
                             </div>
                             {sort.piles[id].title}
                             <div style={{ flex: 1 }} />
+                            <button
+                                style={{
+                                    backgroundColor: 'transparent',
+                                    border: 'none',
+                                    padding: 8,
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold',
+                                }}
+                                onClick={(evt) => {
+                                    evt.stopPropagation();
+                                    setFocus(id);
+                                }}
+                            >
+                                ↗️
+                            </button>
                         </div>
                     </div>
                 ))}
@@ -232,6 +314,8 @@ const styles = {
     container: {
         overflow: 'hidden',
         position: 'absolute',
+        display: 'flex',
+        flexDirection: 'column',
         top: 0,
         left: 0,
         right: 0,
