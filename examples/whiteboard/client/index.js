@@ -24,11 +24,14 @@ const schemas = {
 const AppWithAuth = ({ host }) => {
     const status = useAuthStatus(host);
     if (status === null) {
+        console.log('waiting');
         // Waiting
         return <div />;
     } else if (status === false) {
+        console.log('need login');
         return <Auth host={host} />;
     } else {
+        console.log('now working');
         return <App host={host} auth={status} logout={() => logout(host, status.token)} />;
     }
 };
@@ -42,21 +45,19 @@ const App = ({
     auth: ?{ token: string, user: { name: string, email: string } },
     logout: () => mixed,
 }) => {
-    console.log('starting a client');
     // We're assuming we're authed, and cookies are taking care of things.
-    const client = React.useMemo(
-        auth
-            ? () =>
-                  createPersistedDeltaClient(
-                      'value-sort',
-                      schemas,
-                      `${host.startsWith('localhost:') ? 'ws' : 'wss'}://${host}/sync?token=${
-                          auth.token
-                      }`,
-                  )
-            : () => createPersistedBlobClient('miller-values-sort', schemas, null, 2),
-        [],
-    );
+    const client = React.useMemo(() => {
+        console.log('starting a client', auth);
+        return auth
+            ? createPersistedDeltaClient(
+                  'value-sort',
+                  schemas,
+                  `${host.startsWith('localhost:') ? 'ws' : 'wss'}://${host}/sync?token=${
+                      auth.token
+                  }`,
+              )
+            : createPersistedBlobClient('miller-values-sort', schemas, null, 2);
+    }, [auth && auth.token]);
     return <Main client={client} user={auth ? auth.user : null} logout={logout} />;
 };
 
@@ -65,5 +66,6 @@ if (document.body) {
     document.body.appendChild(root);
     // const host = 'localhost:9090';
     const host = 'value-sort-server.glitch.me';
+    console.log('toplevel login');
     render(<AppWithAuth host={host} />, root);
 }

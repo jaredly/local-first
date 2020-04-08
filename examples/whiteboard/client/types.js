@@ -70,7 +70,7 @@ export type SortT = {
             pile: number,
             sort: ?Array<number>,
             placementTime: number,
-            jitter: ?{ x: number, y: number, tilt: number },
+            // jitter: ?{ x: number, y: number, tilt: number },
         },
     },
 };
@@ -92,14 +92,14 @@ export const SortSchema = {
                 type: 'object',
                 attributes: {
                     pile: 'number',
-                    jitter: {
-                        type: 'object',
-                        attributes: {
-                            x: 'number',
-                            y: 'number',
-                            tilt: 'number',
-                        },
-                    },
+                    // jitter: {
+                    //     type: 'object',
+                    //     attributes: {
+                    //         x: 'number',
+                    //         y: 'number',
+                    //         tilt: 'number',
+                    //     },
+                    // },
                     placementTime: 'number',
                     sort: { type: 'optional', value: 'any' },
                 },

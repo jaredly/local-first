@@ -2,6 +2,7 @@
 /* @jsx jsx */
 import { jsx } from '@emotion/core';
 import * as React from 'react';
+import Alea from 'alea';
 
 import { type Collection } from '../../../../../packages/client-bundle';
 import { type CardT, type SortT, colors } from '../../types';
@@ -9,9 +10,9 @@ import { useSpring, animated, interpolate } from 'react-spring';
 import { useDrag } from 'react-use-gesture';
 import { Colors } from '../../Styles';
 
-export const shuffle = function<T>(array: Array<T>): Array<T> {
+export const shuffle = function<T>(array: Array<T>, rng: () => number = Math.random): Array<T> {
     return array
-        .map((item) => [Math.random(), item])
+        .map((item) => [rng(), item])
         .sort((a, b) => a[0] - b[0])
         .map((item) => item[1]);
 };
@@ -39,10 +40,9 @@ const currentPositions = (deckPosition, cardPositions, sort, pilePositions, open
 
     const openPileCount = openPile != null ? countInPile(cardPositions, sort, openPile) : 0;
 
-    const positions = cardPositions.map(({ id }, i) => {
+    const positions = cardPositions.map(({ id, x, y }, i) => {
         if (sort.cards[id] != null) {
             const pile = sort.cards[id].pile;
-            const { x, y } = sort.cards[id].jitter || { x: 0, y: 0 };
             const pileKey = '' + pile;
             if (pilePositions[pileKey]) {
                 const pilePos = pilePositions[pileKey];
@@ -85,8 +85,8 @@ const currentPositions = (deckPosition, cardPositions, sort, pilePositions, open
 };
 
 const getNewPos = (i, pile, cardPositions, pilePositions, sort, deckPosition, openPile, jitter) => {
-    const { id } = cardPositions[i];
-    const { x, y } = jitter;
+    const { id, x, y } = cardPositions[i];
+    // const { x, y } = jitter;
     if (pile != null) {
         const pileKey = '' + pile;
         if (pilePositions[pileKey]) {
@@ -177,11 +177,11 @@ const dragHandler = ({
             currentDrag.current = null;
         }
         if (closestTarget && closestTarget.dist < cdist) {
-            const jitter = {
-                x: Math.random() * 2 - 1,
-                y: Math.random() * 2 - 1,
-                tilt: Math.random() * 2 - 1,
-            };
+            // const jitter = {
+            //     x: Math.random() * 2 - 1,
+            //     y: Math.random() * 2 - 1,
+            //     tilt: Math.random() * 2 - 1,
+            // };
             if (closestTarget.deck) {
                 sortsCol.clearAttribute(sort.id, ['cards', cardPositions[i].id]);
             } else {
@@ -194,7 +194,7 @@ const dragHandler = ({
                 sortsCol.setAttribute(sort.id, ['cards', cardPositions[i].id], {
                     pile: +closestTarget.pile,
                     placementTime: Date.now(),
-                    jitter,
+                    // jitter,
                 });
             }
             const newPos = getNewPos(
@@ -205,7 +205,7 @@ const dragHandler = ({
                 sort,
                 deckPosition,
                 openPile,
-                jitter,
+                // jitter,
             );
             if (newPos) {
                 springs[i][1]({
@@ -257,17 +257,21 @@ const Cards = ({
     // baseY: number,
 }): React.Node => {
     const cardPositions = React.useMemo(() => {
+        const rng: () => number = new Alea(sort.createdDate);
         const keys = Object.keys(cards);
         const sorted = keys
             .filter((k) => !!sort.cards[k])
             .sort((a, b) => sort.cards[a].placementTime - sort.cards[b].placementTime);
-        const unsorted = shuffle(keys.filter((k) => !sort.cards[k]));
+        const unsorted = shuffle(
+            keys.filter((k) => !sort.cards[k]),
+            rng,
+        );
 
         return sorted.concat(unsorted).map((id) => ({
             id,
-            // x: Math.random() * 2 - 1,
-            // y: Math.random() * 2 - 1,
-            // tilt: Math.random() * 2 - 1,
+            x: rng() * 2 - 1,
+            y: rng() * 2 - 1,
+            tilt: rng() * 2 - 1,
         }));
     }, []);
 
@@ -320,12 +324,7 @@ const Cards = ({
     // TODO useSprtings
     const tiltSprings = cardPositions.map((card, i) => {
         const dest = {
-            tilt:
-                sort.cards[card.id] != null
-                    ? sort.cards[card.id].jitter
-                        ? sort.cards[card.id].jitter.tilt
-                        : 0
-                    : 0,
+            tilt: sort.cards[card.id] != null ? card.tilt : 0,
             opacity: sort.cards[card.id] != null ? 0.8 : 1,
         };
         return useSpring(dest);
@@ -407,11 +406,6 @@ const Cards = ({
                             sortsCol.setAttribute(sort.id, ['cards', item.id], {
                                 pile: +evt.key - 1,
                                 placementTime: Date.now(),
-                                jitter: {
-                                    x: Math.random() * 2 - 1,
-                                    y: Math.random() * 2 - 1,
-                                    tilt: Math.random() * 2 - 1,
-                                },
                             });
                             const target = item.id === firstCard ? secondCard : firstCard;
                             if (target && cardRefs[target]) {

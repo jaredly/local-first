@@ -86,6 +86,7 @@ const initialStatus = (): Status => {
             if (!user || !token) {
                 throw new Error(`Unexpected data`);
             }
+            console.log('initial loaded status', user, token);
             return { user, token };
         } catch {
             return false;
@@ -97,12 +98,20 @@ const initialStatus = (): Status => {
 
 export const useAuthStatus = (host: string) => {
     const [status, setStatus] = React.useState(() => initialStatus());
+    const statusRef = React.useRef(status);
+    statusRef.current = status;
 
     React.useEffect(() => {
         if (status) {
             getUser(host, status.token).then(
                 // in case user info or token changed
-                (data: ?Status) => (data ? setStatus(data) : undefined),
+                (data: ?Status) => {
+                    console.log('got a new status', data);
+                    if (data && (!statusRef.current || data.token !== statusRef.current.token)) {
+                        console.log('updating the status');
+                        setStatus(data);
+                    }
+                },
                 // if we were logged out
                 (err) => setStatus(false),
             );

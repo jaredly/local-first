@@ -6,7 +6,10 @@ import { type Client } from '../client-bundle';
 export const useSyncStatus = function<SyncStatus>(React: *, client: Client<SyncStatus>) {
     const [status, setStatus] = React.useState(client.getSyncStatus());
     React.useEffect(() => {
-        return client.onSyncStatus(setStatus);
+        return client.onSyncStatus((status) => {
+            console.log('status', status);
+            setStatus(status);
+        });
     }, []);
     return status;
 };

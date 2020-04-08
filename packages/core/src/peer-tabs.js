@@ -14,45 +14,39 @@ import deepEqual from 'fast-deep-equal';
 import { type PeerChange } from './types';
 
 export const peerTabAwareNetworks = function<SyncStatus>(
-    handleCrossTabChanges: PeerChange => mixed,
+    handleCrossTabChanges: (PeerChange) => mixed,
     networks: { [key: string]: Network<SyncStatus> },
 ): OldNetwork<{ [key: string]: SyncStatus }> {
     const connectionListeners = [];
     let currentSyncStatus = {};
-    Object.keys(networks).forEach(
-        key => (currentSyncStatus[key] = networks[key].initial),
-    );
+    Object.keys(networks).forEach((key) => (currentSyncStatus[key] = networks[key].initial));
 
-    const { sendConnectionStatus, sendCrossTabChange, sync } = peerTabAwareSync(
-        status => {
-            currentSyncStatus = status;
-            connectionListeners.forEach(f => f(currentSyncStatus));
+    const { sendCrossTabChange, sync } = peerTabAwareSync(
+        (status) => {
+            // STOPSHIP: this status tracking is *broken*, we need to track which network it was
+            // when we send status across tabs
+            Object.keys(networks).forEach((key) => (currentSyncStatus[key] = status));
+            // currentSyncStatus[] = status;
+            connectionListeners.forEach((f) => f(currentSyncStatus));
         },
-        peerChange => {
+        (peerChange) => {
             // console.log('received peer change');
             handleCrossTabChanges(peerChange);
         },
         // Create the thing.
-        sendCrossTabChange => {
+        (sendCrossTabChange, onStatus) => {
             const syncs = {};
-            Object.keys(networks).forEach(key => {
-                syncs[key] = networks[key].createSync(
-                    sendCrossTabChange,
-                    status => {
-                        currentSyncStatus[key] = status;
-                        connectionListeners.forEach(f => f(currentSyncStatus));
-                    },
-                    () => {
-                        Object.keys(syncs).forEach(k => {
-                            if (k !== key) {
-                                syncs[k](true);
-                            }
-                        });
-                    },
-                );
+            Object.keys(networks).forEach((key) => {
+                syncs[key] = networks[key].createSync(sendCrossTabChange, onStatus, () => {
+                    Object.keys(syncs).forEach((k) => {
+                        if (k !== key) {
+                            syncs[k](true);
+                        }
+                    });
+                });
             });
             return () => {
-                Object.keys(syncs).forEach(k => {
+                Object.keys(syncs).forEach((k) => {
                     syncs[k]();
                 });
             };
@@ -61,7 +55,7 @@ export const peerTabAwareNetworks = function<SyncStatus>(
 
     return {
         setDirty: sync,
-        onSyncStatus: fn => {
+        onSyncStatus: (fn) => {
             connectionListeners.push(fn);
         },
         getSyncStatus() {
@@ -74,39 +68,32 @@ export const peerTabAwareNetworks = function<SyncStatus>(
 };
 
 export const peerTabAwareNetwork = function<SyncStatus>(
-    handleCrossTabChanges: PeerChange => mixed,
+    handleCrossTabChanges: (PeerChange) => mixed,
     network: Network<SyncStatus>,
 ): OldNetwork<SyncStatus> {
     const connectionListeners = [];
     let currentSyncStatus = network.initial;
 
-    const { sendConnectionStatus, sendCrossTabChange, sync } = peerTabAwareSync(
-        status => {
+    const { sendCrossTabChange, sync } = peerTabAwareSync(
+        (status) => {
             currentSyncStatus = status;
-            connectionListeners.forEach(f => f(currentSyncStatus));
+            connectionListeners.forEach((f) => f(currentSyncStatus));
         },
-        peerChange => {
+        (peerChange) => {
             // console.log('received peer change');
             handleCrossTabChanges(peerChange);
         },
-        sendCrossTabChange => {
-            const sync = network.createSync(
-                sendCrossTabChange,
-                status => {
-                    currentSyncStatus = status;
-                    connectionListeners.forEach(f => f(currentSyncStatus));
-                },
-                () => {
-                    // do nothing
-                },
-            );
+        (sendCrossTabChange, onStatus) => {
+            const sync = network.createSync(sendCrossTabChange, onStatus, () => {
+                // do nothing
+            });
             return () => sync(false);
         },
     );
 
     return {
         setDirty: sync,
-        onSyncStatus: fn => {
+        onSyncStatus: (fn) => {
             connectionListeners.push(fn);
         },
         getSyncStatus() {
@@ -119,14 +106,14 @@ export const peerTabAwareNetwork = function<SyncStatus>(
 };
 
 export const peerTabAwareSync = function<SyncStatus>(
-    onStatus: SyncStatus => void,
-    handleCrossTabChange: PeerChange => void,
-    makeLeaderSync: (sendCrossTabChanges: (PeerChange) => void) => () => void,
+    onStatus: (SyncStatus) => void,
+    handleCrossTabChange: (PeerChange) => void,
+    makeLeaderSync: (
+        sendCrossTabChanges: (PeerChange) => void,
+        onStatus: (SyncStatus) => void,
+    ) => () => void,
 ) {
-    const {
-        BroadcastChannel,
-        createLeaderElection,
-    } = require('broadcast-channel');
+    const { BroadcastChannel, createLeaderElection } = require('broadcast-channel');
     const channel = new BroadcastChannel('local-first', {
         webWorkerSupport: false,
     });
@@ -156,19 +143,22 @@ export const peerTabAwareSync = function<SyncStatus>(
         // console.log('Sending changes', change);
         channel.postMessage({ type: 'change', peerChange: change });
     };
+    const sendConnectionStatus = (status: SyncStatus) => {
+        channel.postMessage({ type: 'status', status });
+    };
 
     const elector = createLeaderElection(channel);
     let sync = originalSync;
     elector.awaitLeadership().then(() => {
-        sync = makeLeaderSync(sendCrossTabChange);
+        sync = makeLeaderSync(sendCrossTabChange, (status) => {
+            onStatus(status);
+            sendConnectionStatus(status);
+        });
     });
 
     let syncTimer = null;
 
     return {
-        sendConnectionStatus: (status: SyncStatus) => {
-            channel.postMessage({ type: 'status', status });
-        },
         sendCrossTabChange,
         // Dedup sync calls within the same tick -- makes a lot of things easier.
         sync: () => {

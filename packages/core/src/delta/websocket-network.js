@@ -27,8 +27,8 @@ const reconnectingSocket = (
                         setTimeout(() => {
                             if (!closed) {
                                 opened = true;
-                                res(true);
                                 updateStatus({ status: 'connected' });
+                                res(true);
                                 onOpen();
                             }
                         }, 50);

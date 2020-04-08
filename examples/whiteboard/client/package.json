@@ -4,6 +4,7 @@
     "dependencies": {
         "@birchill/json-equalish": "^1.1.0",
         "@emotion/core": "^10.0.28",
+        "alea": "^1.0.0",
         "broadcast-channel": "^3.0.3",
         "gravatar-url": "^3.1.0",
         "idb": "^5.0.1",
