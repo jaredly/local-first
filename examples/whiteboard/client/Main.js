@@ -6,7 +6,7 @@ import { useCollection } from '../../../packages/client-react';
 
 import { type Client, type SyncStatus } from '../../../packages/client-bundle';
 
-import PilesMode, { PILE_WIDTH } from './screens/AnimatedPiles';
+import PilesMode, { PILE_WIDTH } from './screens/Piles/AnimatedPiles';
 import PhonePilesMode from './screens/PhonePiles';
 import HomePage from './screens/HomePage';
 
