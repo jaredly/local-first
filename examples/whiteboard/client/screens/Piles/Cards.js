@@ -84,9 +84,9 @@ const currentPositions = (deckPosition, cardPositions, sort, pilePositions, open
     return { positions, firstCard, secondCard };
 };
 
-const getNewPos = (i, pile, cardPositions, pilePositions, sort, deckPosition, openPile) => {
+const getNewPos = (i, pile, cardPositions, pilePositions, sort, deckPosition, openPile, jitter) => {
     const { id } = cardPositions[i];
-    const { x, y } = (sort.cards[id] && sort.cards[id].jitter) || { x: 0, y: 0 };
+    const { x, y } = jitter;
     if (pile != null) {
         const pileKey = '' + pile;
         if (pilePositions[pileKey]) {
@@ -177,6 +177,11 @@ const dragHandler = ({
             currentDrag.current = null;
         }
         if (closestTarget && closestTarget.dist < cdist) {
+            const jitter = {
+                x: Math.random() * 2 - 1,
+                y: Math.random() * 2 - 1,
+                tilt: Math.random() * 2 - 1,
+            };
             if (closestTarget.deck) {
                 sortsCol.clearAttribute(sort.id, ['cards', cardPositions[i].id]);
             } else {
@@ -189,11 +194,7 @@ const dragHandler = ({
                 sortsCol.setAttribute(sort.id, ['cards', cardPositions[i].id], {
                     pile: +closestTarget.pile,
                     placementTime: Date.now(),
-                    jitter: {
-                        x: Math.random() * 2 - 1,
-                        y: Math.random() * 2 - 1,
-                        tilt: Math.random() * 2 - 1,
-                    },
+                    jitter,
                 });
             }
             const newPos = getNewPos(
@@ -204,6 +205,7 @@ const dragHandler = ({
                 sort,
                 deckPosition,
                 openPile,
+                jitter,
             );
             if (newPos) {
                 springs[i][1]({
