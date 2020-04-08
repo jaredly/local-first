@@ -20,7 +20,7 @@ import { CARD_HEIGHT, CARD_WIDTH } from './consts';
 const openInc = CARD_HEIGHT / 2;
 const MARGIN = 24;
 
-const currentPositions = (baseY, cardPositions, sort, pilePositions, openPile) => {
+const currentPositions = (deckPosition, cardPositions, sort, pilePositions, openPile) => {
     let leftPos = 0;
     let firstCard = null;
     let secondCard = null;
@@ -58,7 +58,7 @@ const currentPositions = (baseY, cardPositions, sort, pilePositions, openPile) =
         const xPos = window.innerWidth / 2 - CARD_WIDTH / 2 + leftPos * (CARD_WIDTH + MARGIN);
         const pos = {
             x: Math.min(xPos, window.innerWidth - CARD_WIDTH / 2),
-            y: baseY,
+            y: deckPosition.current ? deckPosition.current.y : 0,
         };
         leftPos += 1;
         return pos;
@@ -66,7 +66,7 @@ const currentPositions = (baseY, cardPositions, sort, pilePositions, openPile) =
     return { positions, firstCard, secondCard };
 };
 
-const getNewPos = (i, pile, cardPositions, pilePositions, sort, baseY, openPile) => {
+const getNewPos = (i, pile, cardPositions, pilePositions, sort, deckPosition, openPile) => {
     const { x, y } = cardPositions[i];
     if (pile != null) {
         if (pilePositions[pile].current) {
@@ -113,7 +113,7 @@ const getNewPos = (i, pile, cardPositions, pilePositions, sort, baseY, openPile)
     const xPos = window.innerWidth / 2 - CARD_WIDTH / 2 + leftPos * (CARD_WIDTH + MARGIN);
     return {
         x: Math.min(xPos, window.innerWidth - CARD_WIDTH / 2),
-        y: baseY,
+        y: deckPosition.current ? deckPosition.current.y : 0,
     };
 };
 
@@ -123,7 +123,7 @@ const distTo = (p1, p2) => dist({ x: p2.x - p1.x, y: p2.y - p1.y });
 const dragHandler = ({
     i,
     pilePositions,
-    baseY,
+    deckPosition,
     down,
     openPile,
     movement: [x, y],
@@ -172,7 +172,7 @@ const dragHandler = ({
                 cardPositions,
                 pilePositions,
                 sort,
-                baseY,
+                deckPosition,
                 openPile,
             );
             if (newPos) {
@@ -213,8 +213,8 @@ const Cards = ({
     openPile,
     setCurrentTarget,
     deckPosition,
-    baseY,
-}: {
+}: // baseY,
+{
     cards: { [key: string]: CardT },
     sort: SortT,
     sortsCol: Collection<SortT>,
@@ -222,7 +222,7 @@ const Cards = ({
     openPile: ?number,
     setCurrentTarget: (?(number | 'deck')) => void,
     deckPosition: { current: ?{ x: number, y: number } },
-    baseY: number,
+    // baseY: number,
 }): React.Node => {
     const cardPositions = React.useMemo(() => {
         const keys = Object.keys(cards);
@@ -240,7 +240,7 @@ const Cards = ({
     }, []);
 
     const { positions, firstCard, secondCard } = currentPositions(
-        baseY,
+        deckPosition,
         cardPositions,
         sort,
         pilePositions,
@@ -300,7 +300,7 @@ const Cards = ({
         dragHandler({
             i,
             down,
-            baseY,
+            deckPosition,
             openPile,
             pilePositions,
             movement: [x, y],
@@ -369,8 +369,9 @@ const Cards = ({
                                 pile: +evt.key - 1,
                                 placementTime: Date.now(),
                             });
-                            if (secondCard && cardRefs[secondCard].current) {
-                                cardRefs[secondCard].current.focus();
+                            const target = item.id === firstCard ? secondCard : firstCard;
+                            if (target && cardRefs[target].current) {
+                                cardRefs[target].current.focus();
                             }
                         }
                     }}

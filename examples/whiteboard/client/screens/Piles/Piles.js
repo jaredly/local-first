@@ -32,6 +32,7 @@ const Piles = ({
             style={{
                 display: 'flex',
                 justifyContent: 'space-between',
+                flexWrap: 'wrap',
             }}
         >
             {pilesInOrder.map(({ id, pile }, i) => (
@@ -55,7 +56,25 @@ const Piles = ({
                         },
                     }}
                 >
-                    <div style={styles.title}>{pile.title}</div>
+                    <div style={styles.title}>
+                        {pile.title}
+                        <span
+                            css={{
+                                display: 'inline-block',
+                                padding: '2px 4px',
+                                marginLeft: 4,
+                                backgroundColor: '#ccc',
+                                border: '1px solid #aaa',
+                                borderRadius: 3,
+                                fontSize: '80%',
+                                color: '#555',
+                                textShadow: '1px 1px white',
+                                boxShadow: '1px 1px 2px #aaa',
+                            }}
+                        >
+                            {+id + 1}
+                        </span>
+                    </div>
                     <div
                         style={{
                             backgroundColor: hovered == +id ? Colors.lightPink : null,

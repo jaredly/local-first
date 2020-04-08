@@ -19,6 +19,18 @@ import Cards from './Cards';
 
 import Piles from './Piles';
 
+const useWindowSize = () => {
+    const [size, setSize] = React.useState({ w: window.innerWidth, h: window.innerHeight });
+    React.useEffect(() => {
+        const fn = () => {
+            setSize({ w: window.innerWidth, h: window.innerHeight });
+        };
+        window.addEventListener('resize', fn);
+        return () => window.removeEventListener('resize', fn);
+    }, []);
+    return size;
+};
+
 const PilesMode = ({
     col,
     cards,
@@ -34,6 +46,8 @@ const PilesMode = ({
     sort: SortT,
     sortsCol: Collection<SortT>,
 }) => {
+    useWindowSize();
+
     const [currentTarget, setCurrentTarget] = React.useState(null);
 
     const [openPile, setOpenPile] = React.useState(null);
@@ -98,6 +112,7 @@ const PilesMode = ({
                     baseY={baseY}
                 />
             ) : null}
+            {/* <div style={{ flex: 1 }} /> */}
             <div
                 ref={(node) => {
                     if (node) {
@@ -115,12 +130,13 @@ const PilesMode = ({
                 }}
                 css={styles.deck}
                 style={{
-                    top: baseY,
+                    // top: baseY,
                     outline: currentTarget === 'deck' ? `3px solid ${Colors.offBlack}` : null,
                 }}
             >
                 Miller Value Sort
             </div>
+            <div style={{ flex: 1 }} />
         </div>
     );
 };
@@ -171,6 +187,17 @@ const isFullyRendered = (piles, deck) => {
 const boxSize = 1.3;
 
 const styles = {
+    container: {
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+
     titleInput: {
         fontSize: 32,
         padding: 0,
@@ -180,13 +207,11 @@ const styles = {
     },
 
     deck: {
-        position: 'absolute',
         backgroundColor: Colors.darkPink,
         color: Colors.offBlack,
         fontWeight: 'bold',
-        left: window.innerWidth - (CARD_WIDTH * boxSize) / 2,
-        marginLeft: (-CARD_WIDTH / 2) * boxSize,
-        marginTop: (-CARD_HEIGHT / 2) * boxSize,
+        alignSelf: 'flex-end',
+        marginTop: 48,
         width: CARD_WIDTH * boxSize,
         height: CARD_HEIGHT * boxSize,
         textAlign: 'center',
@@ -195,6 +220,7 @@ const styles = {
         justifyContent: 'center',
         border: '1px solid #ccc',
         borderColor: Colors.darkestPink,
+        position: 'relative',
     },
 
     backArrow: {
@@ -205,15 +231,6 @@ const styles = {
         transform: `scaleX(-1)`,
         textDecoration: 'none',
         padding: '4px 16px',
-    },
-
-    container: {
-        overflow: 'hidden',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
     },
 };
 
