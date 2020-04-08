@@ -19,25 +19,6 @@ import Cards from './Cards';
 
 import Piles from './Piles';
 
-// export const CARD_WIDTH = 200;
-// export const PILE_WIDTH = CARD_WIDTH * 1.5;
-// export const CARD_HEIGHT = 100;
-// export const PILE_HEIGHT = CARD_HEIGHT * 2;
-
-// const calcPilePositions = (numPiles) => {
-//     const totalWidth = window.innerWidth
-//     const positions = []
-//     const numPerLine = Math.min(numPiles, totalWidth / PILE_WIDTH | 0)
-//     const margin = Math.min(24, (totalWidth - numPiles * PILE_WIDTH) / numPerLine)
-//     const sideMargin = (totalWidth - numPerLine * (PILE_WIDTH + margin) - margin) / 2
-//     const topMargin = 50;
-//     let y = 0;
-//     for (let i=0; i<numPiles; i++) {
-
-//     }
-//     return positions
-// }
-
 const PilesMode = ({
     col,
     cards,

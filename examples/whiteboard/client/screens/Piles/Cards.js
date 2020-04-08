@@ -23,6 +23,7 @@ const MARGIN = 24;
 const currentPositions = (baseY, cardPositions, sort, pilePositions, openPile) => {
     let leftPos = 0;
     let firstCard = null;
+    let secondCard = null;
     let openY = 0;
     let openX = 0;
     const positions = cardPositions.map(({ x, y, tilt, id }, i) => {
@@ -51,6 +52,8 @@ const currentPositions = (baseY, cardPositions, sort, pilePositions, openPile) =
         }
         if (firstCard === null) {
             firstCard = id;
+        } else if (secondCard === null) {
+            secondCard = id;
         }
         const xPos = window.innerWidth / 2 - CARD_WIDTH / 2 + leftPos * (CARD_WIDTH + MARGIN);
         const pos = {
@@ -60,7 +63,7 @@ const currentPositions = (baseY, cardPositions, sort, pilePositions, openPile) =
         leftPos += 1;
         return pos;
     });
-    return { positions, firstCard };
+    return { positions, firstCard, secondCard };
 };
 
 const getNewPos = (i, pile, cardPositions, pilePositions, sort, baseY, openPile) => {
@@ -220,7 +223,7 @@ const Cards = ({
     setCurrentTarget: (?(number | 'deck')) => void,
     deckPosition: { current: ?{ x: number, y: number } },
     baseY: number,
-}): Array<React.Node> => {
+}): React.Node => {
     const cardPositions = React.useMemo(() => {
         const keys = Object.keys(cards);
         const sorted = keys
@@ -235,9 +238,8 @@ const Cards = ({
             tilt: Math.random() * 2 - 1,
         }));
     }, []);
-    const firstRef = React.useRef(null);
 
-    const { positions, firstCard } = currentPositions(
+    const { positions, firstCard, secondCard } = currentPositions(
         baseY,
         cardPositions,
         sort,
@@ -320,43 +322,65 @@ const Cards = ({
     //         div.focus();
     //     }
     // }, [firstRef.current, sort]);
+    const cardRefs = {};
+    cardPositions.forEach((item) => (cardRefs[item.id] = React.useRef(null)));
 
-    return cardPositions.map((item, i) => (
-        <animated.div
-            key={item.id}
-            ref={item.id === firstCard ? (node) => (firstRef.current = node) : null}
-            tabIndex={item.id === firstCard ? '0' : null}
-            css={styles.card}
-            {...bind(i)}
-            style={{
-                zIndex:
-                    sort.cards[item.id] && sort.cards[item.id].pile === openPile ? 10 : undefined,
-                transform: interpolate(
-                    [springs[i][0].pos, tiltSprings[i].tilt],
-                    (pos, tilt) =>
-                        `translate(${pos[0]}px, ${pos[1]}px) rotate(${parseInt(tilt * 15)}deg)`,
-                ),
-            }}
-            onKeyDown={(evt) => {
-                if (+evt.key == evt.key && sort.piles[+evt.key - 1]) {
-                    const missing = cardPositions.some(
-                        (card, idx) => idx !== i && sort.cards[card.id] == null,
-                    );
-                    if (!missing && sort.completedDate == null) {
-                        sortsCol.setAttribute(sort.id, ['completedDate'], Date.now());
-                    }
+    return (
+        <div>
+            {cardPositions.map((item, i) => (
+                <animated.div
+                    key={item.id}
+                    // ref={item.id === firstCard ? (node) => (firstRef.current = node) : null}
+                    ref={(node) => {
+                        if (node) {
+                            if (cardRefs[item.id].current && cardRefs[item.id].current !== node) {
+                                console.log('replace', item.id, node, cardRefs[item.id]);
+                            }
+                            cardRefs[item.id].current = node;
+                        }
+                        // console.log(item.id, node);
+                    }}
+                    tabIndex={'0'}
+                    css={styles.card}
+                    {...bind(i)}
+                    style={{
+                        zIndex:
+                            sort.cards[item.id] && sort.cards[item.id].pile === openPile
+                                ? 10
+                                : undefined,
+                        transform: interpolate(
+                            [springs[i][0].pos, tiltSprings[i].tilt],
+                            (pos, tilt) =>
+                                `translate(${pos[0]}px, ${pos[1]}px) rotate(${parseInt(
+                                    tilt * 15,
+                                )}deg)`,
+                        ),
+                    }}
+                    onKeyDown={(evt) => {
+                        if (+evt.key == evt.key && sort.piles[+evt.key - 1]) {
+                            const missing = cardPositions.some(
+                                (card, idx) => idx !== i && sort.cards[card.id] == null,
+                            );
+                            if (!missing && sort.completedDate == null) {
+                                sortsCol.setAttribute(sort.id, ['completedDate'], Date.now());
+                            }
 
-                    sortsCol.setAttribute(sort.id, ['cards', item.id], {
-                        pile: +evt.key - 1,
-                        placementTime: Date.now(),
-                    });
-                }
-            }}
-        >
-            <div css={styles.title}>{cards[item.id].title}</div>
-            <div>{cards[item.id].description}</div>
-        </animated.div>
-    ));
+                            sortsCol.setAttribute(sort.id, ['cards', item.id], {
+                                pile: +evt.key - 1,
+                                placementTime: Date.now(),
+                            });
+                            if (secondCard && cardRefs[secondCard].current) {
+                                cardRefs[secondCard].current.focus();
+                            }
+                        }
+                    }}
+                >
+                    <div css={styles.title}>{cards[item.id].title}</div>
+                    <div>{cards[item.id].description}</div>
+                </animated.div>
+            ))}
+        </div>
+    );
 };
 
 export default Cards;
