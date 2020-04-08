@@ -12,7 +12,7 @@ const processResponse = async (res, sentToken) => {
     const token = sentToken || res.headers.get('X-Session');
     if (!token) {
         localStorage.removeItem(storageKey);
-        listeners.forEach((fn) => fn(null));
+        listeners.forEach((fn) => fn(false));
         return null;
     }
     const user = await res.json();
@@ -34,7 +34,7 @@ const getUser = async (host: string, token: string) => {
     }
     if (res.status === 401) {
         localStorage.removeItem(storageKey);
-        listeners.forEach((fn) => fn(null));
+        listeners.forEach((fn) => fn(false));
         throw new Error(`Not logged in`);
     }
     return processResponse(res, token);
@@ -102,7 +102,7 @@ export const useAuthStatus = (host: string) => {
         if (status) {
             getUser(host, status.token).then(
                 // in case user info or token changed
-                (data: Status) => (data ? setStatus(data) : undefined),
+                (data: ?Status) => (data ? setStatus(data) : undefined),
                 // if we were logged out
                 (err) => setStatus(false),
             );
