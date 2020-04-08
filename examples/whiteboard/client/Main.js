@@ -51,9 +51,11 @@ const useHash = () => {
 const Main = ({
     client,
     user,
+    logout,
 }: {
     client: Client<SyncStatus>,
     user: ?{ name: string, email: string },
+    logout: () => mixed,
 }) => {
     const [col, cards] = useCollection<CardT, SyncStatus>(React, client, 'cards');
     const [sortsCol, sorts] = useCollection<SortT, SyncStatus>(React, client, 'sorts');
@@ -93,6 +95,7 @@ const Main = ({
             <HomePage
                 client={client}
                 user={user}
+                logout={logout}
                 openSort={(sort) => setSortId(sort.id)}
                 genId={client.getStamp}
                 cards={cards}

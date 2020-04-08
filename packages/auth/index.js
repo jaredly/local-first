@@ -37,7 +37,7 @@ export const setupAuth = (
                 maxAge: 30 * 24 * 3600 * 1000,
             });
             res.set('X-Session', token);
-            res.status(200).json(user);
+            res.status(200).json(user.info);
         }
     });
     app.post(prefix + (paths.signup || '/signup'), (req, res) => {
@@ -62,7 +62,7 @@ export const setupAuth = (
     const mid = middleware(db, secret);
     app.post(prefix + (paths.logout || '/logout'), mid, (req, res) => {
         completeUserSession(db, req.auth.sessionId);
-        res.status(204);
+        res.status(204).end();
     });
     app.post(prefix + (paths.chpwd || '/chpwd'), mid, (req, res) => {
         //

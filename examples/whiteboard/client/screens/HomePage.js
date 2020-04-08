@@ -166,12 +166,15 @@ const Sorts = ({
     genId,
     status,
     user,
+    logout,
 }: {
     sorts: { [key: string]: SortT },
     sortsCol: Collection<SortT>,
     openSort: (SortT) => void,
     genId: () => string,
     status: SyncStatus,
+    user: ?{ name: string, email: string },
+    logout: () => mixed,
 }) => {
     return (
         <div
@@ -187,36 +190,39 @@ const Sorts = ({
                 justifyContent: 'center',
             }}
         >
-            <div
-                css={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    marginBottom: 16,
-                }}
-            >
-                <img
-                    src={gravatarUrl(user.email)}
+            {user ? (
+                <div
                     css={{
-                        borderRadius: '50%',
-                        width: 50,
-                        height: 50,
-                        marginRight: 8,
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        marginBottom: 16,
                     }}
-                />
-                <div>
-                    <div>{user.name}</div>
-                    <div
+                >
+                    <img
+                        src={gravatarUrl(user.email)}
                         css={{
-                            color: { connected: 'green', pending: '#aaa', disconnected: 'red' }[
-                                status.status
-                            ],
+                            borderRadius: '50%',
+                            width: 50,
+                            height: 50,
+                            marginRight: 8,
                         }}
-                    >
-                        {status.status}
+                    />
+                    <div>
+                        <div>{user.name}</div>
+                        <div
+                            css={{
+                                color: { connected: 'green', pending: '#aaa', disconnected: 'red' }[
+                                    status.status
+                                ],
+                            }}
+                        >
+                            {status.status}
+                        </div>
+                        <button onClick={() => logout()}>logout</button>
                     </div>
                 </div>
-            </div>
+            ) : null}
             <div
                 css={{
                     maxWidth: '100%',
@@ -313,6 +319,7 @@ const HomePage = ({
     genId,
     client,
     user,
+    logout,
 }: {
     client: Client<SyncStatus>,
     cards: { [key: string]: CardT },
@@ -322,6 +329,7 @@ const HomePage = ({
     openSort: (SortT) => void,
     genId: () => string,
     user: ?{ name: string, email: string },
+    logout: () => mixed,
 }) => {
     const status = useSyncStatus(React, client);
 
@@ -336,6 +344,7 @@ const HomePage = ({
     }
     return (
         <Sorts
+            logout={logout}
             status={status}
             user={user}
             sorts={sorts}

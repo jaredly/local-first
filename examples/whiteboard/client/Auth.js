@@ -6,14 +6,16 @@ import React from 'react';
 const listeners = [];
 
 const processResponse = async (res, sentToken) => {
-    if (res.status !== 200) {
+    if (res.status !== 200 && res.status !== 204) {
         throw new Error(await res.text());
     }
-    const user = await res.json();
     const token = sentToken || res.headers.get('X-Session');
     if (!token) {
-        throw new Error(`What no response`);
+        localStorage.removeItem(storageKey);
+        listeners.forEach((fn) => fn(null));
+        return null;
     }
+    const user = await res.json();
     const auth = { user, token };
     localStorage.setItem(storageKey, JSON.stringify(auth));
     listeners.forEach((fn) => fn(auth));
@@ -31,9 +33,20 @@ const getUser = async (host: string, token: string) => {
         return false;
     }
     if (res.status === 401) {
+        localStorage.removeItem(storageKey);
+        listeners.forEach((fn) => fn(null));
         throw new Error(`Not logged in`);
     }
     return processResponse(res, token);
+};
+
+export const logout = async (host: string, token: string) => {
+    // TODO figure out what the behavior is here if we're offline
+    const res = await fetch(`${window.location.protocol}//${host}/api/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer: ${token}` },
+    });
+    return processResponse(res);
 };
 
 const login = async (host, email, password) => {
@@ -62,7 +75,7 @@ const signup = async (host, email, password, name, invite) => {
 
 const storageKey = `millder-card-sort-auth`;
 
-type Data = { user: { id: string, info: { name: string, email: string } }, token: string };
+type Data = { user: { name: string, email: string }, token: string };
 type Status = false | null | Data;
 
 const initialStatus = (): Status => {

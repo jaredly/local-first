@@ -160,12 +160,12 @@ export const validateSessionToken = (
 ): ?{ user: UserInfo, sessionId: number } => {
     let sessionId = null;
     try {
-        sessionId = jwt.verify(token, secret);
+        sessionId = jwt.verify(token, secret).data;
     } catch (err) {
         return null;
     }
     const stmt = db.prepare(`SELECT * FROM sessions WHERE id = @id`);
-    const session = stmt.get({ id: sessionId.data });
+    const session = stmt.get({ id: sessionId });
     if (!session) {
         return null;
     }

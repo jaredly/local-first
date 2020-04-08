@@ -13,7 +13,7 @@ import { default as makeDeltaInMemoryPersistence } from '../../../packages/idb/s
 import { SortSchema, CommentSchema, CardSchema } from './types';
 
 import Main from './Main';
-import Auth, { useAuthStatus } from './Auth';
+import Auth, { useAuthStatus, logout } from './Auth';
 
 const schemas = {
     cards: CardSchema,
@@ -29,17 +29,20 @@ const AppWithAuth = ({ host }) => {
     } else if (status === false) {
         return <Auth host={host} />;
     } else {
-        return <App host={host} auth={status} />;
+        return <App host={host} auth={status} logout={() => logout(host, status.token)} />;
     }
 };
 
 const App = ({
     host,
     auth,
+    logout,
 }: {
     host: string,
     auth: ?{ token: string, user: { name: string, email: string } },
+    logout: () => mixed,
 }) => {
+    console.log('starting a client');
     // We're assuming we're authed, and cookies are taking care of things.
     const client = React.useMemo(
         auth
@@ -54,7 +57,7 @@ const App = ({
             : () => createPersistedBlobClient('miller-values-sort', schemas, null, 2),
         [],
     );
-    return <Main client={client} user={auth ? auth.user : null} />;
+    return <Main client={client} user={auth ? auth.user : null} logout={logout} />;
 };
 
 const root = document.createElement('div');
