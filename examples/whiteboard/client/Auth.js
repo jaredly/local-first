@@ -10,10 +10,11 @@ const processResponse = async (res, sentToken) => {
         throw new Error(await res.text());
     }
     const user = await res.json();
-    const auth = { user, token: sentToken || res.headers.get('X-Session') };
-    if (!auth.token) {
+    const token = sentToken || res.headers.get('X-Session');
+    if (!token) {
         throw new Error(`What no response`);
     }
+    const auth = { user, token };
     localStorage.setItem(storageKey, JSON.stringify(auth));
     listeners.forEach((fn) => fn(auth));
     return auth;
@@ -61,7 +62,10 @@ const signup = async (host, email, password, name, invite) => {
 
 const storageKey = `millder-card-sort-auth`;
 
-const initialStatus = () => {
+type Data = { user: { id: string, info: { name: string, email: string } }, token: string };
+type Status = false | null | Data;
+
+const initialStatus = (): Status => {
     const raw = localStorage.getItem(storageKey);
     if (raw) {
         try {
@@ -85,7 +89,7 @@ export const useAuthStatus = (host: string) => {
         if (status) {
             getUser(host, status.token).then(
                 // in case user info or token changed
-                (data) => (data ? setStatus(data) : undefined),
+                (data: Status) => (data ? setStatus(data) : undefined),
                 // if we were logged out
                 (err) => setStatus(false),
             );
