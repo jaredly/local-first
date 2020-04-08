@@ -32,11 +32,17 @@ const AppWithAuth = ({ host }) => {
     }
 };
 
-const App = ({ host, token }: { host: string, token: string }) => {
+const App = ({ host, token }: { host: string, token: ?string }) => {
     // We're assuming we're authed, and cookies are taking care of things.
     const client = React.useMemo(
         token
-            ? () => createInMemoryDeltaClient(schemas, `wss://${host}/sync?token=${token}`)
+            ? () =>
+                  createInMemoryDeltaClient(
+                      schemas,
+                      `${
+                          host.startsWith('localhost:') ? 'ws' : 'wss'
+                      }://${host}/sync?token=${token}`,
+                  )
             : () => createPersistedBlobClient('miller-values-sort', schemas, null, 2),
         [],
     );
@@ -47,6 +53,6 @@ const root = document.createElement('div');
 if (document.body) {
     document.body.appendChild(root);
     // const host = 'localhost:9090';
-    const host = 'value-sort-server.glitch.me/';
+    const host = 'value-sort-server.glitch.me';
     render(<AppWithAuth host={host} />, root);
 }
