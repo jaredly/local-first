@@ -68,7 +68,10 @@ const Main = ({
     const sort = sortId ? sorts[sortId] : null;
 
     if (sort) {
-        if (window.innerWidth < PILE_WIDTH * ((Object.keys(sort.piles).length / 2) | 0)) {
+        if (
+            window.innerWidth <
+            PILE_WIDTH * Math.max(2, (Object.keys(sort.piles).length / 2) | 0)
+        ) {
             return (
                 <PhonePilesMode
                     cards={cards}
@@ -98,7 +101,7 @@ const Main = ({
                 client={client}
                 user={user}
                 logout={logout}
-                openSort={(sort) => setSortId(sort.id)}
+                openSort={(id) => setSortId(id)}
                 genId={client.getStamp}
                 cards={cards}
                 cardsCol={col}

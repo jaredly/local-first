@@ -13,6 +13,7 @@ import { Colors } from '../../Styles';
 import { shuffle, CARD_HEIGHT, CARD_WIDTH } from '../Piles/AnimatedPiles';
 import EditableTitle from '../Piles/EditableTitle';
 import CardDetail from './CardDetail';
+import { relativeTime } from '../../utils';
 
 const Screen = ({
     col,
@@ -149,6 +150,18 @@ const PhonePiles = ({
     const springs = positions.map(({ pos }, i) => {
         return useSpring({ pos });
     });
+    const { sorted, unsorted } = React.useMemo(() => {
+        let sorted = 0;
+        let unsorted = 0;
+        Object.keys(cards).forEach((k) => {
+            if (sort.cards[k] != null) {
+                sorted += 1;
+            } else {
+                unsorted += 1;
+            }
+        });
+        return { sorted, unsorted };
+    }, [cards, sort]);
 
     const [focus, setFocus] = React.useState(null);
 
@@ -265,6 +278,7 @@ const PhonePiles = ({
                     width: 120,
                     height: CARD_HEIGHT * 1.1,
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
                     boxShadow: '2px 2px 4px #ccc',
@@ -275,6 +289,26 @@ const PhonePiles = ({
                 }}
             >
                 Miller Card Sort
+                {sort.completedDate == null ? (
+                    unsorted === 0 ? (
+                        <button
+                            css={{
+                                backgroundColor: Colors.darkPink,
+                            }}
+                            onClick={() => {
+                                sortsCol.setAttribute(sort.id, ['completedDate'], Date.now());
+                            }}
+                        >
+                            Complete
+                        </button>
+                    ) : (
+                        <div css={{ fontSize: '80%', marginTop: 8, fontWeight: 200 }}>
+                            {'' + unsorted} / {'' + (sorted + unsorted)}
+                        </div>
+                    )
+                ) : (
+                    <div>Completed {relativeTime(sort.completedDate)}</div>
+                )}
             </div>
             <div>
                 {pilesInOrder.map((id, i) => (

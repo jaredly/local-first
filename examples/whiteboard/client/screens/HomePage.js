@@ -10,6 +10,7 @@ import { useSyncStatus } from '../../../../packages/client-react';
 import gravatarUrl from 'gravatar-url';
 
 import { makeDefaultCards } from '../defaults';
+import { relativeTime } from '../utils';
 
 const basicPiles = [
     'Most important',
@@ -47,7 +48,15 @@ const stockTitles = [
     { title: 'How much I respect this in others', piles: respectPiles },
 ];
 
-const CreateSort = ({ sortsCol, genId }: { genId: () => string, sortsCol: Collection<SortT> }) => {
+const CreateSort = ({
+    sortsCol,
+    genId,
+    openSort,
+}: {
+    genId: () => string,
+    sortsCol: Collection<SortT>,
+    openSort: (string) => void,
+}) => {
     const [title, setTitle] = React.useState(null);
     if (title === null) {
         return (
@@ -149,6 +158,7 @@ const CreateSort = ({ sortsCol, genId }: { genId: () => string, sortsCol: Collec
                         piles,
                     });
                     setTitle(null);
+                    openSort(id);
                 }}
             >
                 Create
@@ -188,7 +198,7 @@ const Sorts = ({
 }: {
     sorts: { [key: string]: SortT },
     sortsCol: Collection<SortT>,
-    openSort: (SortT) => void,
+    openSort: (string) => void,
     genId: () => string,
     status: SyncStatus,
     user: ?{ name: string, email: string },
@@ -266,7 +276,7 @@ const Sorts = ({
                     My Sorts
                 </h1>
                 <div css={{ overflow: 'auto', flex: 1, fontSize: 32 }}>
-                    <CreateSort genId={genId} sortsCol={sortsCol} />
+                    <CreateSort genId={genId} sortsCol={sortsCol} openSort={openSort} />
                     {Object.keys(sorts)
                         .filter((k) => sorts[k])
                         .sort((a, b) => sorts[b].createdDate - sorts[a].createdDate)
@@ -284,7 +294,7 @@ const Sorts = ({
                                     justifyContent: 'space-between',
                                 }}
                                 key={key}
-                                onClick={() => openSort(sorts[key])}
+                                onClick={() => openSort(key)}
                             >
                                 <div>{sorts[key].title}</div>
                                 <div
@@ -310,24 +320,6 @@ const Sorts = ({
     );
 };
 
-const atMorning = (d) => {
-    d.setHours(0, 0, 0, 0);
-    return d;
-};
-
-const relativeTime = (time) => {
-    const now = Date.now();
-    const thisMorning = atMorning(new Date());
-    const yesterdayMorning = atMorning(new Date(thisMorning.getTime() - 3600 * 1000));
-    if (time > thisMorning.getTime()) {
-        return new Date(time).toLocaleTimeString();
-    }
-    if (time > yesterdayMorning.getTime()) {
-        return 'Yesterday, ' + new Date(time).toLocaleTimeString();
-    }
-    return new Date(time).toLocaleDateString();
-};
-
 const HomePage = ({
     cards,
     cardsCol,
@@ -344,7 +336,7 @@ const HomePage = ({
     cardsCol: Collection<CardT>,
     sorts: { [key: string]: SortT },
     sortsCol: Collection<SortT>,
-    openSort: (SortT) => void,
+    openSort: (string) => void,
     genId: () => string,
     user: ?{ name: string, email: string },
     logout: () => mixed,
