@@ -8,6 +8,7 @@ import { type CardT, type SortT, colors } from '../../types';
 import { useSpring, animated, interpolate } from 'react-spring';
 import { useDrag } from 'react-use-gesture';
 import { Colors } from '../../Styles';
+import { relativeTime } from '../../utils';
 
 const Card = ({ card, cardsCol }) => {
     const [editing, setEditing] = React.useState(null);
@@ -170,24 +171,6 @@ const CardDetail = ({ card, cardsCol, comments, commentsCol, sort, onClose }: *)
             </div>
         </div>
     );
-};
-
-const atMorning = (d) => {
-    d.setHours(0, 0, 0, 0);
-    return d;
-};
-
-const relativeTime = (time) => {
-    const now = Date.now();
-    const thisMorning = atMorning(new Date());
-    const yesterdayMorning = atMorning(new Date(thisMorning.getTime() - 3600 * 1000));
-    if (time > thisMorning.getTime()) {
-        return new Date(time).toLocaleTimeString();
-    }
-    if (time > yesterdayMorning.getTime()) {
-        return 'Yesterday, ' + new Date(time).toLocaleTimeString();
-    }
-    return new Date(time).toLocaleDateString();
 };
 
 const styles = {
