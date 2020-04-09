@@ -103,9 +103,9 @@ const PhonePiles = ({
         return useSpring({ pos });
     });
 
-    const [focus, setFocus] = React.useState(false);
+    const [focus, setFocus] = React.useState(null);
 
-    if (focus) {
+    if (focus != null) {
         const focusedCards = cardsInOrder.filter(
             (id) => sort.cards[id] && sort.cards[id].pile === focus,
         );
