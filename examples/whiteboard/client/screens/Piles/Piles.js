@@ -56,25 +56,7 @@ const Piles = ({
                         },
                     }}
                 >
-                    <div style={styles.title}>
-                        {pile.title}
-                        <span
-                            css={{
-                                display: 'inline-block',
-                                padding: '2px 4px',
-                                marginLeft: 4,
-                                backgroundColor: '#ccc',
-                                border: '1px solid #aaa',
-                                borderRadius: 3,
-                                fontSize: '80%',
-                                color: '#555',
-                                textShadow: '1px 1px white',
-                                boxShadow: '1px 1px 2px #aaa',
-                            }}
-                        >
-                            {+id + 1}
-                        </span>
-                    </div>
+                    <div style={styles.title}>{pile.title}</div>
                     <div
                         style={{
                             backgroundColor: hovered == +id ? Colors.lightPink : null,
@@ -82,8 +64,27 @@ const Piles = ({
                             width: PILE_WIDTH,
                             height: PILE_HEIGHT,
                             position: 'relative',
+                            display: 'flex',
+                            alignItems: 'flex-end',
+                            justifyContent: 'flex-end',
                         }}
-                    />
+                    >
+                        <span
+                            css={{
+                                display: 'inline-block',
+                                padding: '2px 4px',
+                                margin: 4,
+                                // backgroundColor: '#ccc',
+                                // borderRadius: 3,
+                                fontSize: '80%',
+                                color: '#000',
+                                // textShadow: '1px 1px white',
+                                // boxShadow: 'inset -1px -1px 1px #eee, inset 1px 1px 1px #777',
+                            }}
+                        >
+                            {+id + 1}
+                        </span>
+                    </div>
                 </div>
             ))}
         </div>

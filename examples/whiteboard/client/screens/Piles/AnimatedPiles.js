@@ -130,13 +130,27 @@ const PilesMode = ({
                 deckPosition={deckPosition}
                 pilePositions={pilePositions}
                 setFullyRendered={setFullyRendered}
+                cards={cards}
+                sort={sort}
             />
             <div style={{ flex: 1 }} />
         </div>
     );
 };
 
-const Deck = ({ deckPosition, pilePositions, setFullyRendered, hovered }) => {
+const Deck = ({ deckPosition, pilePositions, setFullyRendered, hovered, cards, sort }) => {
+    const { sorted, unsorted } = React.useMemo(() => {
+        let sorted = 0;
+        let unsorted = 0;
+        Object.keys(cards).forEach((k) => {
+            if (sort.cards[k] != null) {
+                sorted += 1;
+            } else {
+                unsorted += 1;
+            }
+        });
+        return { sorted, unsorted };
+    }, [cards, sort]);
     return (
         <div
             ref={(node) => {
@@ -160,6 +174,9 @@ const Deck = ({ deckPosition, pilePositions, setFullyRendered, hovered }) => {
             }}
         >
             Miller Value Sort
+            <div>
+                {'' + unsorted} / {'' + (sorted + unsorted)}
+            </div>
         </div>
     );
 };
