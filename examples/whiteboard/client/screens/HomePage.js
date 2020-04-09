@@ -80,6 +80,7 @@ const CreateSort = ({ sortsCol, genId }: { genId: () => string, sortsCol: Collec
                 padding: 8,
                 display: 'flex',
                 alignItems: 'center',
+                flexWrap: 'wrap',
             }}
         >
             {typeof title === 'number' ? (
@@ -127,7 +128,7 @@ const CreateSort = ({ sortsCol, genId }: { genId: () => string, sortsCol: Collec
             )}
             <button
                 css={styles.button}
-                style={{ marginLeft: 8 }}
+                style={{ marginLeft: 8, backgroundColor: '#8fa' }}
                 onClick={() => {
                     if (typeof title === 'string' && !title.length) {
                         return;
@@ -152,7 +153,11 @@ const CreateSort = ({ sortsCol, genId }: { genId: () => string, sortsCol: Collec
             >
                 Create
             </button>
-            <button css={styles.button} style={{ marginLeft: 8 }} onClick={() => setTitle(null)}>
+            <button
+                css={styles.button}
+                style={{ marginLeft: 8, backgroundColor: '#f99' }}
+                onClick={() => setTitle(null)}
+            >
                 Cancel
             </button>
         </div>
