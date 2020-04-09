@@ -15,6 +15,9 @@
         "react-spring": "9.0.0-canary.808.14.192785c",
         "react-use-gesture": "^7.0.9"
     },
+    "scripts": {
+        "deploy": "parcel build index.html && cd dist && surge . value-sort.surge.sh"
+    },
     "browserslist": [
         "last 1 Chrome versions"
     ],
