@@ -7,7 +7,7 @@ import { useCollection } from '../../../packages/client-react';
 import { type Client, type SyncStatus } from '../../../packages/client-bundle';
 
 import PilesMode, { PILE_WIDTH } from './screens/Piles/AnimatedPiles';
-import PhonePilesMode from './screens/PhonePiles';
+import PhonePilesMode from './screens/Phone/PhonePiles';
 import HomePage from './screens/HomePage';
 
 import {
@@ -77,6 +77,8 @@ const Main = ({
                     genId={client.getStamp}
                     sort={sort}
                     sortsCol={sortsCol}
+                    comments={comments}
+                    commentsCol={commentsCol}
                 />
             );
         }

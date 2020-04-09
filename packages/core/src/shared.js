@@ -126,6 +126,8 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             setDirty();
         },
 
+        genId: getStamp,
+
         async applyRichTextDelta(id: string, path: Array<string | number>, delta: RichTextDelta) {
             const sub = subSchema(schema, path);
             if (sub !== 'rich-text') {

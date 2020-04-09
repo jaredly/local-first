@@ -2,15 +2,62 @@
 /* @jsx jsx */
 import { jsx } from '@emotion/core';
 import React from 'react';
+import Alea from 'alea';
 
-import { type Collection } from '../../../../packages/client-bundle';
-import { type CardT, type SortT, colors } from '../types';
+import { type Collection } from '../../../../../packages/client-bundle';
+import { type CardT, type SortT, type CommentT, colors } from '../../types';
 import { useSpring, animated, interpolate } from 'react-spring';
 import { useDrag } from 'react-use-gesture';
-import { Colors } from '../Styles';
+import { Colors } from '../../Styles';
 
-import { shuffle, CARD_HEIGHT, CARD_WIDTH } from './Piles/AnimatedPiles';
-import EditableTitle from './Piles/EditableTitle';
+import { shuffle, CARD_HEIGHT, CARD_WIDTH } from '../Piles/AnimatedPiles';
+import EditableTitle from '../Piles/EditableTitle';
+import CardDetail from './CardDetail';
+
+const Screen = ({
+    col,
+    cards,
+    onDone,
+    genId,
+    sort,
+    sortsCol,
+    comments,
+    commentsCol,
+}: {
+    onDone: () => void,
+    col: Collection<CardT>,
+    cards: { [key: string]: CardT },
+    genId: () => string,
+    sort: SortT,
+    sortsCol: Collection<SortT>,
+    comments: { [key: string]: CommentT },
+    commentsCol: Collection<CommentT>,
+}) => {
+    const [detail, setDetail] = React.useState(null);
+    if (detail) {
+        return (
+            <CardDetail
+                card={cards[detail]}
+                cardsCol={col}
+                sort={sort}
+                comments={comments}
+                commentsCol={commentsCol}
+                onClose={() => setDetail(null)}
+            />
+        );
+    }
+    return (
+        <PhonePiles
+            col={col}
+            cards={cards}
+            onDone={onDone}
+            genId={genId}
+            sort={sort}
+            sortsCol={sortsCol}
+            setDetail={setDetail}
+        />
+    );
+};
 
 const PhonePiles = ({
     col,
@@ -19,6 +66,7 @@ const PhonePiles = ({
     genId,
     sort,
     sortsCol,
+    setDetail,
 }: {
     onDone: () => void,
     col: Collection<CardT>,
@@ -26,18 +74,19 @@ const PhonePiles = ({
     genId: () => string,
     sort: SortT,
     sortsCol: Collection<SortT>,
+    setDetail: (string) => void,
 }) => {
     const cardsInOrder = React.useMemo(() => {
+        const rng = new Alea(sort.createdDate);
         const keys = Object.keys(cards);
         const sorted = keys
             .filter((k) => !!sort.cards[k])
             .sort((a, b) => sort.cards[a].placementTime - sort.cards[b].placementTime);
-        const unsorted = shuffle(keys.filter((k) => !sort.cards[k]));
+        const unsorted = shuffle(
+            keys.filter((k) => !sort.cards[k]),
+            rng,
+        );
         return sorted.concat(unsorted);
-        // return sorted.concat(unsorted).map((id) => ({
-        //     id,
-        //     tilt: Math.random() * 2 - 1,
-        // }));
     }, []);
     const pilesInOrder = Object.keys(sort.piles)
         .map((x) => +x)
@@ -71,7 +120,6 @@ const PhonePiles = ({
             const dy = 10 / total;
             return {
                 pos: [
-                    // window.innerWidth / 2 + Math.min(num, 5) * 10,
                     (at + 2) * SEP + CARD_WIDTH / 2,
                     10 +
                         CARD_HEIGHT / 2 +
@@ -92,7 +140,6 @@ const PhonePiles = ({
             const off = Math.min(top, 5);
             const pos = off * SEP;
             top = Math.min(top + 1, 6);
-            // return { pos: [window.innerWidth / 2 + off * 1 - 3, max - pos], at: top };
             return {
                 pos: [window.innerWidth - CARD_WIDTH / 2 - pos - 8, deckTop],
                 at: top,
@@ -147,7 +194,7 @@ const PhonePiles = ({
                                 display: 'flex',
                             }}
                         >
-                            <div style={{ flex: 1, padding: 8 }}>
+                            <div style={{ flex: 1, padding: 8 }} onClick={() => setDetail(id)}>
                                 <div css={styles.title}>{cards[id].title}</div>
                                 <div>{cards[id].description}</div>
                             </div>
@@ -177,10 +224,6 @@ const PhonePiles = ({
                     →
                 </a>
                 <div>{sort.title}</div>
-                {/* <EditableTitle
-                    title={sort.title}
-                    onChange={(newTitle) => sortsCol.setAttribute(sort.id, ['title'], newTitle)}
-                /> */}
             </div>
             <div>
                 {positions.map((pos, i) => (
@@ -190,6 +233,8 @@ const PhonePiles = ({
                         onClick={() => {
                             if (sort.cards[cardsInOrder[i]]) {
                                 sortsCol.clearAttribute(sort.id, ['cards', cardsInOrder[i]]);
+                            } else {
+                                setDetail(cardsInOrder[i]);
                             }
                         }}
                         style={{
@@ -214,13 +259,9 @@ const PhonePiles = ({
                 css={{
                     zIndex: 10,
                     position: 'absolute',
-                    // top: 100 - CARD_HEIGHT / 2,
                     top: deckTop - (CARD_HEIGHT / 2) * 1.1,
-                    // left: '50%',
-                    // left: (CARD_WIDTH / 2) * 1.1 + 8,
                     left: 0,
                     textAlign: 'center',
-                    // marginLeft: (-CARD_WIDTH / 2) * 1.1,
                     width: 120,
                     height: CARD_HEIGHT * 1.1,
                     display: 'flex',
@@ -356,4 +397,4 @@ const styles = {
     },
 };
 
-export default PhonePiles;
+export default Screen;

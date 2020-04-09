@@ -19,7 +19,7 @@ const basicPiles = [
     'Not important',
 ];
 const timePiles = ['Hours per day', 'Daily', 'Weekly', 'Monthly', 'Less than monthly', 'N/A'];
-const amountPines = [
+const amountPiles = [
     'More than I want',
     'About as much as I want',
     'A bit less than I want',
@@ -27,11 +27,24 @@ const amountPines = [
     'N/A',
 ];
 
+const conflictedPiles = ['Very conflicted', 'A little conflicted', 'Not conflicted'];
+
+const respectPiles = [
+    'Lots of respect',
+    'Some respect',
+    'Indifferent',
+    'Some disrespect',
+    'Strong disrespect',
+];
+
 const stockTitles = [
     { title: 'What I value', piles: basicPiles },
     { title: 'What I want to value', piles: basicPiles },
     { title: 'How I spend my time', piles: timePiles },
-    { title: 'What I have in life', piles: amountPines },
+    { title: 'How I spend my time (relative)', piles: amountPiles },
+    { title: 'What I have in life', piles: amountPiles },
+    { title: 'How conflicted I am', piles: conflictedPiles },
+    { title: 'How much I respect this in others', piles: respectPiles },
 ];
 
 const CreateSort = ({ sortsCol, genId }: { genId: () => string, sortsCol: Collection<SortT> }) => {

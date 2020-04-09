@@ -27,6 +27,7 @@ export type Collection<T> = {
     save: (id: string, value: T) => Promise<void>,
     clearAttribute: (id: string, path: Array<string | number>) => Promise<void>,
     setAttribute: (id: string, path: Array<string | number>, value: any) => Promise<void>,
+    genId: () => string,
     load: (id: string) => Promise<?T>,
     loadAll: () => Promise<{ [key: string]: T }>,
     delete: (id: string) => Promise<void>,
