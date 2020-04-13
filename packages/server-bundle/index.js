@@ -73,7 +73,6 @@ export const setupWebsocket = function<Delta, Data>(
 };
 
 export const runServer = <Delta, Data>(
-    // port: number,
     getBlobDataPath: req => string,
     getServer: req => ServerState<Delta, Data>,
     middleware: Middleware = []
@@ -87,6 +86,5 @@ export const runServer = <Delta, Data>(
     setupPolling(app, getServer, middleware);
     setupWebsocket(app, getServer, middleware);
 
-    // const http = app.listen(port);
     return { app, wsInst };
 };

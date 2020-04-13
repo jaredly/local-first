@@ -1,0 +1,31 @@
+{
+    "name": "things-to-share-client",
+    "private": true,
+    "version": "1.0.0",
+    "dependencies": {
+        "@birchill/json-equalish": "^1.1.0",
+        "@emotion/core": "^10.0.28",
+        "@material-ui/core": "^4.9.10",
+        "@material-ui/icons": "^4.9.1",
+        "broadcast-channel": "^3.0.3",
+        "gravatar-url": "^3.1.0",
+        "idb": "^5.0.1",
+        "parse-color": "^1.0.0",
+        "react": "^16.13.1",
+        "react-dom": "^16.13.1"
+    },
+    "scripts": {
+        "deploy": "parcel build index.html && cd dist && surge . value-sort.surge.sh"
+    },
+    "browserslist": [
+        "last 1 Chrome versions"
+    ],
+    "devDependencies": {
+        "@babel/core": "^7.0.0-0",
+        "@babel/plugin-proposal-class-properties": "^7.8.3",
+        "@babel/register": "^7.8.3",
+        "fast-deep-equal": "^3.1.1",
+        "flow-bin": "^0.116.1",
+        "parcel": "^1.12.4"
+    }
+}

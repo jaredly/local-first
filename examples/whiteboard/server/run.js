@@ -5,7 +5,6 @@ require('@babel/register')({
     presets: ['@babel/preset-flow', '@babel/preset-env'],
     plugins: ['@babel/plugin-proposal-class-properties']
 });
-// const { run } = require('./index.js');
 const { run } = require('../../../packages/server-bundle/full.js');
 const dataPath = __dirname + '/.data';
 const port = process.env.PORT || 9090;
