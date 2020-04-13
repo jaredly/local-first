@@ -16,9 +16,9 @@ type Middleware = Array<(req, *, () => void) => void>;
 
 export const setupBlob = (
     app: express,
-    getDataPath: (req) => string,
+    getDataPath: req => string,
     middleware: Middleware = [],
-    prefix: string = '/blob',
+    prefix: string = '/blob'
 ) => {
     app.get(prefix + '/:name', middleware, (req, res) => {
         const filePath = path.join(getDataPath(req), req.params['name']);
@@ -33,9 +33,9 @@ export const setupBlob = (
 
 export const setupPolling = function<Delta, Data>(
     app: express,
-    getServer: (req) => ServerState<Data, Delta>,
+    getServer: req => ServerState<Data, Delta>,
     middleware: Middleware = [],
-    path: string = '/sync',
+    path: string = '/sync'
 ) {
     app.post(path, middleware, (req, res) => {
         if (!req.query.sessionId) {
@@ -47,9 +47,9 @@ export const setupPolling = function<Delta, Data>(
 
 export const setupWebsocket = function<Delta, Data>(
     app: express,
-    getServer: (express.Request) => ServerState<Data, Delta>,
+    getServer: express.Request => ServerState<Data, Delta>,
     middleware: Middleware = [],
-    path: string = '/sync',
+    path: string = '/sync'
 ) {
     const clients = {};
 
@@ -74,9 +74,9 @@ export const setupWebsocket = function<Delta, Data>(
 
 export const runServer = <Delta, Data>(
     // port: number,
-    getBlobDataPath: (req) => string,
-    getServer: (req) => ServerState<Delta, Data>,
-    middleware: Middleware = [],
+    getBlobDataPath: req => string,
+    getServer: req => ServerState<Delta, Data>,
+    middleware: Middleware = []
 ) => {
     const app = express();
     const wsInst = ws(app);
