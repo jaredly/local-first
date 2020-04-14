@@ -11,12 +11,18 @@ import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
 
 import { makeStyles } from '@material-ui/core/styles';
+import {
+    checkEmail,
+    login,
+    signup,
+    initialStatus,
+    listen,
+    getUser,
+} from './auth-api';
 
 const useStyles = makeStyles(theme => ({
     container: {
-        // border: '1px solid red',
         paddingTop: theme.spacing(8),
-        // backgroundColor: theme.palette.background.default,
     },
     root: {
         backgroundColor: theme.palette.background.paper,
@@ -27,40 +33,210 @@ const useStyles = makeStyles(theme => ({
     },
     topBar: {
         padding: theme.spacing(2),
-        // backgroundColor: theme.palette.primary.light,
+        backgroundColor: theme.palette.primary.light,
+        color: theme.palette.primary.contrastText,
     },
 }));
 
-const SignUpIn = () => {
+/*
+
+on startup, do we have stored user/auth data?
+-- (yes)
+   is it expired?
+   -- (yes)
+      Show a login dialog with the email & host prefilled
+      The user has the option here to "log out", clearing the auth data.
+   -- (no)
+      good to go!
+
+-- (no)
+   do we have stored idb data?
+   -- (yes)
+      we're in local-only mode, go forth and prosper
+   -- (no)
+      show a message!
+
+Hello! Welcome to "Things to Share"!
+This is a 'local-first' app, which means
+that all of your data lives on your device,
+and is fully usable offline.
+You can choose to log in to a syncing server
+in order to access your data on multiple
+devices, but this is not required.
+You can also start local-only, and then sign
+in to a syncing server later.
+
+[Proceed Local-only]
+
+[Log in to a syncing server]
+
+*/
+
+// const initialState = {
+// }
+
+const SignUpIn = ({ host }: { host: string }) => {
     const styles = useStyles();
+    const [email, setEmail] = React.useState('');
+    const [password, setPassword] = React.useState('');
+    const [name, setName] = React.useState('');
+
+    const [state, setState] = React.useState('initial');
+    const [loading, setLoading] = React.useState(false);
 
     return (
         <Container maxWidth="sm" className={styles.container}>
             <Paper className={styles.root}>
                 <div className={styles.topBar}>
-                    <Typography variant="h4">Login</Typography>
+                    <Typography variant="h4">
+                        {state === 'register' ? 'Register' : 'Login'}
+                    </Typography>
                 </div>
                 <form className={styles.body}>
                     <Grid container direction="column" spacing={2}>
                         <Grid item>
                             <TextField
+                                value={email}
+                                onChange={evt => setEmail(evt.target.value)}
                                 type="email"
-                                id="outlined-basic"
                                 label="Email Address"
                                 variant="outlined"
                                 fullWidth
+                                disabled={loading || state !== 'initial'}
                             />
                         </Grid>
-                        <Grid item direction="row" container spacing={2}>
+                        {state === 'register' ? (
                             <Grid item>
-                                <Button color="primary" variant="contained">
-                                    Login
+                                <TextField
+                                    value={name}
+                                    onChange={evt => setName(evt.target.value)}
+                                    type="text"
+                                    label="Display Name"
+                                    variant="outlined"
+                                    fullWidth
+                                    disabled={loading}
+                                />
+                            </Grid>
+                        ) : null}
+                        {state !== 'initial' ? (
+                            <Grid item>
+                                <TextField
+                                    value={password}
+                                    onChange={evt =>
+                                        setPassword(evt.target.value)
+                                    }
+                                    type="password"
+                                    label={
+                                        state === 'register'
+                                            ? 'Create password'
+                                            : 'Password'
+                                    }
+                                    variant="outlined"
+                                    fullWidth
+                                    disabled={loading}
+                                />
+                            </Grid>
+                        ) : null}
+                        {state === 'initial' ? (
+                            <Grid item>
+                                <Button
+                                    color="primary"
+                                    variant="contained"
+                                    disabled={loading || !email.trim()}
+                                    onClick={() => {
+                                        setLoading(true);
+                                        checkEmail(host, email)
+                                            .then(
+                                                isRegistered => {
+                                                    setState(
+                                                        isRegistered
+                                                            ? 'login'
+                                                            : 'register',
+                                                    );
+                                                },
+                                                // um handle failure
+                                                () => {},
+                                            )
+                                            .then(() => setLoading(false));
+                                    }}
+                                >
+                                    Continue
                                 </Button>
                             </Grid>
-                            <Grid item>
-                                <Button variant="contained">Cancel</Button>
+                        ) : null}
+                        {state === 'login' ? (
+                            <Grid item direction="row" container spacing={2}>
+                                <Grid item>
+                                    <Button
+                                        color="primary"
+                                        variant="contained"
+                                        disabled={loading}
+                                        onClick={() => {
+                                            setLoading(true);
+                                            login(host, email, password).then(
+                                                () => {
+                                                    // setLoading(false);
+                                                    // Someone should notice that we've logged in at this point
+                                                },
+                                            );
+                                        }}
+                                    >
+                                        Login
+                                    </Button>
+                                </Grid>
+                                <Grid item>
+                                    <Button
+                                        variant="contained"
+                                        disabled={loading}
+                                        onClick={() => {
+                                            setState('initial');
+                                        }}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </Grid>
                             </Grid>
-                        </Grid>
+                        ) : null}
+                        {state === 'register' ? (
+                            <Grid item direction="row" container spacing={2}>
+                                <Grid item>
+                                    <Button
+                                        color="primary"
+                                        variant="contained"
+                                        disabled={
+                                            loading ||
+                                            !password.trim() ||
+                                            !name.trim()
+                                        }
+                                        onClick={() => {
+                                            setLoading(true);
+                                            signup(
+                                                host,
+                                                email,
+                                                password,
+                                                name,
+                                            ).then(() => {
+                                                // setLoading(false);
+                                                // Someone should notice that we've logged in at this point
+                                            });
+                                        }}
+                                    >
+                                        Register
+                                    </Button>
+                                </Grid>
+                                <Grid item>
+                                    <Button
+                                        variant="contained"
+                                        disabled={loading}
+                                        onClick={() => {
+                                            setState('initial');
+                                        }}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </Grid>
+                            </Grid>
+                        ) : null}
                     </Grid>
                 </form>
             </Paper>
@@ -68,14 +244,60 @@ const SignUpIn = () => {
     );
 };
 
-const Auth = ({ host, render }: { host: string, render: () => React.Node }) => {
-    const state = 'logged-out';
+export const useAuthStatus = (host: string) => {
+    const [status, setStatus] = React.useState(() => initialStatus());
+    const statusRef = React.useRef(status);
+    statusRef.current = status;
+
+    React.useEffect(() => {
+        if (status) {
+            getUser(host, status.token).then(
+                // in case user info or token changed
+                (data: ?Status) => {
+                    console.log('got a new status', data);
+                    if (
+                        data &&
+                        (!statusRef.current ||
+                            data.token !== statusRef.current.token)
+                    ) {
+                        console.log('updating the status');
+                        setStatus(data);
+                    }
+                },
+                // if we were logged out
+                err => setStatus(false),
+            );
+        }
+    }, [host]);
+
+    React.useEffect(() => {
+        const fn = auth => setStatus(auth);
+        return listen(auth => setStatus(auth));
+    }, []);
+
+    return status;
+};
+
+type Data = { user: { name: string, email: string }, token: string };
+type Status = false | null | Data;
+
+const Auth = ({
+    host,
+    render,
+}: {
+    host: string,
+    render: (data: Data) => React.Node,
+}) => {
+    const status = useAuthStatus(host);
     // load auth
 
-    if (state === 'logged-out') {
-        return <SignUpIn />;
+    if (status === false) {
+        return <SignUpIn host={host} />;
     }
-    return render();
+    if (status == null) {
+        return <div />;
+    }
+    return render(status);
 };
 
 export default Auth;

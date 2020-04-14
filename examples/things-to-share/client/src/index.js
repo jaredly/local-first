@@ -26,9 +26,10 @@ const darkTheme = createMuiTheme({
     },
 });
 
-const App = () => {
+const App = ({ host }: { host: string }) => {
     return (
         <Auth
+            host={host}
             render={() => (
                 <Button color="primary" variant="contained">
                     Ok buttons
@@ -40,10 +41,11 @@ const App = () => {
 
 const node = document.createElement('div');
 document.body.appendChild(node);
+const host = 'localhost:9090';
 render(
     <ThemeProvider theme={darkTheme}>
         <CssBaseline />
-        <App />
+        <App host={host} />
     </ThemeProvider>,
     node,
 );

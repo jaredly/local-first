@@ -6,6 +6,7 @@ import {
     loginUser,
     createUserSession,
     completeUserSession,
+    checkUserExists
 } from './db';
 
 export { createTables } from './db';
@@ -18,8 +19,18 @@ export const setupAuth = (
     app: express,
     secret: string,
     prefix: string = '/api',
-    paths: { [key: string]: string } = {},
+    paths: { [key: string]: string } = {}
 ) => {
+    app.get(prefix + (paths.checkUsername || '/check-login'), (req, res) => {
+        if (!req.query.email) {
+            return res.status(400).send('email as url param required');
+        }
+        if (checkUserExists(db, req.query.email)) {
+            return res.status(204).end();
+        } else {
+            return res.status(404).end();
+        }
+    });
     app.post(prefix + (paths.login || '/login'), (req, res) => {
         if (!req.body || !req.body.email || !req.body.password) {
             return res.status(400).send('username + password as JSON body required');
@@ -34,7 +45,7 @@ export const setupAuth = (
             res.cookie('token', token, {
                 // secure: true,
                 // 30 days
-                maxAge: 30 * 24 * 3600 * 1000,
+                maxAge: 30 * 24 * 3600 * 1000
             });
             res.set('X-Session', token);
             res.status(200).json(user.info);
@@ -48,13 +59,13 @@ export const setupAuth = (
         const createdDate = Date.now();
         const userId = createUser(db, {
             password,
-            info: { email, name, createdDate },
+            info: { email, name, createdDate }
         });
         const token = createUserSession(db, secret, userId, req.ip);
         res.cookie('token', token, {
             // httpOnly: true,
             // 30 days
-            maxAge: 30 * 24 * 3600 * 1000,
+            maxAge: 30 * 24 * 3600 * 1000
         });
         res.set('X-Session', token);
         res.status(200).json({ id: userId, info: { email, name, createdDate } });
