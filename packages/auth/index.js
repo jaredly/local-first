@@ -6,7 +6,10 @@ import {
     loginUser,
     createUserSession,
     completeUserSession,
+    checkUserExists
 } from './db';
+
+export { createTables } from './db';
 
 type express = any;
 type DB = any;
@@ -16,13 +19,21 @@ export const setupAuth = (
     app: express,
     secret: string,
     prefix: string = '/api',
-    paths: { [key: string]: string } = {},
+    paths: { [key: string]: string } = {}
 ) => {
+    app.get(prefix + (paths.checkUsername || '/check-login'), (req, res) => {
+        if (!req.query.email) {
+            return res.status(400).send('email as url param required');
+        }
+        if (checkUserExists(db, req.query.email)) {
+            return res.status(204).end();
+        } else {
+            return res.status(404).end();
+        }
+    });
     app.post(prefix + (paths.login || '/login'), (req, res) => {
         if (!req.body || !req.body.email || !req.body.password) {
-            return res
-                .status(400)
-                .send('username + password as JSON body required');
+            return res.status(400).send('username + password as JSON body required');
         }
         const user = loginUser(db, req.body.email, req.body.password);
         if (user == null) {
@@ -34,39 +45,35 @@ export const setupAuth = (
             res.cookie('token', token, {
                 // secure: true,
                 // 30 days
-                maxAge: 30 * 24 * 3600 * 1000,
+                maxAge: 30 * 24 * 3600 * 1000
             });
-            res.status(200).json(user);
+            res.set('X-Session', token);
+            res.status(200).json(user.info);
         }
     });
     app.post(prefix + (paths.signup || '/signup'), (req, res) => {
-        if (
-            !req.body ||
-            !req.body.email ||
-            !req.body.password ||
-            !req.body.name
-        ) {
-            return res
-                .status(400)
-                .send('required fields: email, password, name');
+        if (!req.body || !req.body.email || !req.body.password || !req.body.name) {
+            return res.status(400).send('required fields: email, password, name');
         }
         const { email, password, name } = req.body;
+        const createdDate = Date.now();
         const userId = createUser(db, {
             password,
-            info: { email, name, createdDate: Date.now() },
+            info: { email, name, createdDate }
         });
         const token = createUserSession(db, secret, userId, req.ip);
         res.cookie('token', token, {
             // httpOnly: true,
             // 30 days
-            maxAge: 30 * 24 * 3600 * 1000,
+            maxAge: 30 * 24 * 3600 * 1000
         });
-        res.status(204);
+        res.set('X-Session', token);
+        res.status(200).json({ id: userId, info: { email, name, createdDate } });
     });
     const mid = middleware(db, secret);
     app.post(prefix + (paths.logout || '/logout'), mid, (req, res) => {
         completeUserSession(db, req.auth.sessionId);
-        res.status(204);
+        res.status(204).end();
     });
     app.post(prefix + (paths.chpwd || '/chpwd'), mid, (req, res) => {
         //
@@ -99,11 +106,7 @@ export const setupAuth = (
     // https://www.npmjs.com/package/juice might be useful
 };
 
-export const middleware = (db: DB, secret: string) => (
-    req: *,
-    res: *,
-    next: *,
-) => {
+export const middleware = (db: DB, secret: string) => (req: *, res: *, next: *) => {
     if (req.query.token) {
         // TODO validateSessionToken should ... issue a new token?
         // if we're getting close to the end...

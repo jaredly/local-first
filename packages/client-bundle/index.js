@@ -34,10 +34,7 @@ export { default as makeDeltaInMemoryPersistence } from '../idb/src/delta-mem';
 export { default as createDeltaClient } from '../core/src/delta/create-client';
 export { default as makeDeltaPersistence } from '../idb/src/delta';
 export { default as createPollingNetwork } from '../core/src/delta/polling-network';
-export {
-    default as createWebSocketNetwork,
-    SyncStatus,
-} from '../core/src/delta/websocket-network';
+export { default as createWebSocketNetwork, SyncStatus } from '../core/src/delta/websocket-network';
 
 export {
     PersistentClock,
@@ -72,24 +69,17 @@ export const clientCrdtImpl: CRDTImpl<Delta, Data> = {
             meta: null,
         }));
     },
-    latestStamp: data => crdt.latestStamp(data, () => null),
-    value: d => d.value,
+    latestStamp: (data) => crdt.latestStamp(data, () => null),
+    value: (d) => d.value,
     get: crdt.get,
-    createEmpty: stamp => crdt.createEmpty(stamp),
+    createEmpty: (stamp) => crdt.createEmpty(stamp),
     deltas: {
         ...crdt.deltas,
-        stamp: data => crdt.deltas.stamp(data, () => null),
-        apply: (base, delta) =>
-            crdt.applyDelta(base, delta, (applyOtherDelta: any), otherMerge),
+        stamp: (data) => crdt.deltas.stamp(data, () => null),
+        apply: (base, delta) => crdt.applyDelta(base, delta, (applyOtherDelta: any), otherMerge),
     },
     createValue: (value, stamp, getStamp, schema) => {
-        return crdt.createWithSchema(
-            value,
-            stamp,
-            getStamp,
-            schema,
-            value => null,
-        );
+        return crdt.createWithSchema(value, stamp, getStamp, schema, (value) => null);
     },
 };
 

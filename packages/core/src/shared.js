@@ -56,14 +56,10 @@ export type CRDTImpl<Delta, Data> = {
     createEmpty(string): Data,
 };
 
-const send = <Data, T>(
-    state: CollectionState<Data, T>,
-    id: string,
-    value: ?T,
-) => {
-    state.listeners.forEach(fn => fn([{ id, value }]));
+const send = <Data, T>(state: CollectionState<Data, T>, id: string, value: ?T) => {
+    state.listeners.forEach((fn) => fn([{ id, value }]));
     if (state.itemListeners[id]) {
-        state.itemListeners[id].forEach(fn => fn(value));
+        state.itemListeners[id].forEach((fn) => fn(value));
     }
 };
 
@@ -76,7 +72,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
     state: CollectionState<Data, T>,
     getStamp: () => string,
     setDirty: () => void,
-    sendCrossTabChanges: PeerChange => mixed,
+    sendCrossTabChanges: (PeerChange) => mixed,
     schema: Schema,
     undoManager?: UndoManager,
     // undoManager or some such
@@ -108,9 +104,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             validate(node, schema);
             // NOTE this overwrites everything, setAttribute will do much better merges
             if (undoManager) {
-                const prev = state.cache[id]
-                    ? crdt.value(state.cache[id])
-                    : null;
+                const prev = state.cache[id] ? crdt.value(state.cache[id]) : null;
                 undoManager.add(() => this.save(id, prev));
             }
             state.cache[id] = crdt.merge(
@@ -132,11 +126,9 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             setDirty();
         },
 
-        async applyRichTextDelta(
-            id: string,
-            path: Array<string | number>,
-            delta: RichTextDelta,
-        ) {
+        genId: getStamp,
+
+        async applyRichTextDelta(id: string, path: Array<string | number>, delta: RichTextDelta) {
             const sub = subSchema(schema, path);
             if (sub !== 'rich-text') {
                 throw new Error(`Schema at path is not a rich-text`);
@@ -144,34 +136,20 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             if (state.cache[id] == null) {
                 const stored = await persistence.load(colid, id);
                 if (!stored) {
-                    throw new Error(
-                        `Cannot set attribute, node with id ${id} doesn't exist`,
-                    );
+                    throw new Error(`Cannot set attribute, node with id ${id} doesn't exist`);
                 }
                 state.cache[id] = stored;
             }
-            const hostDelta = crdt.deltas.other(
-                state.cache[id],
-                path,
-                delta,
-                getStamp(),
-            );
+            const hostDelta = crdt.deltas.other(state.cache[id], path, delta, getStamp());
             return applyDelta(id, hostDelta);
         },
 
-        async setAttribute(
-            id: string,
-            path: Array<string | number>,
-            value: any,
-        ) {
+        async clearAttribute(id: string, path: Array<string | number>) {
             const sub = subSchema(schema, path);
-            validate(value, sub);
             if (state.cache[id] == null) {
                 const stored = await persistence.load(colid, id);
                 if (!stored) {
-                    throw new Error(
-                        `Cannot set attribute, node with id ${id} doesn't exist`,
-                    );
+                    throw new Error(`Cannot set attribute, node with id ${id} doesn't exist`);
                 }
                 state.cache[id] = stored;
             }
@@ -182,12 +160,34 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                         state.cache[id],
                         path,
                         prev
-                            ? crdt.createValue(
-                                  crdt.value(prev),
-                                  getStamp(),
-                                  getStamp,
-                                  sub,
-                              )
+                            ? crdt.createValue(crdt.value(prev), getStamp(), getStamp, sub)
+                            : crdt.createEmpty(getStamp()),
+                    );
+                    return applyDelta(id, delta);
+                });
+            }
+            const delta = crdt.deltas.set(state.cache[id], path, crdt.createEmpty(getStamp()));
+            return applyDelta(id, delta);
+        },
+
+        async setAttribute(id: string, path: Array<string | number>, value: any) {
+            const sub = subSchema(schema, path);
+            validate(value, sub);
+            if (state.cache[id] == null) {
+                const stored = await persistence.load(colid, id);
+                if (!stored) {
+                    throw new Error(`Cannot set attribute, node with id ${id} doesn't exist`);
+                }
+                state.cache[id] = stored;
+            }
+            if (undoManager) {
+                const prev = crdt.get(state.cache[id], path);
+                undoManager.add(() => {
+                    const delta = crdt.deltas.set(
+                        state.cache[id],
+                        path,
+                        prev
+                            ? crdt.createValue(crdt.value(prev), getStamp(), getStamp, sub)
                             : crdt.createEmpty(getStamp()),
                     );
                     return applyDelta(id, delta);
@@ -212,7 +212,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         async loadAll() {
             const all = await persistence.loadAll(colid);
             const res = {};
-            Object.keys(all).forEach(id => {
+            Object.keys(all).forEach((id) => {
                 state.cache[id] = all[id];
                 res[id] = crdt.value(all[id]);
             });
@@ -236,7 +236,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         onChanges(fn: (Array<{ id: string, value: ?T }>) => void) {
             state.listeners.push(fn);
             return () => {
-                state.listeners = state.listeners.filter(f => f !== fn);
+                state.listeners = state.listeners.filter((f) => f !== fn);
             };
         },
 
@@ -250,9 +250,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                 if (!state.itemListeners[id]) {
                     return;
                 }
-                state.itemListeners[id] = state.itemListeners[id].filter(
-                    f => f !== fn,
-                );
+                state.itemListeners[id] = state.itemListeners[id].filter((f) => f !== fn);
             };
         },
     };
@@ -267,7 +265,7 @@ export const onCrossTabChanges = async function<Delta, Data, T>(
 ) {
     const values = {};
     await Promise.all(
-        nodes.map(async id => {
+        nodes.map(async (id) => {
             const v = await persistence.load(colid, id);
             if (v) {
                 state.cache[id] = v;
@@ -277,12 +275,10 @@ export const onCrossTabChanges = async function<Delta, Data, T>(
             }
         }),
     );
-    state.listeners.forEach(fn =>
-        fn(nodes.map(id => ({ id, value: values[id] }))),
-    );
-    nodes.forEach(id => {
+    state.listeners.forEach((fn) => fn(nodes.map((id) => ({ id, value: values[id] }))));
+    nodes.forEach((id) => {
         if (state.itemListeners[id]) {
-            state.itemListeners[id].forEach(fn => fn(values[id]));
+            state.itemListeners[id].forEach((fn) => fn(values[id]));
         }
     });
 };

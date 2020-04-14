@@ -9,14 +9,8 @@ export type rect = { position: pos, size: pos };
 
 export const clamp = (pos: pos, size: pos, range: rect) => {
     return {
-        x: Math.min(
-            Math.max(range.position.x, pos.x),
-            range.position.x + range.size.x - size.x,
-        ),
-        y: Math.min(
-            Math.max(range.position.y, pos.y),
-            range.position.y + range.size.y - size.y,
-        ),
+        x: Math.min(Math.max(range.position.x, pos.x), range.position.x + range.size.x - size.x),
+        y: Math.min(Math.max(range.position.y, pos.y), range.position.y + range.size.y - size.y),
     };
 };
 
@@ -55,27 +49,87 @@ export const evtPos = (evt: { clientX: number, clientY: number }): pos => ({
 
 export const rectIntersect = (one: rect, two: rect) => {
     return (
-        ((two.position.x <= one.position.x &&
-            one.position.x <= two.position.x + two.size.x) ||
-            (one.position.x <= two.position.x &&
-                two.position.x <= one.position.x + one.size.x)) &&
-        ((two.position.y <= one.position.y &&
-            one.position.y <= two.position.y + two.size.y) ||
-            (one.position.y <= two.position.y &&
-                two.position.y <= one.position.y + one.size.y))
+        ((two.position.x <= one.position.x && one.position.x <= two.position.x + two.size.x) ||
+            (one.position.x <= two.position.x && two.position.x <= one.position.x + one.size.x)) &&
+        ((two.position.y <= one.position.y && one.position.y <= two.position.y + two.size.y) ||
+            (one.position.y <= two.position.y && two.position.y <= one.position.y + one.size.y))
     );
 };
 
-export type SettingsT = {
+import { type Schema } from '../../../packages/client-bundle';
+
+export type SortT = {
+    id: string,
     title: string,
-    tagNames: { [key: string]: string },
+    createdDate: number,
+    completedDate: ?number,
+    // piles are actually keyed by number
+    piles: { [key: number]: { title: string, color: string } },
+    cards: {
+        [key: string]: {
+            pile: number,
+            sort: ?Array<number>,
+            placementTime: number,
+            // jitter: ?{ x: number, y: number, tilt: number },
+        },
+    },
 };
 
-export const SettingsSchema: Schema = {
+export const SortSchema = {
     type: 'object',
     attributes: {
+        id: 'string',
         title: 'string',
-        tagNames: { type: 'map', value: 'string' },
+        createdDate: 'number',
+        completedDate: { type: 'optional', value: 'number' },
+        piles: {
+            type: 'map',
+            value: { type: 'object', attributes: { title: 'string', color: 'string' } },
+        },
+        cards: {
+            type: 'map',
+            value: {
+                type: 'object',
+                attributes: {
+                    pile: 'number',
+                    // jitter: {
+                    //     type: 'object',
+                    //     attributes: {
+                    //         x: 'number',
+                    //         y: 'number',
+                    //         tilt: 'number',
+                    //     },
+                    // },
+                    placementTime: 'number',
+                    sort: { type: 'optional', value: 'any' },
+                },
+            },
+        },
+    },
+};
+
+export type CommentT = {
+    id: string,
+    card: string,
+    sort: string,
+    parentComment: ?string,
+    text: string,
+    authorId: string,
+    createdDate: number,
+    deleted: boolean,
+};
+
+export const CommentSchema: Schema = {
+    type: 'object',
+    attributes: {
+        id: 'string',
+        card: 'string',
+        sort: 'string',
+        parentComment: { type: 'optional', value: 'string' },
+        text: 'string',
+        authorId: 'string',
+        createdDate: 'int',
+        deleted: 'boolean',
     },
 };
 
@@ -83,42 +137,21 @@ export type CardT = {
     id: string,
     title: string,
     description: string,
-    position: {| x: number, y: number |},
-    size: {| x: number, y: number |},
-    letter: ?string,
-    number: ?number,
-    header: ?number,
     disabled: boolean,
 };
 
-import { type Schema } from '../../../packages/client-bundle';
 export const CardSchema: Schema = {
     type: 'object',
     attributes: {
         id: 'string',
         title: 'string',
         description: 'string',
-        position: {
-            type: 'object',
-            attributes: {
-                x: 'number',
-                y: 'number',
-            },
-        },
-        size: {
-            type: 'object',
-            attributes: { x: 'number', y: 'number' },
-        },
-        number: { type: 'optional', value: 'number' },
-        letter: { type: 'optional', value: 'string' },
-        header: { type: 'optional', value: 'number' },
         disabled: 'boolean',
     },
 };
 export type pos = {| x: number, y: number |};
 
-const colorsRaw =
-    '1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf';
+const colorsRaw = '1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf';
 export const colors = [];
 for (let i = 0; i < colorsRaw.length; i += 6) {
     colors.push('#' + colorsRaw.slice(i, i + 6));

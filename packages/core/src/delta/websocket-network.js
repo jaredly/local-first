@@ -8,37 +8,42 @@ const reconnectingSocket = (
     url,
     onOpen,
     onMessage: (string, (string) => void) => mixed,
-    updateStatus: SyncStatus => mixed,
+    updateStatus: (SyncStatus) => mixed,
 ) => {
     const state: { socket: ?WebSocket } = {
         socket: null,
     };
     const reconnect = () => {
         state.socket = null;
-        updateStatus({ status: 'disconnected' });
+        updateStatus({ status: 'pending' });
         backOff(
             () =>
                 new Promise((res, rej) => {
                     const socket = new WebSocket(url);
                     let opened = false;
+                    let closed = false;
                     socket.addEventListener('open', () => {
                         state.socket = socket;
-                        opened = true;
-                        res(true);
-                        updateStatus({ status: 'connected' });
-                        onOpen();
+                        setTimeout(() => {
+                            if (!closed) {
+                                opened = true;
+                                updateStatus({ status: 'connected' });
+                                res(true);
+                                onOpen();
+                            }
+                        }, 50);
                     });
                     socket.addEventListener('close', () => {
+                        updateStatus({ status: 'disconnected' });
+                        closed = true;
                         if (opened) {
                             reconnect();
                         } else {
                             res(false);
                         }
                     });
-                    socket.addEventListener(
-                        'message',
-                        ({ data }: { data: any }) =>
-                            onMessage(data, response => socket.send(response)),
+                    socket.addEventListener('message', ({ data }: { data: any }) =>
+                        onMessage(data, (response) => socket.send(response)),
                     );
                 }),
             500,
@@ -49,7 +54,10 @@ const reconnectingSocket = (
     return state;
 };
 
-export type SyncStatus = { status: 'connected' } | { status: 'disconnected' };
+export type SyncStatus =
+    | { status: 'pending' }
+    | { status: 'connected' }
+    | { status: 'disconnected' };
 
 const createWebSocketNetwork = <Delta, Data>(
     url: string,
@@ -59,25 +67,22 @@ const createWebSocketNetwork = <Delta, Data>(
     handleMessages,
 ): Network<SyncStatus> => {
     return {
-        initial: { status: 'disconnected' },
+        initial: { status: 'pending' },
         createSync: (sendCrossTabChange, updateStatus, softResync) => {
             console.log('Im the leader (websocket)');
             const state = reconnectingSocket(
-                `${url}?siteId=${sessionId}`,
+                url + (url.includes('?') ? '&' : '?') + `siteId=${sessionId}`,
                 () => sync(false),
                 async (msg, respond) => {
                     const messages = JSON.parse(msg);
                     const responseMessages = await handleMessages(
                         messages,
                         sendCrossTabChange,
-                    ).catch(err => {
+                    ).catch((err) => {
                         console.log('Failed to handle messages!');
                         console.error(err);
                     });
-                    if (
-                        responseMessages != null &&
-                        responseMessages.length > 0
-                    ) {
+                    if (responseMessages != null && responseMessages.length > 0) {
                         respond(JSON.stringify(responseMessages));
                     }
                 },
@@ -88,14 +93,14 @@ const createWebSocketNetwork = <Delta, Data>(
                 if (state.socket) {
                     const socket = state.socket;
                     getMessages(!softSync).then(
-                        messages => {
+                        (messages) => {
                             if (messages.length) {
                                 socket.send(JSON.stringify(messages));
                             } else {
                                 console.log('nothing to sync here');
                             }
                         },
-                        err => {
+                        (err) => {
                             console.error('Failed to sync messages folks');
                             console.error(err);
                         },
