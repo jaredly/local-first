@@ -64,7 +64,6 @@ const VideoPreview = ({ styles, video, html_url, image, url }) => {
         <a
             href={html_url || url}
             target="_blank"
-            referrer
             rel="noreferrer"
             className={styles.videoPreview}
         >
@@ -101,7 +100,12 @@ const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
     return (
         <Card className={styles.root}>
             <CardContent>
-                <Typography variant="h4" color="textSecondary" component="p">
+                <Typography
+                    style={{ whiteSpace: 'pre-wrap' }}
+                    variant="h4"
+                    color="textSecondary"
+                    component="p"
+                >
                     {description}
                 </Typography>
             </CardContent>
