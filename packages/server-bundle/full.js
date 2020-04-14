@@ -26,11 +26,17 @@ const applyOtherDelta = (text: rich.CRDT, meta: null, delta: rich.Delta) => {
 };
 
 const crdtImpl = {
+    createWithSchema: (data, stamp, getStamp, schema) =>
+        crdt.createWithSchema(data, stamp, getStamp, schema, () => null),
     createEmpty: crdt.createEmpty,
     applyDelta: (base, delta) => crdt.applyDelta(base, delta, (applyOtherDelta: any), otherMerge),
     deltas: {
         stamp: delta => crdt.deltas.stamp(delta, () => null)
     }
+};
+
+export const serverForUser = (dataPath: string, userId: string) => {
+    return make<Delta, Data>(crdtImpl, setupPersistence(path.join(dataPath, '' + userId)));
 };
 
 export const run = (dataPath: string, port: number = 9090) => {
@@ -54,10 +60,7 @@ export const run = (dataPath: string, port: number = 9090) => {
                     throw new Error(`No auth`);
                 }
                 if (!userServers[req.auth.id]) {
-                    userServers[req.auth.id] = make<Delta, Data>(
-                        crdtImpl,
-                        setupPersistence(path.join(dataPath, '' + req.auth.id))
-                    );
+                    userServers[req.auth.id] = serverForUser(dataPath, req.auth.id);
                 }
                 return userServers[req.auth.id];
             },

@@ -23,7 +23,7 @@ export type LinkT = {
     fetchedContent: mixed,
     tags: { [key: string]: boolean },
     description: mixed,
-    completed: ?string,
+    completed: ?number,
     added: number,
 };
 
@@ -35,7 +35,7 @@ export const LinkSchema: Schema = {
         fetchedContent: 'any',
         tags: { type: 'map', value: 'boolean' },
         description: 'any',
-        completed: { type: 'optional', value: 'string' },
+        completed: { type: 'optional', value: 'number' },
         added: 'number',
     },
 };
