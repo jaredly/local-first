@@ -12,7 +12,8 @@
         "idb": "^5.0.1",
         "parse-color": "^1.0.0",
         "react": "^16.13.1",
-        "react-dom": "^16.13.1"
+        "react-dom": "^16.13.1",
+        "typeface-roboto": "^0.0.75"
     },
     "scripts": {
         "deploy": "parcel build index.html && cd dist && surge . value-sort.surge.sh"
@@ -26,6 +27,7 @@
         "@babel/register": "^7.8.3",
         "fast-deep-equal": "^3.1.1",
         "flow-bin": "^0.116.1",
-        "parcel": "^1.12.4"
+        "parcel": "^1.12.4",
+        "prettier": "^2.0.4"
     }
 }
