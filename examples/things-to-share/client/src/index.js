@@ -22,6 +22,11 @@ import App from './App';
 const darkTheme = createMuiTheme({
     palette: {
         type: 'dark',
+
+        primary: { main: '#9c27b0' },
+        secondary: {
+            main: '#00b0ff',
+        },
     },
 });
 
