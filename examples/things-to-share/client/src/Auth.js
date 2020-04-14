@@ -1,6 +1,4 @@
 // @flow
-/** @jsx jsx */
-import { jsx } from '@emotion/core';
 import * as React from 'react';
 
 import Container from '@material-ui/core/Container';
