@@ -11,6 +11,9 @@ import IconButton from '@material-ui/core/IconButton';
 import CloseIcon from '@material-ui/icons/Close';
 import { makeStyles } from '@material-ui/core/styles';
 
+import { useSpring, animated, config } from 'react-spring';
+import useMeasure from 'react-use-measure';
+
 import OpenGraph from './OpenGraph';
 
 const useStyles = makeStyles((theme) => ({
@@ -46,6 +49,8 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
+const AnimatedPaper = animated(Paper);
+
 const Adder = ({
     onAdd,
     host,
@@ -55,55 +60,73 @@ const Adder = ({
 }) => {
     const styles = useStyles();
     const [open, setOpen] = React.useState(false);
+
+    const [ref, { height }] = useMeasure();
+    const props = useSpring({
+        height,
+        config: {
+            mass: 1,
+            tension: 1000,
+            friction: 70,
+        },
+    });
+
     return (
-        <Paper className={styles.container}>
-            <div className={styles.topBar}>
-                <Button
-                    color="primary"
-                    variant="contained"
-                    fullWidth
-                    onClick={() => setOpen(true)}
-                    // className={styles.topBar}
-                >
-                    {/* <div className={styles.topBar}> */}
-                    <Typography className={styles.titleButton} variant="h4">
-                        Add link
-                    </Typography>
-                </Button>
-                {open ? (
-                    <div
-                        style={{
-                            top: 0,
-                            bottom: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            position: 'absolute',
-                            marginRight: 4,
-                            right: 0,
-                        }}
+        <animated.div
+            style={{
+                overflow: 'hidden',
+                ...props,
+            }}
+        >
+            <Paper className={styles.container} ref={ref}>
+                <div className={styles.topBar}>
+                    <Button
+                        color="primary"
+                        variant="contained"
+                        fullWidth
+                        onClick={() => setOpen(true)}
+                        // className={styles.topBar}
                     >
-                        <IconButton
-                            onClick={(evt) => {
-                                evt.stopPropagation();
-                                setOpen(false);
+                        {/* <div className={styles.topBar}> */}
+                        <Typography className={styles.titleButton} variant="h4">
+                            Add link
+                        </Typography>
+                    </Button>
+                    {open ? (
+                        <div
+                            style={{
+                                top: 0,
+                                bottom: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                position: 'absolute',
+                                marginRight: 4,
+                                right: 0,
                             }}
                         >
-                            <CloseIcon />
-                        </IconButton>
-                    </div>
+                            <IconButton
+                                onClick={(evt) => {
+                                    evt.stopPropagation();
+                                    setOpen(false);
+                                }}
+                            >
+                                <CloseIcon />
+                            </IconButton>
+                        </div>
+                    ) : null}
+                    {/* </div> */}
+                </div>
+                {open ? (
+                    <AdderBody
+                        host={host}
+                        onAdd={(link, data) => {
+                            setOpen(false);
+                            onAdd(link, data);
+                        }}
+                    />
                 ) : null}
-                {/* </div> */}
-            </div>
-            {open ? (
-                <AdderBody
-                    host={host}
-                    onAdd={(link, data) => {
-                        setOpen(false);
-                        onAdd(link, data);
-                    }}
-                />
-            ) : null}
-        </Paper>
+            </Paper>
+        </animated.div>
     );
 };
 
@@ -135,6 +158,7 @@ const AdderBody = ({
         <React.Fragment>
             {data && !data.failed && Object.keys(data).length > 0 ? (
                 <div className={styles.cardBackdrop}>
+                    gg
                     <OpenGraph data={data} url={link} />
                 </div>
             ) : null}
