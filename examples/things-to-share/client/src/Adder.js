@@ -7,6 +7,8 @@ import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
+import IconButton from '@material-ui/core/IconButton';
+import CloseIcon from '@material-ui/icons/Close';
 import { makeStyles } from '@material-ui/core/styles';
 
 import OpenGraph from './OpenGraph';
@@ -20,9 +22,17 @@ const useStyles = makeStyles((theme) => ({
     root: {
         padding: theme.spacing(2),
     },
+    titleButton: {
+        textTransform: 'none',
+    },
     topBar: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        display: 'flex',
+        flexDirection: 'row',
         padding: theme.spacing(2),
-        backgroundColor: theme.palette.primary.light,
+        backgroundColor: theme.palette.primary.main,
         color: theme.palette.primary.contrastText,
     },
     cardBackdrop: {
@@ -40,27 +50,63 @@ const Adder = ({
     onAdd: (string, mixed) => void,
 }) => {
     const styles = useStyles();
+    const [open, setOpen] = React.useState(false);
+    return (
+        <Paper className={styles.container}>
+            <Button
+                color="primary"
+                variant="contained"
+                onClick={() => setOpen(true)}
+                className={styles.topBar}
+            >
+                {/* <div className={styles.topBar}> */}
+                <Typography className={styles.titleButton} variant="h4">
+                    Add link
+                </Typography>
+                {open ? (
+                    <IconButton
+                        style={{ margin: -4 }}
+                        onClick={(evt) => {
+                            evt.stopPropagation();
+                            setOpen(false);
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                ) : null}
+                {/* </div> */}
+            </Button>
+            {open ? <AdderBody host={host} onAdd={onAdd} /> : null}
+        </Paper>
+    );
+};
+
+const AdderBody = ({
+    onAdd,
+    host,
+}: {
+    host: string,
+    onAdd: (string, mixed) => void,
+}) => {
+    const styles = useStyles();
     const [link, setLink] = React.useState('');
     const [data, setData] = React.useState(null);
     // const [tags, setTags] = React.useState({});
     const [loading, setLoading] = React.useState(false);
 
-    React.useEffect(() => {
-        const key = '.x_saved_data';
-        if (data) {
-            localStorage[key] = JSON.stringify(data);
-        } else if (localStorage[key]) {
-            const data = JSON.parse(localStorage[key]);
-            setData(data);
-            setLink(data['og:url'][0]);
-        }
-    }, [data]);
+    // React.useEffect(() => {
+    //     const key = '.x_saved_data';
+    //     if (data) {
+    //         localStorage[key] = JSON.stringify(data);
+    //     } else if (localStorage[key]) {
+    //         const data = JSON.parse(localStorage[key]);
+    //         setData(data);
+    //         setLink(data['og:url'][0]);
+    //     }
+    // }, [data]);
 
     return (
-        <Paper className={styles.container}>
-            <div className={styles.topBar}>
-                <Typography variant="h4">Add link</Typography>
-            </div>
+        <React.Fragment>
             {data ? (
                 <div className={styles.cardBackdrop}>
                     <OpenGraph data={data} url={link} />
@@ -122,7 +168,7 @@ const Adder = ({
                     </Button>
                 </Grid>
             </Grid>
-        </Paper>
+        </React.Fragment>
     );
 };
 

@@ -25,8 +25,21 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
+const getOg = (data, key) => {
+    if (!data[key]) return null;
+    if (data[key].length > 1) {
+        return data[key];
+    }
+    return data[key][0];
+};
+
 const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
     const styles = useStyles();
+
+    const title = getOg(data, 'og:title');
+    const description = getOg(data, 'og:description');
+    url = getOg(data, 'og:url') || url;
+    const image = data['og:image'] || [];
 
     return (
         <Card className={styles.root}>
@@ -41,19 +54,19 @@ const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
                 //     {/* <MoreVertIcon /> */}
                 //   </IconButton>
                 // }
-                title={data['og:title'][0]}
+                title={title}
                 subheader={
                     <Link
                         color="secondary"
                         rel="noreferrer"
                         target="_blank"
-                        href={data['og:url'][0]}
+                        href={url}
                     >
-                        {data['og:url'][0]}
+                        {url}
                     </Link>
                 }
             />
-            {data['og:image'].map((url) => (
+            {image.map((url) => (
                 <CardMedia
                     key={url}
                     component="img"
@@ -64,7 +77,7 @@ const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
             ))}
             <CardContent>
                 <Typography variant="h4" color="textSecondary" component="p">
-                    {data['og:description'][0]}
+                    {description}
                 </Typography>
             </CardContent>
             {/* <CardActions disableSpacing>
