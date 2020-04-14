@@ -1,5 +1,6 @@
 // @flow
 
+import 'regenerator-runtime';
 import { parse } from 'node-html-parser';
 const fetch = require('node-fetch');
 
@@ -10,7 +11,7 @@ export const addProxy = app => {
         }
         fetch(req.query.url)
             .then(res => res.text())
-            .then(text => {
+            .then(async text => {
                 const parsed = parse(text);
                 console.log('parsed', text.length);
                 const ogs = {};
@@ -25,6 +26,15 @@ export const addProxy = app => {
                         }
                     }
                 });
+                if (ogs['og:video:url']) {
+                    const url = ogs['og:video:url'][0];
+                    const res = await fetch(url, { method: 'HEAD' });
+                    if (res.headers.get('Content-Type').startsWith('text/html')) {
+                        console.log('Not a real video');
+                        delete ogs['og:video:url'];
+                        ogs['og:video:html_url'] = [url];
+                    }
+                }
                 res.json(ogs);
             })
             .catch(err => {
