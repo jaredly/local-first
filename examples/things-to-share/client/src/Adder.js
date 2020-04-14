@@ -54,7 +54,7 @@ const Adder = ({
     onAdd: (string, mixed) => void,
 }) => {
     const styles = useStyles();
-    const [open, setOpen] = React.useState(true);
+    const [open, setOpen] = React.useState(false);
     return (
         <Paper className={styles.container}>
             <div className={styles.topBar}>
@@ -94,7 +94,15 @@ const Adder = ({
                 ) : null}
                 {/* </div> */}
             </div>
-            {open ? <AdderBody host={host} onAdd={onAdd} /> : null}
+            {open ? (
+                <AdderBody
+                    host={host}
+                    onAdd={(link, data) => {
+                        setOpen(false);
+                        onAdd(link, data);
+                    }}
+                />
+            ) : null}
         </Paper>
     );
 };
@@ -112,16 +120,16 @@ const AdderBody = ({
     // const [tags, setTags] = React.useState({});
     const [loading, setLoading] = React.useState(false);
 
-    React.useEffect(() => {
-        const key = '.x_saved_data';
-        if (data) {
-            localStorage[key] = JSON.stringify(data);
-        } else if (localStorage[key]) {
-            const data = JSON.parse(localStorage[key]);
-            setData(data);
-            setLink(data['og:url'][0]);
-        }
-    }, [data]);
+    // React.useEffect(() => {
+    //     const key = '.x_saved_data';
+    //     if (data) {
+    //         localStorage[key] = JSON.stringify(data);
+    //     } else if (localStorage[key]) {
+    //         const data = JSON.parse(localStorage[key]);
+    //         setData(data);
+    //         setLink(data['og:url'][0]);
+    //     }
+    // }, [data]);
 
     return (
         <React.Fragment>
@@ -172,7 +180,7 @@ const AdderBody = ({
                         </Button>
                     </Grid>
                 </Grid>
-                {JSON.stringify(data)}
+                {/* {JSON.stringify(data)} */}
                 <Grid item>
                     <Button
                         color="primary"

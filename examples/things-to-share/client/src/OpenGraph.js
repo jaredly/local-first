@@ -105,7 +105,10 @@ const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
                     {description}
                 </Typography>
             </CardContent>
-            {type === 'image'
+            {type === 'image' ||
+            (type === 'article' &&
+                (getOg(data, 'og:site_name') !== 'Twitter' ||
+                    getOg(data, 'og:image:user_generated') === 'true'))
                 ? images.map((url) => (
                       <CardMedia
                           key={url}

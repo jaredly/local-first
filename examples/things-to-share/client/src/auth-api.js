@@ -2,6 +2,9 @@
 
 const listeners = [];
 
+export type Data = { user: { name: string, email: string }, token: string };
+export type Status = false | null | Data;
+
 export const initialStatus = (): Status => {
     const raw = localStorage.getItem(storageKey);
     if (raw) {

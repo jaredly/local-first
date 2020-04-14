@@ -26,6 +26,10 @@ import { TagSchema, LinkSchema } from './types';
 
 import Adder from './Adder';
 
+import type { Data } from './auth-api';
+
+import LinkItem from './LinkItem';
+
 const schemas = {
     tags: TagSchema,
     links: LinkSchema,
@@ -82,12 +86,22 @@ const App = ({ host, auth }: { host: string, auth: ?Data }) => {
                             id,
                             url,
                             fetchedContent,
+                            added: Date.now(),
                             tags: {},
                             description: null,
                             completed: null,
                         });
                     }}
                 />
+                <div style={{ height: 12 }} />
+                {Object.keys(links)
+                    .sort((a, b) => links[b].added - links[a].added)
+                    .map((key, i) => (
+                        <React.Fragment>
+                            {i !== 0 ? <div style={{ height: 12 }} /> : null}
+                            <LinkItem link={links[key]} key={key} />
+                        </React.Fragment>
+                    ))}
             </Container>
         </React.Fragment>
     );

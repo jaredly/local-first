@@ -1,11 +1,11 @@
 // @flow
 
-import { type Schema } from '../../../packages/client-bundle';
+import { type Schema } from '../../../../packages/client-bundle';
 
 export type TagT = {
     id: string,
     title: string,
-    color: string
+    color: string,
 };
 
 export const TagSchema: Schema = {
@@ -13,8 +13,8 @@ export const TagSchema: Schema = {
     attributes: {
         id: 'string',
         title: 'string',
-        color: 'string'
-    }
+        color: 'string',
+    },
 };
 
 export type LinkT = {
@@ -23,17 +23,21 @@ export type LinkT = {
     fetchedContent: mixed,
     tags: { [key: string]: boolean },
     description: mixed,
-    completed: ?string
+    completed: ?string,
+    added: number,
 };
 
 export const LinkSchema: Schema = {
     type: 'object',
-    id: 'string',
-    url: 'string',
-    fetchContent: 'any',
-    tags: { type: 'map', value: 'boolean' },
-    description: 'any',
-    completed: { type: 'optional', value: 'string' }
+    attributes: {
+        id: 'string',
+        url: 'string',
+        fetchedContent: 'any',
+        tags: { type: 'map', value: 'boolean' },
+        description: 'any',
+        completed: { type: 'optional', value: 'string' },
+        added: 'number',
+    },
 };
 
 // export type Comment
@@ -41,7 +45,8 @@ export const LinkSchema: Schema = {
 //     id: string,
 // }
 
-const colorsRaw = '1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf';
+const colorsRaw =
+    '1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf';
 export const colors = [];
 for (let i = 0; i < colorsRaw.length; i += 6) {
     colors.push('#' + colorsRaw.slice(i, i + 6));

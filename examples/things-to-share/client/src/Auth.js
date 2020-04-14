@@ -8,6 +8,7 @@ import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
 
+import type { Data } from './auth-api';
 import { makeStyles } from '@material-ui/core/styles';
 import {
     checkEmail,
@@ -69,9 +70,6 @@ in to a syncing server later.
 [Log in to a syncing server]
 
 */
-
-// const initialState = {
-// }
 
 const SignUpIn = ({ host }: { host: string }) => {
     const styles = useStyles();
@@ -275,9 +273,6 @@ export const useAuthStatus = (host: string) => {
 
     return status;
 };
-
-type Data = { user: { name: string, email: string }, token: string };
-type Status = false | null | Data;
 
 const Auth = ({
     host,
