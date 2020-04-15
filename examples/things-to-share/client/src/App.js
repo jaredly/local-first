@@ -102,7 +102,8 @@ const App = ({
         .filter((k) => (showAll ? true : !initiallyCompleted[k]))
         .sort((a, b) => links[b].added - links[a].added);
 
-    const [anchorEl, setAnchorEl] = React.useState(null);
+    const [menuOpen, setMenuOpen] = React.useState(false);
+    const anchorEl = React.useRef(null);
 
     return (
         <React.Fragment>
@@ -128,29 +129,22 @@ const App = ({
 
                     <Button
                         color="inherit"
-                        onClick={(evt) => setAnchorEl(evt.target)}
+                        onClick={(evt) => setMenuOpen(true)}
+                        ref={(node) => (anchorEl.current = node)}
                         className={styles.userButton}
                     >
                         {auth ? auth.user.email : 'Login to sync'}
                     </Button>
 
                     <Menu
-                        anchorEl={anchorEl}
-                        anchorOrigin={{
-                            vertical: 'bottom',
-                            horizontal: 'right',
-                        }}
+                        anchorEl={anchorEl.current}
                         keepMounted
-                        transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'right',
-                        }}
-                        open={!!anchorEl}
-                        onClose={() => setAnchorEl(null)}
+                        open={menuOpen}
+                        onClose={() => setMenuOpen(false)}
                     >
                         <MenuItem
                             onClick={() => {
-                                setAnchorEl(null);
+                                setMenuOpen(false);
                                 logout();
                             }}
                         >
@@ -158,14 +152,14 @@ const App = ({
                         </MenuItem>
                         <MenuItem
                             onClick={() => {
-                                // setAnchorEl(null)
+                                // setMenuOpen(false)
                             }}
                         >
                             Export Data
                         </MenuItem>
                         <MenuItem
                             onClick={() => {
-                                // setAnchorEl(null)
+                                // setMenuOpen(false)
                             }}
                         >
                             Import Data
