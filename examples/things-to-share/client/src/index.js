@@ -39,8 +39,8 @@ render(
         {/* <App host={host} /> */}
         <Auth
             host={host}
-            render={auth => (
-                <App auth={auth} host={host} />
+            render={(auth, logout) => (
+                <App auth={auth} logout={logout} host={host} />
                 // <Button color="primary" variant="contained">
                 //     Ok buttons
                 // </Button>

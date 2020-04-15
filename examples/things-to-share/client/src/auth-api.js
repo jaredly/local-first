@@ -84,7 +84,7 @@ export const logout = async (host: string, token: string) => {
         method: 'POST',
         headers: { Authorization: `Bearer: ${token}` },
     });
-    return processResponse(res);
+    processResponse(res);
 };
 
 export const login = async (host, email, password) => {

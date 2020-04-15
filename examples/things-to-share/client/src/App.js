@@ -11,6 +11,8 @@ import AppBar from '@material-ui/core/AppBar';
 import Switch from '@material-ui/core/Switch';
 import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
 import MenuIcon from '@material-ui/icons/Menu';
 
 import { makeStyles } from '@material-ui/core/styles';
@@ -36,7 +38,15 @@ const schemas = {
     links: LinkSchema,
 };
 
-const App = ({ host, auth }: { host: string, auth: ?Data }) => {
+const App = ({
+    host,
+    auth,
+    logout,
+}: {
+    host: string,
+    auth: ?Data,
+    logout: () => void,
+}) => {
     const client = React.useMemo(() => {
         console.log('starting a client', auth);
         return auth
@@ -92,6 +102,8 @@ const App = ({ host, auth }: { host: string, auth: ?Data }) => {
         .filter((k) => (showAll ? true : !initiallyCompleted[k]))
         .sort((a, b) => links[b].added - links[a].added);
 
+    const [anchorEl, setAnchorEl] = React.useState(null);
+
     return (
         <React.Fragment>
             <AppBar position="sticky">
@@ -113,9 +125,52 @@ const App = ({ host, auth }: { host: string, auth: ?Data }) => {
                         checked={showAll}
                         onChange={() => setShowAll(!showAll)}
                     />
-                    <Button color="inherit" className={styles.userButton}>
+
+                    <Button
+                        color="inherit"
+                        onClick={(evt) => setAnchorEl(evt.target)}
+                        className={styles.userButton}
+                    >
                         {auth ? auth.user.email : 'Login to sync'}
                     </Button>
+
+                    <Menu
+                        anchorEl={anchorEl}
+                        anchorOrigin={{
+                            vertical: 'bottom',
+                            horizontal: 'right',
+                        }}
+                        keepMounted
+                        transformOrigin={{
+                            vertical: 'top',
+                            horizontal: 'right',
+                        }}
+                        open={!!anchorEl}
+                        onClose={() => setAnchorEl(null)}
+                    >
+                        <MenuItem
+                            onClick={() => {
+                                setAnchorEl(null);
+                                logout();
+                            }}
+                        >
+                            Log out
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                // setAnchorEl(null)
+                            }}
+                        >
+                            Export Data
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                // setAnchorEl(null)
+                            }}
+                        >
+                            Import Data
+                        </MenuItem>
+                    </Menu>
                 </Toolbar>
             </AppBar>
             <Container maxWidth="sm" className={styles.container}>

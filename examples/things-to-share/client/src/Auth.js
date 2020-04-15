@@ -14,6 +14,7 @@ import {
     checkEmail,
     login,
     signup,
+    logout,
     initialStatus,
     listen,
     getUser,
@@ -279,7 +280,7 @@ const Auth = ({
     render,
 }: {
     host: string,
-    render: (data: Data) => React.Node,
+    render: (data: Data, logout: () => Promise<void>) => React.Node,
 }) => {
     const status = useAuthStatus(host);
     // load auth
@@ -290,7 +291,7 @@ const Auth = ({
     if (status == null) {
         return <div />;
     }
-    return render(status);
+    return render(status, () => logout(host, status.token));
 };
 
 export default Auth;
