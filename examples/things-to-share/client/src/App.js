@@ -57,7 +57,7 @@ const App = ({ host, auth }: { host: string, auth: ?Data }) => {
 
     // We want to show any links that, at first load of this screen,
     // were not collapsed.
-    const initiallyCompleted = React.useMemo(() => {
+    const [initiallyCompleted, setInitiallyCompleted] = React.useState(() => {
         const completed = {};
         Object.keys(links).forEach((k) => {
             if (links[k].completed) {
@@ -65,16 +65,21 @@ const App = ({ host, auth }: { host: string, auth: ?Data }) => {
             }
         });
         return completed;
-    }, []);
+    });
     const lastLinks = React.useRef(links);
-    lastLinks.current = links;
 
     React.useEffect(() => {
+        console.log('links changed');
+        const newCompleted = {};
+        let hasNew = false;
         Object.keys(links).forEach((k) => {
             if (!lastLinks.current[k] && links[k].completed) {
-                initiallyCompleted[k] = true;
+                newCompleted[k] = true;
+                hasNew = true;
             }
         });
+        lastLinks.current = links;
+        setInitiallyCompleted((state) => ({ ...state, ...newCompleted }));
     }, [links]);
 
     const styles = useStyles();
@@ -121,7 +126,7 @@ const App = ({ host, auth }: { host: string, auth: ?Data }) => {
                     .sort((a, b) => links[b].added - links[a].added)
                     .slice(0, 20)
                     .map((key, i) => (
-                        <React.Fragment>
+                        <React.Fragment key={key}>
                             {i !== 0 ? <div style={{ height: 12 }} /> : null}
                             <LinkItem
                                 linksCol={linksCol}
