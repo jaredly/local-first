@@ -12,6 +12,9 @@ import IconButton from '@material-ui/core/IconButton';
 import CloseIcon from '@material-ui/icons/Close';
 import { makeStyles } from '@material-ui/core/styles';
 
+import CheckBoxOutlineBlankIcon from '@material-ui/icons/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@material-ui/icons/CheckBox';
+
 import OpenGraph from './OpenGraph';
 
 import { useSpring, animated, config } from 'react-spring';
@@ -21,6 +24,7 @@ import type { LinkT } from './types';
 const useStyles = makeStyles((theme) => ({
     container: {
         backgroundColor: theme.palette.primary.light,
+        position: 'relative',
     },
     inner: {},
     innerOpen: {
@@ -29,6 +33,14 @@ const useStyles = makeStyles((theme) => ({
     collapsed: {
         padding: theme.spacing(2),
         cursor: 'pointer',
+    },
+    completionBox: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+    },
+    completionIcon: {
+        fontSize: theme.spacing(4),
     },
 }));
 
@@ -50,12 +62,24 @@ const LinkItem = ({ link }: { link: LinkT }) => {
             friction: 70,
         },
     });
+
+    const completionBox = (
+        <IconButton className={styles.completionBox}>
+            {link.completed ? (
+                <CheckBoxIcon className={styles.completionIcon} />
+            ) : (
+                <CheckBoxOutlineBlankIcon className={styles.completionIcon} />
+            )}
+        </IconButton>
+    );
+
     if (!link.fetchedContent) {
         return (
             <Paper className={styles.container}>
                 <Link href={link.url} target="_blank" className={styles.inner}>
                     {linkText}
                 </Link>
+                {completionBox}
             </Paper>
         );
     }
@@ -83,6 +107,7 @@ const LinkItem = ({ link }: { link: LinkT }) => {
                         {linkText}
                     </div>
                 )}
+                {completionBox}
             </div>
         </AnimatedPaper>
     );
