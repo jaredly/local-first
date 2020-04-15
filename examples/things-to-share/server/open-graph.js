@@ -1,36 +1,56 @@
 const fetch = require('node-fetch');
 const { parse } = require('node-html-parser');
 
-module.exports = (url, cb) => {
-    fetch(url)
-        .then(res => res.text())
-        .then(async text => {
-            const parsed = parse(text);
-            console.log('parsed', text.length);
-            const ogs = {};
-            parsed.querySelectorAll('meta').forEach(meta => {
-                const property = meta.getAttribute('property');
-                if (property && property.startsWith('og:')) {
-                    const content = meta.getAttribute('content');
-                    if (!ogs[property]) {
-                        ogs[property] = [content];
-                    } else {
-                        ogs[property].push(content);
+const rx = /https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
+
+const getTwoLevels = async url => {
+    const data = await getGraphData(url);
+    if (data && data['og:description']) {
+        const mainDesc = data['og:description'][0];
+        const innerUrl = mainDesc.match(rx);
+        if (innerUrl) {
+            const url = innerUrl[0];
+            const innerData = await getGraphData(url);
+            if (innerData) {
+                if (!innerData['og:url'] || innerData['og:url'][0] !== data['og:url'][0]) {
+                    data['embedded'] = innerData;
+                    const without = mainDesc.replace(url, '').trim();
+                    // if it was at the end, we can take it off
+                    if (mainDesc.startsWith(without)) {
+                        data['og:description'][0] = without;
                     }
                 }
-            });
-            if (ogs['og:video:url']) {
-                const url = ogs['og:video:url'][0];
-                const res = await fetch(url, { method: 'HEAD' });
-                if (res.headers.get('Content-Type').startsWith('text/html')) {
-                    console.log('Not a real video');
-                    delete ogs['og:video:url'];
-                    ogs['og:video:html_url'] = [url];
+            }
+        }
+    }
+    return data;
+};
+
+const getGraphData = async (url, cb) => {
+    try {
+        const res = await fetch(url);
+        if (!res.headers.get('Content-type').startsWith('text/html')) {
+            return null;
+        }
+        const text = await res.text();
+        const parsed = parse(text);
+        console.log('parsed', text.length);
+        const ogs = {};
+        parsed.querySelectorAll('meta').forEach(meta => {
+            const property = meta.getAttribute('property');
+            if (property && property.startsWith('og:')) {
+                const content = meta.getAttribute('content');
+                if (!ogs[property]) {
+                    ogs[property] = [content];
+                } else {
+                    ogs[property].push(content);
                 }
             }
-            cb(ogs);
-        })
-        .catch(err => {
-            cb(null);
         });
+        return ogs;
+    } catch (_err) {
+        return null;
+    }
 };
+
+module.exports = { getGraphData, getTwoLevels };

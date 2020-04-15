@@ -1,4 +1,4 @@
-const getGraphData = require('./open-graph.js');
+const { getTwoLevels } = require('./open-graph.js');
 const fs = require('fs');
 
 const data = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
@@ -18,7 +18,7 @@ const run = async () => {
                 const without = child.content.replace(url, '').trim();
                 const description = without.length ? without : null;
 
-                const data = await new Promise((res, rej) => getGraphData(url, res));
+                const data = await getTwoLevels(url);
 
                 return {
                     fetchedContent: data,

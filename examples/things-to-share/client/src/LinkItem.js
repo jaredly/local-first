@@ -15,6 +15,7 @@ import OpenGraph from './OpenGraph';
 
 import type { LinkT } from './types';
 
+// TODO: hide if not completed.
 const LinkItem = ({ link }: { link: LinkT }) => {
     if (link.fetchedContent) {
         return <OpenGraph data={link.fetchedContent} url={link.url} />;

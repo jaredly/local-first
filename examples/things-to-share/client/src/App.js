@@ -97,6 +97,7 @@ const App = ({ host, auth }: { host: string, auth: ?Data }) => {
                 {Object.keys(links)
                     .filter((k) => links[k].completed === null)
                     .sort((a, b) => links[b].added - links[a].added)
+                    .slice(0, 20)
                     .map((key, i) => (
                         <React.Fragment>
                             {i !== 0 ? <div style={{ height: 12 }} /> : null}

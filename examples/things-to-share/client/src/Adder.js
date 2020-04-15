@@ -158,7 +158,6 @@ const AdderBody = ({
         <React.Fragment>
             {data && !data.failed && Object.keys(data).length > 0 ? (
                 <div className={styles.cardBackdrop}>
-                    gg
                     <OpenGraph data={data} url={link} />
                 </div>
             ) : null}
@@ -204,7 +203,7 @@ const AdderBody = ({
                         </Button>
                     </Grid>
                 </Grid>
-                {/* {JSON.stringify(data)} */}
+                {JSON.stringify(data)}
                 <Grid item>
                     <Button
                         color="primary"

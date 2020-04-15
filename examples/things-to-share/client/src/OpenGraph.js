@@ -56,13 +56,13 @@ const getOg = (data, key: string) => {
     return data[key][0];
 };
 
-const VideoPreview = ({ styles, video, html_url, image, url }) => {
-    if (video) {
+const VideoPreview = ({ styles, video, video_type, image }) => {
+    if (video_type !== 'text/html') {
         return <video src={video} controls />;
     }
     return (
         <a
-            href={html_url || url}
+            href={video}
             target="_blank"
             rel="noreferrer"
             className={styles.videoPreview}
@@ -89,13 +89,19 @@ const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
     const styles = useStyles();
 
     const type = getOg(data, 'og:type');
-    const title = getOg(data, 'og:title');
-    const description = getOg(data, 'og:description');
+    // const title = getOg(data, 'og:title');
+    // const description = getOg(data, 'og:description');
     url = getOg(data, 'og:url') || url;
     const images = getOgs(data, 'og:image');
     const video = getOg(data, 'og:video:url');
-    const html_url = getOg(data, 'og:video:html_url');
+    const video_type = getOg(data, 'og:video:type');
+    const site_name = getOg(data, 'og:site_name');
     // for images, need to filter out twitter avatar ones probably
+
+    const [title, description] =
+        site_name === 'Twitter'
+            ? [getOg(data, 'og:description'), getOg(data, 'og:title')]
+            : [getOg(data, 'og:title'), getOg(data, 'og:description')];
 
     return (
         <Card className={styles.root}>
@@ -106,12 +112,12 @@ const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
                     color="textSecondary"
                     component="p"
                 >
-                    {description}
+                    {title}
                 </Typography>
             </CardContent>
             {type === 'image' ||
             (type === 'article' &&
-                (getOg(data, 'og:site_name') !== 'Twitter' ||
+                (site_name !== 'Twitter' ||
                     getOg(data, 'og:image:user_generated') === 'true'))
                 ? images.map((url) => (
                       <CardMedia
@@ -123,41 +129,15 @@ const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
                       />
                   ))
                 : null}
-            {type === 'video' ? (
+            {type === 'video' || type === 'video.other' ? (
                 <VideoPreview
                     styles={styles}
                     video={video}
-                    html_url={html_url}
+                    video_type={video_type}
                     image={images.length ? images[0] : null}
                     url={url}
                 />
-            ) : // <iframe referrerpolicy="no-referrer" src={video} />
-            // <video
-            // video ? (
-            //     <video
-            //         width="640"
-            //         height="480"
-            //         controls
-            //         src={
-            //             // 'https://video.twimg.com/tweet_video/EVa58wJUMAAr-2x.mp4'
-            //             video
-            //             //  video
-            //         }
-            //     />
-            // ) : (
-            //     images.map((href) => (
-            //         <Link href={html_url ? html_url : url} target="_blank">
-            //             <CardMedia
-            //                 key={href}
-            //                 component="img"
-            //                 // className={classes.media}
-            //                 image={href}
-            //                 title="Image"
-            //             />
-            //         </Link>
-            //     ))
-            // )
-            null}
+            ) : null}
             {/* <CardActions disableSpacing>
         <IconButton aria-label="add to favorites">
           PlayIconFavoriteIcon />
@@ -187,7 +167,7 @@ const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
                 //     {/* <MoreVertIcon /> */}
                 //   </IconButton>
                 // }
-                title={title}
+                title={description}
                 subheader={
                     <Link
                         color="secondary"
@@ -199,6 +179,11 @@ const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
                     </Link>
                 }
             />
+            {data.embedded ? (
+                <div style={{ padding: 12 }}>
+                    <OpenGraph data={data.embedded} url={url} />
+                </div>
+            ) : null}
         </Card>
     );
 };
