@@ -47,7 +47,7 @@ const useStyles = makeStyles((theme) => ({
 const AnimatedPaper = animated(Paper);
 
 // TODO: hide if not completed.
-const LinkItem = ({ link }: { link: LinkT }) => {
+const LinkItem = ({ link, linksCol }: { link: LinkT, linksCol: any }) => {
     const styles = useStyles();
     const [open, setOpen] = React.useState(false);
     // on open, should scroll it to the top.
@@ -64,7 +64,16 @@ const LinkItem = ({ link }: { link: LinkT }) => {
     });
 
     const completionBox = (
-        <IconButton className={styles.completionBox}>
+        <IconButton
+            className={styles.completionBox}
+            onClick={() =>
+                linksCol.setAttribute(
+                    link.id,
+                    ['completed'],
+                    link.completed ? null : Date.now(),
+                )
+            }
+        >
             {link.completed ? (
                 <CheckBoxIcon className={styles.completionIcon} />
             ) : (
@@ -92,21 +101,18 @@ const LinkItem = ({ link }: { link: LinkT }) => {
             }}
             className={styles.container}
         >
-            <div ref={ref} className={open ? styles.innerOpen : styles.inner}>
+            <div ref={ref}>
+                <div
+                    className={styles.collapsed}
+                    onClick={() => setOpen(!open)}
+                >
+                    {linkText}
+                </div>
                 {open ? (
-                    <OpenGraph
-                        onClose={() => setOpen(false)}
-                        data={link.fetchedContent}
-                        url={link.url}
-                    />
-                ) : (
-                    <div
-                        className={styles.collapsed}
-                        onClick={() => setOpen(!open)}
-                    >
-                        {linkText}
+                    <div className={styles.innerOpen}>
+                        <OpenGraph data={link.fetchedContent} url={link.url} />
                     </div>
-                )}
+                ) : null}
                 {completionBox}
             </div>
         </AnimatedPaper>

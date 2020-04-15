@@ -26,6 +26,7 @@ const commands = {
         let clock = hlc.init(session, Date.now());
         const getStamp = () => {
             clock = hlc.inc(clock, Date.now());
+            return hlc.pack(clock);
         };
 
         const server = serverForUser(path.join(__dirname, '.data'), userId);
