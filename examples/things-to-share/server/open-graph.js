@@ -6,7 +6,11 @@ const rx = /https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-z
 const getTwoLevels = async url => {
     const data = await getGraphData(url);
     if (data && data['og:description']) {
-        const mainDesc = data['og:description'][0];
+        let mainDesc = data['og:description'][0].trim();
+        if (mainDesc.startsWith('“') && mainDesc.endsWith('”')) {
+            mainDesc = mainDesc.replace(/”\s*$/, '').replace(/^\s*“/, '');
+            data['og:description'][0] = mainDesc;
+        }
         const innerUrl = mainDesc.match(rx);
         if (innerUrl) {
             const url = innerUrl[0];

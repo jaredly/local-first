@@ -21,6 +21,10 @@ import PlayIcon from '@material-ui/icons/PlayCircleFilled';
 
 const useStyles = makeStyles((theme) => ({
     //
+    nestedRoot: {
+        maxWidth: '100%',
+        backgroundColor: theme.palette.primary.light,
+    },
     root: {
         maxWidth: '100%',
     },
@@ -44,6 +48,9 @@ const useStyles = makeStyles((theme) => ({
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    closer: {
+        cursor: 'pointer',
     },
 }));
 
@@ -85,7 +92,17 @@ const VideoPreview = ({ styles, video, video_type, image }) => {
     );
 };
 
-const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
+const OpenGraph = ({
+    data,
+    url,
+    onClose,
+    nested,
+}: {
+    data: mixed,
+    url: string,
+    nested: boolean,
+    onClose: () => void,
+}) => {
     const styles = useStyles();
 
     const type = getOg(data, 'og:type');
@@ -102,8 +119,11 @@ const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
             : [getOg(data, 'og:title'), getOg(data, 'og:description')];
 
     return (
-        <Card className={styles.root}>
-            <CardContent>
+        <Card className={nested ? styles.nestedRoot : styles.root}>
+            <CardContent
+                onClick={onClose}
+                className={onClose ? styles.closer : null}
+            >
                 <Typography
                     style={{ whiteSpace: 'pre-wrap' }}
                     variant="h4"
@@ -179,7 +199,7 @@ const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
             />
             {data.embedded ? (
                 <div style={{ padding: 12 }}>
-                    <OpenGraph data={data.embedded} url={url} />
+                    <OpenGraph nested data={data.embedded} url={url} />
                 </div>
             ) : null}
         </Card>
