@@ -89,8 +89,6 @@ const OpenGraph = ({ data, url }: { data: mixed, url: string }) => {
     const styles = useStyles();
 
     const type = getOg(data, 'og:type');
-    // const title = getOg(data, 'og:title');
-    // const description = getOg(data, 'og:description');
     url = getOg(data, 'og:url') || url;
     const images = getOgs(data, 'og:image');
     const video = getOg(data, 'og:video:url');
