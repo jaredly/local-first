@@ -8,6 +8,7 @@ import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
 import AppBar from '@material-ui/core/AppBar';
+import Switch from '@material-ui/core/Switch';
 import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
@@ -55,6 +56,9 @@ const App = ({ host, auth }: { host: string, auth: ?Data }) => {
     }, [auth && auth.token]);
     const [linksCol, links] = useCollection(React, client, 'links');
 
+    const [showAll, setShowAll] = React.useState(false);
+    const [numToShow, setNumToShow] = React.useState(20);
+
     // We want to show any links that, at first load of this screen,
     // were not collapsed.
     const [initiallyCompleted, setInitiallyCompleted] = React.useState(() => {
@@ -84,6 +88,10 @@ const App = ({ host, auth }: { host: string, auth: ?Data }) => {
 
     const styles = useStyles();
 
+    let linksToShow = Object.keys(links)
+        .filter((k) => (showAll ? true : !initiallyCompleted[k]))
+        .sort((a, b) => links[b].added - links[a].added);
+
     return (
         <React.Fragment>
             <AppBar position="sticky">
@@ -99,6 +107,12 @@ const App = ({ host, auth }: { host: string, auth: ?Data }) => {
                     <Typography variant="h6" className={styles.title}>
                         Things to Share
                     </Typography>
+
+                    <Typography>Show completed</Typography>
+                    <Switch
+                        checked={showAll}
+                        onChange={() => setShowAll(!showAll)}
+                    />
                     <Button color="inherit" className={styles.userButton}>
                         {auth ? auth.user.email : 'Login to sync'}
                     </Button>
@@ -121,20 +135,22 @@ const App = ({ host, auth }: { host: string, auth: ?Data }) => {
                     }}
                 />
                 <div style={{ height: 12 }} />
-                {Object.keys(links)
-                    .filter((k) => !initiallyCompleted[k])
-                    .sort((a, b) => links[b].added - links[a].added)
-                    .slice(0, 20)
-                    .map((key, i) => (
-                        <React.Fragment key={key}>
-                            {i !== 0 ? <div style={{ height: 12 }} /> : null}
-                            <LinkItem
-                                linksCol={linksCol}
-                                link={links[key]}
-                                key={key}
-                            />
-                        </React.Fragment>
-                    ))}
+                {linksToShow.slice(0, numToShow).map((key, i) => (
+                    <React.Fragment key={key}>
+                        {i !== 0 ? <div style={{ height: 12 }} /> : null}
+                        <LinkItem
+                            linksCol={linksCol}
+                            link={links[key]}
+                            key={key}
+                        />
+                    </React.Fragment>
+                ))}
+                <div style={{ height: 12 }} />
+                {linksToShow.length > numToShow ? (
+                    <Button onClick={() => setNumToShow(numToShow + 20)}>
+                        Show more
+                    </Button>
+                ) : null}
             </Container>
         </React.Fragment>
     );
