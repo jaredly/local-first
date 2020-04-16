@@ -172,6 +172,7 @@ const AdderBody = ({
                     <Grid item xs>
                         <TextField
                             value={link}
+                            autoFocus
                             fullWidth
                             variant="outlined"
                             label="Link"
@@ -179,46 +180,53 @@ const AdderBody = ({
                             onChange={(evt) => setLink(evt.target.value)}
                         />
                     </Grid>
-                    <Grid item>
-                        <Button
-                            disabled={loading || !link.trim()}
-                            onClick={() => {
-                                setLoading(true);
-                                fetch(
-                                    `${
-                                        window.location.protocol
-                                    }//${host}/proxy/info?url=${encodeURIComponent(
-                                        link,
-                                    )}`,
-                                )
-                                    .then((res) => res.json())
-                                    .catch((err) => null)
-                                    .then((ogData) => {
-                                        setLoading(false);
-                                        setData(ogData);
-                                    });
-                            }}
-                        >
-                            Fetch data
-                        </Button>
-                    </Grid>
                 </Grid>
-                {JSON.stringify(data)}
+                {/* {JSON.stringify(data)} */}
                 <Grid item>
                     <Button
                         color="primary"
                         variant="contained"
                         disabled={!link.trim()}
                         onClick={() => {
-                            onAdd(link, data);
+                            if (data != null) {
+                                onAdd(link, data);
+                            } else {
+                                setLoading(true);
+                                getData(host, link).then((ogData) => {
+                                    setLoading(false);
+                                    onAdd(link, ogData);
+                                });
+                            }
                         }}
                     >
-                        Add
+                        {data ? 'Add' : 'Fetch & Add'}
+                    </Button>
+                    <Button
+                        disabled={loading || !link.trim()}
+                        style={{ marginLeft: 12 }}
+                        onClick={() => {
+                            setLoading(true);
+                            getData(host, link).then((ogData) => {
+                                setLoading(false);
+                                setData(ogData);
+                            });
+                        }}
+                    >
+                        Just fetch
                     </Button>
                 </Grid>
             </Grid>
         </React.Fragment>
     );
 };
+
+const getData = (host, link) =>
+    fetch(
+        `${
+            window.location.protocol
+        }//${host}/proxy/info?url=${encodeURIComponent(link)}`,
+    )
+        .then((res) => res.json())
+        .catch((err) => null);
 
 export default Adder;

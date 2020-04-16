@@ -13,6 +13,7 @@ import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
+
 import MenuIcon from '@material-ui/icons/Menu';
 
 import { makeStyles } from '@material-ui/core/styles';
@@ -32,11 +33,25 @@ import Adder from './Adder';
 import type { Data } from './auth-api';
 
 import LinkItem from './LinkItem';
+import ExportDialog from './ExportDialog';
 
 const schemas = {
     tags: TagSchema,
     links: LinkSchema,
 };
+
+// const ExportDialog = ({ onClose }) => {
+//     return 'export';
+//     return <SimpleDialog
+//     selectedValue={selectedValue}
+//     open={open}
+//     onClose={handleClose}
+//     />
+// };
+
+// const ImportDialog = ({ onClose }) => {
+//     return 'import';
+// };
 
 const App = ({
     host,
@@ -68,6 +83,7 @@ const App = ({
 
     const [showAll, setShowAll] = React.useState(false);
     const [numToShow, setNumToShow] = React.useState(20);
+    const [dialog, setDialog] = React.useState(null);
 
     // We want to show any links that, at first load of this screen,
     // were not collapsed.
@@ -104,6 +120,18 @@ const App = ({
 
     const [menuOpen, setMenuOpen] = React.useState(false);
     const anchorEl = React.useRef(null);
+
+    // let dialogNode = null;
+    // switch (dialog) {
+    //     case 'export':
+    //         dialogNode = <ExportDialog onClose={() => setDialog(null)} />;
+    //         break;
+    //     case 'import':
+    //         dialogNode = <ImportDialog onClose={() => setDialog(null)} />;
+    //         break;
+    //     default:
+    //         dialogNode = null;
+    // }
 
     return (
         <React.Fragment>
@@ -152,14 +180,16 @@ const App = ({
                         </MenuItem>
                         <MenuItem
                             onClick={() => {
-                                // setMenuOpen(false)
+                                setDialog('export');
+                                setMenuOpen(false);
                             }}
                         >
                             Export Data
                         </MenuItem>
                         <MenuItem
                             onClick={() => {
-                                // setMenuOpen(false)
+                                setDialog('import');
+                                setMenuOpen(false);
                             }}
                         >
                             Import Data
@@ -201,6 +231,12 @@ const App = ({
                     </Button>
                 ) : null}
             </Container>
+            {/* {dialogNode} */}
+            <ExportDialog
+                open={dialog === 'export'}
+                client={client}
+                onClose={() => setDialog(null)}
+            />
         </React.Fragment>
     );
 };

@@ -13,10 +13,14 @@ export type OldNetwork<SyncStatus> = {
     setDirty: () => void,
 };
 
+type Export<Data> = { [colId: string]: { [nodeId: string]: Data } };
+
 export type Client<SyncStatus> = {
     sessionId: string,
     getStamp(): string,
     undo(): void,
+    fullExport<Data>(): Promise<Export<Data>>,
+    importDump<Data>(data: Export<Data>): Promise<void>,
     getCollection<T>(id: string): Collection<T>,
     onSyncStatus(fn: (SyncStatus) => void): void,
     getSyncStatus(): SyncStatus,
@@ -26,7 +30,11 @@ export type Client<SyncStatus> = {
 export type Collection<T> = {
     save: (id: string, value: T) => Promise<void>,
     clearAttribute: (id: string, path: Array<string | number>) => Promise<void>,
-    setAttribute: (id: string, path: Array<string | number>, value: any) => Promise<void>,
+    setAttribute: (
+        id: string,
+        path: Array<string | number>,
+        value: any,
+    ) => Promise<void>,
     genId: () => string,
     load: (id: string) => Promise<?T>,
     loadAll: () => Promise<{ [key: string]: T }>,
@@ -47,6 +55,7 @@ export type Persistence = {
         stamp: string,
         apply: (Data, Delta) => Data,
     ): Promise<Data>,
+    fullExport<Data>(): Promise<Export<Data>>,
     load<T>(colid: string, id: string): Promise<?T>,
     loadAll<T>(colid: string): Promise<{ [key: string]: T }>,
     tabIsolated: boolean,
@@ -105,7 +114,10 @@ export type FullPersistence = {
         merged: { blob: Blob<Data>, stamp: ?string },
         changedIds: { [colid: string]: Array<string> },
     }>,
-    updateMeta: (serverEtag: ?string, dirtyStampToClear: ?string) => Promise<void>,
+    updateMeta: (
+        serverEtag: ?string,
+        dirtyStampToClear: ?string,
+    ) => Promise<void>,
 };
 
 export type DeltaPersistence = {
@@ -162,7 +174,10 @@ export type BlobNetworkCreator<Data, SyncStatus> = (
         etag: string,
         (PeerChange) => mixed,
     ) => Promise<?{ blob: Blob<Data>, stamp: ?string }>,
-    updateMeta: (newServerEtag: ?string, dirtyFlagToClear: ?string) => Promise<void>,
+    updateMeta: (
+        newServerEtag: ?string,
+        dirtyFlagToClear: ?string,
+    ) => Promise<void>,
 ) => Network<SyncStatus>;
 
 export type NetworkCreator<Delta, Data, SyncStatus> = (

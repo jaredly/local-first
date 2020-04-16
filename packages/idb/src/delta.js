@@ -130,6 +130,18 @@ const makePersistence = (
             items.forEach(item => (res[item.id] = item.value));
             return res;
         },
+        async fullExport<Data>(): Promise<{
+            [colid: string]: { [key: string]: Data },
+        }> {
+            const dump = {};
+            await Promise.all(
+                collections.map(async colid => {
+                    // const items = await (await db).getAll(colid + ':nodes');
+                    dump[colid] = await this.loadAll(colid);
+                }),
+            );
+            return dump;
+        },
         async applyDeltas<Delta, Data>(
             collection: string,
             deltas: Array<{ node: string, delta: Delta, stamp: string }>,

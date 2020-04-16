@@ -204,7 +204,7 @@ function createClient<Delta, Data, SyncStatus>(
     const state = initialState(persistence.collections);
     const undoManager = createUndoManager();
 
-    console.log();
+    // console.log();
 
     const innerNetwork = createNetwork(
         clock.now.node,
@@ -237,6 +237,10 @@ function createClient<Delta, Data, SyncStatus>(
         getStamp: clock.get,
         setDirty: network.setDirty,
         undo: undoManager.undo,
+        fullExport: () => persistence.fullExport(),
+        importDump: async dump => {
+            //
+        },
         getCollection<T>(colid: string) {
             return getCollection(
                 colid,
