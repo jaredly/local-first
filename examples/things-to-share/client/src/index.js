@@ -32,8 +32,8 @@ const darkTheme = createMuiTheme({
 
 const node = document.createElement('div');
 document.body.appendChild(node);
-// const host = 'localhost:9090';
-const host = 'things-to-share.glitch.me';
+const host = 'localhost:9090';
+// const host = 'things-to-share.glitch.me';
 render(
     <ThemeProvider theme={darkTheme}>
         <CssBaseline />

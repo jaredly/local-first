@@ -158,7 +158,7 @@ const makePersistence = (
                 deltas,
                 serverCursor,
                 apply,
-                false,
+                serverCursor == null,
             );
         },
     };

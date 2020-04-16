@@ -240,15 +240,15 @@ function createClient<Delta, Data, SyncStatus>(
         // TODO export should include a stamp
         fullExport: () => persistence.fullExport(),
         async importDump<Data>(dump) {
-            const fullStamp = clock.get();
             await Promise.all(
                 Object.keys(dump).map(async key => {
                     const deltas = Object.keys(dump[key]).map(id => {
                         const node = dump[key][id];
+                        const inner = crdt.deltas.replace(node);
                         const delta = {
                             node: id,
-                            delta: crdt.deltas.replace(node),
-                            stamp: fullStamp,
+                            delta: inner,
+                            stamp: crdt.deltas.stamp(inner),
                         };
                         return delta;
                     });

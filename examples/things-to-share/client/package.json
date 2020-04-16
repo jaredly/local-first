@@ -19,7 +19,7 @@
         "typeface-roboto": "^0.0.75"
     },
     "scripts": {
-        "deploy": "parcel build index.html && cd dist && surge . value-sort.surge.sh"
+        "deploy": "parcel build index.html && cd dist && surge . things-to-share.surge.sh"
     },
     "browserslist": [
         "last 1 Chrome versions"

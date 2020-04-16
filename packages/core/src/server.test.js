@@ -1,4 +1,4 @@
-// @flow
+// @-flow
 
 import type { ClientMessage, ServerMessage } from './server';
 
@@ -7,6 +7,7 @@ import * as rich from '../../rich-text-crdt/index';
 import makePersistence from '../../idb/src/delta-mem';
 import * as client from './delta/create-client';
 import * as server from './server';
+import setupSqliteServerPersistence from '../../server-bundle/sqlite-persistence';
 import setupServerPersistence from './memory-persistence';
 import { PersistentClock, inMemoryClockPersist } from './persistent-clock';
 import { type CRDTImpl, getCollection } from './shared';
@@ -134,7 +135,7 @@ const someMessages = [
 const expectedValue = { yes: { one: 2, three: '4', five: { six: 8 } } };
 
 const createClient = (sessionId, collections, messages) => {
-    const persistence = makePersistence('yolo', collections);
+    const persistence = makePersistence(collections);
     const state = client.initialState(persistence.collections);
     const clock = new PersistentClock(inMemoryClockPersist());
     // client
@@ -179,9 +180,10 @@ const createClient = (sessionId, collections, messages) => {
 };
 
 const createServer = deltas => {
-    const state: ServerState<Delta, Data> = server.default<Delta, Data>(
+    const state: ServerState<Delta, Data> = server.default(
         serverCrdt,
-        setupServerPersistence<Delta, Data>(),
+        // setupServerPersistence<Delta, Data>(),
+        setupSqliteServerPersistence('.test-data'),
     );
     if (deltas) {
         Object.keys(deltas).forEach(collection => {
@@ -226,6 +228,15 @@ const createServer = deltas => {
         },
     };
 };
+
+const fs = require('fs');
+beforeAll(() => {
+    fs.mkdirSync('./.test-data');
+});
+afterAll(() => {
+    fs.unlinkSync('./.test-data/data.db');
+    fs.rmdirSync('./.test-data');
+});
 
 describe('client-server interaction', () => {
     it('Clean both - initial handshake', async () => {
