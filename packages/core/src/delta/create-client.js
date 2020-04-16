@@ -237,8 +237,29 @@ function createClient<Delta, Data, SyncStatus>(
         getStamp: clock.get,
         setDirty: network.setDirty,
         undo: undoManager.undo,
+        // TODO export should include a stamp
         fullExport: () => persistence.fullExport(),
-        importDump: async dump => {
+        async importDump<Data>(dump) {
+            const fullStamp = clock.get();
+            await Promise.all(
+                Object.keys(dump).map(async key => {
+                    const deltas = Object.keys(dump[key]).map(id => {
+                        const node = dump[key][id];
+                        const delta = {
+                            node: id,
+                            delta: crdt.deltas.replace(node),
+                            stamp: fullStamp,
+                        };
+                        return delta;
+                    });
+                    await persistence.applyDeltas(
+                        key,
+                        deltas,
+                        null,
+                        (data, delta) => crdt.deltas.apply(data, delta),
+                    );
+                }),
+            );
             //
         },
         getCollection<T>(colid: string) {

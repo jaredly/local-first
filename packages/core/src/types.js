@@ -126,7 +126,7 @@ export type DeltaPersistence = {
     applyDeltas<Delta, Data>(
         colid: string,
         deltas: Array<{ node: string, delta: Delta, stamp: string }>,
-        serverCursor: number,
+        serverCursor: ?CursorType,
         apply: (Data, Delta) => Data,
     ): Promise<{ [key: string]: Data }>,
     deltas<Delta>(

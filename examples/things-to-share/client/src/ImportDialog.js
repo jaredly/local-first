@@ -42,20 +42,50 @@ const ExportDialog = ({
     open: boolean,
 }) => {
     const styles = useStyles();
-    const [url, setUrl] = React.useState(null);
+    const [file, setFile] = React.useState(null);
     const [loading, setLoading] = React.useState(false);
     const id = React.useMemo(() => 'id-' + genId(), []);
 
     return (
         <Dialog open={open} aria-labelledby={id} onClose={onClose}>
-            <DialogTitle id={id}>Data Export</DialogTitle>
+            <DialogTitle id={id}>Data Import</DialogTitle>
             <Typography variant="body1" className={styles.text}>
-                If you want to move your data to another server, you can export
-                all data, download it as an archive, and then upload it once
-                you've logged into the new server. You can even do this multiple
-                times, and the exports will merge correctly.
+                Import the things
             </Typography>
-            {url ? (
+            <TextField
+                disabled={loading}
+                onChange={(evt) => {
+                    setLoading(true);
+                    if (evt.target.files.length > 0) {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                            try {
+                                const data = JSON.parse(
+                                    pako.inflate(evt.target.result, {
+                                        to: 'string',
+                                    }),
+                                );
+                                client.importDump(data).then(
+                                    () => {
+                                        onClose();
+                                    },
+                                    (err) => {
+                                        console.error(err);
+                                    },
+                                );
+                            } catch (err) {
+                                console.error(err);
+                            }
+                        };
+                        reader.readAsArrayBuffer(evt.target.files[0]);
+                        setFile(evt.target.files[0]);
+                    }
+                }}
+                id="standard-basic"
+                label="Standard"
+                type="file"
+            />
+            {/* {url ? (
                 <Button
                     variant="contained"
                     color="primary"
@@ -88,7 +118,7 @@ const ExportDialog = ({
                 >
                     {loading ? 'Processing...' : 'Export all data'}
                 </Button>
-            )}
+            )} */}
         </Dialog>
     );
 };

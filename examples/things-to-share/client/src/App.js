@@ -34,6 +34,7 @@ import type { Data } from './auth-api';
 
 import LinkItem from './LinkItem';
 import ExportDialog from './ExportDialog';
+import ImportDialog from './ImportDialog';
 
 const schemas = {
     tags: TagSchema,
@@ -234,6 +235,11 @@ const App = ({
             {/* {dialogNode} */}
             <ExportDialog
                 open={dialog === 'export'}
+                client={client}
+                onClose={() => setDialog(null)}
+            />
+            <ImportDialog
+                open={dialog === 'import'}
                 client={client}
                 onClose={() => setDialog(null)}
             />

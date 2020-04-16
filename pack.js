@@ -17,6 +17,13 @@ const pack = require('./packages/monorepo-pack');
 // });
 
 pack({
+    name: 'things-to-share',
+    entry: 'examples/things-to-share/server/glitch.js',
+    dest: 'public/things-to-share-server',
+    start: true,
+});
+
+pack({
     name: 'example',
     entry: 'examples/whiteboard/server/glitch.js',
     dest: 'public/whiteboard-server',
