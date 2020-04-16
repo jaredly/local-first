@@ -26,7 +26,9 @@ const useStyles = makeStyles((theme) => ({
         backgroundColor: theme.palette.primary.light,
         position: 'relative',
     },
-    inner: {},
+    inner: {
+        flex: 1,
+    },
     innerOpen: {
         padding: theme.spacing(2),
     },
@@ -34,11 +36,18 @@ const useStyles = makeStyles((theme) => ({
         padding: theme.spacing(2),
         cursor: 'pointer',
     },
-    completionBox: {
-        position: 'absolute',
-        top: 0,
-        right: 0,
+    titleRow: {
+        cursor: 'pointer',
+        paddingLeft: theme.spacing(2),
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
     },
+    // completionBox: {
+    //     position: 'absolute',
+    //     top: 0,
+    //     right: 0,
+    // },
     completionIcon: {
         fontSize: theme.spacing(4),
     },
@@ -66,13 +75,14 @@ const LinkItem = ({ link, linksCol }: { link: LinkT, linksCol: any }) => {
     const completionBox = (
         <IconButton
             className={styles.completionBox}
-            onClick={() =>
+            onClick={(evt) => {
+                evt.stopPropagation();
                 linksCol.setAttribute(
                     link.id,
                     ['completed'],
                     link.completed ? null : Date.now(),
-                )
-            }
+                );
+            }}
         >
             {link.completed ? (
                 <CheckBoxIcon className={styles.completionIcon} />
@@ -84,7 +94,7 @@ const LinkItem = ({ link, linksCol }: { link: LinkT, linksCol: any }) => {
 
     if (!link.fetchedContent) {
         return (
-            <Paper className={styles.container}>
+            <Paper className={styles.container + ' ' + styles.titleRow}>
                 <Link href={link.url} target="_blank" className={styles.inner}>
                     {linkText}
                 </Link>
@@ -102,18 +112,15 @@ const LinkItem = ({ link, linksCol }: { link: LinkT, linksCol: any }) => {
             className={styles.container}
         >
             <div ref={ref}>
-                <div
-                    className={styles.collapsed}
-                    onClick={() => setOpen(!open)}
-                >
-                    {linkText}
+                <div className={styles.titleRow} onClick={() => setOpen(!open)}>
+                    <div style={{ flex: 1 }}>{linkText}</div>
+                    {completionBox}
                 </div>
                 {open ? (
                     <div className={styles.innerOpen}>
                         <OpenGraph data={link.fetchedContent} url={link.url} />
                     </div>
                 ) : null}
-                {completionBox}
             </div>
         </AnimatedPaper>
     );

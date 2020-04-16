@@ -95,13 +95,11 @@ const VideoPreview = ({ styles, video, video_type, image }) => {
 const OpenGraph = ({
     data,
     url,
-    onClose,
     nested,
 }: {
     data: mixed,
     url: string,
-    nested: boolean,
-    onClose: () => void,
+    nested?: boolean,
 }) => {
     const styles = useStyles();
 
@@ -120,10 +118,7 @@ const OpenGraph = ({
 
     return (
         <Card className={nested ? styles.nestedRoot : styles.root}>
-            <CardContent
-                onClick={onClose}
-                className={onClose ? styles.closer : null}
-            >
+            <CardContent>
                 <Typography
                     style={{ whiteSpace: 'pre-wrap' }}
                     variant="h4"
