@@ -1,4 +1,6 @@
 [ignore]
+.*/bower\.json
+.*/config\.json
 
 [include]
 ../../../packages
