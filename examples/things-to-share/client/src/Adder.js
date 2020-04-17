@@ -59,8 +59,17 @@ const Adder = ({
     onAdd: (string, mixed) => void,
 }) => {
     const styles = useStyles();
-    const [open, setOpen] = React.useState(false);
 
+    const initalUrl = React.useMemo(() => {
+        const params = window.location.search
+            .slice(1)
+            .split('&')
+            .map((item) => item.split('='))
+            .reduce((col, [k, v]) => ((col[k] = v), col), {});
+        return params.url || null;
+    }, []);
+
+    const [open, setOpen] = React.useState(initalUrl != null);
     const [ref, { height }] = useMeasure();
     const props = useSpring({
         height,
@@ -118,6 +127,7 @@ const Adder = ({
                 </div>
                 {open ? (
                     <AdderBody
+                        initialUrl={initalUrl}
                         host={host}
                         onAdd={(link, data) => {
                             setOpen(false);
@@ -133,12 +143,14 @@ const Adder = ({
 const AdderBody = ({
     onAdd,
     host,
+    initialUrl,
 }: {
     host: string,
     onAdd: (string, mixed) => void,
+    initialUrl?: string,
 }) => {
     const styles = useStyles();
-    const [link, setLink] = React.useState('');
+    const [link, setLink] = React.useState(initialUrl || '');
     const [data, setData] = React.useState(null);
     // const [tags, setTags] = React.useState({});
     const [loading, setLoading] = React.useState(false);
