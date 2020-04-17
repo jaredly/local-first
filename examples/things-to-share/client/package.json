@@ -12,6 +12,7 @@
         "idb": "^5.0.1",
         "pako": "^1.0.11",
         "parse-color": "^1.0.0",
+        "querystring": "^0.2.0",
         "react": "^16.13.1",
         "react-dom": "^16.13.1",
         "react-spring": "^8.0.27",

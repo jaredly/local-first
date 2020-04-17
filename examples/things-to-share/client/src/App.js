@@ -1,5 +1,6 @@
 // @flow
 import * as React from 'react';
+import querystring from 'querystring';
 
 import Container from '@material-ui/core/Container';
 import TextField from '@material-ui/core/TextField';
@@ -86,16 +87,17 @@ const App = ({
     }, [auth && auth.token]);
 
     const [addingUrl, setAddingUrl] = React.useState(() => {
-        const params = window.location.search
-            .slice(1)
-            .split('&')
-            .map((item) => item.split('='))
-            .reduce(
-                (col, [k, v]) => (
-                    (col[k] = v ? decodeURIComponent(v) : v), col
-                ),
-                {},
-            );
+        const params = querystring.parse(window.location.search.slice(1));
+        // const params = window.location.search
+        //     .slice(1)
+        //     .split('&')
+        //     .map((item) => item.split('='))
+        //     .reduce(
+        //         (col, [k, v]) => (
+        //             (col[k] = v ? decodeURIComponent(v) : v), col
+        //         ),
+        //         {},
+        //     );
         if (params.url) {
             return params.url;
         }
@@ -120,29 +122,33 @@ const App = ({
 
     if (addingUrl) {
         return (
-            <Adder
-                host={host}
-                initialUrl={addingUrl}
-                onCancel={() => {
-                    window.history.replaceState(null, '', '/');
-                    setAddingUrl(null);
-                }}
-                onAdd={(url, fetchedContent) => {
-                    const id = client.getStamp();
-                    linksCol.save(id, {
-                        id,
-                        url,
-                        fetchedContent,
-                        added: Date.now(),
-                        tags: {},
-                        description: null,
-                        completed: null,
-                    });
-                    // Reset the URL
-                    window.history.replaceState(null, '', '/');
-                    setAddingUrl(null);
-                }}
-            />
+            <div>
+                <Adder
+                    host={host}
+                    initialUrl={addingUrl}
+                    onCancel={() => {
+                        window.history.replaceState(null, '', '/');
+                        setAddingUrl(null);
+                    }}
+                    onAdd={(url, fetchedContent) => {
+                        const id = client.getStamp();
+                        linksCol.save(id, {
+                            id,
+                            url,
+                            fetchedContent,
+                            added: Date.now(),
+                            tags: {},
+                            description: null,
+                            completed: null,
+                        });
+                        // Reset the URL
+                        window.history.replaceState(null, '', '/');
+                        setAddingUrl(null);
+                    }}
+                />
+                {window.location.href}
+                {window.location.search}
+            </div>
         );
     }
 
