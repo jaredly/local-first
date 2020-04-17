@@ -1,21 +1,7 @@
 // @flow
 import type { Content, CRDT, Node, Delta, Span } from './types';
-import {
-    toKey,
-    fromKey,
-    keyCmp,
-    contentLength,
-    contentChars,
-    keyEq,
-} from './utils';
-import {
-    rootParent,
-    rootSite,
-    walkFrom,
-    lastChild,
-    lastId,
-    nodeForKey,
-} from './loc';
+import { toKey, fromKey, keyCmp, contentLength, contentChars, keyEq } from './utils';
+import { rootParent, rootSite, walkFrom, lastChild, lastId, nodeForKey } from './loc';
 import deepEqual from 'fast-deep-equal';
 
 const insertionPos = (ids, id) => {
@@ -173,9 +159,7 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
     if (afterKey === rootParent) {
         const idx = insertionPos(state.roots, id);
         const currentFormats =
-            idx === 0
-                ? {}
-                : state.map[lastChild(state, state.roots[idx - 1])].formats;
+            idx === 0 ? {} : state.map[lastChild(state, state.roots[idx - 1])].formats;
         const key = toKey(id);
         state.roots = insertId(state.roots, key, idx);
         const node = mkNode(id, afterKey, content, currentFormats);
@@ -194,8 +178,7 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
         parent.id[1] === id[1] &&
         parent.id[0] + parent.content.text.length === id[0] &&
         !parent.deleted &&
-        (parent.children.length === 0 ||
-            state.map[parent.children[0]].id[0] < id[0])
+        (parent.children.length === 0 || state.map[parent.children[0]].id[0] < id[0])
     ) {
         const size = content.text.length;
         state.map[parentKey] = {
@@ -217,9 +200,7 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
 
     const idx = insertionPos(parent.children, id);
     const currentFormats =
-        idx === 0
-            ? parent.formats
-            : state.map[lastChild(state, parent.children[idx - 1])].formats;
+        idx === 0 ? parent.formats : state.map[lastChild(state, parent.children[idx - 1])].formats;
     const node = mkNode(id, parentKey, content, currentFormats);
     const size = contentChars(content);
     const key = toKey(id);
@@ -253,12 +234,7 @@ const insertIdx = (state: CRDT, formats: Array<string>, stamp: string) => {
     return formats.length;
 };
 
-const addFormat = (
-    state: CRDT,
-    formats: ?Array<string>,
-    stamp: string,
-    id: string,
-) => {
+const addFormat = (state: CRDT, formats: ?Array<string>, stamp: string, id: string) => {
     if (!formats) {
         return [id];
     }
@@ -304,7 +280,11 @@ const deleteSpan = (state: CRDT, span: Span) => {
         ensureNodeAt(state, [span.id + span.length, span.site]);
     }
     if (!state.map[key].deleted) {
-        const deletedLength = state.map[key].content.text.length;
+        const { content } = state.map[key];
+        if (content.type !== 'text') {
+            throw new Error('Somehow types got changed just now');
+        }
+        const deletedLength = content.text.length;
         // text.length > span.length ? span.length : text.length;
         state.map[key] = {
             ...state.map[key],
@@ -348,10 +328,7 @@ const maybeMergeUp = (state, key) => {
         return;
     }
     const parentText = parent.content.text;
-    if (
-        parent.id[1] !== node.id[1] ||
-        node.id[0] !== parent.id[0] + parentText.length
-    ) {
+    if (parent.id[1] !== node.id[1] || node.id[0] !== parent.id[0] + parentText.length) {
         return;
     }
     // Ok we're merging

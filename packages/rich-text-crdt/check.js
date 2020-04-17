@@ -13,9 +13,7 @@ const checkSize = (state, id) => {
         size += state.map[child].size;
     });
     if (size !== node.size) {
-        throw new Error(
-            `Wrong cached size ${node.size} - should be ${size}; for ${id}`,
-        );
+        throw new Error(`Wrong cached size ${node.size} - should be ${size}; for ${id}`);
     }
 };
 
@@ -47,7 +45,9 @@ export const checkFormats = (state: CRDT) => {
                 return;
             }
             const idx = f.findIndex(
-                item => state.map[item].content.stamp === content.stamp,
+                item =>
+                    state.map[item].content.type !== 'text' &&
+                    state.map[item].content.stamp === content.stamp,
             );
             if (idx !== -1) {
                 f.splice(idx, 1);
@@ -58,9 +58,7 @@ export const checkFormats = (state: CRDT) => {
         }
         if (!deepEqual(format, node.formats)) {
             throw new Error(
-                `Formats mismatch for ${toKey(
-                    node.id,
-                )}: expected: ${JSON.stringify(
+                `Formats mismatch for ${toKey(node.id)}: expected: ${JSON.stringify(
                     format,
                 )}; actual: ${JSON.stringify(node.formats)}`,
             );

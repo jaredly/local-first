@@ -5,11 +5,7 @@ import type { HLC } from '../../hybrid-logical-clock';
 import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
 import { type CursorType } from '../../../packages/core/src/types';
 import deepEqual from 'fast-deep-equal';
-import type {
-    Persistence,
-    FullPersistence,
-    DeltaPersistence,
-} from '../../core/src/types';
+import type { Persistence, FullPersistence, DeltaPersistence, Export } from '../../core/src/types';
 import type { DB, Transaction } from './types';
 
 export const applyDeltas = async function<Delta, Data>(
@@ -54,10 +50,7 @@ export const applyDeltas = async function<Delta, Data>(
     return map;
 };
 
-const makePersistence = (
-    name: string,
-    collections: Array<string>,
-): DeltaPersistence => {
+const makePersistence = (name: string, collections: Array<string>): DeltaPersistence => {
     // console.log('Persistence with name', name);
     const db: Promise<DB> = openDB(name, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
@@ -130,9 +123,7 @@ const makePersistence = (
             items.forEach(item => (res[item.id] = item.value));
             return res;
         },
-        async fullExport<Data>(): Promise<{
-            [colid: string]: { [key: string]: Data },
-        }> {
+        async fullExport<Data>(): Promise<Export<Data>> {
             const dump = {};
             await Promise.all(
                 collections.map(async colid => {
@@ -152,14 +143,7 @@ const makePersistence = (
             if (!collections.includes(collection)) {
                 throw new Error('Unknown collection ' + collection);
             }
-            return applyDeltas(
-                db,
-                collection,
-                deltas,
-                serverCursor,
-                apply,
-                serverCursor == null,
-            );
+            return applyDeltas(db, collection, deltas, serverCursor, apply, serverCursor == null);
         },
     };
 };

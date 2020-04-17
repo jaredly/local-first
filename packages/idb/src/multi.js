@@ -53,7 +53,7 @@ import * as hlc from '../../hybrid-logical-clock';
 import type { HLC } from '../../hybrid-logical-clock';
 import type { Delta, CRDT as Data } from '../../nested-object-crdt';
 import deepEqual from 'fast-deep-equal';
-import type { MultiPersistence, CursorType } from '../../core/src/types.js';
+import type { MultiPersistence, CursorType, Export } from '../../core/src/types.js';
 import type { DB, Transaction } from './types';
 
 const colName = name => name + ':nodes';
@@ -85,7 +85,7 @@ export const applyDeltas = async function<Delta, Data>(
         stores.push(metaName(collection));
     }
     const tx = (await db).transaction(stores, 'readwrite');
-    if (blobServerIds != null) {
+    if (blobServerIds != null || serverCursor == null) {
         const deltaStore = tx.objectStore(deltasName(collection));
         console.log(`PUTTING DELTAS`);
         deltas.forEach(obj => deltaStore.put(obj));
@@ -120,22 +120,13 @@ export const applyDeltas = async function<Delta, Data>(
                 maxStamp = deltas[i].stamp;
             }
         }
-        console.log(
-            'Setting dirty as',
-            maxStamp,
-            'for blob servers',
-            blobServerIds,
-        );
+        console.log('Setting dirty as', maxStamp, 'for blob servers', blobServerIds);
 
         await Promise.all(
             blobServerIds.map(async sid => {
-                const dirty = await tx
-                    .objectStore('blob-meta')
-                    .get(sid + '-dirty');
+                const dirty = await tx.objectStore('blob-meta').get(sid + '-dirty');
                 if (!dirty || dirty < maxStamp) {
-                    await tx
-                        .objectStore('blob-meta')
-                        .put(maxStamp, sid + '-dirty');
+                    await tx.objectStore('blob-meta').put(maxStamp, sid + '-dirty');
                 }
             }),
         );
@@ -144,13 +135,7 @@ export const applyDeltas = async function<Delta, Data>(
     return map;
 };
 
-const makeDb = async (
-    name,
-    collections,
-    deltaServer,
-    deltaCreate,
-    blobServerIds,
-): Promise<DB> => {
+const makeDb = async (name, collections, deltaServer, deltaCreate, blobServerIds): Promise<DB> => {
     const db: DB = await openDB(name, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
             console.log('Setting up database');
@@ -201,9 +186,7 @@ const makeDb = async (
                     [colName(collection), deltasName(collection)],
                     'readwrite',
                 );
-                const items = await tx
-                    .objectStore(colName(collection))
-                    .getAll();
+                const items = await tx.objectStore(colName(collection)).getAll();
                 const deltas = tx.objectStore(deltasName(collection));
                 for (const item of items) {
                     const delta = deltaCreate(item.value, item.id);
@@ -233,22 +216,23 @@ const makePersistence = (
     collections: Array<string>,
     deltaServer: boolean,
     blobServerIds: Array<string>,
-    deltaCreate: (
-        data: Data,
-        id: string,
-    ) => { node: string, delta: Delta, stamp: string },
+    deltaCreate: (data: Data, id: string) => { node: string, delta: Delta, stamp: string },
 ): MultiPersistence => {
-    const db: Promise<DB> = makeDb(
-        name,
-        collections,
-        deltaServer,
-        deltaCreate,
-        blobServerIds,
-    );
+    const db: Promise<DB> = makeDb(name, collections, deltaServer, deltaCreate, blobServerIds);
 
     return {
         collections,
         tabIsolated: false,
+        async fullExport<Data>(): Promise<Export<Data>> {
+            const dump = {};
+            await Promise.all(
+                collections.map(async colid => {
+                    // const items = await (await db).getAll(colid + ':nodes');
+                    dump[colid] = await this.loadAll(colid);
+                }),
+            );
+            return dump;
+        },
         async deltas<Delta>(
             collection: string,
         ): Promise<Array<{ node: string, delta: Delta, stamp: string }>> {
@@ -293,21 +277,14 @@ const makePersistence = (
                 throw new Error('Unknown collection ' + colid);
             }
             if (!deltaServer) {
-                const tx = (await db).transaction(
-                    [colName(colid), 'blob-meta'],
-                    'readwrite',
-                );
+                const tx = (await db).transaction([colName(colid), 'blob-meta'], 'readwrite');
                 let data = await tx.objectStore(colName(colid)).get(id);
                 const value = apply(data ? data.value : null, delta);
 
                 blobServerIds.forEach(async serverId => {
-                    const dirty = await tx
-                        .objectStore('blob-meta')
-                        .get(serverId + '-dirty');
+                    const dirty = await tx.objectStore('blob-meta').get(serverId + '-dirty');
                     if (!dirty || dirty < stamp) {
-                        await tx
-                            .objectStore('meta')
-                            .put(stamp, serverId + '-dirty');
+                        await tx.objectStore('meta').put(stamp, serverId + '-dirty');
                     }
                 });
 
@@ -349,21 +326,10 @@ const makePersistence = (
             if (!collections.includes(collection)) {
                 throw new Error('Unknown collection ' + collection);
             }
-            return applyDeltas(
-                db,
-                collection,
-                deltas,
-                serverCursor,
-                apply,
-                blobServerIds,
-            );
+            return applyDeltas(db, collection, deltas, serverCursor, apply, blobServerIds);
         },
 
-        async updateMeta(
-            serverId: string,
-            serverEtag: ?string,
-            dirtyStampToClear: ?string,
-        ) {
+        async updateMeta(serverId: string, serverEtag: ?string, dirtyStampToClear: ?string) {
             const tx = (await db).transaction('blob-meta', 'readwrite');
             if (serverEtag != null) {
                 tx.store.put(serverEtag, serverId + '-serverEtag');
@@ -380,21 +346,15 @@ const makePersistence = (
                 collections.map(colName).concat('blob-meta'),
                 'readonly',
             );
-            const dirty = await tx
-                .objectStore('blob-meta')
-                .get(serverId + '-dirty');
-            const serverEtag = await tx
-                .objectStore('blob-meta')
-                .get(serverId + '-serverEtag');
+            const dirty = await tx.objectStore('blob-meta').get(serverId + '-dirty');
+            const serverEtag = await tx.objectStore('blob-meta').get(serverId + '-serverEtag');
             if (!dirty) {
                 return { local: null, serverEtag };
             }
             const blob = {};
             await Promise.all(
                 collections.map(async colid => {
-                    blob[colid] = itemMap(
-                        await tx.objectStore(colName(colid)).getAll(),
-                    );
+                    blob[colid] = itemMap(await tx.objectStore(colName(colid)).getAll());
                 }),
             );
             return { local: { blob, stamp: dirty }, serverEtag };
@@ -412,10 +372,7 @@ const makePersistence = (
                 const tx = (await db).transaction(
                     []
                         .concat(
-                            ...Object.keys(datas).map(name => [
-                                deltasName(name),
-                                colName(name),
-                            ]),
+                            ...Object.keys(datas).map(name => [deltasName(name), colName(name)]),
                         )
                         .concat(['blob-meta']),
                     'readwrite',
@@ -468,12 +425,8 @@ const makePersistence = (
                     }),
                 );
                 console.log('After merge, any changed?', anyChanged);
-                await tx
-                    .objectStore('blob-meta')
-                    .put(etag, serverId + '-serverEtag');
-                const dirty = await tx
-                    .objectStore('blob-meta')
-                    .get(serverId + '-dirty');
+                await tx.objectStore('blob-meta').put(etag, serverId + '-serverEtag');
+                const dirty = await tx.objectStore('blob-meta').get(serverId + '-dirty');
                 await tx.done;
                 if (!anyChanged) {
                     return null;
@@ -497,9 +450,7 @@ const makePersistence = (
                     blobServerIds
                         .filter(id => id !== serverId)
                         .map(async sid => {
-                            await tx
-                                .objectStore('blob-meta')
-                                .put(newDirtyStamp, sid + '-dirty');
+                            await tx.objectStore('blob-meta').put(newDirtyStamp, sid + '-dirty');
                         }),
                 );
             }
@@ -531,12 +482,8 @@ const makePersistence = (
                 }),
             );
             console.log('After merge, any changed?', anyChanged);
-            await tx
-                .objectStore('blob-meta')
-                .put(etag, serverId + '-serverEtag');
-            const dirty = await tx
-                .objectStore('blob-meta')
-                .get(serverId + '-dirty');
+            await tx.objectStore('blob-meta').put(etag, serverId + '-serverEtag');
+            const dirty = await tx.objectStore('blob-meta').get(serverId + '-dirty');
             await tx.done;
             if (!anyChanged) {
                 return null;

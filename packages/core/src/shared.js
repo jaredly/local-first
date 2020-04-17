@@ -1,6 +1,6 @@
 // @flow
 
-import type { Collection, PeerChange } from './types';
+import type { Collection, PeerChange, Export } from './types';
 import type {
     Persistence,
     OldNetwork,
@@ -19,6 +19,17 @@ import {
 import type { HLC } from '../../hybrid-logical-clock';
 import * as hlc from '../../hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';
+
+export const fullExport = async function<Data>(persistence: Persistence): Export<Data> {
+    const dump = {};
+    await Promise.all(
+        persistence.collections.map(async colid => {
+            // const items = await (await db).getAll(colid + ':nodes');
+            dump[colid] = await persistence.loadAll(colid);
+        }),
+    );
+    return dump;
+};
 
 export type CollectionState<Data, T> = {
     cache: { [key: string]: Data },
@@ -57,9 +68,9 @@ export type CRDTImpl<Delta, Data> = {
 };
 
 const send = <Data, T>(state: CollectionState<Data, T>, id: string, value: ?T) => {
-    state.listeners.forEach((fn) => fn([{ id, value }]));
+    state.listeners.forEach(fn => fn([{ id, value }]));
     if (state.itemListeners[id]) {
-        state.itemListeners[id].forEach((fn) => fn(value));
+        state.itemListeners[id].forEach(fn => fn(value));
     }
 };
 
@@ -72,7 +83,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
     state: CollectionState<Data, T>,
     getStamp: () => string,
     setDirty: () => void,
-    sendCrossTabChanges: (PeerChange) => mixed,
+    sendCrossTabChanges: PeerChange => mixed,
     schema: Schema,
     undoManager?: UndoManager,
     // undoManager or some such
@@ -212,7 +223,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         async loadAll() {
             const all = await persistence.loadAll(colid);
             const res = {};
-            Object.keys(all).forEach((id) => {
+            Object.keys(all).forEach(id => {
                 state.cache[id] = all[id];
                 res[id] = crdt.value(all[id]);
             });
@@ -236,7 +247,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         onChanges(fn: (Array<{ id: string, value: ?T }>) => void) {
             state.listeners.push(fn);
             return () => {
-                state.listeners = state.listeners.filter((f) => f !== fn);
+                state.listeners = state.listeners.filter(f => f !== fn);
             };
         },
 
@@ -250,7 +261,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                 if (!state.itemListeners[id]) {
                     return;
                 }
-                state.itemListeners[id] = state.itemListeners[id].filter((f) => f !== fn);
+                state.itemListeners[id] = state.itemListeners[id].filter(f => f !== fn);
             };
         },
     };
@@ -265,7 +276,7 @@ export const onCrossTabChanges = async function<Delta, Data, T>(
 ) {
     const values = {};
     await Promise.all(
-        nodes.map(async (id) => {
+        nodes.map(async id => {
             const v = await persistence.load(colid, id);
             if (v) {
                 state.cache[id] = v;
@@ -275,10 +286,10 @@ export const onCrossTabChanges = async function<Delta, Data, T>(
             }
         }),
     );
-    state.listeners.forEach((fn) => fn(nodes.map((id) => ({ id, value: values[id] }))));
-    nodes.forEach((id) => {
+    state.listeners.forEach(fn => fn(nodes.map(id => ({ id, value: values[id] }))));
+    nodes.forEach(id => {
         if (state.itemListeners[id]) {
-            state.itemListeners[id].forEach((fn) => fn(values[id]));
+            state.itemListeners[id].forEach(fn => fn(values[id]));
         }
     });
 };

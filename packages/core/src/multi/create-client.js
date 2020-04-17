@@ -8,6 +8,7 @@ import type {
     NetworkCreator,
     BlobNetworkCreator,
     PersistentClock,
+    Export,
 } from '../types';
 import { peerTabAwareNetworks } from '../peer-tabs';
 import type { HLC } from '../../../hybrid-logical-clock';
@@ -60,30 +61,27 @@ export const getMessages = async function<Delta, Data>(
 ): Promise<Array<ClientMessage<Delta, Data>>> {
     console.log('getting messages');
     const items: Array<?ClientMessage<Delta, Data>> = await Promise.all(
-        persistence.collections.map(
-            async (
-                collection: string,
-            ): Promise<?ClientMessage<Delta, Data>> => {
-                const deltas = await persistence.deltas(collection);
-                const serverCursor = await persistence.getServerCursor(
+        persistence.collections.map(async (collection: string): Promise<?ClientMessage<
+            Delta,
+            Data,
+        >> => {
+            const deltas = await persistence.deltas(collection);
+            const serverCursor = await persistence.getServerCursor(collection);
+            if (deltas.length || serverCursor == null || reconnected) {
+                console.log('messages yeah', serverCursor);
+                return {
+                    type: 'sync',
                     collection,
-                );
-                if (deltas.length || serverCursor == null || reconnected) {
-                    console.log('messages yeah', serverCursor);
-                    return {
-                        type: 'sync',
-                        collection,
-                        serverCursor,
-                        deltas: deltas.map(({ node, delta }) => ({
-                            node,
-                            delta,
-                        })),
-                    };
-                } else {
-                    console.log('noe messages', deltas, serverCursor);
-                }
-            },
-        ),
+                    serverCursor,
+                    deltas: deltas.map(({ node, delta }) => ({
+                        node,
+                        delta,
+                    })),
+                };
+            } else {
+                console.log('noe messages', deltas, serverCursor);
+            }
+        }),
     );
     return items.filter(Boolean);
 };
@@ -112,12 +110,7 @@ export const handleMessages = async function<Delta, Data>(
                 }));
 
                 const changedIds = Object.keys(changed);
-                console.log(
-                    'applying deltas',
-                    msg.serverCursor,
-                    msg.deltas.length,
-                    msg.deltas,
-                );
+                console.log('applying deltas', msg.serverCursor, msg.deltas.length, msg.deltas);
                 if (!msg.serverCursor && !msg.deltas.length) {
                     return;
                 }
@@ -144,17 +137,12 @@ export const handleMessages = async function<Delta, Data>(
                         state[msg.collection].cache[id] = data[id];
                     }
                     if (col.itemListeners[id]) {
-                        col.itemListeners[id].forEach(fn =>
-                            fn(crdt.value(data[id])),
-                        );
+                        col.itemListeners[id].forEach(fn => fn(crdt.value(data[id])));
                     }
                 });
 
                 if (changedIds.length) {
-                    console.log(
-                        'Broadcasting to client-level listeners',
-                        changedIds,
-                    );
+                    console.log('Broadcasting to client-level listeners', changedIds);
                     sendCrossTabChanges({
                         col: msg.collection,
                         nodes: changedIds,
@@ -198,13 +186,7 @@ function createClient<Delta, Data, SyncStatus>(
     const allDirty = [];
 
     const handlePeerChange = (msg: PeerChange) => {
-        return onCrossTabChanges(
-            crdt,
-            persistence,
-            state[msg.col],
-            msg.col,
-            msg.nodes,
-        );
+        return onCrossTabChanges(crdt, persistence, state[msg.col], msg.col, msg.nodes);
     };
 
     const allNetworks: { [key: string]: Network<SyncStatus> } = {};
@@ -218,14 +200,7 @@ function createClient<Delta, Data, SyncStatus>(
             fresh => getMessages(persistence, fresh),
             (messages, sendCrossTabChanges) =>
                 // $FlowFixMe
-                handleMessages(
-                    crdt,
-                    persistence,
-                    messages,
-                    state,
-                    clock.recv,
-                    sendCrossTabChanges,
-                ),
+                handleMessages(crdt, persistence, messages, state, clock.recv, sendCrossTabChanges),
         );
     }
 
@@ -249,17 +224,10 @@ function createClient<Delta, Data, SyncStatus>(
                     return null;
                 }
                 const { merged, changedIds } = result;
-                updateCacheAndNotify(
-                    state,
-                    crdt,
-                    changedIds,
-                    merged.blob,
-                    sendCrossTabChanges,
-                );
+                updateCacheAndNotify(state, crdt, changedIds, merged.blob, sendCrossTabChanges);
                 return merged;
             },
-            (etag, dirtyFlag) =>
-                persistence.updateMeta(serverId, etag, dirtyFlag),
+            (etag, dirtyFlag) => persistence.updateMeta(serverId, etag, dirtyFlag),
         );
     });
 
@@ -272,6 +240,29 @@ function createClient<Delta, Data, SyncStatus>(
         getStamp: clock.get,
         setDirty: network.setDirty,
         undo: undoManager.undo,
+        fullExport<Data>(): Promise<Export<Data>> {
+            return persistence.fullExport();
+        },
+        async importDump<Data>(dump: Export<Data>) {
+            await Promise.all(
+                Object.keys(dump).map(async key => {
+                    const deltas = Object.keys(dump[key]).map(id => {
+                        const node = dump[key][id];
+                        const inner = crdt.deltas.replace(node);
+                        const delta = {
+                            node: id,
+                            delta: inner,
+                            stamp: crdt.deltas.stamp(inner),
+                        };
+                        return delta;
+                    });
+                    await persistence.applyDeltas(key, deltas, null, (data, delta) =>
+                        crdt.deltas.apply(data, delta),
+                    );
+                }),
+            );
+            //
+        },
         getCollection<T>(colid: string) {
             return getCollection(
                 colid,

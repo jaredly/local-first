@@ -92,14 +92,6 @@ export const SortSchema = {
                 type: 'object',
                 attributes: {
                     pile: 'number',
-                    // jitter: {
-                    //     type: 'object',
-                    //     attributes: {
-                    //         x: 'number',
-                    //         y: 'number',
-                    //         tilt: 'number',
-                    //     },
-                    // },
                     placementTime: 'number',
                     sort: { type: 'optional', value: 'any' },
                 },

@@ -4,7 +4,7 @@ import * as hlc from '../../hybrid-logical-clock';
 import type { HLC } from '../../hybrid-logical-clock';
 import type { Delta, CRDT as Data } from '../../../packages/nested-object-crdt';
 import deepEqual from '@birchill/json-equalish';
-import type { FullPersistence } from '../../core/src/types';
+import type { FullPersistence, Export } from '../../core/src/types';
 import type { DB, Transaction } from './types';
 
 // export const
@@ -57,11 +57,7 @@ export const makePersistence = function(
                 if (current === dirtyStampToClear) {
                     tx.store.put(null, 'dirty');
                 } else {
-                    console.log(
-                        'not clearing dirty',
-                        current,
-                        dirtyStampToClear,
-                    );
+                    console.log('not clearing dirty', current, dirtyStampToClear);
                 }
             }
         },
@@ -75,9 +71,7 @@ export const makePersistence = function(
             const blob = {};
             await Promise.all(
                 collections.map(async colid => {
-                    blob[colid] = itemMap(
-                        await tx.objectStore(colName(colid)).getAll(),
-                    );
+                    blob[colid] = itemMap(await tx.objectStore(colName(colid)).getAll());
                 }),
             );
             return { local: { blob, stamp: dirty }, serverEtag };
@@ -139,10 +133,7 @@ export const makePersistence = function(
             stamp: string,
             apply: (?Data, Delta) => Data,
         ) {
-            const tx = (await db).transaction(
-                [colName(collection), 'meta'],
-                'readwrite',
-            );
+            const tx = (await db).transaction([colName(collection), 'meta'], 'readwrite');
             let data = await tx.objectStore(colName(collection)).get(id);
             const value = apply(data ? data.value : null, delta);
 
@@ -153,6 +144,16 @@ export const makePersistence = function(
 
             await tx.objectStore(colName(collection)).put({ id, value });
             return value;
+        },
+        async fullExport<Data>(): Promise<Export<Data>> {
+            const dump = {};
+            await Promise.all(
+                collections.map(async colid => {
+                    // const items = await (await db).getAll(colid + ':nodes');
+                    dump[colid] = await this.loadAll(colid);
+                }),
+            );
+            return dump;
         },
     };
 };

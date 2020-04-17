@@ -5,11 +5,7 @@ import type { HLC } from '../../hybrid-logical-clock/src';
 import type { Delta, CRDT as Data } from '../../nested-object-crdt/src';
 import { type CursorType } from '../../core/src/types';
 import deepEqual from 'fast-deep-equal';
-import type {
-    Persistence,
-    FullPersistence,
-    DeltaPersistence,
-} from '../../core/src/types';
+import type { Persistence, FullPersistence, DeltaPersistence, Export } from '../../core/src/types';
 
 export const applyDeltas = function<Delta, Data>(
     db: FakeDb,
@@ -42,9 +38,7 @@ export const applyDeltas = function<Delta, Data>(
         map[node] = apply(map[node], delta);
     });
     // console.log('idb changeMany processed', ids, map, serverCursor);
-    ids.forEach(id =>
-        map[id] ? db.put(collection + ':nodes', { id, value: map[id] }) : null,
-    );
+    ids.forEach(id => (map[id] ? db.put(collection + ':nodes', { id, value: map[id] }) : null));
     if (serverCursor != null) {
         db.put(collection + ':meta', serverCursor, 'cursor');
     }
@@ -65,9 +59,7 @@ class FakeDb {
         }
     }
     getAll<T>(colid: string): Array<T> {
-        return Object.keys(this.collections[colid]).map(
-            key => this.collections[colid][key],
-        );
+        return Object.keys(this.collections[colid]).map(key => this.collections[colid][key]);
     }
     put<T>(colid: string, object: T, key?: string) {
         if (key == null) {
@@ -138,14 +130,7 @@ const makePersistence = (collections: Array<string>): DeltaPersistence => {
             if (!collections.includes(colid)) {
                 throw new Error('Unknown collection ' + colid);
             }
-            const map = applyDeltas(
-                db,
-                colid,
-                [{ node: id, delta, stamp }],
-                null,
-                apply,
-                true,
-            );
+            const map = applyDeltas(db, colid, [{ node: id, delta, stamp }], null, apply, true);
             return map[id];
         },
 
@@ -159,6 +144,16 @@ const makePersistence = (collections: Array<string>): DeltaPersistence => {
             items.forEach(item => (res[item.id] = item.value));
             return res;
         },
+        async fullExport<Data>(): Promise<Export<Data>> {
+            const dump = {};
+            await Promise.all(
+                collections.map(async colid => {
+                    // const items = await (await db).getAll(colid + ':nodes');
+                    dump[colid] = await this.loadAll(colid);
+                }),
+            );
+            return dump;
+        },
         async applyDeltas<Delta, Data>(
             collection: string,
             deltas: Array<{ node: string, delta: Delta, stamp: string }>,
@@ -169,14 +164,7 @@ const makePersistence = (collections: Array<string>): DeltaPersistence => {
             if (!collections.includes(collection)) {
                 throw new Error('Unknown collection ' + collection);
             }
-            return applyDeltas(
-                db,
-                collection,
-                deltas,
-                serverCursor,
-                apply,
-                false,
-            );
+            return applyDeltas(db, collection, deltas, serverCursor, apply, false);
         },
     };
 };

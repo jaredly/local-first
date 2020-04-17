@@ -1,4 +1,4 @@
-// @flow
+// @-flow
 
 import { selectionToSpans } from './span';
 import { insert } from './deltas';
