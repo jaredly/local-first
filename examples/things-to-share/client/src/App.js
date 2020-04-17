@@ -23,6 +23,8 @@ import {
     createInMemoryDeltaClient,
     createPersistedDeltaClient,
     createPersistedBlobClient,
+    type Client,
+    type SyncStatus,
 } from '../../../../packages/client-bundle';
 import { default as makeDeltaInMemoryPersistence } from '../../../../packages/idb/src/delta-mem';
 
@@ -147,7 +149,17 @@ const App = ({
     return <Home client={client} auth={auth} logout={logout} host={host} />;
 };
 
-const Home = ({ client, logout, host, auth }) => {
+const Home = ({
+    client,
+    logout,
+    host,
+    auth,
+}: {
+    client: Client<SyncStatus>,
+    logout: () => void,
+    host: string,
+    auth: ?Data,
+}) => {
     const [linksCol, links] = useCollection(React, client, 'links');
     const [showAll, setShowAll] = React.useState(false);
     const [numToShow, setNumToShow] = React.useState(20);
