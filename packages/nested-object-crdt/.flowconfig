@@ -1,12 +1,15 @@
 [ignore]
 
 [include]
-../../packages
+../../packages/hybrid-logical-clock
+../../packages/rich-text-crdt
 
 [libs]
 flow-typed
 
 [lints]
+sketchy-null=error
+sketchy-null-bool=off
 
 [options]
 

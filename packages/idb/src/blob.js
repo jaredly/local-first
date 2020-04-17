@@ -78,7 +78,7 @@ export const makePersistence = function(
         },
         async mergeFull<Data>(
             datas: { [col: string]: { [key: string]: Data } },
-            etag: string,
+            etag: ?string,
             merge: (Data, Data) => Data,
         ) {
             const tx = (await db).transaction(
@@ -114,7 +114,9 @@ export const makePersistence = function(
                 }),
             );
             console.log('After merge, any changed?', anyChanged);
-            await tx.objectStore('meta').put(etag, 'serverEtag');
+            if (etag != null) {
+                await tx.objectStore('meta').put(etag, 'serverEtag');
+            }
             const dirty = await tx.objectStore('meta').get('dirty');
             // console.log('Merged', blob);
             await tx.done;

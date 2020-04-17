@@ -8,6 +8,7 @@ import type {
     PersistentClock,
     FullPersistence,
     BlobNetworkCreator,
+    Export,
 } from '../types';
 import { peerTabAwareNetwork } from '../peer-tabs';
 import { type Schema } from '../../../nested-object-crdt/src/schema.js';
@@ -80,10 +81,7 @@ export const updateCacheAndNotify = function<Delta, Data>(
         });
 
         if (changedIds[colid].length) {
-            console.log(
-                'Broadcasting to client-level listeners',
-                changedIds[colid],
-            );
+            console.log('Broadcasting to client-level listeners', changedIds[colid]);
             sendCrossTabChanges({
                 col: colid,
                 nodes: changedIds[colid],
@@ -104,13 +102,7 @@ function createClient<Delta, Data, SyncStatus>(
 
     const network = peerTabAwareNetwork(
         (msg: PeerChange) => {
-            return onCrossTabChanges(
-                crdt,
-                persistence,
-                state[msg.col],
-                msg.col,
-                msg.nodes,
-            );
+            return onCrossTabChanges(crdt, persistence, state[msg.col], msg.col, msg.nodes);
         },
         createNetwork(
             persistence.getFull,
@@ -119,22 +111,12 @@ function createClient<Delta, Data, SyncStatus>(
                 if (max != null) {
                     clock.recv(hlc.unpack(max));
                 }
-                const result = await persistence.mergeFull<Data>(
-                    full,
-                    etag,
-                    crdt.merge,
-                );
+                const result = await persistence.mergeFull<Data>(full, etag, crdt.merge);
                 if (!result) {
                     return null;
                 }
                 const { merged, changedIds } = result;
-                updateCacheAndNotify(
-                    state,
-                    crdt,
-                    changedIds,
-                    merged.blob,
-                    sendCrossTabChanges,
-                );
+                updateCacheAndNotify(state, crdt, changedIds, merged.blob, sendCrossTabChanges);
                 return merged;
             },
             persistence.updateMeta,
@@ -147,6 +129,15 @@ function createClient<Delta, Data, SyncStatus>(
         setDirty: network.setDirty,
         getStamp: clock.get,
         undo: undoManager.undo,
+        fullExport<Data>(): Promise<Export<Data>> {
+            return persistence.fullExport();
+        },
+        async importDump<Data>(dump) {
+            await persistence.mergeFull(dump, null, (a, b) =>
+                // $FlowFixMe datas
+                crdt.merge(a, b),
+            );
+        },
         getCollection<T>(colid: string) {
             return getCollection(
                 colid,

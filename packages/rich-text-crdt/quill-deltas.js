@@ -36,10 +36,7 @@ export const stateToQuillContents = (state: CRDT) => {
         if (Object.keys(attributes).length) {
             op.attributes = attributes;
         }
-        if (
-            ops.length &&
-            deepEqual(op.attributes, ops[ops.length - 1].attributes)
-        ) {
+        if (ops.length && deepEqual(op.attributes, ops[ops.length - 1].attributes)) {
             ops[ops.length - 1].insert += text;
         } else {
             ops.push(op);
@@ -85,10 +82,7 @@ const deleteToDeltas = function<Format, QuillFormat>(
     return res;
 };
 
-export const deltaToQuillDeltas = (
-    state: CRDT,
-    delta: Delta,
-): Array<QuillDelta> => {
+export const deltaToQuillDeltas = (state: CRDT, delta: Delta): Array<QuillDelta> => {
     console.log('to quill', state, delta);
     if (delta.type === 'insert') {
         const pos = locToInsertionPos(state, delta.after, delta.id);
@@ -118,10 +112,7 @@ export const deltaToQuillDeltas = (
         if (startPos === 0) {
             return [{ retain: endPos, attributes }];
         }
-        return [
-            { retain: startPos },
-            { retain: endPos - startPos, attributes },
-        ];
+        return [{ retain: startPos }, { retain: endPos - startPos, attributes }];
     } else if (delta.type === 'delete-format') {
         const startPos = locToPos(state, {
             pre: true,
@@ -139,19 +130,16 @@ export const deltaToQuillDeltas = (
         }
         if (startNode.content.type !== 'open') {
             throw new Error(
-                `Start node not an open type ${toKey(
-                    delta.open,
-                )} - ${JSON.stringify(startNode.content)}`,
+                `Start node not an open type ${toKey(delta.open)} - ${JSON.stringify(
+                    startNode.content,
+                )}`,
             );
         }
         const attributes = { [startNode.content.key]: null };
         if (startPos === 0) {
             return [{ retain: endPos, attributes }];
         }
-        return [
-            { retain: startPos },
-            { retain: endPos - startPos, attributes },
-        ];
+        return [{ retain: startPos }, { retain: endPos - startPos, attributes }];
     }
     throw new Error(`Unexpected delta type ${delta.type}`);
 };

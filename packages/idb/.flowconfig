@@ -1,7 +1,9 @@
 [ignore]
 
 [include]
-../../packages
+../../packages/core
+../../packages/hybrid-logical-clock
+../../packages/nested-object-crdt
 
 [libs]
 

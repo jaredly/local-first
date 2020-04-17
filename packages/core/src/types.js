@@ -104,7 +104,7 @@ export type FullPersistence = {
     }>,
     mergeFull<Data>(
         full: Blob<Data>,
-        etag: string,
+        etag: ?string,
         merge: (Data, Data) => Data,
     ): Promise<?{
         merged: { blob: Blob<Data>, stamp: ?string },

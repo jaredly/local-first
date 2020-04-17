@@ -247,7 +247,8 @@ function createClient<Delta, Data, SyncStatus>(
             await Promise.all(
                 Object.keys(dump).map(async key => {
                     const deltas = Object.keys(dump[key]).map(id => {
-                        const node = dump[key][id];
+                        const node: Data = dump[key][id];
+                        // $FlowFixMe datas arguing
                         const inner = crdt.deltas.replace(node);
                         const delta = {
                             node: id,

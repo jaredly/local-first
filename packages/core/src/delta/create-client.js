@@ -9,6 +9,7 @@ import type {
     DeltaPersistence,
     FullPersistence,
     NetworkCreator,
+    Export,
 } from '../types';
 import { peerTabAwareNetwork } from '../peer-tabs';
 import type { HLC } from '../../../hybrid-logical-clock';
@@ -38,28 +39,25 @@ export const getMessages = async function<Delta, Data>(
     reconnected: boolean,
 ): Promise<Array<ClientMessage<Delta, Data>>> {
     const items: Array<?ClientMessage<Delta, Data>> = await Promise.all(
-        persistence.collections.map(
-            async (
-                collection: string,
-            ): Promise<?ClientMessage<Delta, Data>> => {
-                const deltas = await persistence.deltas(collection);
-                const serverCursor = await persistence.getServerCursor(
+        persistence.collections.map(async (collection: string): Promise<?ClientMessage<
+            Delta,
+            Data,
+        >> => {
+            const deltas = await persistence.deltas(collection);
+            const serverCursor = await persistence.getServerCursor(collection);
+            if (deltas.length || serverCursor == null || reconnected) {
+                // console.log('messages yeah', serverCursor);
+                return {
+                    type: 'sync',
                     collection,
-                );
-                if (deltas.length || serverCursor == null || reconnected) {
-                    // console.log('messages yeah', serverCursor);
-                    return {
-                        type: 'sync',
-                        collection,
-                        serverCursor,
-                        deltas: deltas.map(({ node, delta }) => ({
-                            node,
-                            delta,
-                        })),
-                    };
-                }
-            },
-        ),
+                    serverCursor,
+                    deltas: deltas.map(({ node, delta }) => ({
+                        node,
+                        delta,
+                    })),
+                };
+            }
+        }),
     );
     return items.filter(Boolean);
 };
@@ -112,9 +110,7 @@ export const handleMessages = async function<Delta, Data>(
                         state[msg.collection].cache[id] = data[id];
                     }
                     if (col.itemListeners[id]) {
-                        col.itemListeners[id].forEach(fn =>
-                            fn(crdt.value(data[id])),
-                        );
+                        col.itemListeners[id].forEach(fn => fn(crdt.value(data[id])));
                     }
                 });
 
@@ -210,26 +206,13 @@ function createClient<Delta, Data, SyncStatus>(
         clock.now.node,
         fresh => getMessages(persistence, fresh),
         (messages, sendCrossTabChanges) =>
-            handleMessages(
-                crdt,
-                persistence,
-                messages,
-                state,
-                clock.recv,
-                sendCrossTabChanges,
-            ),
+            handleMessages(crdt, persistence, messages, state, clock.recv, sendCrossTabChanges),
     );
 
     const network = persistence.tabIsolated
         ? tabIsolatedNetwork(innerNetwork)
         : peerTabAwareNetwork((msg: PeerChange) => {
-              return onCrossTabChanges(
-                  crdt,
-                  persistence,
-                  state[msg.col],
-                  msg.col,
-                  msg.nodes,
-              );
+              return onCrossTabChanges(crdt, persistence, state[msg.col], msg.col, msg.nodes);
           }, innerNetwork);
 
     return {
@@ -238,12 +221,15 @@ function createClient<Delta, Data, SyncStatus>(
         setDirty: network.setDirty,
         undo: undoManager.undo,
         // TODO export should include a stamp
-        fullExport: () => persistence.fullExport(),
+        fullExport<Data>(): Promise<Export<Data>> {
+            return persistence.fullExport();
+        },
         async importDump<Data>(dump) {
             await Promise.all(
                 Object.keys(dump).map(async key => {
                     const deltas = Object.keys(dump[key]).map(id => {
                         const node = dump[key][id];
+                        // $FlowFixMe datas arguing
                         const inner = crdt.deltas.replace(node);
                         const delta = {
                             node: id,
@@ -252,11 +238,8 @@ function createClient<Delta, Data, SyncStatus>(
                         };
                         return delta;
                     });
-                    await persistence.applyDeltas(
-                        key,
-                        deltas,
-                        null,
-                        (data, delta) => crdt.deltas.apply(data, delta),
+                    await persistence.applyDeltas(key, deltas, null, (data, delta) =>
+                        crdt.deltas.apply(data, delta),
                     );
                 }),
             );
