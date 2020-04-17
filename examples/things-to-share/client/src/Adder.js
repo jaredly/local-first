@@ -51,25 +51,51 @@ const useStyles = makeStyles((theme) => ({
 
 const AnimatedPaper = animated(Paper);
 
+const rx = /https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
+const fullRx = /^https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?$/gi;
+
 const Adder = ({
     onAdd,
     host,
+    onCancel,
+    initialUrl,
 }: {
     host: string,
     onAdd: (string, mixed) => void,
+    onCancel?: () => void,
+    initialUrl?: string,
 }) => {
     const styles = useStyles();
 
-    const initalUrl = React.useMemo(() => {
-        const params = window.location.search
-            .slice(1)
-            .split('&')
-            .map((item) => item.split('='))
-            .reduce((col, [k, v]) => ((col[k] = v), col), {});
-        return params.url || null;
-    }, []);
+    // const initalUrl = React.useMemo(() => {
+    //     const params = window.location.search
+    //         .slice(1)
+    //         .split('&')
+    //         .map((item) => item.split('='))
+    //         .reduce(
+    //             (col, [k, v]) => (
+    //                 (col[k] = v ? decodeURIComponent(v) : v), col
+    //             ),
+    //             {},
+    //         );
+    //     if (params.url) {
+    //         return params.url;
+    //     }
+    //     if (params.text) {
+    //         const lines = params.text.trim().split('\n');
+    //         const lastLine = lines[lines.length - 1].trim();
+    //         if (lastLine.match(fullRx)) {
+    //             return lastLine;
+    //         }
+    //         const match = params.text.match(rx);
+    //         if (match) {
+    //             return match[0];
+    //         }
+    //     }
+    //     return null;
+    // }, []);
 
-    const [open, setOpen] = React.useState(initalUrl != null);
+    const [open, setOpen] = React.useState(initialUrl != null);
     const [ref, { height }] = useMeasure();
     const props = useSpring({
         height,
@@ -116,7 +142,11 @@ const Adder = ({
                             <IconButton
                                 onClick={(evt) => {
                                     evt.stopPropagation();
-                                    setOpen(false);
+                                    if (onCancel) {
+                                        onCancel();
+                                    } else {
+                                        setOpen(false);
+                                    }
                                 }}
                             >
                                 <CloseIcon />
@@ -127,7 +157,7 @@ const Adder = ({
                 </div>
                 {open ? (
                     <AdderBody
-                        initialUrl={initalUrl}
+                        initialUrl={initialUrl}
                         host={host}
                         onAdd={(link, data) => {
                             setOpen(false);

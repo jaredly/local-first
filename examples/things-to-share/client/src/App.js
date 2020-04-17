@@ -26,7 +26,7 @@ import {
 } from '../../../../packages/client-bundle';
 import { default as makeDeltaInMemoryPersistence } from '../../../../packages/idb/src/delta-mem';
 
-import { TagSchema, LinkSchema } from './types';
+import { TagSchema, LinkSchema, type LinkT } from './types';
 
 import Adder from './Adder';
 
@@ -53,6 +53,8 @@ const schemas = {
 // const ImportDialog = ({ onClose }) => {
 //     return 'import';
 // };
+const rx = /https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
+const fullRx = /^https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?$/gi;
 
 const App = ({
     host,
@@ -80,8 +82,73 @@ const App = ({
                   2,
               );
     }, [auth && auth.token]);
-    const [linksCol, links] = useCollection(React, client, 'links');
 
+    const [addingUrl, setAddingUrl] = React.useState(() => {
+        const params = window.location.search
+            .slice(1)
+            .split('&')
+            .map((item) => item.split('='))
+            .reduce(
+                (col, [k, v]) => (
+                    (col[k] = v ? decodeURIComponent(v) : v), col
+                ),
+                {},
+            );
+        if (params.url) {
+            return params.url;
+        }
+        if (params.text) {
+            const lines = params.text.trim().split('\n');
+            const lastLine = lines[lines.length - 1].trim();
+            if (lastLine.match(fullRx)) {
+                return lastLine;
+            }
+            const match = params.text.match(rx);
+            if (match) {
+                return match[0];
+            }
+        }
+        return null;
+    });
+
+    const linksCol = React.useMemo(
+        () => client.getCollection<LinkT>('links'),
+        [],
+    );
+
+    if (addingUrl) {
+        return (
+            <Adder
+                host={host}
+                initialUrl={addingUrl}
+                onCancel={() => {
+                    window.history.pushState(null, '', '/');
+                    setAddingUrl(null);
+                }}
+                onAdd={(url, fetchedContent) => {
+                    const id = client.getStamp();
+                    linksCol.save(id, {
+                        id,
+                        url,
+                        fetchedContent,
+                        added: Date.now(),
+                        tags: {},
+                        description: null,
+                        completed: null,
+                    });
+                    // Reset the URL
+                    window.history.pushState(null, '', '/');
+                    setAddingUrl(null);
+                }}
+            />
+        );
+    }
+
+    return <Home client={client} auth={auth} logout={logout} host={host} />;
+};
+
+const Home = ({ client, logout, host, auth }) => {
+    const [linksCol, links] = useCollection(React, client, 'links');
     const [showAll, setShowAll] = React.useState(false);
     const [numToShow, setNumToShow] = React.useState(20);
     const [dialog, setDialog] = React.useState(null);
@@ -121,18 +188,6 @@ const App = ({
 
     const [menuOpen, setMenuOpen] = React.useState(false);
     const anchorEl = React.useRef(null);
-
-    // let dialogNode = null;
-    // switch (dialog) {
-    //     case 'export':
-    //         dialogNode = <ExportDialog onClose={() => setDialog(null)} />;
-    //         break;
-    //     case 'import':
-    //         dialogNode = <ImportDialog onClose={() => setDialog(null)} />;
-    //         break;
-    //     default:
-    //         dialogNode = null;
-    // }
 
     return (
         <React.Fragment>
@@ -231,6 +286,7 @@ const App = ({
                         Show more
                     </Button>
                 ) : null}
+                {window.location.href}
             </Container>
             {/* {dialogNode} */}
             <ExportDialog

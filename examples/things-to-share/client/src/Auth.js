@@ -20,7 +20,7 @@ import {
     getUser,
 } from './auth-api';
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme) => ({
     container: {
         paddingTop: theme.spacing(8),
     },
@@ -81,6 +81,39 @@ const SignUpIn = ({ host }: { host: string }) => {
     const [state, setState] = React.useState('initial');
     const [loading, setLoading] = React.useState(false);
 
+    const checkUsername = () => {
+        if (!email.length) {
+            return;
+        }
+        setLoading(true);
+        checkEmail(host, email)
+            .then(
+                (isRegistered) => {
+                    setState(isRegistered ? 'login' : 'register');
+                },
+                // um handle failure
+                () => {},
+            )
+            .then(() => setLoading(false));
+    };
+    const doLogin = () => {
+        setLoading(true);
+        if (!password.length || !email.length) {
+            return;
+        }
+        login(host, email, password).then(() => {
+            // setLoading(false);
+            // Someone should notice that we've logged in at this point
+        });
+    };
+    const doSignup = () => {
+        setLoading(true);
+        signup(host, email, password, name).then(() => {
+            // setLoading(false);
+            // Someone should notice that we've logged in at this point
+        });
+    };
+
     return (
         <Container maxWidth="sm" className={styles.container}>
             <Paper className={styles.root}>
@@ -89,12 +122,24 @@ const SignUpIn = ({ host }: { host: string }) => {
                         {state === 'register' ? 'Register' : 'Login'}
                     </Typography>
                 </div>
-                <form className={styles.body}>
+                <form
+                    className={styles.body}
+                    onSubmit={(evt) => {
+                        evt.preventDefault();
+                        if (state === 'initial') {
+                            checkUsername();
+                        } else if (state === 'login') {
+                            doLogin();
+                        } else if (state === 'register') {
+                            doSignup();
+                        }
+                    }}
+                >
                     <Grid container direction="column" spacing={2}>
                         <Grid item>
                             <TextField
                                 value={email}
-                                onChange={evt => setEmail(evt.target.value)}
+                                onChange={(evt) => setEmail(evt.target.value)}
                                 type="email"
                                 label="Email Address"
                                 variant="outlined"
@@ -106,7 +151,9 @@ const SignUpIn = ({ host }: { host: string }) => {
                             <Grid item>
                                 <TextField
                                     value={name}
-                                    onChange={evt => setName(evt.target.value)}
+                                    onChange={(evt) =>
+                                        setName(evt.target.value)
+                                    }
                                     type="text"
                                     label="Display Name"
                                     variant="outlined"
@@ -119,7 +166,7 @@ const SignUpIn = ({ host }: { host: string }) => {
                             <Grid item>
                                 <TextField
                                     value={password}
-                                    onChange={evt =>
+                                    onChange={(evt) =>
                                         setPassword(evt.target.value)
                                     }
                                     type="password"
@@ -141,20 +188,7 @@ const SignUpIn = ({ host }: { host: string }) => {
                                     variant="contained"
                                     disabled={loading || !email.trim()}
                                     onClick={() => {
-                                        setLoading(true);
-                                        checkEmail(host, email)
-                                            .then(
-                                                isRegistered => {
-                                                    setState(
-                                                        isRegistered
-                                                            ? 'login'
-                                                            : 'register',
-                                                    );
-                                                },
-                                                // um handle failure
-                                                () => {},
-                                            )
-                                            .then(() => setLoading(false));
+                                        checkUsername();
                                     }}
                                 >
                                     Continue
@@ -169,13 +203,7 @@ const SignUpIn = ({ host }: { host: string }) => {
                                         variant="contained"
                                         disabled={loading}
                                         onClick={() => {
-                                            setLoading(true);
-                                            login(host, email, password).then(
-                                                () => {
-                                                    // setLoading(false);
-                                                    // Someone should notice that we've logged in at this point
-                                                },
-                                            );
+                                            doLogin();
                                         }}
                                     >
                                         Login
@@ -206,16 +234,7 @@ const SignUpIn = ({ host }: { host: string }) => {
                                             !name.trim()
                                         }
                                         onClick={() => {
-                                            setLoading(true);
-                                            signup(
-                                                host,
-                                                email,
-                                                password,
-                                                name,
-                                            ).then(() => {
-                                                // setLoading(false);
-                                                // Someone should notice that we've logged in at this point
-                                            });
+                                            doSignup();
                                         }}
                                     >
                                         Register
@@ -262,14 +281,14 @@ export const useAuthStatus = (host: string) => {
                     }
                 },
                 // if we were logged out
-                err => setStatus(false),
+                (err) => setStatus(false),
             );
         }
     }, [host]);
 
     React.useEffect(() => {
-        const fn = auth => setStatus(auth);
-        return listen(auth => setStatus(auth));
+        const fn = (auth) => setStatus(auth);
+        return listen((auth) => setStatus(auth));
     }, []);
 
     return status;

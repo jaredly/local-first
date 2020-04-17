@@ -7,37 +7,37 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   sodipodi:docname="icons.svg"
-   inkscape:version="1.0beta1 (32d4812, 2019-09-19)"
-   id="svg8"
-   version="1.1"
-   viewBox="0 0 210 297"
+   width="210mm"
    height="297mm"
-   width="210mm">
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg8"
+   inkscape:version="1.0beta1 (32d4812, 2019-09-19)"
+   sodipodi:docname="icons.svg">
   <defs
      id="defs2" />
   <sodipodi:namedview
-     inkscape:window-maximized="0"
-     inkscape:window-y="23"
-     inkscape:window-x="0"
-     inkscape:window-height="907"
-     inkscape:window-width="1600"
-     showgrid="true"
-     inkscape:document-rotation="0"
-     inkscape:current-layer="layer1"
-     inkscape:document-units="mm"
-     inkscape:cy="160.63669"
-     inkscape:cx="230.36767"
-     inkscape:zoom="2.7519083"
-     inkscape:pageshadow="2"
-     inkscape:pageopacity="0.0"
-     borderopacity="1.0"
-     bordercolor="#666666"
+     id="base"
      pagecolor="#ffffff"
-     id="base">
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.73294"
+     inkscape:cx="226.82556"
+     inkscape:cy="278.66262"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     inkscape:document-rotation="0"
+     showgrid="true"
+     inkscape:window-width="1600"
+     inkscape:window-height="907"
+     inkscape:window-x="0"
+     inkscape:window-y="23"
+     inkscape:window-maximized="0">
     <inkscape:grid
-       id="grid10"
-       type="xygrid" />
+       type="xygrid"
+       id="grid10" />
   </sodipodi:namedview>
   <metadata
      id="metadata5">
@@ -47,29 +47,48 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <g
-     id="layer1"
+     inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     inkscape:label="Layer 1">
+     id="layer1">
     <rect
-       inkscape:export-ydpi="446.83636"
-       inkscape:export-xdpi="446.83636"
-       transform="scale(1,-1)"
-       y="-58.208332"
+       style="fill:#9c27b0;stroke:none;stroke-width:6.00001;fill-opacity:1"
+       id="rect12"
+       width="29.104166"
+       height="29.104166"
        x="50.270832"
+       y="-58.208332"
+       transform="scale(1,-1)"
+       inkscape:export-xdpi="446.83636"
+       inkscape:export-ydpi="446.83636" />
+    <path
+       style="fill:#af52bf;fill-opacity:1;stroke:none;stroke-width:0.395537px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 77.231575,40.871434 -7.910741,-7.910739 v 5.933055 c -17.908368,0.148284 -16.049901,8.315518 -15.82148,15.82148 -0.07361,-11.776038 7.723984,-12.040383 15.82148,-11.86611 v 5.933055 z"
+       id="path14"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccccc" />
+    <rect
+       ry="11.308146"
+       inkscape:export-ydpi="145.74547"
+       inkscape:export-xdpi="145.74547"
+       transform="scale(1,-1)"
+       y="-113.17273"
+       x="51.034225"
        height="29.104166"
        width="29.104166"
-       id="rect12"
-       style="fill:#9c27b0;stroke:none;stroke-width:6.00001;fill-opacity:1" />
+       id="rect885"
+       style="fill:#9c27b0;fill-opacity:1;stroke:none;stroke-width:6.00001" />
     <path
+       inkscape:export-ydpi="145.74547"
+       inkscape:export-xdpi="145.74547"
        sodipodi:nodetypes="ccccccc"
        inkscape:connector-curvature="0"
-       id="path14"
-       d="m 77.231575,40.871434 -7.910741,-7.910739 v 5.933055 c -17.908368,0.148284 -16.049901,8.315518 -15.82148,15.82148 -0.07361,-11.776038 7.723984,-12.040383 15.82148,-11.86611 v 5.933055 z"
-       style="fill:#af52bf;fill-opacity:1;stroke:none;stroke-width:0.395537px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+       id="path887"
+       d="m 77.994969,95.835831 -7.910741,-7.910739 v 5.933055 C 52.17586,94.006431 54.034327,102.17366 54.262748,109.67963 54.189138,97.903589 61.986732,97.639244 70.084228,97.813517 v 5.933053 z"
+       style="fill:#c27dcf;fill-opacity:1;stroke:none;stroke-width:0.39553700000000003px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
   </g>
 </svg>
