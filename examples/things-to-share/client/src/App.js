@@ -65,7 +65,7 @@ const App = ({
 }: {
     host: string,
     auth: ?Data,
-    logout: () => void,
+    logout: () => mixed,
 }) => {
     const client = React.useMemo(() => {
         console.log('starting a client', auth);
@@ -156,7 +156,7 @@ const Home = ({
     auth,
 }: {
     client: Client<SyncStatus>,
-    logout: () => void,
+    logout: () => mixed,
     host: string,
     auth: ?Data,
 }) => {

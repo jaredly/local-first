@@ -21,7 +21,7 @@ const otherMerge = (v1, m1, v2, m2) => {
 const applyOtherDelta = (text: rich.CRDT, meta: null, delta: rich.Delta) => {
     return {
         value: rich.apply(text, delta),
-        meta
+        meta,
     };
 };
 
@@ -31,8 +31,8 @@ const crdtImpl = {
     createEmpty: crdt.createEmpty,
     applyDelta: (base, delta) => crdt.applyDelta(base, delta, (applyOtherDelta: any), otherMerge),
     deltas: {
-        stamp: delta => crdt.deltas.stamp(delta, () => null)
-    }
+        stamp: delta => crdt.deltas.stamp(delta, () => null),
+    },
 };
 
 export const serverForUser = (dataPath: string, userId: string) => {
@@ -40,9 +40,9 @@ export const serverForUser = (dataPath: string, userId: string) => {
 };
 
 export const run = (dataPath: string, port: number = 9090) => {
-    if (!process.env.NO_AUTH) {
+    if (process.env.NO_AUTH == null) {
         const { SECRET: secret } = process.env;
-        if (!secret) {
+        if (secret == null) {
             throw new Error("process.env.SECRET is required if you don't pass process.env.NO_AUTH");
         }
 
@@ -64,7 +64,7 @@ export const run = (dataPath: string, port: number = 9090) => {
                 }
                 return userServers[req.auth.id];
             },
-            [auth.middleware(authDb, secret)]
+            [auth.middleware(authDb, secret)],
         );
 
         auth.setupAuth(authDb, state.app, secret);
@@ -77,7 +77,7 @@ export const run = (dataPath: string, port: number = 9090) => {
         const state = runServer(
             // port,
             () => path.join(dataPath, 'blobs'),
-            () => server
+            () => server,
         );
         console.log('setup ephemeral socket');
         setupWebsocket(state.app, () => ephemeralServer, [], '/ephemeral/sync');

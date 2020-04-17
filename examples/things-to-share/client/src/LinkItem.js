@@ -80,11 +80,11 @@ const LinkItem = ({ link, linksCol }: { link: LinkT, linksCol: any }) => {
                 linksCol.setAttribute(
                     link.id,
                     ['completed'],
-                    link.completed ? null : Date.now(),
+                    link.completed != null ? null : Date.now(),
                 );
             }}
         >
-            {link.completed ? (
+            {link.completed != null ? (
                 <CheckBoxIcon className={styles.completionIcon} />
             ) : (
                 <CheckBoxOutlineBlankIcon className={styles.completionIcon} />
@@ -92,7 +92,7 @@ const LinkItem = ({ link, linksCol }: { link: LinkT, linksCol: any }) => {
         </IconButton>
     );
 
-    if (!link.fetchedContent) {
+    if (link.fetchedContent == null) {
         return (
             <Paper className={styles.container + ' ' + styles.titleRow}>
                 <Link href={link.url} target="_blank" className={styles.inner}>

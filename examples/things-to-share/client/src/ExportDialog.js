@@ -55,7 +55,7 @@ const ExportDialog = ({
                 you've logged into the new server. You can even do this multiple
                 times, and the exports will merge correctly.
             </Typography>
-            {url ? (
+            {url != null ? (
                 <Button
                     variant="contained"
                     color="primary"

@@ -27,17 +27,12 @@ const colorLevel = level => {
 const nodeToDebug = (node, level) =>
     chalk.dim(`${node.id[0]}${node.id[1]}`) +
     '·' +
-    (node.deleted
-        ? chalk.dim.underline(node.text)
-        : colorLevel(level).underline(node.text)) +
+    (node.deleted ? chalk.dim.underline(node.text) : colorLevel(level).underline(node.text)) +
     (node.format ? JSON.stringify(ncrdt.value(node.format)) : '') +
     (node.children.length
-        ? '{' +
-          node.children.map(node => nodeToDebug(node, level + 1)).join(';') +
-          '}'
+        ? '{' + node.children.map(node => nodeToDebug(node, level + 1)).join(';') + '}'
         : '');
-const toDebug = crdt =>
-    crdt.roots.map(node => nodeToDebug(node, 0)).join(chalk.red.bold(':'));
+const toDebug = crdt => crdt.roots.map(node => nodeToDebug(node, 0)).join(chalk.red.bold(':'));
 
 /*::
 
@@ -80,8 +75,7 @@ const format = (text /*:string*/, crdt /*:Format*/) => {
     return text;
 };
 
-const mergeFormats = (a /*:Format*/, b /*:Format*/) /*:Format*/ =>
-    ncrdt.merge(a, b);
+const mergeFormats = (a /*:Format*/, b /*:Format*/) /*:Format*/ => ncrdt.merge(a, b);
 
 const sortCursor = selection => {
     const { cursor, anchor } = selection;
@@ -102,10 +96,7 @@ const draw = (id, cli, state /*:State*/, pos, focused, editors) => {
 
     // TODO multicursor stuffs.
 
-    const c /*:crdt.CRDT<Format>*/ = crdt.inflate(
-        state.text.site,
-        clone(state.text.roots),
-    );
+    const c /*:crdt.CRDT<Format>*/ = crdt.inflate(state.text.site, clone(state.text.roots));
 
     if (state.mode === 'visual' || !focused) {
         const { at, count } = sortCursor(state.sel);
@@ -113,21 +104,14 @@ const draw = (id, cli, state /*:State*/, pos, focused, editors) => {
             c,
             at,
             count,
-            ncrdt.createValue(
-                focused ? { highlight: true } : { lowlight: true },
-                '',
-            ),
+            ncrdt.createValue(focused ? { highlight: true } : { lowlight: true }, ''),
         );
         crdt.apply(c, delta, mergeFormats);
         text = crdt.toString(c, format);
         if (DEBUG) {
             cli.move(0, pos + 1);
             cli.eraseInLine(2);
-            cli.write(
-                JSON.stringify(
-                    crdt.selectionToSpans(state.text, at, at + count),
-                ),
-            );
+            cli.write(JSON.stringify(crdt.selectionToSpans(state.text, at, at + count)));
             const aPlace = crdt.posToLoc(state.text, state.sel.cursor, true);
             cli.move(0, pos + 2);
             cli.eraseInLine(2);
@@ -140,12 +124,8 @@ const draw = (id, cli, state /*:State*/, pos, focused, editors) => {
             cli.move(0, pos + 1);
             cli.eraseInLine(2);
             cli.write(
-                JSON.stringify(
-                    crdt.posToLoc(state.text, state.sel.cursor, true),
-                ) +
-                    JSON.stringify(
-                        crdt.posToLoc(state.text, state.sel.cursor, false),
-                    ),
+                JSON.stringify(crdt.posToLoc(state.text, state.sel.cursor, true)) +
+                    JSON.stringify(crdt.posToLoc(state.text, state.sel.cursor, false)),
             );
         }
         text = crdt.toString(state.text, format);
@@ -303,7 +283,7 @@ const handleKeyPress = (mode, prefix, text, sel, ch, evt) => {
         if (ch === 'b' || ch === 'B') {
             const word = findBack(text, sel.cursor);
             if (prefix === 'd') {
-                if (word) {
+                if (word != null) {
                     return [
                         {
                             type: 'delete',
@@ -316,7 +296,7 @@ const handleKeyPress = (mode, prefix, text, sel, ch, evt) => {
                 }
                 return [{ type: 'prefix', prefix: '' }];
             } else if (prefix === 'c') {
-                if (word) {
+                if (word != null) {
                     return [
                         {
                             type: 'delete',
@@ -330,7 +310,7 @@ const handleKeyPress = (mode, prefix, text, sel, ch, evt) => {
                 }
                 return [{ type: 'prefix', prefix: '' }];
             } else {
-                if (word) {
+                if (word != null) {
                     return [{ type: 'selrel', rel: -word.length }];
                 }
             }
@@ -338,7 +318,7 @@ const handleKeyPress = (mode, prefix, text, sel, ch, evt) => {
         if (ch === 'w' || ch === 'W') {
             const word = findWord(text, sel.cursor);
             if (prefix === 'd') {
-                if (word) {
+                if (word != null) {
                     return [
                         { type: 'delete', at: sel.cursor, count: word.length },
                         { type: 'prefix', prefix: '' },
@@ -346,7 +326,7 @@ const handleKeyPress = (mode, prefix, text, sel, ch, evt) => {
                 }
                 return [{ type: 'prefix', prefix: '' }];
             } else if (prefix === 'c') {
-                if (word) {
+                if (word != null) {
                     return [
                         { type: 'delete', at: sel.cursor, count: word.length },
                         { type: 'prefix', prefix: '' },
@@ -355,7 +335,7 @@ const handleKeyPress = (mode, prefix, text, sel, ch, evt) => {
                 }
                 return [{ type: 'prefix', prefix: '' }];
             } else {
-                if (word) {
+                if (word != null) {
                     return [{ type: 'selrel', rel: word.length }];
                 }
             }
@@ -472,10 +452,7 @@ const handleAction = (programState, editor, action) => {
             // state.sel = { anchor: at, cursor: at };
             return;
         case 'delete':
-            applyDelta(
-                editor,
-                crdt.localDelete(editor.text, action.at, action.count),
-            );
+            applyDelta(editor, crdt.localDelete(editor.text, action.at, action.count));
             return;
         case 'insert':
             applyDelta(
@@ -540,11 +517,7 @@ const stateA /*:State*/ = {
 
 crdt.apply(
     stateA.text,
-    crdt.localInsert(
-        stateA.text,
-        0,
-        'Hello folks, this is the editor extraordinaire.',
-    ),
+    crdt.localInsert(stateA.text, 0, 'Hello folks, this is the editor extraordinaire.'),
     mergeFormats,
 );
 
@@ -635,15 +608,9 @@ if (toLoad) {
         const actions = JSON.parse(text[i]);
         try {
             actions.forEach(action =>
-                handleAction(
-                    programState,
-                    programState.editors[programState.focused],
-                    action,
-                ),
+                handleAction(programState, programState.editors[programState.focused], action),
             );
-            crdt.checkConsistency(
-                programState.editors[programState.focused].text,
-            );
+            crdt.checkConsistency(programState.editors[programState.focused].text);
         } catch (err) {
             console.log(`Got to line ${i}`);
             console.log(text[i]);

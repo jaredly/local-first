@@ -31,7 +31,9 @@ const darkTheme = createMuiTheme({
 });
 
 const node = document.createElement('div');
-document.body.appendChild(node);
+if (document.body) {
+    document.body.appendChild(node);
+}
 // const host = 'localhost:9090';
 const host = 'things-to-share.glitch.me';
 render(

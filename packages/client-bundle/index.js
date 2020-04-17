@@ -15,7 +15,10 @@ export type { Client, Collection } from '../core/src/types';
 
 import { default as createBlobClient } from '../core/src/blob/create-client';
 import { default as makeBlobPersistence } from '../idb/src/blob';
-import { default as createBasicBlobNetwork } from '../core/src/blob/basic-network';
+import {
+    default as createBasicBlobNetwork,
+    type SyncStatus as BlobSyncStatus,
+} from '../core/src/blob/basic-network';
 
 export { default as createBlobClient } from '../core/src/blob/create-client';
 export { default as makeBlobPersistence } from '../idb/src/blob';
@@ -69,17 +72,17 @@ export const clientCrdtImpl: CRDTImpl<Delta, Data> = {
             meta: null,
         }));
     },
-    latestStamp: (data) => crdt.latestStamp(data, () => null),
-    value: (d) => d.value,
+    latestStamp: data => crdt.latestStamp(data, () => null),
+    value: d => d.value,
     get: crdt.get,
-    createEmpty: (stamp) => crdt.createEmpty(stamp),
+    createEmpty: stamp => crdt.createEmpty(stamp),
     deltas: {
         ...crdt.deltas,
-        stamp: (data) => crdt.deltas.stamp(data, () => null),
+        stamp: data => crdt.deltas.stamp(data, () => null),
         apply: (base, delta) => crdt.applyDelta(base, delta, (applyOtherDelta: any), otherMerge),
     },
     createValue: (value, stamp, getStamp, schema) => {
-        return crdt.createWithSchema(value, stamp, getStamp, schema, (value) => null);
+        return crdt.createWithSchema(value, stamp, getStamp, schema, value => null);
     },
 };
 
@@ -93,13 +96,13 @@ export const createPersistedBlobClient = (
     schemas: { [key: string]: Schema },
     url: ?string,
     version: number,
-): Client<SyncStatus> => {
-    return createBlobClient(
+): Client<BlobSyncStatus> => {
+    return createBlobClient<Delta, Data, BlobSyncStatus>(
         clientCrdtImpl,
         schemas,
         new PersistentClock(localStorageClockPersist(name)),
         makeBlobPersistence(name, Object.keys(schemas), version),
-        url ? createBasicBlobNetwork(url) : nullNetwork,
+        url != null ? createBasicBlobNetwork<Delta, Data>(url) : nullNetwork,
     );
 };
 
@@ -113,7 +116,7 @@ export const createPersistedDeltaClient = (
         schemas,
         new PersistentClock(localStorageClockPersist(name)),
         makeDeltaPersistence(name, Object.keys(schemas)),
-        url ? createWebSocketNetwork(url) : nullNetwork,
+        url != null ? createWebSocketNetwork(url) : nullNetwork,
     );
 };
 

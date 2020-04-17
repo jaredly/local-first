@@ -7,7 +7,7 @@ export type Status = false | null | Data;
 
 export const initialStatus = (): Status => {
     const raw = localStorage.getItem(storageKey);
-    if (raw) {
+    if (raw != null) {
         try {
             const { user, token } = JSON.parse(raw);
             if (!user || !token) {
@@ -23,7 +23,7 @@ export const initialStatus = (): Status => {
     }
 };
 
-export const listen = (fn) => {
+export const listen = (fn: (data: Status) => mixed) => {
     listeners.push(fn);
     return () => {
         const idx = listeners.indexOf(fn);
@@ -43,12 +43,15 @@ export const checkEmail = async (host: string, email: string) => {
     return res.status >= 200 && res.status < 300;
 };
 
-const processResponse = async (res, sentToken) => {
+const processResponse = async (res, sentToken: ?string) => {
     if (res.status !== 200 && res.status !== 204) {
         throw new Error(await res.text());
     }
-    const token = sentToken || res.headers.get('X-Session');
-    if (!token) {
+    const token =
+        sentToken == null || sentToken.length == 0
+            ? res.headers.get('X-Session')
+            : sentToken;
+    if (token == null) {
         localStorage.removeItem(storageKey);
         listeners.forEach((fn) => fn(false));
         return null;
@@ -87,7 +90,7 @@ export const logout = async (host: string, token: string) => {
     processResponse(res);
 };
 
-export const login = async (host, email, password) => {
+export const login = async (host: string, email: string, password: string) => {
     // TODO figure out what the behavior is here if we're offline
     const res = await fetch(`${window.location.protocol}//${host}/api/login`, {
         method: 'POST',
@@ -99,7 +102,13 @@ export const login = async (host, email, password) => {
     return processResponse(res);
 };
 
-export const signup = async (host, email, password, name, invite) => {
+export const signup = async (
+    host: string,
+    email: string,
+    password: string,
+    name: string,
+    invite: ?string,
+) => {
     // TODO figure out what the behavior is here if we're offline
     const res = await fetch(`${window.location.protocol}//${host}/api/signup`, {
         method: 'POST',

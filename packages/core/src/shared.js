@@ -115,7 +115,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             validate(node, schema);
             // NOTE this overwrites everything, setAttribute will do much better merges
             if (undoManager) {
-                const prev = state.cache[id] ? crdt.value(state.cache[id]) : null;
+                const prev = state.cache[id] != null ? crdt.value(state.cache[id]) : null;
                 undoManager.add(() => this.save(id, prev));
             }
             state.cache[id] = crdt.merge(
@@ -170,7 +170,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                     const delta = crdt.deltas.set(
                         state.cache[id],
                         path,
-                        prev
+                        prev != null
                             ? crdt.createValue(crdt.value(prev), getStamp(), getStamp, sub)
                             : crdt.createEmpty(getStamp()),
                     );
@@ -197,7 +197,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                     const delta = crdt.deltas.set(
                         state.cache[id],
                         path,
-                        prev
+                        prev != null
                             ? crdt.createValue(crdt.value(prev), getStamp(), getStamp, sub)
                             : crdt.createEmpty(getStamp()),
                     );

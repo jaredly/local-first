@@ -8,16 +8,12 @@ export const nodeToString = function<Format>(
     return (
         (node.deleted
             ? ''
-            : format && node.format
+            : format && node.format != null
             ? format(node.text, node.format)
-            : node.text) +
-        node.children.map(child => nodeToString(child, format)).join('')
+            : node.text) + node.children.map(child => nodeToString(child, format)).join('')
     );
 };
-export const toString = function<Format>(
-    crdt: CRDT<Format>,
-    format?: (string, Format) => string,
-) {
+export const toString = function<Format>(crdt: CRDT<Format>, format?: (string, Format) => string) {
     return crdt.roots.map(root => nodeToString(root, format)).join('');
 };
 

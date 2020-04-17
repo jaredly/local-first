@@ -26,16 +26,17 @@ export const deltaToChange = function<QuillFormat, Format>(
     const changes = [];
     let pos = 0;
     delta.forEach(op => {
-        if (op.delete) {
-            changes.push(localDelete(state, pos, op.delete));
-            pos += op.delete;
-        } else if (op.insert) {
+        if (op.delete != null) {
+            const d = op.delete;
+            changes.push(localDelete(state, pos, d));
+            pos += d;
+        } else if (op.insert != null) {
             changes.push(
                 localInsert(
                     state,
                     pos,
                     op.insert,
-                    op.attributes
+                    op.attributes != null
                         ? transformFormat(
                               op.attributes,
                               formatAt(state, pos - 1),
@@ -44,8 +45,8 @@ export const deltaToChange = function<QuillFormat, Format>(
                         : null,
                 ),
             );
-        } else if (op.retain) {
-            if (op.attributes) {
+        } else if (op.retain != null) {
+            if (op.attributes != null) {
                 changes.push(
                     localFormat(
                         state,
@@ -73,16 +74,12 @@ export const changeToDelta = function<Format, QuillFormat>(
     switch (change.type) {
         case 'insert':
             const [id, site] = change.span.after;
-            const pos = locToInsertionPos(
-                state,
-                change.span.after,
-                change.span.id,
-            );
+            const pos = locToInsertionPos(state, change.span.after, change.span.id);
             if (pos === 0) {
                 return [
                     {
                         insert: change.span.text,
-                        ...(change.span.format
+                        ...(change.span.format != null
                             ? { attributes: convertFormat(change.span.format) }
                             : null),
                     },
@@ -92,7 +89,7 @@ export const changeToDelta = function<Format, QuillFormat>(
                 { retain: pos },
                 {
                     insert: change.span.text,
-                    ...(change.span.format
+                    ...(change.span.format != null
                         ? { attributes: convertFormat(change.span.format) }
                         : null),
                 },

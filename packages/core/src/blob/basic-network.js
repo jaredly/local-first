@@ -4,7 +4,7 @@ import poller from '../poller';
 import backOff from '../back-off';
 import { debounce } from '../debounce';
 
-type SyncStatus = { status: 'connected' } | { status: 'disconnected' };
+export type SyncStatus = { status: 'connected' } | { status: 'disconnected' };
 
 // const createNetwork = (
 // ): BlobNetworkCreator => {
@@ -86,17 +86,11 @@ const syncFetch = async function<Data>(
         etag: string,
     ) => Promise<?{ blob: Blob<Data>, stamp: ?string }>,
 
-    updateMeta: (
-        serverEtag: ?string,
-        dirtyFlagToClear: ?string,
-    ) => Promise<void>,
+    updateMeta: (serverEtag: ?string, dirtyFlagToClear: ?string) => Promise<void>,
 ) {
     const { local, serverEtag } = await getLocal();
     let dirtyStamp = local ? local.stamp : null;
-    console.log(
-        `[blob]`,
-        dirtyStamp != null ? 'local changes!' + dirtyStamp : 'no local changes',
-    );
+    console.log(`[blob]`, dirtyStamp != null ? 'local changes!' + dirtyStamp : 'no local changes');
     const remote = await getRemote(serverEtag);
     if (!local && !remote) {
         console.log('bail');
@@ -118,9 +112,7 @@ const syncFetch = async function<Data>(
     }
     let newServerEtag = null;
     if (toSend) {
-        console.log(
-            remote ? '[blob] pushing up merged' : '[blob] pushing up local',
-        );
+        console.log(remote ? '[blob] pushing up merged' : '[blob] pushing up local');
         const t = toSend;
         Object.keys(toSend).forEach(colid => {
             if (Array.isArray(t[colid])) {
@@ -146,21 +138,12 @@ const makeSync = <Delta, Data>(
         etag: string,
         (PeerChange) => mixed,
     ) => Promise<?{ blob: Blob<Data>, stamp: ?string }>,
-    updateMeta: (
-        newServerEtag: ?string,
-        dirtyFlagToClear: ?string,
-    ) => Promise<void>,
+    updateMeta: (newServerEtag: ?string, dirtyFlagToClear: ?string) => Promise<void>,
     sendCrossTabChanges,
     updateSyncStatus,
     softResync,
 ) => {
-    console.log(
-        '[blob] Maing sync with',
-        url,
-        getLocal,
-        mergeIntoLocal,
-        updateMeta,
-    );
+    console.log('[blob] Maing sync with', url, getLocal, mergeIntoLocal, updateMeta);
     console.log('[blob] Im the leader (basic blob)');
     const poll = poller(
         3 * 1000,
@@ -178,24 +161,17 @@ const makeSync = <Delta, Data>(
                                 },
                             });
                             if (res.status === 304 || res.status === 404) {
-                                console.log(
-                                    '[blob] No changes from server!',
-                                    etag,
-                                );
+                                console.log('[blob] No changes from server!', etag);
                                 return null;
                             }
                             if (res.status !== 200) {
-                                throw new Error(
-                                    `Unexpected status on get ${res.status}`,
-                                );
+                                throw new Error(`Unexpected status on get ${res.status}`);
                             }
                             const blob = await res.json();
                             const newEtag = res.headers.get('etag');
                             console.log('[blob] New etag', newEtag);
                             if (newEtag == null) {
-                                throw new Error(
-                                    `Remote didn't set an etag on get`,
-                                );
+                                throw new Error(`Remote didn't set an etag on get`);
                             }
                             return { blob, etag: newEtag };
                         },
@@ -212,26 +188,20 @@ const makeSync = <Delta, Data>(
                             });
                             if (res.status !== 204) {
                                 throw new Error(
-                                    `Unexpected status: ${
-                                        res.status
-                                    }, ${JSON.stringify(res.headers)}`,
+                                    `Unexpected status: ${res.status}, ${JSON.stringify(
+                                        res.headers,
+                                    )}`,
                                 );
                             }
                             const etag = res.headers.get('etag');
                             if (etag == null) {
-                                throw new Error(
-                                    `Remote didn't respond to post with an etag`,
-                                );
+                                throw new Error(`Remote didn't respond to post with an etag`);
                             }
                             return etag;
                         },
                         getLocal,
                         async (remote, etag) => {
-                            const res = await mergeIntoLocal(
-                                remote,
-                                etag,
-                                sendCrossTabChanges,
-                            );
+                            const res = await mergeIntoLocal(remote, etag, sendCrossTabChanges);
                             if (res) {
                                 softResync();
                             }
@@ -268,9 +238,7 @@ const makeSync = <Delta, Data>(
 };
 
 // TODO dedup with polling network
-const createNetwork = <Delta, Data>(
-    url: string,
-): BlobNetworkCreator<Data, SyncStatus> => (
+const createNetwork = <Delta, Data>(url: string): BlobNetworkCreator<Data, SyncStatus> => (
     getLocal,
     mergeIntoLocal,
     updateMeta,

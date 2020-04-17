@@ -23,18 +23,14 @@ export const apply = function<Format>(
     }
 };
 
-const split = function<Format>(
-    crdt: CRDT<Format>,
-    key: string,
-    splitPoint: number,
-) {
+const split = function<Format>(crdt: CRDT<Format>, key: string, splitPoint: number) {
     const node = crdt.map[key];
     const newNode = {
         id: [node.id[0] + splitPoint, node.id[1]],
         parent: toKey(node.id),
         text: node.text.slice(splitPoint),
         deleted: node.deleted,
-        format: node.format ? { ...node.format } : undefined,
+        format: node.format != null ? { ...node.format } : undefined,
         size: node.size - splitPoint,
         children: node.children,
     };
@@ -67,10 +63,7 @@ const ensureNodeAt = function<Format>(crdt: CRDT<Format>, id) {
     return true;
 };
 
-const parentForAfter = function<Format>(
-    crdt: CRDT<Format>,
-    after: [number, string],
-) {
+const parentForAfter = function<Format>(crdt: CRDT<Format>, after: [number, string]) {
     for (let i = after[0]; i >= 0; i--) {
         const key = toKey([i, after[1]]);
         if (!crdt.map[key]) {
@@ -86,10 +79,7 @@ const parentForAfter = function<Format>(
     }
 };
 
-export const insert = function<Format>(
-    crdt: CRDT<Format>,
-    span: PreNode<Format>,
-) {
+export const insert = function<Format>(crdt: CRDT<Format>, span: PreNode<Format>) {
     const key = toKey(span.after);
     if (key === rootParent) {
         // insert into the roots
@@ -112,7 +102,7 @@ export const insert = function<Format>(
         return;
     }
     const parentKey = parentForAfter(crdt, span.after);
-    if (!parentKey) {
+    if (parentKey == null) {
         console.log('no parent key', span.after);
         return false;
     }
@@ -198,7 +188,7 @@ const updateNode = function<Format>(
         }
     }
     if (format) {
-        if (node.format) {
+        if (node.format != null) {
             node.format = format.merge(node.format, format.fmt);
         } else {
             node.format = format.fmt;
@@ -219,15 +209,10 @@ const updateNode = function<Format>(
     }
 };
 
-const mergeable = function<Format>(
-    parent: Node<Format>,
-    child: Node<Format> | PreNode<Format>,
-) {
+const mergeable = function<Format>(parent: Node<Format>, child: Node<Format> | PreNode<Format>) {
     return (
         // parent.children.length <= 1 &&
-        (parent.children.length > 0
-            ? keyCmp(parent.children[0].id, child.id) <= 0
-            : true) &&
+        (parent.children.length > 0 ? keyCmp(parent.children[0].id, child.id) <= 0 : true) &&
         parent.id[1] === child.id[1] &&
         parent.id[0] + parent.text.length === child.id[0] &&
         parent.deleted == child.deleted &&

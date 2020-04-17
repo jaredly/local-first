@@ -54,11 +54,13 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
-const getOgs = (data, key: string) => {
+const getOgs = (data: mixed, key: string) => {
+    // $FlowFixMe
     return data[key] || [];
 };
 
 const getOg = (data, key: string) => {
+    // $FlowFixMe
     if (!data[key]) return null;
     return data[key][0];
 };
@@ -192,6 +194,7 @@ const OpenGraph = ({
                     </Link>
                 }
             />
+            {/* $FlowFixMe */}
             {data.embedded ? (
                 <div style={{ padding: 12 }}>
                     <OpenGraph nested data={data.embedded} url={url} />

@@ -61,6 +61,7 @@ const ExportDialog = ({
                         reader.onload = (evt) => {
                             try {
                                 const data = JSON.parse(
+                                    // $FlowFixMe
                                     pako.inflate(evt.target.result, {
                                         to: 'string',
                                     }),
