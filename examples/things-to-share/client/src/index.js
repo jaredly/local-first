@@ -36,19 +36,17 @@ if (document.body) {
 }
 // const host = 'localhost:9090';
 const host = 'things-to-share.glitch.me';
-render(
-    <ThemeProvider theme={darkTheme}>
-        <CssBaseline />
-        {/* <App host={host} /> */}
-        <Auth
-            host={host}
-            render={(auth, logout) => (
-                <App auth={auth} logout={logout} host={host} />
-                // <Button color="primary" variant="contained">
-                //     Ok buttons
-                // </Button>
-            )}
-        />
-    </ThemeProvider>,
-    node,
-);
+window.addEventListener('load', () => {
+    render(
+        <ThemeProvider theme={darkTheme}>
+            <CssBaseline />
+            <Auth
+                host={host}
+                render={(auth, logout) => (
+                    <App auth={auth} logout={logout} host={host} />
+                )}
+            />
+        </ThemeProvider>,
+        node,
+    );
+});

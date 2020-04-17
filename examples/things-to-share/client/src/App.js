@@ -14,8 +14,10 @@ import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
+import Snackbar from '@material-ui/core/Snackbar';
 
 import MenuIcon from '@material-ui/icons/Menu';
+import CloseIcon from '@material-ui/icons/Close';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -125,42 +127,104 @@ const App = ({
         [],
     );
 
-    if (addingUrl) {
-        return (
-            <div>
-                <Adder
-                    host={host}
-                    initialUrl={addingUrl}
-                    onCancel={() => {
-                        window.close();
-                        // window.history.replaceState(null, '', '/');
-                        // setAddingUrl(null);
-                    }}
-                    onAdd={(url, fetchedContent) => {
-                        const id = client.getStamp();
-                        linksCol
-                            .save(id, {
-                                id,
-                                url,
-                                fetchedContent,
-                                added: Date.now(),
-                                tags: {},
-                                description: null,
-                                completed: null,
-                            })
-                            .then(() => {
-                                window.close();
-                            });
-                        // Reset the URL
-                        // window.history.replaceState(null, '', '/');
-                        // setAddingUrl(null);
-                    }}
-                />
-            </div>
-        );
-    }
+    const [showUpgrade, setShowUpgrade] = React.useState(
+        window.upgradeAvailable && window.upgradeAvailable.installed,
+    );
 
-    return <Home client={client} auth={auth} logout={logout} host={host} />;
+    console.log('app hello');
+    React.useEffect(() => {
+        if (window.upgradeAvailable) {
+            console.log('listeneing');
+            const listener = () => {
+                console.log('listenered!');
+                setShowUpgrade(true);
+            };
+            window.upgradeAvailable.listeners.push(listener);
+            return () => {
+                console.log('unlistenerd');
+                window.upgradeAvailable.listeners = window.upgradeAvailable.listeners.filter(
+                    (f) => f !== listener,
+                );
+            };
+        } else {
+            console.log('no upgrade support');
+        }
+    }, []);
+
+    const contents = addingUrl ? (
+        <div>
+            <Adder
+                host={host}
+                initialUrl={addingUrl}
+                onCancel={() => {
+                    window.close();
+                    // window.history.replaceState(null, '', '/');
+                    // setAddingUrl(null);
+                }}
+                onAdd={(url, fetchedContent) => {
+                    const id = client.getStamp();
+                    linksCol
+                        .save(id, {
+                            id,
+                            url,
+                            fetchedContent,
+                            added: Date.now(),
+                            tags: {},
+                            description: null,
+                            completed: null,
+                        })
+                        .then(() => {
+                            window.close();
+                        });
+                    // Reset the URL
+                    // window.history.replaceState(null, '', '/');
+                    // setAddingUrl(null);
+                }}
+            />
+        </div>
+    ) : (
+        <Home client={client} auth={auth} logout={logout} host={host} />
+    );
+
+    return (
+        <React.Fragment>
+            {contents}
+            <Snackbar
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                }}
+                open={showUpgrade}
+                autoHideDuration={6000}
+                onClose={() => setShowUpgrade(false)}
+                message="Update available"
+                action={
+                    <React.Fragment>
+                        <Button
+                            color="secondary"
+                            size="small"
+                            onClick={() => {
+                                window.upgradeAvailable.waiting.postMessage({
+                                    type: 'SKIP_WAITING',
+                                });
+                                setShowUpgrade(false);
+                            }}
+                        >
+                            Reload
+                        </Button>
+                        <IconButton
+                            size="small"
+                            aria-label="close"
+                            color="inherit"
+                            onClick={() => setShowUpgrade(false)}
+                        >
+                            <CloseIcon fontSize="small" />
+                        </IconButton>
+                    </React.Fragment>
+                }
+            />
+        </React.Fragment>
+    );
 };
 
 const Home = ({
