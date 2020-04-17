@@ -122,7 +122,7 @@ const App = ({
                 host={host}
                 initialUrl={addingUrl}
                 onCancel={() => {
-                    window.history.pushState(null, '', '/');
+                    window.history.replaceState(null, '', '/');
                     setAddingUrl(null);
                 }}
                 onAdd={(url, fetchedContent) => {
@@ -137,7 +137,7 @@ const App = ({
                         completed: null,
                     });
                     // Reset the URL
-                    window.history.pushState(null, '', '/');
+                    window.history.replaceState(null, '', '/');
                     setAddingUrl(null);
                 }}
             />
