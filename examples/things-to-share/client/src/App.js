@@ -132,23 +132,28 @@ const App = ({
                     host={host}
                     initialUrl={addingUrl}
                     onCancel={() => {
-                        window.history.replaceState(null, '', '/');
-                        setAddingUrl(null);
+                        window.close();
+                        // window.history.replaceState(null, '', '/');
+                        // setAddingUrl(null);
                     }}
                     onAdd={(url, fetchedContent) => {
                         const id = client.getStamp();
-                        linksCol.save(id, {
-                            id,
-                            url,
-                            fetchedContent,
-                            added: Date.now(),
-                            tags: {},
-                            description: null,
-                            completed: null,
-                        });
+                        linksCol
+                            .save(id, {
+                                id,
+                                url,
+                                fetchedContent,
+                                added: Date.now(),
+                                tags: {},
+                                description: null,
+                                completed: null,
+                            })
+                            .then(() => {
+                                window.close();
+                            });
                         // Reset the URL
-                        window.history.replaceState(null, '', '/');
-                        setAddingUrl(null);
+                        // window.history.replaceState(null, '', '/');
+                        // setAddingUrl(null);
                     }}
                 />
             </div>
@@ -226,11 +231,19 @@ const Home = ({
                         Things to Share
                     </Typography>
 
-                    <Typography>Show completed</Typography>
-                    <Switch
-                        checked={showAll}
-                        onChange={() => setShowAll(!showAll)}
-                    />
+                    <div
+                        style={{
+                            flexWrap: 'wrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <Typography>Show completed</Typography>
+                        <Switch
+                            checked={showAll}
+                            onChange={() => setShowAll(!showAll)}
+                        />
+                    </div>
 
                     <Button
                         color="inherit"
@@ -348,7 +361,14 @@ const useStyles = makeStyles((theme) => ({
         color: theme.palette.primary.contrastText,
     },
     userButton: {
+        '& > span': {
+            display: 'inline',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+        },
         textTransform: 'none',
+        minWidth: 0,
     },
 }));
 

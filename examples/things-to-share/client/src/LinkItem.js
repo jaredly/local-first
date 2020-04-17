@@ -113,7 +113,17 @@ const LinkItem = ({ link, linksCol }: { link: LinkT, linksCol: any }) => {
         >
             <div ref={ref}>
                 <div className={styles.titleRow} onClick={() => setOpen(!open)}>
-                    <div style={{ flex: 1 }}>{linkText}</div>
+                    <div
+                        style={{
+                            flex: 1,
+                            minWidth: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        {linkText}
+                    </div>
                     {completionBox}
                 </div>
                 {open ? (
