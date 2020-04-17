@@ -58,6 +58,7 @@ const schemas = {
 // };
 const rx = /https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
 const fullRx = /^https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?$/gi;
+const endRx = /https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?$/gi;
 
 const App = ({
     host,
@@ -102,6 +103,10 @@ const App = ({
             return params.url;
         }
         if (params.text) {
+            const endMatch = params.text.trim().match(endRx);
+            if (endMatch) {
+                return endMatch[0];
+            }
             const lines = params.text.trim().split('\n');
             const lastLine = lines[lines.length - 1].trim();
             if (lastLine.match(fullRx)) {
@@ -146,8 +151,6 @@ const App = ({
                         setAddingUrl(null);
                     }}
                 />
-                {window.location.href}
-                {window.location.search}
             </div>
         );
     }
