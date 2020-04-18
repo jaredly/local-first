@@ -1,7 +1,6 @@
 // @flow
 import Button from '@material-ui/core/Button';
 import Container from '@material-ui/core/Container';
-import Drawer from '@material-ui/core/Drawer';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import Divider from '@material-ui/core/Divider';
@@ -26,6 +25,8 @@ import ExportDialog from './ExportDialog';
 import ImportDialog from './ImportDialog';
 import LinkItem from './LinkItem';
 import TopBar from './TopBar';
+
+import Drawer from './Drawer';
 
 const Home = ({
     client,
@@ -89,58 +90,15 @@ const Home = ({
                 logout={logout}
                 openMenu={() => setMenu(true)}
             />
-            <Drawer anchor={'left'} open={menu} onClose={() => setMenu(false)}>
-                <List>
-                    {auth ? (
-                        <ListItem>
-                            <ListItemIcon>
-                                <AccountCircle />
-                            </ListItemIcon>
-                            <ListItemText primary={auth.user.email} />
-                        </ListItem>
-                    ) : (
-                        <ListItem button>
-                            <ListItemIcon>
-                                <AccountCircle />
-                            </ListItemIcon>
-                            <ListItemText primary="Sign in" />
-                        </ListItem>
-                    )}
-                    <Divider />
-                    <ListItem button onClick={() => setDialog('export')}>
-                        <ListItemIcon>
-                            <GetApp />
-                        </ListItemIcon>
-                        <ListItemText primary="Export" />
-                    </ListItem>
-                    <ListItem button onClick={() => setDialog('import')}>
-                        <ListItemIcon>
-                            <Publish />
-                        </ListItemIcon>
-                        <ListItemText primary="Import" />
-                    </ListItem>
-                    <ListItem>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={showAll}
-                                    onChange={() => setShowAll(!showAll)}
-                                    color="primary"
-                                />
-                            }
-                            label="Show completed"
-                        />
-                    </ListItem>
-                    <Divider />
-                    <ListItem button onClick={logout}>
-                        <ListItemIcon>
-                            <ExitToApp />
-                        </ListItemIcon>
-                        <ListItemText primary="Sign out" />
-                    </ListItem>
-                </List>
-                <Divider />
-            </Drawer>
+            <Drawer
+                onClose={() => setMenu(false)}
+                open={menu}
+                auth={auth}
+                setDialog={setDialog}
+                showAll={showAll}
+                setShowAll={setShowAll}
+                logout={logout}
+            />
             <Container maxWidth="sm" className={styles.container}>
                 <Adder
                     host={host}
