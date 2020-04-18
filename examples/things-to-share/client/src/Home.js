@@ -1,6 +1,18 @@
 // @flow
 import Button from '@material-ui/core/Button';
 import Container from '@material-ui/core/Container';
+import Drawer from '@material-ui/core/Drawer';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import Divider from '@material-ui/core/Divider';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import ListItemText from '@material-ui/core/ListItemText';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import Switch from '@material-ui/core/Switch';
+import AccountCircle from '@material-ui/icons/AccountCircle';
+import ExitToApp from '@material-ui/icons/ExitToApp';
+import GetApp from '@material-ui/icons/GetApp';
+import Publish from '@material-ui/icons/Publish';
 import { makeStyles } from '@material-ui/core/styles';
 import * as React from 'react';
 import {
@@ -27,11 +39,12 @@ const Home = ({
     auth: ?Data,
 }) => {
     const [linksCol, links] = useCollection(React, client, 'links');
-    // const [showAll, setShowAll] = React.useState(false);
+    const [showAll, setShowAll] = React.useState(false);
     const [numToShow, setNumToShow] = React.useState(20);
     const [dialog, setDialog] = React.useState(null);
+    const [menu, setMenu] = React.useState(false);
 
-    const showAll = false;
+    // const showAll = false;
 
     // We want to show any links that, at first load of this screen,
     // were not collapsed.
@@ -70,7 +83,64 @@ const Home = ({
 
     return (
         <React.Fragment>
-            <TopBar auth={auth} setDialog={setDialog} logout={logout} />
+            <TopBar
+                auth={auth}
+                setDialog={setDialog}
+                logout={logout}
+                openMenu={() => setMenu(true)}
+            />
+            <Drawer anchor={'left'} open={menu} onClose={() => setMenu(false)}>
+                <List>
+                    {auth ? (
+                        <ListItem>
+                            <ListItemIcon>
+                                <AccountCircle />
+                            </ListItemIcon>
+                            <ListItemText primary={auth.user.email} />
+                        </ListItem>
+                    ) : (
+                        <ListItem button>
+                            <ListItemIcon>
+                                <AccountCircle />
+                            </ListItemIcon>
+                            <ListItemText primary="Sign in" />
+                        </ListItem>
+                    )}
+                    <Divider />
+                    <ListItem button onClick={() => setDialog('export')}>
+                        <ListItemIcon>
+                            <GetApp />
+                        </ListItemIcon>
+                        <ListItemText primary="Export" />
+                    </ListItem>
+                    <ListItem button onClick={() => setDialog('import')}>
+                        <ListItemIcon>
+                            <Publish />
+                        </ListItemIcon>
+                        <ListItemText primary="Import" />
+                    </ListItem>
+                    <ListItem>
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={showAll}
+                                    onChange={() => setShowAll(!showAll)}
+                                    color="primary"
+                                />
+                            }
+                            label="Show completed"
+                        />
+                    </ListItem>
+                    <Divider />
+                    <ListItem button onClick={logout}>
+                        <ListItemIcon>
+                            <ExitToApp />
+                        </ListItemIcon>
+                        <ListItemText primary="Sign out" />
+                    </ListItem>
+                </List>
+                <Divider />
+            </Drawer>
             <Container maxWidth="sm" className={styles.container}>
                 <Adder
                     host={host}

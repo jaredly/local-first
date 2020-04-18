@@ -3,6 +3,7 @@ import AppBar from '@material-ui/core/AppBar';
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import Menu from '@material-ui/core/Menu';
+import Hidden from '@material-ui/core/Hidden';
 import MenuItem from '@material-ui/core/MenuItem';
 import { makeStyles } from '@material-ui/core/styles';
 import Toolbar from '@material-ui/core/Toolbar';
@@ -14,16 +15,18 @@ import type { Data } from './auth-api';
 const TopBar = ({
     auth,
     setDialog,
+    openMenu,
     logout,
 }: {
     auth: ?Data,
+    openMenu: () => void,
     setDialog: ('export' | 'import') => void,
     logout: () => mixed,
 }) => {
     const styles = useStyles();
-    const [menuOpen, setMenuOpen] = React.useState(false);
+    // const [menuOpen, setMenuOpen] = React.useState(false);
 
-    const anchorEl = React.useRef(null);
+    // const anchorEl = React.useRef(null);
 
     return (
         <AppBar position="sticky">
@@ -33,6 +36,7 @@ const TopBar = ({
                     className={styles.menuButton}
                     color="inherit"
                     aria-label="menu"
+                    onClick={openMenu}
                 >
                     <MenuIcon />
                 </IconButton>
@@ -55,16 +59,16 @@ const TopBar = ({
                         />
                 </div> */}
 
-                <Button
+                {/* <Button
                     color="inherit"
                     onClick={(evt) => setMenuOpen(true)}
                     ref={(node) => (anchorEl.current = node)}
                     className={styles.userButton}
                 >
                     {auth ? auth.user.email : 'Login to sync'}
-                </Button>
+                </Button> */}
 
-                <Menu
+                {/* <Menu
                     anchorEl={anchorEl.current}
                     keepMounted
                     open={menuOpen}
@@ -94,7 +98,7 @@ const TopBar = ({
                     >
                         Import Data
                     </MenuItem>
-                </Menu>
+                </Menu> */}
             </Toolbar>
         </AppBar>
     );
