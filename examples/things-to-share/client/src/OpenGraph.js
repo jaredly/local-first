@@ -125,9 +125,10 @@ const OpenGraph = ({
             (type === 'article' &&
                 (site_name !== 'Twitter' ||
                     getOg(data, 'og:image:user_generated') === 'true'))
-                ? images.map((url) => (
+                ? images.map((url, i) => (
                       <CardMedia
                           key={url}
+                          style={i > 0 ? { marginTop: 12 } : null}
                           component="img"
                           // className={classes.media}
                           image={url}
