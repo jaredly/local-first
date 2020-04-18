@@ -1,124 +1,19 @@
 // @flow
-import * as React from 'react';
-
-import Container from '@material-ui/core/Container';
-import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
-import Grid from '@material-ui/core/Grid';
-import Paper from '@material-ui/core/Paper';
-import Typography from '@material-ui/core/Typography';
-import AppBar from '@material-ui/core/AppBar';
-import Switch from '@material-ui/core/Switch';
-import Toolbar from '@material-ui/core/Toolbar';
-import IconButton from '@material-ui/core/IconButton';
-import Menu from '@material-ui/core/Menu';
-import MenuItem from '@material-ui/core/MenuItem';
-
-import MenuIcon from '@material-ui/icons/Menu';
-import CloseIcon from '@material-ui/icons/Close';
-
+import Container from '@material-ui/core/Container';
 import { makeStyles } from '@material-ui/core/styles';
-
-import { useCollection } from '../../../../packages/client-react';
+import * as React from 'react';
 import {
-    createInMemoryDeltaClient,
-    createPersistedDeltaClient,
-    createPersistedBlobClient,
     type Client,
     type SyncStatus,
 } from '../../../../packages/client-bundle';
-import { default as makeDeltaInMemoryPersistence } from '../../../../packages/idb/src/delta-mem';
-
-import { TagSchema, LinkSchema, type LinkT } from './types';
-
+import { useCollection } from '../../../../packages/client-react';
 import Adder from './Adder';
-
 import type { Data } from './auth-api';
-
-import LinkItem from './LinkItem';
 import ExportDialog from './ExportDialog';
 import ImportDialog from './ImportDialog';
-
-const TopBar = ({ auth, setDialog, logout }) => {
-    const styles = useStyles();
-    const [menuOpen, setMenuOpen] = React.useState(false);
-
-    const anchorEl = React.useRef(null);
-
-    return (
-        <AppBar position="sticky">
-            <Toolbar>
-                <IconButton
-                    edge="start"
-                    className={styles.menuButton}
-                    color="inherit"
-                    aria-label="menu"
-                >
-                    <MenuIcon />
-                </IconButton>
-                <Typography variant="h6" className={styles.title}>
-                    Things to Share
-                </Typography>
-
-                {/* 
-                <div
-                    style={{
-                        flexWrap: 'wrap',
-                        display: 'flex',
-                        alignItems: 'center',
-                    }}
-                >
-                    <Typography>Show completed</Typography>
-                    <Switch
-                            checked={showAll}
-                            onChange={() => setShowAll(!showAll)}
-                        />
-                </div> */}
-
-                <Button
-                    color="inherit"
-                    onClick={(evt) => setMenuOpen(true)}
-                    ref={(node) => (anchorEl.current = node)}
-                    className={styles.userButton}
-                >
-                    {auth ? auth.user.email : 'Login to sync'}
-                </Button>
-
-                <Menu
-                    anchorEl={anchorEl.current}
-                    keepMounted
-                    open={menuOpen}
-                    onClose={() => setMenuOpen(false)}
-                >
-                    <MenuItem
-                        onClick={() => {
-                            setMenuOpen(false);
-                            logout();
-                        }}
-                    >
-                        Log out
-                    </MenuItem>
-                    <MenuItem
-                        onClick={() => {
-                            setDialog('export');
-                            setMenuOpen(false);
-                        }}
-                    >
-                        Export Data
-                    </MenuItem>
-                    <MenuItem
-                        onClick={() => {
-                            setDialog('import');
-                            setMenuOpen(false);
-                        }}
-                    >
-                        Import Data
-                    </MenuItem>
-                </Menu>
-            </Toolbar>
-        </AppBar>
-    );
-};
+import LinkItem from './LinkItem';
+import TopBar from './TopBar';
 
 const Home = ({
     client,
@@ -162,7 +57,9 @@ const Home = ({
             }
         });
         lastLinks.current = links;
-        setInitiallyCompleted((state) => ({ ...state, ...newCompleted }));
+        if (hasNew) {
+            setInitiallyCompleted((state) => ({ ...state, ...newCompleted }));
+        }
     }, [links]);
 
     const styles = useStyles();

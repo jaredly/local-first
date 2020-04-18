@@ -1,20 +1,11 @@
 // @flow
 import { render } from 'react-dom';
 import React from 'react';
-import Button from '@material-ui/core/Button';
 import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 
 import 'typeface-roboto';
 
-import {
-    createInMemoryDeltaClient,
-    createPersistedDeltaClient,
-    createPersistedBlobClient,
-} from '../../../../packages/client-bundle';
-import { default as makeDeltaInMemoryPersistence } from '../../../../packages/idb/src/delta-mem';
 import CssBaseline from '@material-ui/core/CssBaseline';
-
-import { TagSchema, LinkSchema } from './types';
 
 import Auth from './Auth';
 import App from './App';

@@ -287,7 +287,6 @@ export const useAuthStatus = (host: string) => {
     }, [host]);
 
     React.useEffect(() => {
-        const fn = (auth) => setStatus(auth);
         return listen((auth) => setStatus(auth));
     }, []);
 

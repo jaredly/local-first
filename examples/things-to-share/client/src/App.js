@@ -1,33 +1,19 @@
 // @flow
-import * as React from 'react';
-import querystring from 'querystring';
-
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
-import Menu from '@material-ui/core/Menu';
-import MenuItem from '@material-ui/core/MenuItem';
 import Snackbar from '@material-ui/core/Snackbar';
-
 import CloseIcon from '@material-ui/icons/Close';
-
-import { makeStyles } from '@material-ui/core/styles';
-
-import { useCollection } from '../../../../packages/client-react';
+import querystring from 'querystring';
+import * as React from 'react';
 import {
-    createInMemoryDeltaClient,
-    createPersistedDeltaClient,
     createPersistedBlobClient,
-    type Client,
-    type SyncStatus,
+    createPersistedDeltaClient,
 } from '../../../../packages/client-bundle';
-// import { default as makeDeltaInMemoryPersistence } from '../../../../packages/idb/src/delta-mem';
-
-import { TagSchema, LinkSchema, type LinkT } from './types';
-
-import type { Data } from './auth-api';
-
 import Adder from './Adder';
+import type { Data } from './auth-api';
 import Home from './Home';
+// import { default as makeDeltaInMemoryPersistence } from '../../../../packages/idb/src/delta-mem';
+import { LinkSchema, type LinkT, TagSchema } from './types';
 
 const schemas = {
     tags: TagSchema,
@@ -65,7 +51,7 @@ const App = ({
               );
     }, [auth && auth.token]);
 
-    const [addingUrl, setAddingUrl] = React.useState(() => {
+    const addingUrl = React.useMemo(() => {
         const params = querystring.parse(window.location.search.slice(1));
         if (params.url) {
             return params.url;
@@ -86,7 +72,7 @@ const App = ({
             }
         }
         return null;
-    });
+    }, []);
 
     const linksCol = React.useMemo(
         () => client.getCollection<LinkT>('links'),
@@ -187,40 +173,5 @@ const App = ({
         </React.Fragment>
     );
 };
-
-const useStyles = makeStyles((theme) => ({
-    container: {
-        paddingTop: theme.spacing(4),
-        paddingBottom: theme.spacing(4),
-    },
-    title: {
-        flexGrow: 1,
-    },
-    menuButton: {
-        marginRight: theme.spacing(2),
-    },
-    root: {
-        backgroundColor: theme.palette.background.paper,
-        overflow: 'hidden',
-    },
-    body: {
-        padding: theme.spacing(2),
-    },
-    topBar: {
-        padding: theme.spacing(2),
-        backgroundColor: theme.palette.primary.light,
-        color: theme.palette.primary.contrastText,
-    },
-    userButton: {
-        '& > span': {
-            display: 'inline',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-        },
-        textTransform: 'none',
-        minWidth: 0,
-    },
-}));
 
 export default App;
