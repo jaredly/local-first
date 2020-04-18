@@ -1,6 +1,7 @@
 // @flow
 import IconButton from '@material-ui/core/IconButton';
 import Link from '@material-ui/core/Link';
+import Button from '@material-ui/core/Button';
 import Paper from '@material-ui/core/Paper';
 import { makeStyles } from '@material-ui/core/styles';
 import CheckBoxIcon from '@material-ui/icons/CheckBox';
@@ -29,18 +30,15 @@ const useStyles = makeStyles((theme) => ({
     },
     titleRow: {
         cursor: 'pointer',
-        // paddingLeft: theme.spacing(2),
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
     },
-    // completionBox: {
-    //     position: 'absolute',
-    //     top: 0,
-    //     right: 0,
-    // },
     completionIcon: {
         fontSize: theme.spacing(4),
+    },
+    deleteButton: {
+        marginTop: theme.spacing(2),
     },
 }));
 
@@ -133,6 +131,16 @@ const LinkItem = ({
                         ) : (
                             'Unable to fetch content'
                         )}
+                        <Button
+                            className={styles.deleteButton}
+                            onClick={() => {
+                                linksCol.delete(link.id);
+                                // would be nice to have an "undo" within easy reach, right?
+                                // would that just consist of "recreating" it?
+                            }}
+                        >
+                            Delete
+                        </Button>
                     </div>
                 ) : null}
             </div>

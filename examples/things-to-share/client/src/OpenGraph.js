@@ -113,8 +113,8 @@ const OpenGraph = ({
         <Card className={nested ? styles.nestedRoot : styles.root}>
             <CardContent>
                 <Typography
-                    style={{ whiteSpace: 'pre-wrap' }}
-                    variant="h4"
+                    style={{ whiteSpace: 'pre-wrap', fontWeight: 300 }}
+                    variant="h5"
                     color="textSecondary"
                     component="p"
                 >

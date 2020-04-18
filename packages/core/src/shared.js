@@ -225,7 +225,12 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             const res = {};
             Object.keys(all).forEach(id => {
                 state.cache[id] = all[id];
-                res[id] = crdt.value(all[id]);
+                const v = crdt.value(all[id]);
+                // STOPSHIP there should be a `crdt.isEmpty` or something
+                // to allow true null values if we want them
+                if (v != null) {
+                    res[id] = v;
+                }
             });
             return res;
         },
