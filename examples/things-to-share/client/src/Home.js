@@ -25,6 +25,7 @@ import ExportDialog from './ExportDialog';
 import ImportDialog from './ImportDialog';
 import LinkItem from './LinkItem';
 import TopBar from './TopBar';
+import EditTagDialog from './EditTagDialog';
 
 import Drawer from './Drawer';
 
@@ -39,13 +40,12 @@ const Home = ({
     host: string,
     auth: ?Data,
 }) => {
+    const [tagsCol, tags] = useCollection(React, client, 'tags');
     const [linksCol, links] = useCollection(React, client, 'links');
     const [showAll, setShowAll] = React.useState(false);
     const [numToShow, setNumToShow] = React.useState(20);
     const [dialog, setDialog] = React.useState(null);
     const [menu, setMenu] = React.useState(false);
-
-    // const showAll = false;
 
     // We want to show any links that, at first load of this screen,
     // were not collapsed.
@@ -59,6 +59,8 @@ const Home = ({
         return completed;
     });
     const lastLinks = React.useRef(links);
+
+    const [editTag, setEditTag] = React.useState(false);
 
     React.useEffect(() => {
         console.log('links changed');
@@ -98,6 +100,9 @@ const Home = ({
                 showAll={showAll}
                 setShowAll={setShowAll}
                 logout={logout}
+                tags={tags}
+                tagsCol={tagsCol}
+                editTag={setEditTag}
             />
             <Container maxWidth="sm" className={styles.container}>
                 <Adder
@@ -120,6 +125,7 @@ const Home = ({
                     <React.Fragment key={key}>
                         {i !== 0 ? <div style={{ height: 12 }} /> : null}
                         <LinkItem
+                            tags={tags}
                             linksCol={linksCol}
                             link={links[key]}
                             key={key}
@@ -145,6 +151,14 @@ const Home = ({
                 client={client}
                 onClose={() => setDialog(null)}
             />
+            {editTag !== false ? (
+                <EditTagDialog
+                    client={client}
+                    tagsCol={tagsCol}
+                    tag={editTag}
+                    onClose={() => setEditTag(false)}
+                />
+            ) : null}
         </React.Fragment>
     );
 };

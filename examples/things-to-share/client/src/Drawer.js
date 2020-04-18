@@ -10,10 +10,18 @@ import ListItemText from '@material-ui/core/ListItemText';
 import Switch from '@material-ui/core/Switch';
 import AccountCircle from '@material-ui/icons/AccountCircle';
 import ExitToApp from '@material-ui/icons/ExitToApp';
+import Label from '@material-ui/icons/Label';
+import LabelOutlined from '@material-ui/icons/LabelOutlined';
 import GetApp from '@material-ui/icons/GetApp';
 import Publish from '@material-ui/icons/Publish';
 import * as React from 'react';
 import type { Data } from './auth-api';
+import type { TagT } from './types';
+import {
+    type Client,
+    type SyncStatus,
+    type Collection,
+} from '../../../../packages/client-bundle';
 
 const MyDrawer = ({
     onClose,
@@ -23,6 +31,9 @@ const MyDrawer = ({
     showAll,
     setShowAll,
     logout,
+    tags,
+    tagsCol,
+    editTag,
 }: {
     open: boolean,
     setDialog: ('export' | 'import') => void,
@@ -31,6 +42,9 @@ const MyDrawer = ({
     logout: () => mixed,
     auth: ?Data,
     onClose: () => void,
+    tags: { [key: string]: TagT },
+    tagsCol: Collection<TagT>,
+    editTag: (?TagT) => void,
 }) => {
     return (
         <Drawer anchor={'left'} open={open} onClose={onClose}>
@@ -74,6 +88,21 @@ const MyDrawer = ({
                         }
                         label="Show completed"
                     />
+                </ListItem>
+                <Divider />
+                {Object.keys(tags).map((k) => (
+                    <ListItem button onClick={() => editTag(tags[k])} key={k}>
+                        <ListItemIcon>
+                            <Label />
+                        </ListItemIcon>
+                        <ListItemText primary={tags[k].title} />
+                    </ListItem>
+                ))}
+                <ListItem button onClick={() => editTag(null)}>
+                    <ListItemIcon>
+                        <LabelOutlined />
+                    </ListItemIcon>
+                    <ListItemText primary="New Tag" />
                 </ListItem>
                 <Divider />
                 <ListItem button onClick={logout}>
