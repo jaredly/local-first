@@ -223,6 +223,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         async loadAll() {
             const all = await persistence.loadAll(colid);
             const res = {};
+            // Why isn't this being loaded correctly?
             Object.keys(all).forEach(id => {
                 state.cache[id] = all[id];
                 const v = crdt.value(all[id]);
