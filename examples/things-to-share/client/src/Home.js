@@ -107,14 +107,17 @@ const Home = ({
             <Container maxWidth="sm" className={styles.container}>
                 <Adder
                     host={host}
-                    onAdd={(url, fetchedContent) => {
+                    tags={tags}
+                    onAdd={(url, fetchedContent, currentTags) => {
                         const id = client.getStamp();
+                        const tags = {};
+                        currentTags.forEach((k) => (tags[k] = true));
                         linksCol.save(id, {
                             id,
                             url,
                             fetchedContent,
                             added: Date.now(),
-                            tags: {},
+                            tags,
                             description: null,
                             completed: null,
                         });

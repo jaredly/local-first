@@ -2,6 +2,7 @@
 import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
 import IconButton from '@material-ui/core/IconButton';
+import Autocomplete from '@material-ui/lab/Autocomplete';
 import Paper from '@material-ui/core/Paper';
 import { makeStyles } from '@material-ui/core/styles';
 import TextField from '@material-ui/core/TextField';
@@ -11,6 +12,7 @@ import * as React from 'react';
 import { animated, useSpring } from 'react-spring';
 import useMeasure from 'react-use-measure';
 import OpenGraph from './OpenGraph';
+import { type TagT } from './types';
 
 const useStyles = makeStyles((theme) => ({
     container: {
@@ -53,9 +55,11 @@ const Adder = ({
     host,
     onCancel,
     initialUrl,
+    tags,
 }: {
     host: string,
-    onAdd: (string, mixed) => void,
+    tags: { [key: string]: TagT },
+    onAdd: (string, mixed, Array<string>) => void,
     onCancel?: () => void,
     initialUrl?: string,
 }) => {
@@ -153,9 +157,10 @@ const Adder = ({
                     <AdderBody
                         initialUrl={initialUrl}
                         host={host}
-                        onAdd={(link, data) => {
+                        tags={tags}
+                        onAdd={(link, data, tags) => {
                             setOpen(false);
-                            onAdd(link, data);
+                            onAdd(link, data, tags);
                         }}
                     />
                 ) : null}
@@ -168,14 +173,17 @@ const AdderBody = ({
     onAdd,
     host,
     initialUrl,
+    tags,
 }: {
     host: string,
-    onAdd: (string, mixed) => void,
+    onAdd: (string, mixed, Array<string>) => void,
     initialUrl?: string,
+    tags: { [key: string]: TagT },
 }) => {
     const styles = useStyles();
     const [link, setLink] = React.useState(initialUrl || '');
     const [data, setData] = React.useState(null);
+    const [editTags, setEditTags] = React.useState([]);
     // const [tags, setTags] = React.useState({});
     const [loading, setLoading] = React.useState(false);
 
@@ -217,6 +225,26 @@ const AdderBody = ({
                         />
                     </Grid>
                 </Grid>
+                <Grid item>
+                    <Autocomplete
+                        multiple
+                        id="tags-standard"
+                        options={Object.keys(tags).map((k) => tags[k])}
+                        getOptionLabel={(option) => option.title}
+                        value={editTags.map((k) => tags[k])}
+                        onChange={(_, tags) =>
+                            setEditTags(tags.map((tag) => tag.id))
+                        }
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                variant="standard"
+                                label="Tags"
+                                placeholder="Tags"
+                            />
+                        )}
+                    />
+                </Grid>
                 {/* {JSON.stringify(data)} */}
                 <Grid item>
                     <Button
@@ -225,12 +253,12 @@ const AdderBody = ({
                         disabled={!link.trim()}
                         onClick={() => {
                             if (data != null) {
-                                onAdd(link, data);
+                                onAdd(link, data, editTags);
                             } else {
                                 setLoading(true);
                                 getData(host, link).then((ogData) => {
                                     setLoading(false);
-                                    onAdd(link, ogData);
+                                    onAdd(link, ogData, editTags);
                                 });
                             }
                         }}

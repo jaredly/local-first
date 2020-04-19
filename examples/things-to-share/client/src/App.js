@@ -51,6 +51,8 @@ const App = ({
               );
     }, [auth && auth.token]);
 
+    // TODO need a way to do like "client.clear()" or something
+
     const addingUrl = React.useMemo(() => {
         const params = querystring.parse(window.location.search.slice(1));
         if (params.url) {

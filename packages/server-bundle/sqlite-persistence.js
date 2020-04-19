@@ -21,7 +21,7 @@ function queryRun(db, sql, params = []) {
     return stmt.run(...params);
 }
 
-const mkdirp = (dir) => {
+const mkdirp = dir => {
     if (fs.existsSync(dir)) {
         return;
     }
@@ -33,9 +33,9 @@ const setupPersistence = function<Delta, Data>(baseDir: string): Persistence<Del
     mkdirp(baseDir);
     const db = sqlite3(baseDir + '/data.db');
     const dbs = {};
-    const tableName = (col) => col + ':messages';
-    const escapedTableName = (col) => JSON.stringify(tableName(col));
-    const setupDb = (col) => {
+    const tableName = col => col + ':messages';
+    const escapedTableName = col => JSON.stringify(tableName(col));
+    const setupDb = col => {
         if (dbs[col]) {
             return;
         }
@@ -100,7 +100,7 @@ const setupPersistence = function<Delta, Data>(baseDir: string): Persistence<Del
                         {
                             id: maxId,
                             changes: JSON.stringify(
-                                Object.keys(byNode).map((node) => ({
+                                Object.keys(byNode).map(node => ({
                                     node,
                                     delta: byNode[node],
                                 })),

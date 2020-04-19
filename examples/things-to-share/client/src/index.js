@@ -25,8 +25,8 @@ const node = document.createElement('div');
 if (document.body) {
     document.body.appendChild(node);
 }
-// const host = 'localhost:9090';
-const host = 'things-to-share.glitch.me';
+const host = 'localhost:9090';
+// const host = 'things-to-share.glitch.me';
 window.addEventListener('load', () => {
     render(
         <ThemeProvider theme={darkTheme}>

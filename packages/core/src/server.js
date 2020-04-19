@@ -76,12 +76,9 @@ export type Persistence<Delta, Data> = {
         collection: string,
         sessionId: string,
         deltas: Array<{ node: string, delta: Delta }>,
+        schema: Schema,
     ): void,
-    compact(
-        collection: string,
-        date: number,
-        merge: (Delta, Delta) => Delta,
-    ): void,
+    compact(collection: string, date: number, merge: (Delta, Delta) => Delta): void,
     // TODO maybe store nodes too though
     // This would be quite interesting really.
 };
@@ -95,7 +92,7 @@ type Connection<Delta, Data> = {
 export type ServerState<Delta, Data> = {
     persistence: Persistence<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,
-    // getSchema: string => Schema,
+    getSchema: string => ?Schema,
     clients: {
         [sessionId: string]: {
             collections: {
@@ -118,11 +115,7 @@ export const getMessages = function<Delta, Data>(
     return colids
         .map((cid: string): ?ServerMessage<Delta, Data> => {
             const lastSeen = state.clients[sessionId].collections[cid];
-            const result = state.persistence.deltasSince(
-                cid,
-                lastSeen,
-                sessionId,
-            );
+            const result = state.persistence.deltasSince(cid, lastSeen, sessionId);
             if ((!result || !result.deltas.length) && lastSeen == null) {
                 return {
                     type: 'sync',
@@ -169,30 +162,49 @@ export const onMessage = function<Delta, Data>(
     message: ClientMessage<Delta, Data>,
 ): ?ServerMessage<Delta, Data> {
     if (message.type === 'sync') {
+        const schema = state.getSchema(message.collection);
+        if (!schema) {
+            console.warn(`No schema found for ${message.collection}`);
+            // TODO should I surface an error here? Break off the connection?
+            return;
+        }
+        if (
+            !message.deltas.every(message => {
+                try {
+                    // TODO need to manage flow in a better way, do I have per-crdt schemas or something?
+                    // I don't love ditching type safety in a bunch of places, but I also don't love making
+                    // this more specific than it needs to be.
+                    const delta: any = message.delta;
+                    switch (delta.type) {
+                        case 'set':
+                            validateSet(schema, delta.path, delta.value);
+                            break;
+                        case 'insert':
+                        case 'reorder':
+                            // TODO TDODO
+                            break;
+                    }
+                    return true;
+                } catch (err) {
+                    return false;
+                }
+            })
+        ) {
+            console.log('Faield!');
+            // TODO probably surface an error, like an error-type message folks
+            return;
+        }
         if (!state.clients[sessionId]) {
             state.clients[sessionId] = { collections: {} };
         }
-        // const schema = state.getSchema(message.collection);
-        // console.log(
-        //     'Setting server cursor',
-        //     message.serverCursor,
-        //     message.collection,
-        // );
-        // TODO should I only set this if its present?
         if (
             message.serverCursor != null ||
             state.clients[sessionId].collections[message.collection] == null
         ) {
-            state.clients[sessionId].collections[message.collection] =
-                message.serverCursor;
+            state.clients[sessionId].collections[message.collection] = message.serverCursor;
         }
         if (message.deltas.length) {
-            // const deltas = message.deltas.map(item => ({ ...item, sessionId }));
-            state.persistence.addDeltas(
-                message.collection,
-                sessionId,
-                message.deltas,
-            );
+            state.persistence.addDeltas(message.collection, sessionId, message.deltas, schema);
             let maxStamp = null;
             message.deltas.forEach(delta => {
                 const stamp = state.crdt.deltas.stamp(delta.delta);
@@ -202,27 +214,29 @@ export const onMessage = function<Delta, Data>(
             });
             // console.log('max', maxStamp, message.deltas);
             if (maxStamp) {
-                // console.log('acking');
+                console.log('acking');
                 return {
                     type: 'ack',
                     deltaStamp: maxStamp,
                     collection: message.collection,
                 };
+            } else {
+                console.log('no max stamp??');
             }
             // console.log('not acking');
         }
     } else if (message.type === 'ack') {
-        state.clients[sessionId].collections[message.collection] =
-            message.serverCursor;
+        console.log('acked');
+        state.clients[sessionId].collections[message.collection] = message.serverCursor;
     }
 };
 
 const make = <Delta, Data>(
     crdt: CRDTImpl<Delta, Data>,
     persistence: Persistence<Delta, Data>,
-    // getSchema: string => Schema,
+    getSchema: string => ?Schema,
 ): ServerState<Delta, Data> => {
-    return { crdt, persistence, clients: {} };
+    return { crdt, persistence, getSchema, clients: {} };
 };
 
 export default make;

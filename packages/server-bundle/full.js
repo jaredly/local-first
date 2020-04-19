@@ -35,11 +35,15 @@ const crdtImpl = {
     },
 };
 
-export const serverForUser = (dataPath: string, userId: string) => {
-    return make<Delta, Data>(crdtImpl, setupPersistence(path.join(dataPath, '' + userId)));
+export const serverForUser = (dataPath: string, userId: string, getSchema: string => ?Schema) => {
+    return make<Delta, Data>(
+        crdtImpl,
+        setupPersistence(path.join(dataPath, '' + userId)),
+        getSchema,
+    );
 };
 
-export const run = (dataPath: string, port: number = 9090) => {
+export const run = (dataPath: string, getSchema: string => ?Schema, port: number = 9090) => {
     if (process.env.NO_AUTH == null) {
         const { SECRET: secret } = process.env;
         if (secret == null) {
@@ -60,7 +64,7 @@ export const run = (dataPath: string, port: number = 9090) => {
                     throw new Error(`No auth`);
                 }
                 if (!userServers[req.auth.id]) {
-                    userServers[req.auth.id] = serverForUser(dataPath, req.auth.id);
+                    userServers[req.auth.id] = serverForUser(dataPath, req.auth.id, getSchema);
                 }
                 return userServers[req.auth.id];
             },
@@ -71,8 +75,8 @@ export const run = (dataPath: string, port: number = 9090) => {
         state.app.listen(port);
         return state;
     } else {
-        const server = make<Delta, Data>(crdtImpl, setupPersistence(dataPath));
-        const ephemeralServer = make<Delta, Data>(crdtImpl, setupInMemoryPersistence());
+        const server = make<Delta, Data>(crdtImpl, setupPersistence(dataPath), getSchema);
+        const ephemeralServer = make<Delta, Data>(crdtImpl, setupInMemoryPersistence(), getSchema);
         dataPath = path.join(dataPath, 'anon');
         const state = runServer(
             // port,
