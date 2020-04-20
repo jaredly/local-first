@@ -6,12 +6,31 @@ import { type Client } from '../client-bundle';
 export const useSyncStatus = function<SyncStatus>(React: *, client: Client<SyncStatus>) {
     const [status, setStatus] = React.useState(client.getSyncStatus());
     React.useEffect(() => {
-        return client.onSyncStatus((status) => {
+        return client.onSyncStatus(status => {
             console.log('status', status);
             setStatus(status);
         });
     }, []);
     return status;
+};
+
+export const useItem = function<T: {}, SyncStatus>(
+    React: *,
+    client: Client<SyncStatus>,
+    colid: string,
+    id: string,
+) {
+    const col = React.useMemo(() => client.getCollection<T>(colid), []);
+    // TODO something to indicate whether we've loaded from the database yet
+    // also something to indicate whether we've ever synced with a server.
+    const [item, setItem] = React.useState(col.getCached(id));
+    React.useEffect(() => {
+        col.load(id).then(data => {
+            setItem(data);
+        });
+        return col.onItemChange(id, setItem);
+    }, []);
+    return [col, item];
 };
 
 export const useCollection = function<T: {}, SyncStatus>(
@@ -24,10 +43,10 @@ export const useCollection = function<T: {}, SyncStatus>(
     // also something to indicate whether we've ever synced with a server.
     const [data, setData] = React.useState(({}: { [key: string]: T }));
     React.useEffect(() => {
-        col.loadAll().then((data) => {
-            setData((a) => ({ ...a, ...data }));
-            col.onChanges((changes) => {
-                setData((data) => {
+        col.loadAll().then(data => {
+            setData(a => ({ ...a, ...data }));
+            col.onChanges(changes => {
+                setData(data => {
                     const n = { ...data };
                     changes.forEach(({ value, id }) => {
                         if (value) {

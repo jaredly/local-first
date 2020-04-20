@@ -21,6 +21,7 @@ export const TagSchema: Schema = {
 export type ItemT = {
     id: string,
     title: string,
+    style: ?string, // could be 'group', or something else I guess
     description: string,
     createdDate: number,
     completedDate: ?number,
@@ -30,14 +31,30 @@ export type ItemT = {
     tags: { [tagId: string]: number },
     emojis: { [emoji: string]: number },
 
-    parent: ?{ id: string, idx: Sort },
+    // parent: ?{ id: string, idx: Sort },
+    children: Array<string>,
 };
+
+export const newItem = (id: string, title: string) => ({
+    id,
+    title,
+    style: null,
+    description: '',
+    createdDate: Date.now(),
+    checkDates: {},
+    dueDate: null,
+    timeEstimate: null,
+    tags: {},
+    emojis: {},
+    children: [],
+});
 
 export const ItemSchema: Schema = {
     type: 'object',
     attributes: {
         id: 'string',
         title: 'string',
+        style: { type: 'optional', value: 'string' },
         description: 'string',
         createdDate: 'number',
         completedDate: { type: 'optional', value: 'number' },
@@ -46,10 +63,11 @@ export const ItemSchema: Schema = {
         timeEstimate: { type: 'optional', value: 'number' },
         tags: { type: 'map', value: 'number' },
         emojis: { type: 'map', value: 'number' },
-        parent: {
-            type: 'optional',
-            value: { type: 'object', attributes: { id: 'string', idx: 'array' } },
-        },
+        // parent: {
+        //     type: 'optional',
+        //     value: { type: 'object', attributes: { id: 'string', idx: 'array' } },
+        // },
+        children: 'id-array',
     },
 };
 

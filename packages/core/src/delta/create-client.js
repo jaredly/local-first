@@ -215,6 +215,8 @@ function createClient<Delta, Data, SyncStatus>(
               return onCrossTabChanges(crdt, persistence, state[msg.col], msg.col, msg.nodes);
           }, innerNetwork);
 
+    const collections = {};
+
     return {
         sessionId: clock.now.node,
         getStamp: clock.get,
@@ -246,17 +248,20 @@ function createClient<Delta, Data, SyncStatus>(
             //
         },
         getCollection<T>(colid: string) {
-            return getCollection(
-                colid,
-                crdt,
-                persistence,
-                state[colid],
-                clock.get,
-                network.setDirty,
-                network.sendCrossTabChanges,
-                schemas[colid],
-                undoManager,
-            );
+            if (!collections[colid]) {
+                collections[colid] = getCollection(
+                    colid,
+                    crdt,
+                    persistence,
+                    state[colid],
+                    clock.get,
+                    network.setDirty,
+                    network.sendCrossTabChanges,
+                    schemas[colid],
+                    undoManager,
+                );
+            }
+            return collections[colid];
         },
         onSyncStatus(fn) {
             network.onSyncStatus(fn);

@@ -16,6 +16,19 @@ export const get = function<T, O, Other>(crdt: CRDT<T, Other>, path: Array<strin
         );
     }
     if (crdt.meta.type === 'array') {
+        if (typeof key === 'string') {
+            if (crdt.meta.items[key]) {
+                return get(
+                    {
+                        meta: crdt.meta.items[key].meta,
+                        // $FlowFixMe
+                        value: crdt.value[crdt.meta.idsInOrder.indexOf(key)],
+                    },
+                    path.slice(1),
+                );
+            }
+            return null;
+        }
         if (typeof key !== 'number') {
             throw new Error(`Must use a numeric index`);
         }
@@ -128,8 +141,10 @@ export const deltas = {
         stamp: string,
     ): HostDelta<T, Other> {
         const array = get(current, path);
-        if (array.meta.type !== 'array') {
-            throw new Error(`Can only insert into an array, not a ${array.meta.type}`);
+        if (!array || array.meta.type !== 'array') {
+            throw new Error(
+                `Can only insert into an array, not a ${array ? array.meta.type : 'null'}`,
+            );
         }
         const meta = array.meta;
         const sort = {
@@ -151,8 +166,10 @@ export const deltas = {
         stamp: string,
     ): HostDelta<T, Other> {
         const array = get(current, path);
-        if (array.meta.type !== 'array') {
-            throw new Error(`Can only insert into an array, not a ${array.meta.type}`);
+        if (!array || array.meta.type !== 'array') {
+            throw new Error(
+                `Can only insert into an array, not a ${array ? array.meta.type : 'null'}`,
+            );
         }
         const meta = array.meta;
         const without = meta.idsInOrder.slice();

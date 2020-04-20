@@ -111,6 +111,9 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         setDirty();
     };
     return {
+        getCached: (id: string) => {
+            return state.cache[id] != null ? crdt.value(state.cache[id]) : null;
+        },
         async save(id: string, node: T) {
             validate(node, schema);
             // NOTE this overwrites everything, setAttribute will do much better merges
@@ -181,6 +184,47 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             return applyDelta(id, delta);
         },
 
+        async insertId(id: string, path: Array<string | number>, idx: number, childId: string) {
+            const sub = subSchema(schema, path);
+
+            if (state.cache[id] == null) {
+                const stored = await persistence.load(colid, id);
+                if (!stored) {
+                    throw new Error(`Cannot set attribute, node with id ${id} doesn't exist`);
+                }
+                state.cache[id] = stored;
+            }
+
+            const stamp = getStamp();
+            const delta = crdt.deltas.insert(
+                state.cache[id],
+                path,
+                idx,
+                childId,
+                crdt.createValue(childId, stamp, getStamp, 'string'),
+                stamp,
+            );
+
+            if (undoManager) {
+                const cached = state.cache[id];
+                const prev = crdt.get(cached, path.concat([childId]));
+                // undoManager.add(() => {
+                //     const delta = crdt.deltas.set(
+                //         // STOPSHIP this is wrong!
+                //         cached,
+                //         path.concat([childId]),
+                //         prev != null
+                //             ? crdt.createValue(crdt.value(prev), getStamp(), getStamp, sub)
+                //             : crdt.createEmpty(getStamp()),
+                //     );
+                //     return applyDelta(id, delta);
+                // })
+                console.warn('UNDO not set up for "insert"');
+            }
+
+            return applyDelta(id, delta);
+        },
+
         async setAttribute(id: string, path: Array<string | number>, value: any) {
             const sub = subSchema(schema, path);
             validate(value, sub);
@@ -192,10 +236,11 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                 state.cache[id] = stored;
             }
             if (undoManager) {
-                const prev = crdt.get(state.cache[id], path);
+                const cached = state.cache[id];
+                const prev = crdt.get(cached, path);
                 undoManager.add(() => {
                     const delta = crdt.deltas.set(
-                        state.cache[id],
+                        cached,
                         path,
                         prev != null
                             ? crdt.createValue(crdt.value(prev), getStamp(), getStamp, sub)

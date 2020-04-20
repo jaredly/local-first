@@ -42,15 +42,15 @@ class ValidationError extends Error {
 }
 
 const expectType = (v, name, path) => {
-    if (v && typeof v !== name) {
+    if (v == null) {
+        throw new ValidationError(`Expected type ${name}`, v, path);
+    }
+    if (typeof v !== name) {
         throw new ValidationError(`Expected type ${name}`, v, path);
     }
 };
 
 const expectObject = (v, path) => {
-    if (v === null) {
-        throw new ValidationError(`Expected object, not null`, v, path);
-    }
     expectType(v, 'object', path);
     if (Array.isArray(v)) {
         throw new ValidationError(`Expected object, not array`, v, path);
@@ -138,7 +138,12 @@ export const validateDelta = function<T, Other, OtherDelta>(
                 break;
             case 'insert':
                 // TODO this doesn't validate that we're dealing with an array, I don't think? Oh maybe it does
-                validateSet(t, delta.path.map(p => p.key).concat([0]), delta.value.value);
+                // console.log('validating insert', delta.path);
+                validateSet(
+                    t,
+                    delta.path.map(p => p.key),
+                    delta.value.value,
+                );
                 break;
             case 'reorder':
                 validateSet(
@@ -178,7 +183,14 @@ export const validatePath = (
         return check(t);
     }
     const attr = setPath[0];
+    if (t === 'id-array') {
+        if (setPath.length > 1) {
+            throw new ValidationError(`Can't set more than 1 level into an id-array`, t, path);
+        }
+        return;
+    }
     if (typeof t !== 'object') {
+        console.log(setPath, path, t);
         throw new ValidationError(`Invalid sub path, not a nested type`, t, path);
     }
     switch (t.type) {
@@ -267,7 +279,7 @@ export const validate = (value: any, t: Type, path: Array<string | number> = [])
                 expectArray(value, path);
                 return value.forEach(v => validate(v, t.item, path));
             case 'optional':
-                if (value == null) {
+                if (value != null) {
                     validate(value, t.value, path);
                 }
                 return;
