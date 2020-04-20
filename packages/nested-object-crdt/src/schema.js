@@ -30,7 +30,11 @@ class ValidationError extends Error {
     value: any;
     path: Array<string | number>;
     constructor(message, value, path: Array<string | number>) {
-        super(`${message} ${JSON.stringify(value)} ${path.map(m => m.toString()).join(' - ')}`);
+        super(
+            `${message} ${JSON.stringify(value) ?? 'undefined'} ${path
+                .map(m => m.toString())
+                .join(' - ')}`,
+        );
         this.value = value;
         this.path = path;
     }
@@ -139,6 +143,20 @@ export const validateDelta = function<T, Other, OtherDelta>(
                     [],
                 );
                 break;
+            case 'other':
+                validatePath(
+                    t,
+                    delta.path.map(p => p.key),
+                    inner => {
+                        if (inner.type !== 'rich-text') {
+                            throw new ValidationError(
+                                `Cannot apply a "rich text" delta to path`,
+                                delta.delta,
+                                delta.path.map(p => p.key),
+                            );
+                        }
+                    },
+                );
         }
     } catch (err) {
         console.error(err);
