@@ -1,0 +1,44 @@
+{
+    "name": "things-to-share-client",
+    "private": true,
+    "version": "1.0.0",
+    "dependencies": {
+        "@birchill/json-equalish": "^1.1.0",
+        "@emotion/core": "^10.0.28",
+        "@material-ui/core": "^4.9.9",
+        "@material-ui/icons": "^4.9.1",
+        "@material-ui/lab": "^4.0.0-alpha.49",
+        "@types/react": "^16.8.6",
+        "broadcast-channel": "^3.0.3",
+        "gravatar-url": "^3.1.0",
+        "idb": "^5.0.1",
+        "pako": "^1.0.11",
+        "parse-color": "^1.0.0",
+        "querystring": "^0.2.0",
+        "react": "^16.8.0",
+        "react-dom": "^16.8.0",
+        "react-spring": "^8.0.27",
+        "react-use-measure": "^2.0.0",
+        "typeface-roboto": "^0.0.75"
+    },
+    "scripts": {
+        "deploy": "npm run build && cd dist && surge . things-to-share.surge.sh",
+        "build": "rm -rf dist && parcel build index.html"
+    },
+    "browserslist": [
+        "last 1 Chrome versions"
+    ],
+    "devDependencies": {
+        "@babel/core": "^7.0.0-0",
+        "@babel/plugin-proposal-class-properties": "^7.8.3",
+        "@babel/register": "^7.8.3",
+        "babel-eslint": "^10.1.0",
+        "eslint": "^6.8.0",
+        "eslint-plugin-react": "^7.19.0",
+        "fast-deep-equal": "^3.1.1",
+        "flow-bin": "^0.116.1",
+        "parcel": "^1.12.4",
+        "parcel-plugin-workbox-cache": "^2.0.0",
+        "prettier": "^2.0.4"
+    }
+}

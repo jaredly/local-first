@@ -3,10 +3,7 @@ import type { Meta, HostDelta, CRDT, Delta, OtherMerge } from './types';
 import { latestStamp } from './utils';
 import * as sortedArray from './array-utils';
 
-export const get = function<T, O, Other>(
-    crdt: CRDT<T, Other>,
-    path: Array<string | number>,
-) {
+export const get = function<T, O, Other>(crdt: CRDT<T, Other>, path: Array<string | number>) {
     if (path.length === 0) {
         return crdt;
     }
@@ -34,23 +31,16 @@ export const get = function<T, O, Other>(
     throw new Error(`Can't get a sub item of a ${crdt.meta.type}`);
 };
 
-const makeKeyPath = function<T, Other>(
-    current: Meta<Other>,
-    path: Array<string | number>,
-) {
+const makeKeyPath = function<T, Other>(current: Meta<Other>, path: Array<string | number>) {
     return path.map((item, i) => {
         if (!current) {
-            throw new Error(
-                `Invalid key path - doesn't represent the current state of things.`,
-            );
+            throw new Error(`Invalid key path - doesn't represent the current state of things.`);
         }
         const stamp = current.hlcStamp;
         if (current.type === 'array') {
             if (typeof item === 'number') {
                 if (current.type !== 'array') {
-                    throw new Error(
-                        `Cannot get a number ${item} of a ${current.type}`,
-                    );
+                    throw new Error(`Cannot get a number ${item} of a ${current.type}`);
                 }
                 const key = current.idsInOrder[item];
                 if (!key) {
@@ -75,9 +65,7 @@ const makeKeyPath = function<T, Other>(
             current = current.map[item];
             return { stamp, key: item };
         } else {
-            throw new Error(
-                `Can't get a sub-item ${item} of a ${current.type}`,
-            );
+            throw new Error(`Can't get a sub-item ${item} of a ${current.type}`);
         }
     });
 };
@@ -141,18 +129,12 @@ export const deltas = {
     ): HostDelta<T, Other> {
         const array = get(current, path);
         if (array.meta.type !== 'array') {
-            throw new Error(
-                `Can only insert into an array, not a ${array.meta.type}`,
-            );
+            throw new Error(`Can only insert into an array, not a ${array.meta.type}`);
         }
         const meta = array.meta;
         const sort = {
             stamp,
-            idx: sortedArray.sortForInsertion(
-                meta.idsInOrder,
-                id => meta.items[id].sort.idx,
-                idx,
-            ),
+            idx: sortedArray.sortForInsertion(meta.idsInOrder, id => meta.items[id].sort.idx, idx),
         };
         return {
             type: 'insert',
@@ -170,20 +152,14 @@ export const deltas = {
     ): HostDelta<T, Other> {
         const array = get(current, path);
         if (array.meta.type !== 'array') {
-            throw new Error(
-                `Can only insert into an array, not a ${array.meta.type}`,
-            );
+            throw new Error(`Can only insert into an array, not a ${array.meta.type}`);
         }
         const meta = array.meta;
         const without = meta.idsInOrder.slice();
         const [id] = without.splice(idx, 1);
         const sort = {
             stamp,
-            idx: sortedArray.sortForInsertion(
-                without,
-                id => meta.items[id].sort.idx,
-                newIdx,
-            ),
+            idx: sortedArray.sortForInsertion(without, id => meta.items[id].sort.idx, newIdx),
         };
         // console.log(without, )
         return {

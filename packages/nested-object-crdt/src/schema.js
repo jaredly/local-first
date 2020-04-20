@@ -14,6 +14,7 @@ export type Type =
     | 'array'
     | 'any'
     | 'rich-text'
+    | 'id-array'
     | {| type: 'array', item: Type |}
     | Schema
     | {| type: 'map', value: Type |}
@@ -78,6 +79,9 @@ export const subSchema = (
         return t;
     }
     const attr = setPath[0];
+    // if (t === 'id-array') {
+    //     return 'string'
+    // }
     if (typeof t !== 'object') {
         throw new ValidationError(`Invalid sub path, not a nested type`, t, path);
     }
@@ -247,6 +251,9 @@ export const validate = (value: any, t: Type, path: Array<string | number> = [])
                 return expectObject(value, path);
             case 'array':
                 return expectArray(value, path);
+            case 'id-array':
+                expectArray(value, path);
+                return value.forEach((v, i) => expectType(v, 'string', path.concat(i)));
             case 'rich-text':
                 return expectRichText(value, path);
             case 'any':
@@ -258,7 +265,7 @@ export const validate = (value: any, t: Type, path: Array<string | number> = [])
         switch (t.type) {
             case 'array':
                 expectArray(value, path);
-                return value.every(v => validate(v, t.item, path));
+                return value.forEach(v => validate(v, t.item, path));
             case 'optional':
                 if (value == null) {
                     validate(value, t.value, path);
@@ -266,14 +273,14 @@ export const validate = (value: any, t: Type, path: Array<string | number> = [])
                 return;
             case 'map':
                 expectObject(value, path);
-                Object.keys(value).every(k => validate(value[k], t.value, path.concat([k])));
-                return;
+                return Object.keys(value).forEach(k =>
+                    validate(value[k], t.value, path.concat([k])),
+                );
             case 'object':
                 expectObject(value, path);
-                Object.keys(t.attributes).every(k =>
+                return Object.keys(t.attributes).forEach(k =>
                     validate(value[k], t.attributes[k], path.concat([k])),
                 );
-                return;
             default:
                 throw new Error(`Invalid schema: ${JSON.stringify(t)}`);
         }

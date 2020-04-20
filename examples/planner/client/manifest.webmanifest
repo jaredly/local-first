@@ -1,0 +1,22 @@
+{
+    "short_name": "Planner",
+    "name": "Planner",
+    "description": "Plan to do things, and then do them",
+    "start_url": "/?source=pwa",
+    "icons": [
+        {
+            "src": "/icons/icon512.png",
+            "type": "image/png",
+            "sizes": "512x512"
+        },
+        {
+            "src": "/icons/icon192.png",
+            "type": "image/png",
+            "sizes": "192x192"
+        }
+    ],
+    "background_color": "#9c27b0",
+    "display": "standalone",
+    "scope": "/",
+    "theme_color": "#9c27b0"
+}
