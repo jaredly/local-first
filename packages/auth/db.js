@@ -65,7 +65,7 @@ export const createTables = (db: DB) => {
 export type UserInfo = {
     name: string,
     email: string,
-    createdDate: number
+    createdDate: number,
 };
 
 export type UserInput = { info: UserInfo, password: string };
@@ -80,7 +80,7 @@ export const createUser = (db: DB, { info: { name, email, createdDate }, passwor
     if (info.changes !== 1) {
         throw new Error(`Unexpected sqlite response: ${info.changes} should be '1'`);
     }
-    return info.lastInsertRowId;
+    return info.lastInsertRowid;
 };
 
 export const checkUserExists = (db: DB, email: string) => {
@@ -92,7 +92,7 @@ export const checkUserExists = (db: DB, email: string) => {
 export const loginUser = (
     db: DB,
     email: string,
-    password: string
+    password: string,
 ): ?{ id: number, info: UserInfo } | false => {
     const stmt = db.prepare(`SELECT * FROM users WHERE email = ?`);
     const result = stmt.get(email);
@@ -103,8 +103,8 @@ export const loginUser = (
             info: {
                 name: result.name,
                 email: result.email,
-                createdDate: result.createdDate
-            }
+                createdDate: result.createdDate,
+            },
         };
     } else {
         return false;
@@ -121,7 +121,7 @@ export const createUserSession = (db: DB, secret: string, userId: number, ipAddr
         ipAddress,
         createdDate: Date.now(),
         // valid for a year
-        expirationDate
+        expirationDate,
     });
     if (info.changes !== 1) {
         throw new Error(`Unexpected sqlite response: ${info.changes} should be '1'`);
@@ -131,9 +131,9 @@ export const createUserSession = (db: DB, secret: string, userId: number, ipAddr
     const token = jwt.sign(
         {
             data: sessionId + '',
-            exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30
+            exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30,
         },
-        secret
+        secret,
     );
     return token;
 };
@@ -162,7 +162,7 @@ const jwt = require('jsonwebtoken');
 export const validateSessionToken = (
     db: DB,
     secret: string,
-    token: string
+    token: string,
 ): ?{ user: UserInfo, sessionId: number } => {
     let sessionId = null;
     try {
@@ -191,8 +191,8 @@ export const validateSessionToken = (
         user: {
             name: user.name,
             email: user.email,
-            createdDate: user.createdDate
+            createdDate: user.createdDate,
         },
-        sessionId
+        sessionId,
     };
 };

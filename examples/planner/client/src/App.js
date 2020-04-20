@@ -9,7 +9,7 @@ import {
     createPersistedBlobClient,
     createPersistedDeltaClient,
 } from '../../../../packages/client-bundle';
-import Adder from './Adder';
+// import Adder from './Adder';
 import type { Data } from './auth-api';
 
 // import Home from './Home';
