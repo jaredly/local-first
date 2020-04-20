@@ -1,6 +1,6 @@
 // @flow
 
-// import type { Delta } from './index';
+import type { Delta } from './types';
 // import { type CRDT, value as baseValue } from './index';
 
 export type Type =
@@ -30,11 +30,7 @@ class ValidationError extends Error {
     value: any;
     path: Array<string | number>;
     constructor(message, value, path: Array<string | number>) {
-        super(
-            `${message} ${JSON.stringify(value)} ${path
-                .map(m => m.toString())
-                .join(' - ')}`,
-        );
+        super(`${message} ${JSON.stringify(value)} ${path.map(m => m.toString()).join(' - ')}`);
         this.value = value;
         this.path = path;
     }
@@ -55,12 +51,7 @@ const expectObject = (v, path) => {
 
 const expectRichText = (v, path) => {
     expectType(v, 'object', path);
-    if (
-        !('site' in v) ||
-        !('map' in v) ||
-        !('largestLocalId' in v) ||
-        !('roots' in v)
-    ) {
+    if (!('site' in v) || !('map' in v) || !('largestLocalId' in v) || !('roots' in v)) {
         throw new Error(`Doesn't look like a rich text object`);
     }
 };
@@ -81,11 +72,7 @@ export const subSchema = (
     }
     const attr = setPath[0];
     if (typeof t !== 'object') {
-        throw new ValidationError(
-            `Invalid sub path, not a nested type`,
-            t,
-            path,
-        );
+        throw new ValidationError(`Invalid sub path, not a nested type`, t, path);
     }
     switch (t.type) {
         case 'array':
@@ -99,19 +86,34 @@ export const subSchema = (
                 throw new Error(`Object attributes must be strings`);
             }
             if (!t.attributes[attr]) {
-                throw new ValidationError(
-                    `Invalid sub path`,
-                    t,
-                    path.concat([attr]),
-                );
+                throw new ValidationError(`Invalid sub path`, t, path.concat([attr]));
             }
-            return subSchema(
-                t.attributes[attr],
-                setPath.slice(1),
-                path.concat([attr]),
-            );
+            return subSchema(t.attributes[attr], setPath.slice(1), path.concat([attr]));
         default:
             throw new Error(`Invalid type schema ${JSON.stringify(t)}`);
+    }
+};
+
+export const validateDelta = function<T, Other, OtherDelta>(
+    t: Type,
+    delta: Delta<T, Other, OtherDelta>,
+) {
+    switch (delta.type) {
+        case 'set':
+            return validateSet(
+                t,
+                delta.path.map(p => p.key),
+                delta.value.value,
+            );
+        case 'insert':
+            // TODO this doesn't validate that we're dealing with an array, I don't think? Oh maybe it does
+            return validateSet(t, delta.path.map(p => p.key).concat([0]), delta.value.value);
+        case 'reorder':
+            return validateSet(
+                t,
+                delta.path.map(p => p.key),
+                [],
+            );
     }
 };
 
@@ -126,56 +128,29 @@ export const validateSet = (
     }
     const attr = setPath[0];
     if (typeof t !== 'object') {
-        throw new ValidationError(
-            `Invalid sub path, not a nested type`,
-            t,
-            path,
-        );
+        throw new ValidationError(`Invalid sub path, not a nested type`, t, path);
     }
     switch (t.type) {
         case 'array':
-            return validateSet(
-                t.item,
-                setPath.slice(1),
-                value,
-                path.concat([attr]),
-            );
+            return validateSet(t.item, setPath.slice(1), value, path.concat([attr]));
         case 'optional':
             return validateSet(t.value, setPath, value, path);
         case 'map':
-            return validateSet(
-                t.value,
-                setPath.slice(1),
-                value,
-                path.concat([attr]),
-            );
+            return validateSet(t.value, setPath.slice(1), value, path.concat([attr]));
         case 'object':
             if (typeof attr !== 'string') {
                 throw new Error(`Object attributes must be strings`);
             }
             if (!t.attributes[attr]) {
-                throw new ValidationError(
-                    `Invalid sub path`,
-                    t,
-                    path.concat([attr]),
-                );
+                throw new ValidationError(`Invalid sub path`, t, path.concat([attr]));
             }
-            return validateSet(
-                t.attributes[attr],
-                setPath.slice(1),
-                value,
-                path.concat([attr]),
-            );
+            return validateSet(t.attributes[attr], setPath.slice(1), value, path.concat([attr]));
         default:
             throw new Error(`Invalid type schema ${JSON.stringify(t)}`);
     }
 };
 
-export const validate = (
-    value: any,
-    t: Type,
-    path: Array<string | number> = [],
-) => {
+export const validate = (value: any, t: Type, path: Array<string | number> = []) => {
     if (typeof t === 'string') {
         switch (t) {
             case 'id':
@@ -206,9 +181,7 @@ export const validate = (
                 return value == null || validate(value, t.value, path);
             case 'map':
                 expectObject(value, path);
-                return Object.keys(value).every(k =>
-                    validate(value[k], t.value, path.concat([k])),
-                );
+                return Object.keys(value).every(k => validate(value[k], t.value, path.concat([k])));
             case 'object':
                 expectObject(value, path);
                 return Object.keys(t.attributes).every(k =>

@@ -18,18 +18,12 @@ import { get } from './deltas';
 export const applyDelta = function<T, O, Other, OtherDelta>(
     crdt: ?CRDT<T, Other>,
     delta: Delta<O, Other, OtherDelta>,
-    applyOtherDelta: <T, Other>(
-        T,
-        Other,
-        OtherDelta,
-    ) => { value: T, meta: Other },
+    applyOtherDelta: <T, Other>(T, Other, OtherDelta) => { value: T, meta: Other },
     mergeOther: OtherMerge<Other>,
 ): CRDT<T, Other> {
     if (!crdt) {
         if (delta.type !== 'set' || delta.path.length) {
-            throw new Error(
-                `Only a 'replace' delta can be applied to an empty base`,
-            );
+            throw new Error(`Only a 'replace' delta can be applied to an empty base`);
         }
         // $FlowFixMe
         return delta.value;
@@ -47,10 +41,7 @@ export const applyDelta = function<T, O, Other, OtherDelta>(
     throw new Error('unknown delta type' + JSON.stringify(delta));
 };
 
-export const remove = function<T, Other>(
-    crdt: CRDT<T, Other>,
-    ts: string,
-): CRDT<null, Other> {
+export const remove = function<T, Other>(crdt: CRDT<T, Other>, ts: string): CRDT<null, Other> {
     return { value: null, meta: { type: 't', hlcStamp: ts } };
 };
 
@@ -179,11 +170,7 @@ export const otherDelta = function<T, Other, OtherDelta>(
     crdt: CRDT<T, Other>,
     path: KeyPath,
     delta: OtherDelta,
-    applyOtherDelta: <T, Other>(
-        T,
-        Other,
-        OtherDelta,
-    ) => { value: T, meta: Other },
+    applyOtherDelta: <T, Other>(T, Other, OtherDelta) => { value: T, meta: Other },
 ): CRDT<T, Other> {
     return applyInner(crdt, path, (inner, id) => {
         if (inner.meta.type === 'map') {
@@ -324,6 +311,7 @@ export const set = function<T, O, Other>(
         return merge(
             crdt.value,
             crdt.meta,
+            // $FlowFixMe
             value.value,
             value.meta,
             mergeOther,
@@ -335,11 +323,7 @@ export const set = function<T, O, Other>(
             return value;
         }
         if (inner.meta.type === 'map') {
-            if (
-                !inner.value ||
-                typeof inner.value !== 'object' ||
-                Array.isArray(inner.value)
-            ) {
+            if (!inner.value || typeof inner.value !== 'object' || Array.isArray(inner.value)) {
                 throw new Error(`Invalid value, doesn't match meta type 'map'`);
             }
             return mapSet(inner.value, inner.meta, key, value, mergeOther);
@@ -380,11 +364,7 @@ const applyInner = function<T, O, Other, R>(
     if (crdt.meta.type === 'map') {
         const cmeta = crdt.meta;
         const k = key[0].key;
-        if (
-            crdt.value == null ||
-            typeof crdt.value !== 'object' ||
-            Array.isArray(crdt.value)
-        ) {
+        if (crdt.value == null || typeof crdt.value !== 'object' || Array.isArray(crdt.value)) {
             throw new Error(`Invalid CRDT! Meta is misaligned with the value`);
         }
         const v = crdt.value[k];
@@ -445,13 +425,7 @@ export const mergeMaps = function<T: {}, Other>(
     const meta = { ...m1, map: { ...m1.map } };
     Object.keys(v2).forEach(k => {
         if (meta.map[k]) {
-            const res = merge(
-                value[k],
-                meta.map[k],
-                v2[k],
-                m2.map[k],
-                mergeOther,
-            );
+            const res = merge(value[k], meta.map[k], v2[k], m2.map[k], mergeOther);
             value[k] = res.value;
             meta.map[k] = res.meta;
         } else {
@@ -504,9 +478,7 @@ export const mergeArrays = function<T, Other>(
     //     m2.idsInOrder,
     //     m2.idsInOrder === m1.idsInOrder,
     // );
-    allIds.sort((a, b) =>
-        sortedArray.compare(fullMap[a].meta.sort.idx, fullMap[b].meta.sort.idx),
-    );
+    allIds.sort((a, b) => sortedArray.compare(fullMap[a].meta.sort.idx, fullMap[b].meta.sort.idx));
     const items = {};
     allIds.forEach(id => {
         items[id] = fullMap[id].meta;
@@ -526,13 +498,7 @@ export const mergeTwo = function<A, Other>(
     two: CRDT<A, Other>,
     mergeOther: OtherMerge<Other>,
 ): CRDT<A, Other> {
-    return (merge<A, A, Other>(
-        one.value,
-        one.meta,
-        two.value,
-        two.meta,
-        mergeOther,
-    ): any);
+    return (merge<A, A, Other>(one.value, one.meta, two.value, two.meta, mergeOther): any);
 };
 
 export const merge = function<A, B, Other>(

@@ -1,0 +1,17 @@
+[ignore]
+.*/bower\.json
+.*/config\.json
+
+[include]
+../../../packages
+../client/src/types.js
+
+[libs]
+
+[lints]
+sketchy-null=error
+sketchy-null-bool=off
+
+[options]
+
+[strict]

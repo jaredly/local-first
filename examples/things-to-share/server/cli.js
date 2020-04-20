@@ -3,12 +3,13 @@
 require('@babel/register')({
     ignore: [/node_modules/],
     presets: ['@babel/preset-flow', '@babel/preset-env'],
-    plugins: ['@babel/plugin-proposal-class-properties']
+    plugins: ['@babel/plugin-proposal-class-properties'],
 });
 
-const { serverForUser } = require('../../../packages/server-bundle/full.js');
+const { serverForUser, crdtImpl } = require('../../../packages/server-bundle/full.js');
 const fs = require('fs');
 const path = require('path');
+const { getSchemaChecker } = require('./getSchema');
 
 const cliSession = `_cli_${Date.now()}`;
 
@@ -29,7 +30,7 @@ const commands = {
             return hlc.pack(clock);
         };
 
-        const server = serverForUser(path.join(__dirname, '.data'), userId);
+        const server = serverForUser(path.join(__dirname, '.data'), userId, getSchemaChecker);
         const data = JSON.parse(fs.readFileSync(fileName, 'utf8'));
         server.persistence.addDeltas(
             collection,
@@ -39,11 +40,11 @@ const commands = {
                 delta: {
                     type: 'set',
                     path: [],
-                    value: server.crdt.createWithSchema(data, getStamp(), getStamp, LinkSchema)
-                }
-            }))
+                    value: crdtImpl.createWithSchema(data, getStamp(), getStamp, LinkSchema),
+                },
+            })),
         );
-    }
+    },
 };
 
 const [_, __, cmd, ...opts] = process.argv;

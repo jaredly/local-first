@@ -1,10 +1,5 @@
 // @flow
 import * as hlc from '../../hybrid-logical-clock';
-import {
-    type Schema,
-    validate,
-    validateSet,
-} from '../../../packages/nested-object-crdt/src/schema.js';
 
 // OK folks, we're using sqlite for persistence. This is *synchronous*, which is lots of fun.
 // And so we can I guess design an API that expects that.
@@ -76,7 +71,6 @@ export type Persistence<Delta, Data> = {
         collection: string,
         sessionId: string,
         deltas: Array<{ node: string, delta: Delta }>,
-        schema: Schema,
     ): void,
     compact(collection: string, date: number, merge: (Delta, Delta) => Delta): void,
     // TODO maybe store nodes too though
@@ -92,7 +86,7 @@ type Connection<Delta, Data> = {
 export type ServerState<Delta, Data> = {
     persistence: Persistence<Delta, Data>,
     crdt: CRDTImpl<Delta, Data>,
-    getSchema: string => ?Schema,
+    getSchemaChecker: string => ?(Delta) => ?string,
     clients: {
         [sessionId: string]: {
             collections: {
@@ -162,37 +156,18 @@ export const onMessage = function<Delta, Data>(
     message: ClientMessage<Delta, Data>,
 ): ?ServerMessage<Delta, Data> {
     if (message.type === 'sync') {
-        const schema = state.getSchema(message.collection);
-        if (!schema) {
+        const schemaChecker = state.getSchemaChecker(message.collection);
+        if (!schemaChecker) {
             console.warn(`No schema found for ${message.collection}`);
             // TODO should I surface an error here? Break off the connection?
             return;
         }
-        if (
-            !message.deltas.every(message => {
-                try {
-                    // TODO need to manage flow in a better way, do I have per-crdt schemas or something?
-                    // I don't love ditching type safety in a bunch of places, but I also don't love making
-                    // this more specific than it needs to be.
-                    const delta: any = message.delta;
-                    switch (delta.type) {
-                        case 'set':
-                            validateSet(schema, delta.path, delta.value);
-                            break;
-                        case 'insert':
-                        case 'reorder':
-                            // TODO TDODO
-                            break;
-                    }
-                    return true;
-                } catch (err) {
-                    return false;
-                }
-            })
-        ) {
-            console.log('Faield!');
-            // TODO probably surface an error, like an error-type message folks
-            return;
+        for (const delta of message.deltas) {
+            const error = schemaChecker(delta.delta);
+            if (error != null) {
+                console.error(`Delta on ${delta.node} failed schema check! ${error}`);
+                return;
+            }
         }
         if (!state.clients[sessionId]) {
             state.clients[sessionId] = { collections: {} };
@@ -204,7 +179,7 @@ export const onMessage = function<Delta, Data>(
             state.clients[sessionId].collections[message.collection] = message.serverCursor;
         }
         if (message.deltas.length) {
-            state.persistence.addDeltas(message.collection, sessionId, message.deltas, schema);
+            state.persistence.addDeltas(message.collection, sessionId, message.deltas);
             let maxStamp = null;
             message.deltas.forEach(delta => {
                 const stamp = state.crdt.deltas.stamp(delta.delta);
@@ -234,9 +209,9 @@ export const onMessage = function<Delta, Data>(
 const make = <Delta, Data>(
     crdt: CRDTImpl<Delta, Data>,
     persistence: Persistence<Delta, Data>,
-    getSchema: string => ?Schema,
+    getSchemaChecker: string => ?(Delta) => ?string,
 ): ServerState<Delta, Data> => {
-    return { crdt, persistence, getSchema, clients: {} };
+    return { crdt, persistence, getSchemaChecker, clients: {} };
 };
 
 export default make;

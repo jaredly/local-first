@@ -25,9 +25,9 @@ const applyOtherDelta = (text: rich.CRDT, meta: null, delta: rich.Delta) => {
     };
 };
 
-const crdtImpl = {
-    createWithSchema: (data, stamp, getStamp, schema) =>
-        crdt.createWithSchema(data, stamp, getStamp, schema, () => null),
+export const crdtImpl = {
+    createWithSchema: (data: any, stamp: string, getStamp: () => string, schema: Schema) =>
+        crdt.createWithSchema<any, any>(data, stamp, getStamp, schema, () => null),
     createEmpty: crdt.createEmpty,
     applyDelta: (base, delta) => crdt.applyDelta(base, delta, (applyOtherDelta: any), otherMerge),
     deltas: {
@@ -35,15 +35,23 @@ const crdtImpl = {
     },
 };
 
-export const serverForUser = (dataPath: string, userId: string, getSchema: string => ?Schema) => {
+export const serverForUser = (
+    dataPath: string,
+    userId: string,
+    getSchemaChecker: string => ?(Delta) => ?string,
+) => {
     return make<Delta, Data>(
         crdtImpl,
         setupPersistence(path.join(dataPath, '' + userId)),
-        getSchema,
+        getSchemaChecker,
     );
 };
 
-export const run = (dataPath: string, getSchema: string => ?Schema, port: number = 9090) => {
+export const run = (
+    dataPath: string,
+    getSchemaChecker: string => ?(Delta) => ?string,
+    port: number = 9090,
+) => {
     if (process.env.NO_AUTH == null) {
         const { SECRET: secret } = process.env;
         if (secret == null) {
@@ -64,7 +72,11 @@ export const run = (dataPath: string, getSchema: string => ?Schema, port: number
                     throw new Error(`No auth`);
                 }
                 if (!userServers[req.auth.id]) {
-                    userServers[req.auth.id] = serverForUser(dataPath, req.auth.id, getSchema);
+                    userServers[req.auth.id] = serverForUser(
+                        dataPath,
+                        req.auth.id,
+                        getSchemaChecker,
+                    );
                 }
                 return userServers[req.auth.id];
             },
@@ -75,8 +87,12 @@ export const run = (dataPath: string, getSchema: string => ?Schema, port: number
         state.app.listen(port);
         return state;
     } else {
-        const server = make<Delta, Data>(crdtImpl, setupPersistence(dataPath), getSchema);
-        const ephemeralServer = make<Delta, Data>(crdtImpl, setupInMemoryPersistence(), getSchema);
+        const server = make<Delta, Data>(crdtImpl, setupPersistence(dataPath), getSchemaChecker);
+        const ephemeralServer = make<Delta, Data>(
+            crdtImpl,
+            setupInMemoryPersistence(),
+            getSchemaChecker,
+        );
         dataPath = path.join(dataPath, 'anon');
         const state = runServer(
             // port,
