@@ -43,6 +43,9 @@ const expectType = (v, name, path) => {
 };
 
 const expectObject = (v, path) => {
+    if (v === null) {
+        throw new ValidationError(`Expected object, not null`, v, path);
+    }
     expectType(v, 'object', path);
     if (Array.isArray(v)) {
         throw new ValidationError(`Expected object, not array`, v, path);
@@ -97,23 +100,82 @@ export const subSchema = (
 export const validateDelta = function<T, Other, OtherDelta>(
     t: Type,
     delta: Delta<T, Other, OtherDelta>,
-) {
-    switch (delta.type) {
-        case 'set':
-            return validateSet(
-                t,
-                delta.path.map(p => p.key),
-                delta.value.value,
-            );
-        case 'insert':
-            // TODO this doesn't validate that we're dealing with an array, I don't think? Oh maybe it does
-            return validateSet(t, delta.path.map(p => p.key).concat([0]), delta.value.value);
-        case 'reorder':
-            return validateSet(
-                t,
-                delta.path.map(p => p.key),
-                [],
-            );
+): ?string {
+    try {
+        switch (delta.type) {
+            case 'set':
+                // we're removing something, just need to validate that the path exists
+                if (delta.value.meta.type === 't') {
+                    validatePath(
+                        t,
+                        delta.path.map(p => p.key),
+                        // either it must be allowed to be empty (e.g. optional), or the path must be toplevel
+                        inner => {
+                            if (inner.type !== 'optional' && delta.path.length > 0) {
+                                throw new ValidationError(
+                                    `Clearing out something that's not optional`,
+                                    null,
+                                    delta.path.map(p => p.key),
+                                );
+                            }
+                        },
+                    );
+                } else {
+                    validateSet(
+                        t,
+                        delta.path.map(p => p.key),
+                        delta.value.value,
+                    );
+                }
+                break;
+            case 'insert':
+                // TODO this doesn't validate that we're dealing with an array, I don't think? Oh maybe it does
+                validateSet(t, delta.path.map(p => p.key).concat([0]), delta.value.value);
+                break;
+            case 'reorder':
+                validateSet(
+                    t,
+                    delta.path.map(p => p.key),
+                    [],
+                );
+                break;
+        }
+    } catch (err) {
+        console.error(err);
+        return err.message;
+    }
+};
+
+export const validatePath = (
+    t: Type,
+    setPath: Array<string | number>,
+    check: Type => void,
+    path: Array<string | number> = [],
+) => {
+    if (setPath.length === 0) {
+        return check(t);
+    }
+    const attr = setPath[0];
+    if (typeof t !== 'object') {
+        throw new ValidationError(`Invalid sub path, not a nested type`, t, path);
+    }
+    switch (t.type) {
+        case 'array':
+            return validatePath(t.item, setPath.slice(1), check, path.concat([attr]));
+        case 'optional':
+            return validatePath(t.value, setPath, check, path);
+        case 'map':
+            return validatePath(t.value, setPath.slice(1), check, path.concat([attr]));
+        case 'object':
+            if (typeof attr !== 'string') {
+                throw new Error(`Object attributes must be strings`);
+            }
+            if (!t.attributes[attr]) {
+                throw new ValidationError(`Invalid sub path`, t, path.concat([attr]));
+            }
+            return validatePath(t.attributes[attr], setPath.slice(1), check, path.concat([attr]));
+        default:
+            throw new Error(`Invalid type schema ${JSON.stringify(t)}`);
     }
 };
 
@@ -123,34 +185,35 @@ export const validateSet = (
     value: any,
     path: Array<string | number> = [],
 ) => {
-    if (setPath.length === 0) {
-        return validate(value, t);
-    }
-    const attr = setPath[0];
-    if (typeof t !== 'object') {
-        throw new ValidationError(`Invalid sub path, not a nested type`, t, path);
-    }
-    switch (t.type) {
-        case 'array':
-            return validateSet(t.item, setPath.slice(1), value, path.concat([attr]));
-        case 'optional':
-            return validateSet(t.value, setPath, value, path);
-        case 'map':
-            return validateSet(t.value, setPath.slice(1), value, path.concat([attr]));
-        case 'object':
-            if (typeof attr !== 'string') {
-                throw new Error(`Object attributes must be strings`);
-            }
-            if (!t.attributes[attr]) {
-                throw new ValidationError(`Invalid sub path`, t, path.concat([attr]));
-            }
-            return validateSet(t.attributes[attr], setPath.slice(1), value, path.concat([attr]));
-        default:
-            throw new Error(`Invalid type schema ${JSON.stringify(t)}`);
-    }
+    validatePath(t, setPath, t => validate(value, t));
+    // if (setPath.length === 0) {
+    //     return validate(value, t);
+    // }
+    // const attr = setPath[0];
+    // if (typeof t !== 'object') {
+    //     throw new ValidationError(`Invalid sub path, not a nested type`, t, path);
+    // }
+    // switch (t.type) {
+    //     case 'array':
+    //         return validateSet(t.item, setPath.slice(1), value, path.concat([attr]));
+    //     case 'optional':
+    //         return validateSet(t.value, setPath, value, path);
+    //     case 'map':
+    //         return validateSet(t.value, setPath.slice(1), value, path.concat([attr]));
+    //     case 'object':
+    //         if (typeof attr !== 'string') {
+    //             throw new Error(`Object attributes must be strings`);
+    //         }
+    //         if (!t.attributes[attr]) {
+    //             throw new ValidationError(`Invalid sub path`, t, path.concat([attr]));
+    //         }
+    //         return validateSet(t.attributes[attr], setPath.slice(1), value, path.concat([attr]));
+    //     default:
+    //         throw new Error(`Invalid type schema ${JSON.stringify(t)}`);
+    // }
 };
 
-export const validate = (value: any, t: Type, path: Array<string | number> = []) => {
+export const validate = (value: any, t: Type, path: Array<string | number> = []): void => {
     if (typeof t === 'string') {
         switch (t) {
             case 'id':
@@ -169,24 +232,30 @@ export const validate = (value: any, t: Type, path: Array<string | number> = [])
             case 'rich-text':
                 return expectRichText(value, path);
             case 'any':
-                return true;
+                return;
             default:
                 throw new Error('Invalid schema: ' + t);
         }
     } else if (typeof t === 'object') {
         switch (t.type) {
             case 'array':
+                expectArray(value, path);
                 return value.every(v => validate(v, t.item, path));
             case 'optional':
-                return value == null || validate(value, t.value, path);
+                if (value == null) {
+                    validate(value, t.value, path);
+                }
+                return;
             case 'map':
                 expectObject(value, path);
-                return Object.keys(value).every(k => validate(value[k], t.value, path.concat([k])));
+                Object.keys(value).every(k => validate(value[k], t.value, path.concat([k])));
+                return;
             case 'object':
                 expectObject(value, path);
-                return Object.keys(t.attributes).every(k =>
+                Object.keys(t.attributes).every(k =>
                     validate(value[k], t.attributes[k], path.concat([k])),
                 );
+                return;
             default:
                 throw new Error(`Invalid schema: ${JSON.stringify(t)}`);
         }
