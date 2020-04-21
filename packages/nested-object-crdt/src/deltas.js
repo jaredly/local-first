@@ -3,6 +3,13 @@ import type { Meta, HostDelta, CRDT, Delta, OtherMerge } from './types';
 import { latestStamp } from './utils';
 import * as sortedArray from './array-utils';
 
+// Return something undoable!
+export const invert = function<T, O, Other>(
+    crdt: CRDT<T, Other>,
+    delta: Delta<T, O, Other>,
+    getStamp: () => void,
+) {};
+
 export const get = function<T, O, Other>(crdt: CRDT<T, Other>, path: Array<string | number>) {
     if (path.length === 0) {
         return crdt;

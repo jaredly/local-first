@@ -23,7 +23,7 @@ export const NewItem = ({ onAdd, level }: { onAdd: (string) => void, level: numb
 
     return (
         <div className={styles.inputWrapper} style={{ paddingLeft: level * INDENT }}>
-            <div style={{ width: 32 }} />
+            <div style={{ width: 32, flexShrink: 0 }} />
             <IconButton
                 style={{ padding: 9 }}
                 onClick={() => {
@@ -57,17 +57,19 @@ export const ItemChildren = ({
     level,
     client,
     col,
+    showAll,
 }: {
     item: ItemT,
     level: number,
     client: Client<SyncStatus>,
     col: Collection<ItemT>,
+    showAll: boolean,
 }) => {
     const styles = useStyles();
     return (
         <div className={styles.itemChildren}>
             {item.children.map((child) => (
-                <Item level={level + 1} id={child} key={child} client={client} />
+                <Item showAll={showAll} level={level + 1} id={child} key={child} client={client} />
             ))}
             <NewItem
                 level={level + 1}
@@ -85,16 +87,36 @@ export const ItemChildren = ({
     );
 };
 
-type Props = { level: number, id: string, client: Client<SyncStatus> };
+type Props = { level: number, id: string, client: Client<SyncStatus>, showAll: boolean };
 
-export const Item = React.memo<Props>(({ id, client, level }: Props) => {
+const useLocalStorageState = (key, initial) => {
+    const [current, setCurrent] = React.useState(() => {
+        const raw = localStorage[key];
+        return raw == null ? initial : JSON.parse(raw);
+    });
+    const set = React.useCallback(
+        (value) => {
+            localStorage[key] = JSON.stringify(value);
+            setCurrent(value);
+        },
+        [setCurrent],
+    );
+    return [current, set];
+};
+
+export const Item = React.memo<Props>(({ id, client, level, showAll }: Props) => {
     const [col, item] = useItem(React, client, 'items', id);
-    const [open, setOpen] = React.useState(id === 'root');
+    // const [open, setOpen] = React.useState(id === 'root');
+    const [open, setOpen] = useLocalStorageState(id + '%open', false);
     const [editing, setEditing] = React.useState(null);
     const styles = useStyles();
 
     const [menu, setMenu] = React.useState(false);
     const [anchorEl, setAnchorEl] = React.useState(null);
+
+    if (!item || (item.completedDate != null && !showAll)) {
+        return null;
+    }
 
     if (!item) {
         return (
@@ -232,7 +254,15 @@ export const Item = React.memo<Props>(({ id, client, level }: Props) => {
                     ))}
                 </Menu>
             </div>
-            {open ? <ItemChildren item={item} level={level} client={client} col={col} /> : null}
+            {open ? (
+                <ItemChildren
+                    showAll={showAll}
+                    item={item}
+                    level={level}
+                    client={client}
+                    col={col}
+                />
+            ) : null}
         </div>
     );
 });

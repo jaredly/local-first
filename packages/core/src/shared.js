@@ -112,9 +112,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         setDirty();
     };
     return {
-        getCached: (id: string) => {
-            return state.cache[id] != null ? crdt.value(state.cache[id]) : null;
-        },
+        // Updaters
         async save(id: string, node: T) {
             validate(node, schema);
             // NOTE this overwrites everything, setAttribute will do much better merges
@@ -124,8 +122,6 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             }
             state.cache[id] = crdt.merge(
                 state.cache[id],
-                // STOPSHIP here's the bit
-                // TODO use a schema folks, so we know what should be the rich-text-crdt for example.
                 crdt.createValue(node, getStamp(), getStamp, schema),
             );
             send(state, id, node);
@@ -140,8 +136,6 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             sendCrossTabChanges({ col: colid, nodes: [id] });
             setDirty();
         },
-
-        genId: getStamp,
 
         async applyRichTextDelta(id: string, path: Array<string | number>, delta: RichTextDelta) {
             const sub = subSchema(schema, path);
@@ -223,19 +217,6 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                         return applyDelta(id, delta);
                     });
                 }
-                // const prev = crdt.get(cached, path.concat([childId]));
-                // undoManager.add(() => {
-                //     const delta = crdt.deltas.set(
-                //         // STOPSHIP this is wrong!
-                //         cached,
-                //         path.concat([childId]),
-                //         prev != null
-                //             ? crdt.createValue(crdt.value(prev), getStamp(), getStamp, sub)
-                //             : crdt.createEmpty(getStamp()),
-                //     );
-                //     return applyDelta(id, delta);
-                // })
-                // console.warn('UNDO not set up for "insert"');
             }
 
             return applyDelta(id, delta);
@@ -273,6 +254,28 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             return applyDelta(id, delta);
         },
 
+        async delete(id: string) {
+            delete state.cache[id];
+            send(state, id, null);
+            const stamp = getStamp();
+            await persistence.applyDelta(
+                colid,
+                id,
+                crdt.deltas.remove(stamp),
+                stamp,
+                crdt.deltas.apply,
+            );
+            sendCrossTabChanges({ col: colid, nodes: [id] });
+            setDirty();
+        },
+
+        // Getters
+        genId: getStamp,
+
+        getCached: (id: string) => {
+            return state.cache[id] != null ? crdt.value(state.cache[id]) : null;
+        },
+
         async load(id: string) {
             const v = await persistence.load(colid, id);
             if (!v) {
@@ -295,20 +298,6 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                 }
             });
             return res;
-        },
-        async delete(id: string) {
-            delete state.cache[id];
-            send(state, id, null);
-            const stamp = getStamp();
-            await persistence.applyDelta(
-                colid,
-                id,
-                crdt.deltas.remove(stamp),
-                stamp,
-                crdt.deltas.apply,
-            );
-            sendCrossTabChanges({ col: colid, nodes: [id] });
-            setDirty();
         },
 
         onChanges(fn: (Array<{ id: string, value: ?T }>) => void) {
