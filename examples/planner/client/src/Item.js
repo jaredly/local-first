@@ -23,6 +23,7 @@ export const NewItem = ({ onAdd, level }: { onAdd: (string) => void, level: numb
 
     return (
         <div className={styles.inputWrapper} style={{ paddingLeft: level * INDENT }}>
+            <div style={{ width: 32 }} />
             <IconButton
                 style={{ padding: 9 }}
                 onClick={() => {
@@ -72,7 +73,11 @@ export const ItemChildren = ({
                 level={level + 1}
                 onAdd={(text) => {
                     const childId = client.getStamp();
-                    col.save(childId, newItem(childId, text));
+                    if (text.startsWith('# ')) {
+                        col.save(childId, { ...newItem(childId, text.slice(2)), style: 'group' });
+                    } else {
+                        col.save(childId, newItem(childId, text));
+                    }
                     col.insertId(item.id, ['children'], item.children.length, childId);
                 }}
             />
@@ -92,10 +97,26 @@ export const Item = React.memo<Props>(({ id, client, level }: Props) => {
     const [anchorEl, setAnchorEl] = React.useState(null);
 
     if (!item) {
-        return <div>deleted...</div>;
+        return (
+            <div
+                className={styles.itemWrapper + ' ' + styles.item + ' ' + styles.itemTitle}
+                style={{ padding: 8 }}
+            >
+                &nbsp;
+            </div>
+        );
     }
 
-    const menuItems = [{ title: 'Edit text', onClick: () => setEditing(item.title) }];
+    const menuItems = [
+        {
+            title: 'Edit text',
+            onClick: () => {
+                setTimeout(() => {
+                    setEditing(item.title);
+                }, 5);
+            },
+        },
+    ];
     if (item.children.length === 0 && !open) {
         menuItems.push({ title: 'Add child', onClick: () => setOpen(true) });
     }
@@ -117,15 +138,25 @@ export const Item = React.memo<Props>(({ id, client, level }: Props) => {
 
     return (
         <div className={styles.itemWrapper}>
-            <div
-                className={styles.item}
-                style={{ paddingLeft: level * INDENT }}
-                // onClick={() => setOpen(!open)}
-                // umm so what do we do
-            >
-                {item.style === 'group' ? (
-                    <div style={{ padding: 9 }} onClick={() => setOpen(!open)}>
+            <div className={styles.item} style={{ paddingLeft: level * INDENT }}>
+                {item.style === 'group' || item.children.length > 0 || open ? (
+                    <div
+                        style={{
+                            padding: 4,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                        onClick={() => setOpen(!open)}
+                    >
                         {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
+                    </div>
+                ) : (
+                    <div style={{ width: 32 }} />
+                )}
+                {item.style === 'group' ? (
+                    <div style={{ padding: 9 }}>
+                        <Folder />
                     </div>
                 ) : (
                     <Checkbox
@@ -141,7 +172,11 @@ export const Item = React.memo<Props>(({ id, client, level }: Props) => {
                         onClick={(evt) => evt.stopPropagation()}
                     />
                 )}
-                <div className={item.style === 'group' ? styles.groupTitle : styles.itemTitle}>
+                <div
+                    className={`${item.style === 'group' ? styles.groupTitle : styles.itemTitle} ${
+                        item.completedDate != null ? styles.completed : ''
+                    }`}
+                >
                     {editing != null ? (
                         <input
                             autoFocus
@@ -155,7 +190,7 @@ export const Item = React.memo<Props>(({ id, client, level }: Props) => {
                                     setEditing(null);
                                 }
                             }}
-                            // onBlur={() => setEditing(null)}
+                            onBlur={() => setEditing(null)}
                         />
                     ) : (
                         item.title
@@ -202,48 +237,62 @@ export const Item = React.memo<Props>(({ id, client, level }: Props) => {
     );
 });
 
-const useStyles = makeStyles((theme) => ({
-    container: {},
-    input: {
-        color: 'inherit',
-        width: '100%',
-        fontSize: 32,
-        padding: '4px 8px',
-        backgroundColor: 'inherit',
-        border: 'none',
-        borderBottom: `2px solid ${theme.palette.primary.dark}`,
-    },
-    inputWrapper: {
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        '&:hover': {
-            backgroundColor: theme.palette.primary.light,
-        },
-    },
-    itemWrapper: {},
-    item: {
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        cursor: 'pointer',
-        // padding: `${theme.spacing(1)}px ${theme.spacing(3)}px`,
-        '&:hover': {
-            backgroundColor: theme.palette.primary.light,
-        },
-    },
-    groupTitle: {
-        flex: 1,
-        // padding: theme.spacing(2),
-        ...theme.typography.h3,
-        color: theme.palette.primary.dark,
-    },
-    itemTitle: {
-        flex: 1,
-        // padding: theme.spacing(2),
-        ...theme.typography.h4,
-    },
-    itemChildren: {
-        // paddingLeft: theme.spacing(2),
-    },
-}));
+const useStyles = makeStyles(
+    (theme) => (
+        console.log(theme),
+        {
+            container: {},
+            input: {
+                color: 'inherit',
+                width: '100%',
+                // fontSize: 32,
+                padding: '4px 8px',
+                backgroundColor: 'inherit',
+                border: 'none',
+                borderBottom: `2px solid ${theme.palette.primary.dark}`,
+                ...theme.typography.h5,
+                fontWeight: 300,
+            },
+            inputWrapper: {
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                '&:hover': {
+                    backgroundColor: theme.palette.primary.light,
+                },
+            },
+            itemWrapper: {},
+            item: {
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                cursor: 'pointer',
+                // padding: `${theme.spacing(1)}px ${theme.spacing(3)}px`,
+                '&:hover': {
+                    backgroundColor: theme.palette.primary.light,
+                },
+            },
+            groupTitle: {
+                flex: 1,
+                // padding: theme.spacing(2),
+                ...theme.typography.h5,
+                fontWeight: 500,
+                // color: theme.palette.primary.dark,
+            },
+            itemTitle: {
+                flex: 1,
+                // padding: theme.spacing(2),
+                ...theme.typography.h5,
+                fontWeight: 300,
+            },
+            itemChildren: {
+                // paddingLeft: theme.spacing(2),
+            },
+            completed: {
+                textDecoration: 'line-through',
+                textDecorationColor: theme.palette.primary.light,
+                color: theme.palette.text.disabled,
+            },
+        }
+    ),
+);

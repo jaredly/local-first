@@ -70,8 +70,9 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
 
     return (
         <Container maxWidth="sm" className={styles.container}>
+            <Button onClick={() => client.undo()}>Undo</Button>
             {root ? (
-                <ItemChildren level={0} item={root} client={client} col={col} />
+                <ItemChildren level={-1} item={root} client={client} col={col} />
             ) : (
                 <div className={styles.empty}>
                     Hello! Let's get you started.

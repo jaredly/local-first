@@ -16,11 +16,11 @@ export const applyDeltas = async function<Delta, Data>(
     apply: (?Data, Delta) => Data,
     storeDeltas: boolean,
 ) {
-    console.log('Apply to collection', collection);
+    // console.log('Apply to collection', collection);
     const stores = storeDeltas
         ? [collection + ':meta', collection + ':nodes', collection + ':deltas']
         : [collection + ':meta', collection + ':nodes'];
-    console.log('Opening for stores', stores);
+    // console.log('Opening for stores', stores);
     const tx = (await db).transaction(stores, 'readwrite');
     if (storeDeltas) {
         const deltaStore = tx.objectStore(collection + ':deltas');

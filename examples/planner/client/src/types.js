@@ -21,10 +21,11 @@ export const TagSchema: Schema = {
 export type ItemT = {
     id: string,
     title: string,
-    style: ?string, // could be 'group', or something else I guess
+    style?: ?string, // could be 'group', or something else I guess
     description: string,
     createdDate: number,
-    completedDate: ?number,
+    completedDate?: ?number,
+    trashedDate?: ?number,
     checkDates: { [date: string]: boolean },
     dueDate: ?number,
     timeEstimate: ?number,
@@ -58,6 +59,7 @@ export const ItemSchema: Schema = {
         style: { type: 'optional', value: 'string' },
         description: 'string',
         createdDate: 'number',
+        trashedDate: { type: 'optional', value: 'number' },
         completedDate: { type: 'optional', value: 'number' },
         checkDates: { type: 'map', value: 'boolean' },
         dueDate: { type: 'optional', value: 'number' },
