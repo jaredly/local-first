@@ -120,7 +120,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             // NOTE this overwrites everything, setAttribute will do much better merges
             if (undoManager) {
                 const prev = state.cache[id] != null ? crdt.value(state.cache[id]) : null;
-                undoManager.add(() => this.save(id, prev));
+                undoManager.add(() => (prev != null ? this.save(id, prev) : this.delete(id)));
             }
             state.cache[id] = crdt.merge(
                 state.cache[id],
@@ -208,7 +208,22 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
 
             if (undoManager) {
                 const cached = state.cache[id];
-                const prev = crdt.get(cached, path.concat([childId]));
+                const parent = crdt.get(cached, path);
+                if (parent == null) {
+                    console.warn('Not able to undo, no parent');
+                } else {
+                    // hm; want the "prev index" if that exists.
+                    // How do I make this generic? Do I need to?
+                    undoManager.add(() => {
+                        const delta = crdt.deltas.set(
+                            cached,
+                            path.concat([childId]),
+                            crdt.createEmpty(getStamp()),
+                        );
+                        return applyDelta(id, delta);
+                    });
+                }
+                // const prev = crdt.get(cached, path.concat([childId]));
                 // undoManager.add(() => {
                 //     const delta = crdt.deltas.set(
                 //         // STOPSHIP this is wrong!
@@ -220,7 +235,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                 //     );
                 //     return applyDelta(id, delta);
                 // })
-                console.warn('UNDO not set up for "insert"');
+                // console.warn('UNDO not set up for "insert"');
             }
 
             return applyDelta(id, delta);
