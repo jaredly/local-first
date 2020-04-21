@@ -58,18 +58,27 @@ export const ItemChildren = ({
     client,
     col,
     showAll,
+    pid,
 }: {
     item: ItemT,
     level: number,
     client: Client<SyncStatus>,
     col: Collection<ItemT>,
     showAll: boolean,
+    pid: string,
 }) => {
     const styles = useStyles();
     return (
         <div className={styles.itemChildren}>
             {item.children.map((child) => (
-                <Item showAll={showAll} level={level + 1} id={child} key={child} client={client} />
+                <Item
+                    pid={pid}
+                    showAll={showAll}
+                    level={level + 1}
+                    id={child}
+                    key={child}
+                    client={client}
+                />
             ))}
             <NewItem
                 level={level + 1}
@@ -87,7 +96,13 @@ export const ItemChildren = ({
     );
 };
 
-type Props = { level: number, id: string, client: Client<SyncStatus>, showAll: boolean };
+type Props = {
+    pid: string,
+    level: number,
+    id: string,
+    client: Client<SyncStatus>,
+    showAll: boolean,
+};
 
 const useLocalStorageState = (key, initial) => {
     const [current, setCurrent] = React.useState(() => {
@@ -104,7 +119,7 @@ const useLocalStorageState = (key, initial) => {
     return [current, set];
 };
 
-export const Item = React.memo<Props>(({ id, client, level, showAll }: Props) => {
+export const Item = React.memo<Props>(({ id, client, level, showAll, pid }: Props) => {
     const [col, item] = useItem(React, client, 'items', id);
     // const [open, setOpen] = React.useState(id === 'root');
     const [open, setOpen] = useLocalStorageState(id + '%open', false);
@@ -113,6 +128,10 @@ export const Item = React.memo<Props>(({ id, client, level, showAll }: Props) =>
 
     const [menu, setMenu] = React.useState(false);
     const [anchorEl, setAnchorEl] = React.useState(null);
+
+    if (!item) {
+        return 'deleted?';
+    }
 
     if (!item || (item.completedDate != null && !showAll)) {
         return null;
@@ -157,6 +176,16 @@ export const Item = React.memo<Props>(({ id, client, level, showAll }: Props) =>
             },
         });
     }
+    menuItems.push({
+        title: 'Delete',
+        onClick: async () => {
+            // col.load(pid).then(parent => {
+            // col.removeId(pid, ['children'], id);
+            await col.clearAttribute(pid, ['children', id]);
+            await col.delete(id);
+            // })
+        },
+    });
 
     return (
         <div className={styles.itemWrapper}>
@@ -256,6 +285,7 @@ export const Item = React.memo<Props>(({ id, client, level, showAll }: Props) =>
             </div>
             {open ? (
                 <ItemChildren
+                    pid={id}
                     showAll={showAll}
                     item={item}
                     level={level}

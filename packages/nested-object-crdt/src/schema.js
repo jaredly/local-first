@@ -79,9 +79,9 @@ export const subSchema = (
         return t;
     }
     const attr = setPath[0];
-    // if (t === 'id-array') {
-    //     return 'string'
-    // }
+    if (t === 'id-array') {
+        return 'string';
+    }
     if (typeof t !== 'object') {
         throw new ValidationError(`Invalid sub path, not a nested type`, t, path);
     }

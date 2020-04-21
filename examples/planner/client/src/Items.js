@@ -35,7 +35,14 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
             />
             <Button onClick={() => client.undo()}>Undo</Button>
             {root ? (
-                <ItemChildren showAll={showAll} level={-1} item={root} client={client} col={col} />
+                <ItemChildren
+                    pid="root"
+                    showAll={showAll}
+                    level={-1}
+                    item={root}
+                    client={client}
+                    col={col}
+                />
             ) : (
                 <div className={styles.empty}>
                     Hello! Let's get you started.

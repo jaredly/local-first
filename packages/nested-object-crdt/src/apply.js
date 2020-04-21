@@ -278,10 +278,12 @@ const arraySet = function<T, Other>(
     const res = array.slice();
     let idsInOrder = meta.idsInOrder;
     if (merged.meta.type === 't' && meta.items[key].meta.type !== 't') {
+        console.log('removing', merged);
         res.splice(idx, 1);
         idsInOrder = idsInOrder.slice();
         idsInOrder.splice(idx, 1);
     } else if (meta.items[key].meta.type === 't' && merged.meta.type !== 't') {
+        console.log('adding back in');
         const idx = sortedArray.insertionIndex(
             idsInOrder,
             id => meta.items[id].sort.idx,
@@ -292,6 +294,7 @@ const arraySet = function<T, Other>(
         idsInOrder = idsInOrder.slice();
         idsInOrder.splice(idx, 0, key);
     } else {
+        console.log('updating');
         res[idx] = merged.value;
     }
     return {
