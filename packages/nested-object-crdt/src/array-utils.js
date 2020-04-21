@@ -4,11 +4,7 @@ export type Sort = Array<number>;
 
 const epsilon = Math.pow(2, -10);
 
-export const sortForInsertion = (
-    ids: Array<string>,
-    sortForId: string => Sort,
-    idx: number,
-) => {
+export const sortForInsertion = (ids: Array<string>, sortForId: string => Sort, idx: number) => {
     const pre = idx === 0 ? null : sortForId(ids[idx - 1]);
     const post = idx >= ids.length ? null : sortForId(ids[idx]);
     return between(pre, post);
@@ -18,9 +14,14 @@ export const insertionIndex = (
     ids: Array<string>,
     sortForId: string => Sort,
     newSort: Sort,
+    newId: string,
 ) => {
     for (let i = 0; i < ids.length; i++) {
-        if (compare(sortForId(ids[i]), newSort) > 0) {
+        const cmp = compare(sortForId(ids[i]), newSort);
+        if (cmp === 0 && ids[i] > newId) {
+            return i;
+        }
+        if (cmp > 0) {
             return i;
         }
     }
@@ -40,10 +41,7 @@ export const compare = (one: Array<number>, two: Array<number>) => {
     return 0;
 };
 
-export const between = (
-    one: ?Array<number>,
-    two: ?Array<number>,
-): Array<number> => {
+export const between = (one: ?Array<number>, two: ?Array<number>): Array<number> => {
     if (!one || !two) {
         if (one) return [one[0] + 10];
         if (two) return [two[0] - 10];

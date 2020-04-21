@@ -1,0 +1,16 @@
+[ignore]
+.*/bower\.json
+.*/config\.json
+
+[include]
+../../../packages
+
+[libs]
+
+[lints]
+sketchy-null=error
+sketchy-null-bool=off
+
+[options]
+
+[strict]

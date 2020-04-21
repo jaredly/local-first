@@ -68,15 +68,22 @@ const insertIntoArray = function<T, Other>(
     id: string,
     sort: { idx: Sort, stamp: string },
     value: CRDT<T, Other>,
-): CRDT<Array<T>, Other> {
+): CRDT<$ReadOnlyArray<T>, Other> {
     if (value.meta.type === 't') {
         throw new Error(`Cannot insert a tombstone into an array`);
+    }
+    if (meta.items[id] != null) {
+        console.error('WAIT folks, double insert');
+        // STOPSHIP need to check stamps of the sort to see if I need
+        // to reorder
+        return { meta, value: array };
     }
     const newValue = array.slice();
     const idx = sortedArray.insertionIndex(
         meta.idsInOrder,
         id => meta.items[id].sort.idx,
         sort.idx,
+        id,
     );
     newValue.splice(idx, 0, value.value);
     const items = {
@@ -113,6 +120,7 @@ const reorderArray = function<T, Other>(
             idsInOrder,
             id => meta.items[id].sort.idx,
             sort.idx,
+            id,
         );
 
         newValue.splice(newIdx, 0, curValue);
@@ -142,6 +150,7 @@ export const insert = function<T, O, Other>(
             throw new Error(`No array at path`);
         }
         if (inner.meta.type !== 'array' || !Array.isArray(inner.value)) {
+            console.log(inner);
             throw new Error(`Cannot insert into a ${inner.meta.type}`);
         }
 
@@ -277,6 +286,7 @@ const arraySet = function<T, Other>(
             idsInOrder,
             id => meta.items[id].sort.idx,
             meta.items[key].sort.idx,
+            key,
         );
         res.splice(idx, 0, merged.value);
         idsInOrder = idsInOrder.slice();
@@ -544,6 +554,9 @@ export const merge = function<A, B, Other>(
     if (m1.type === 'other' && m2.type === 'other') {
         const { value, meta } = mergeOther(v1, m1.meta, v2, m2.meta);
         return { value, meta: { ...m1, meta } };
+    }
+    if (m1.type === 't' && m2.type === 't') {
+        return { value: v1, meta: m1 };
     }
     throw new Error(`Unexpected types ${m1.type} : ${m2.type}`);
 };

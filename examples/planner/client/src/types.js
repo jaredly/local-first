@@ -41,6 +41,7 @@ export const newItem = (id: string, title: string) => ({
     style: null,
     description: '',
     createdDate: Date.now(),
+    completedDate: null,
     checkDates: {},
     dueDate: null,
     timeEstimate: null,
@@ -102,7 +103,7 @@ export type Day = {
         },
     },
     schedule: {
-        [key: id]: {
+        [key: string]: {
             id: string,
             itemId: ?string,
             startTime: number,

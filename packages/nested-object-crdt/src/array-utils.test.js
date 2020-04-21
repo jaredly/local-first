@@ -2,7 +2,7 @@
 
 import {
     sortForInsertion,
-    insertionIndex,
+    // insertionIndex,
     compare,
     between,
 } from './array-utils';
