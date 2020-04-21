@@ -64,6 +64,11 @@ const applyOtherDelta = (text: rich.CRDT, meta: null, delta: rich.Delta) => {
     };
 };
 
+const invertOtherDelta = otherDelta => {
+    console.log('cant invert rich text deltas yet');
+    return null;
+};
+
 export const clientCrdtImpl: CRDTImpl<Delta, Data> = {
     merge: (one: ?Data, two: Data): Data => {
         if (!one) return two;
@@ -78,7 +83,9 @@ export const clientCrdtImpl: CRDTImpl<Delta, Data> = {
     createEmpty: stamp => crdt.createEmpty(stamp),
     deltas: {
         ...crdt.deltas,
+        invert: (base, delta, getStamp) => crdt.invert(base, delta, getStamp, invertOtherDelta),
         stamp: data => crdt.deltas.stamp(data, () => null),
+        restamp: (delta: Delta, stamp: string) => crdt.restamp(delta, stamp),
         apply: (base, delta) => crdt.applyDelta(base, delta, (applyOtherDelta: any), otherMerge),
     },
     createValue: (value, stamp, getStamp, schema) => {

@@ -2,13 +2,105 @@
 import type { Meta, HostDelta, CRDT, Delta, OtherMerge } from './types';
 import { latestStamp } from './utils';
 import * as sortedArray from './array-utils';
+import { createEmpty } from './create';
+
+export const restampMeta = function<Other>(meta: Meta<Other>, hlcStamp: string): Meta<Other> {
+    switch (meta.type) {
+        case 'plain':
+            return { ...meta, hlcStamp };
+        case 'other':
+            return { ...meta, hlcStamp };
+        case 'map':
+            return { ...meta, hlcStamp };
+        case 't':
+            return { ...meta, hlcStamp };
+        case 'array':
+            return { ...meta, hlcStamp };
+    }
+    return meta;
+};
+
+export const restamp = function<T, Other, OtherDelta>(
+    delta: Delta<T, Other, OtherDelta>,
+    newStamp: string,
+): Delta<T, Other, OtherDelta> {
+    if (delta.type === 'set') {
+        return {
+            ...delta,
+            value: {
+                ...delta.value,
+                meta: restampMeta(delta.value.meta, newStamp),
+            },
+        };
+    }
+    return delta;
+};
 
 // Return something undoable!
-export const invert = function<T, O, Other>(
+export const invert = function<T, D, Other, OtherDelta>(
     crdt: CRDT<T, Other>,
-    delta: Delta<T, O, Other>,
-    getStamp: () => void,
-) {};
+    delta: Delta<D, Other, OtherDelta>,
+    getStamp: () => string,
+    invertOtherDelta: OtherDelta => ?OtherDelta,
+): ?Delta<?D, Other, OtherDelta> {
+    // umm not sure how to get the stamp right
+    // oh maybe I'll use a special sigil stamp "<latest>" or something
+    // and then go through and replace
+    if (delta.type === 'set') {
+        let current = get(
+            crdt,
+            delta.path.map(k => k.key),
+        );
+        if (current == null) {
+            current = createEmpty();
+        }
+        // $FlowFixMe
+        return { type: 'set', path: delta.path, value: current };
+    } else if (delta.type === 'insert') {
+        const parentPath = delta.path.slice(0, -1);
+        const id = delta.path[delta.path.length - 1].key;
+        const parent = get(
+            crdt,
+            parentPath.map(k => k.key),
+        );
+        if (!parent || parent.meta.type !== 'array') {
+            throw new Error(`Invalid insert operation`);
+        }
+        if (parent.meta.items[id]) {
+            // STOPSHIP the stamps might be wrong in the keypath!
+            return { type: 'reorder', path: delta.path, sort: parent.meta.items[id].sort };
+        } else {
+            return { type: 'set', path: delta.path, value: createEmpty() };
+        }
+    } else if (delta.type === 'reorder') {
+        const parentPath = delta.path.slice(0, -1);
+        const id = delta.path[delta.path.length - 1].key;
+        const parent = get(
+            crdt,
+            parentPath.map(k => k.key),
+        );
+        if (!parent || parent.meta.type !== 'array') {
+            throw new Error(`Invalid insert operation`);
+        }
+        if (parent.meta.items[id]) {
+            // STOPSHIP the stamps might be wrong in the keypath!
+            return { type: 'reorder', path: delta.path, sort: parent.meta.items[id].sort };
+        } else {
+            throw new Error(`Can't reorder something that's not there ${id}`);
+        }
+    } else if (delta.type === 'other') {
+        const inverted = invertOtherDelta(delta.delta);
+        if (inverted == null) {
+            return null;
+        }
+        return {
+            type: 'other',
+            path: delta.path,
+            delta: inverted,
+            stamp: delta.stamp,
+        };
+    }
+};
 
 export const get = function<T, O, Other>(crdt: CRDT<T, Other>, path: Array<string | number>) {
     if (path.length === 0) {

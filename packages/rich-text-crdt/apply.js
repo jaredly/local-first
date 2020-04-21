@@ -143,7 +143,7 @@ const insertNode = (state: CRDT, id, after, content: Content) => {
         //         );
         //     }
         // }
-        // TODO TODO establish consistency here
+        // STOPSHIP TODO establish consistency here
         // console.log('skipping dup');
         return;
     }

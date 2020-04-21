@@ -63,6 +63,8 @@ export type CRDTImpl<Delta, Data> = {
         other<Other>(Data, Array<string | number>, Other, string): Delta,
         apply(Data, Delta): Data,
         stamp(Delta): string,
+        invert(Data, Delta, () => string): ?Delta,
+        restamp(Delta, string): Delta,
     },
     createValue<T>(T, string, () => string, SchemaType): Data,
     createEmpty(string): Data,
@@ -87,11 +89,26 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
     sendCrossTabChanges: PeerChange => mixed,
     schema: Schema,
     undoManager?: UndoManager,
-    // undoManager or some such
 ): Collection<T> {
-    const applyDelta = async (id: string, delta) => {
+    const applyDelta = async (id: string, delta: Delta, sendNew?: boolean) => {
         let plain = null;
-        if (state.cache[id] != null) {
+
+        if (undoManager) {
+            const inverted =
+                state.cache[id] == null
+                    ? crdt.deltas.replace(crdt.createEmpty(getStamp()))
+                    : crdt.deltas.invert(state.cache[id], delta, getStamp);
+            if (inverted != null) {
+                undoManager.add(() => {
+                    // TODO re-stamp things
+                    applyDelta(id, crdt.deltas.restamp(inverted, getStamp()));
+                });
+            } else {
+                console.log(`Unable to invert delta: undo will be skipped`);
+            }
+        }
+
+        if (state.cache[id] != null || sendNew) {
             state.cache[id] = crdt.deltas.apply(state.cache[id], delta);
             plain = crdt.value(state.cache[id]);
             send(state, id, plain);
@@ -116,25 +133,26 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         async save(id: string, node: T) {
             validate(node, schema);
             // NOTE this overwrites everything, setAttribute will do much better merges
-            if (undoManager) {
-                const prev = state.cache[id] != null ? crdt.value(state.cache[id]) : null;
-                undoManager.add(() => (prev != null ? this.save(id, prev) : this.delete(id)));
-            }
-            state.cache[id] = crdt.merge(
-                state.cache[id],
-                crdt.createValue(node, getStamp(), getStamp, schema),
-            );
-            send(state, id, node);
-            const delta = crdt.deltas.replace(state.cache[id]);
-            state.cache[id] = await persistence.applyDelta(
-                colid,
-                id,
-                delta,
-                crdt.deltas.stamp(delta),
-                crdt.deltas.apply,
-            );
-            sendCrossTabChanges({ col: colid, nodes: [id] });
-            setDirty();
+            // if (undoManager) {
+            //     const prev = state.cache[id] != null ? crdt.value(state.cache[id]) : null;
+            //     undoManager.add(() => (prev != null ? this.save(id, prev) : this.delete(id)));
+            // }
+            // state.cache[id] = crdt.merge(
+            //     state.cache[id],
+            //     crdt.createValue(node, getStamp(), getStamp, schema),
+            // );
+            // send(state, id, node);
+            const delta = crdt.deltas.replace(crdt.createValue(node, getStamp(), getStamp, schema));
+            applyDelta(id, delta, true);
+            // state.cache[id] = await persistence.applyDelta(
+            //     colid,
+            //     id,
+            //     delta,
+            //     crdt.deltas.stamp(delta),
+            //     crdt.deltas.apply,
+            // );
+            // sendCrossTabChanges({ col: colid, nodes: [id] });
+            // setDirty();
         },
 
         async applyRichTextDelta(id: string, path: Array<string | number>, delta: RichTextDelta) {
@@ -162,19 +180,19 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                 }
                 state.cache[id] = stored;
             }
-            if (undoManager) {
-                const prev = crdt.get(state.cache[id], path);
-                undoManager.add(() => {
-                    const delta = crdt.deltas.set(
-                        state.cache[id],
-                        path,
-                        prev != null
-                            ? crdt.createValue(crdt.value(prev), getStamp(), getStamp, sub)
-                            : crdt.createEmpty(getStamp()),
-                    );
-                    return applyDelta(id, delta);
-                });
-            }
+            // if (undoManager) {
+            //     const prev = crdt.get(state.cache[id], path);
+            //     undoManager.add(() => {
+            //         const delta = crdt.deltas.set(
+            //             state.cache[id],
+            //             path,
+            //             prev != null
+            //                 ? crdt.createValue(crdt.value(prev), getStamp(), getStamp, sub)
+            //                 : crdt.createEmpty(getStamp()),
+            //         );
+            //         return applyDelta(id, delta);
+            //     });
+            // }
             const delta = crdt.deltas.set(state.cache[id], path, crdt.createEmpty(getStamp()));
             return applyDelta(id, delta);
         },
@@ -200,24 +218,24 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                 stamp,
             );
 
-            if (undoManager) {
-                const cached = state.cache[id];
-                const parent = crdt.get(cached, path);
-                if (parent == null) {
-                    console.warn('Not able to undo, no parent');
-                } else {
-                    // hm; want the "prev index" if that exists.
-                    // How do I make this generic? Do I need to?
-                    undoManager.add(() => {
-                        const delta = crdt.deltas.set(
-                            cached,
-                            path.concat([childId]),
-                            crdt.createEmpty(getStamp()),
-                        );
-                        return applyDelta(id, delta);
-                    });
-                }
-            }
+            // if (undoManager) {
+            //     const cached = state.cache[id];
+            //     const parent = crdt.get(cached, path);
+            //     if (parent == null) {
+            //         console.warn('Not able to undo, no parent');
+            //     } else {
+            //         // hm; want the "prev index" if that exists.
+            //         // How do I make this generic? Do I need to?
+            //         undoManager.add(() => {
+            //             const delta = crdt.deltas.set(
+            //                 cached,
+            //                 path.concat([childId]),
+            //                 crdt.createEmpty(getStamp()),
+            //             );
+            //             return applyDelta(id, delta);
+            //         });
+            //     }
+            // }
 
             return applyDelta(id, delta);
         },
@@ -232,20 +250,20 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                 }
                 state.cache[id] = stored;
             }
-            if (undoManager) {
-                const cached = state.cache[id];
-                const prev = crdt.get(cached, path);
-                undoManager.add(() => {
-                    const delta = crdt.deltas.set(
-                        cached,
-                        path,
-                        prev != null
-                            ? crdt.createValue(crdt.value(prev), getStamp(), getStamp, sub)
-                            : crdt.createEmpty(getStamp()),
-                    );
-                    return applyDelta(id, delta);
-                });
-            }
+            // if (undoManager) {
+            //     const cached = state.cache[id];
+            //     const prev = crdt.get(cached, path);
+            //     undoManager.add(() => {
+            //         const delta = crdt.deltas.set(
+            //             cached,
+            //             path,
+            //             prev != null
+            //                 ? crdt.createValue(crdt.value(prev), getStamp(), getStamp, sub)
+            //                 : crdt.createEmpty(getStamp()),
+            //         );
+            //         return applyDelta(id, delta);
+            //     });
+            // }
             const delta = crdt.deltas.set(
                 state.cache[id],
                 path,
