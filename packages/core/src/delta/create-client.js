@@ -224,6 +224,7 @@ function createClient<Delta, Data, SyncStatus>(
         undo: undoManager.undo,
         // TODO export should include a stamp
         fullExport<Data>(): Promise<Export<Data>> {
+            console.log('full export');
             return persistence.fullExport();
         },
         async importDump<Data>(dump) {

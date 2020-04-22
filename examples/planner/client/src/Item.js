@@ -129,9 +129,9 @@ export const Item = React.memo<Props>(({ id, client, level, showAll, pid }: Prop
     const [menu, setMenu] = React.useState(false);
     const [anchorEl, setAnchorEl] = React.useState(null);
 
-    if (!item) {
-        return 'deleted?';
-    }
+    // if (!item) {
+    //     return 'deleted?';
+    // }
 
     if (!item || (item.completedDate != null && !showAll)) {
         return null;
@@ -179,11 +179,8 @@ export const Item = React.memo<Props>(({ id, client, level, showAll, pid }: Prop
     menuItems.push({
         title: 'Delete',
         onClick: async () => {
-            // col.load(pid).then(parent => {
-            // col.removeId(pid, ['children'], id);
             await col.clearAttribute(pid, ['children', id]);
             await col.delete(id);
-            // })
         },
     });
 

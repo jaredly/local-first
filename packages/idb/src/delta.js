@@ -124,11 +124,14 @@ const makePersistence = (name: string, collections: Array<string>): DeltaPersist
             return res;
         },
         async fullExport<Data>(): Promise<Export<Data>> {
+            console.log('dumping all');
             const dump = {};
             await Promise.all(
                 collections.map(async colid => {
+                    console.log('exporting', colid);
                     // const items = await (await db).getAll(colid + ':nodes');
                     dump[colid] = await this.loadAll(colid);
+                    console.log('done');
                 }),
             );
             return dump;

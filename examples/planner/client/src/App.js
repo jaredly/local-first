@@ -12,7 +12,7 @@ import {
 // import Adder from './Adder';
 import type { Data } from './auth-api';
 
-import Items from './Items';
+import Home from './Home';
 import { ItemSchema, TagSchema, HabitSchema, DaySchema } from './types';
 
 const schemas = {
@@ -56,11 +56,7 @@ const App = ({ host, auth, logout }: { host: string, auth: ?Data, logout: () => 
         }
     }, []);
 
-    const contents = (
-        <div>
-            <Items client={client} />
-        </div>
-    );
+    const contents = <Home client={client} host={host} logout={logout} auth={auth} />;
     // const contents = addingUrl ? (
     //     <div>
     //         <Adder

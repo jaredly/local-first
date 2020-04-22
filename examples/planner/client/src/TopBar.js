@@ -1,10 +1,6 @@
 // @flow
 import AppBar from '@material-ui/core/AppBar';
-import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
-import Menu from '@material-ui/core/Menu';
-import Hidden from '@material-ui/core/Hidden';
-import MenuItem from '@material-ui/core/MenuItem';
 import { makeStyles } from '@material-ui/core/styles';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
@@ -46,37 +42,11 @@ const TopBar = ({
 };
 
 const useStyles = makeStyles((theme) => ({
-    container: {
-        paddingTop: theme.spacing(4),
-        paddingBottom: theme.spacing(4),
-    },
     title: {
         flexGrow: 1,
     },
     menuButton: {
         marginRight: theme.spacing(2),
-    },
-    root: {
-        backgroundColor: theme.palette.background.paper,
-        overflow: 'hidden',
-    },
-    body: {
-        padding: theme.spacing(2),
-    },
-    topBar: {
-        padding: theme.spacing(2),
-        backgroundColor: theme.palette.primary.light,
-        color: theme.palette.primary.contrastText,
-    },
-    userButton: {
-        '& > span': {
-            display: 'inline',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-        },
-        textTransform: 'none',
-        minWidth: 0,
     },
 }));
 
