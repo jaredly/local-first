@@ -59,12 +59,16 @@ export const ItemChildren = ({
     col,
     showAll,
     pid,
+    dragRefs,
+    onDragStart,
 }: {
     item: ItemT,
     level: number,
     client: Client<SyncStatus>,
     col: Collection<ItemT>,
     showAll: boolean,
+    dragRefs: DragRefs,
+    onDragStart: (id: string, pid: string) => void,
     pid: string,
 }) => {
     const styles = useStyles();
@@ -74,7 +78,9 @@ export const ItemChildren = ({
                 <Item
                     pid={pid}
                     showAll={showAll}
+                    onDragStart={onDragStart}
                     level={level + 1}
+                    dragRefs={dragRefs}
                     id={child}
                     key={child}
                     client={client}
@@ -102,7 +108,11 @@ type Props = {
     id: string,
     client: Client<SyncStatus>,
     showAll: boolean,
+    dragRefs: DragRefs,
+    onDragStart: (id: string, pid: string) => void,
 };
+
+export type DragRefs = { [key: string]: any };
 
 const useLocalStorageState = (key, initial) => {
     const [current, setCurrent] = React.useState(() => {
@@ -119,135 +129,164 @@ const useLocalStorageState = (key, initial) => {
     return [current, set];
 };
 
-export const Item = React.memo<Props>(({ id, client, level, showAll, pid }: Props) => {
-    const [col, item] = useItem(React, client, 'items', id);
-    // const [open, setOpen] = React.useState(id === 'root');
-    const [open, setOpen] = useLocalStorageState(id + '%open', false);
-    const [editing, setEditing] = React.useState(null);
-    const styles = useStyles();
+export const Item = React.memo<Props>(
+    ({ id, onDragStart, client, level, showAll, pid, dragRefs }: Props) => {
+        const [col, item] = useItem(React, client, 'items', id);
+        const [open, setOpen] = useLocalStorageState(id + '%open', false);
+        const [editing, setEditing] = React.useState(null);
+        const styles = useStyles();
 
-    const [menu, setMenu] = React.useState(false);
-    const [anchorEl, setAnchorEl] = React.useState(null);
+        const [menu, setMenu] = React.useState(false);
+        const [anchorEl, setAnchorEl] = React.useState(null);
 
-    // if (!item) {
-    //     return 'deleted?';
-    // }
+        if (!item || (item.completedDate != null && !showAll)) {
+            return null;
+        }
 
-    if (!item || (item.completedDate != null && !showAll)) {
-        return null;
-    }
+        // if (!item) {
+        //     return (
+        //         <div
+        //             className={styles.itemWrapper + ' ' + styles.item + ' ' + styles.itemTitle}
+        //             style={{ padding: 8 }}
+        //         >
+        //             &nbsp;
+        //         </div>
+        //     );
+        // }
 
-    if (!item) {
+        const menuItems = [
+            {
+                title: 'Edit text',
+                onClick: () => {
+                    setTimeout(() => {
+                        setEditing(item.title);
+                    }, 5);
+                },
+            },
+        ];
+        if (item.children.length === 0 && !open) {
+            menuItems.push({ title: 'Add child', onClick: () => setOpen(true) });
+        }
+        if (item.style === 'group') {
+            menuItems.push({
+                title: 'Convert to checkbox',
+                onClick: () => {
+                    col.setAttribute(id, ['style'], null);
+                },
+            });
+        } else {
+            menuItems.push({
+                title: 'Convert to group',
+                onClick: () => {
+                    col.setAttribute(id, ['style'], 'group');
+                },
+            });
+        }
+        menuItems.push({
+            title: 'Delete',
+            onClick: async () => {
+                await col.clearAttribute(pid, ['children', id]);
+                await col.delete(id);
+            },
+        });
+
         return (
-            <div
-                className={styles.itemWrapper + ' ' + styles.item + ' ' + styles.itemTitle}
-                style={{ padding: 8 }}
-            >
-                &nbsp;
-            </div>
-        );
-    }
-
-    const menuItems = [
-        {
-            title: 'Edit text',
-            onClick: () => {
-                setTimeout(() => {
-                    setEditing(item.title);
-                }, 5);
-            },
-        },
-    ];
-    if (item.children.length === 0 && !open) {
-        menuItems.push({ title: 'Add child', onClick: () => setOpen(true) });
-    }
-    if (item.style === 'group') {
-        menuItems.push({
-            title: 'Convert to checkbox',
-            onClick: () => {
-                col.setAttribute(id, ['style'], null);
-            },
-        });
-    } else {
-        menuItems.push({
-            title: 'Convert to group',
-            onClick: () => {
-                col.setAttribute(id, ['style'], 'group');
-            },
-        });
-    }
-    menuItems.push({
-        title: 'Delete',
-        onClick: async () => {
-            await col.clearAttribute(pid, ['children', id]);
-            await col.delete(id);
-        },
-    });
-
-    return (
-        <div className={styles.itemWrapper}>
-            <div className={styles.item} style={{ paddingLeft: level * INDENT }}>
-                {item.style === 'group' || item.children.length > 0 || open ? (
-                    <div
-                        style={{
-                            padding: 4,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                        onClick={() => setOpen(!open)}
-                    >
-                        {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
-                    </div>
-                ) : (
-                    <div style={{ width: 32 }} />
-                )}
-                {item.style === 'group' ? (
-                    <div style={{ padding: 9 }}>
-                        <Folder />
-                    </div>
-                ) : (
-                    <Checkbox
-                        // type="checkbox"
-                        checked={!!item.completedDate}
-                        onChange={() => {
-                            col.setAttribute(
-                                id,
-                                ['completedDate'],
-                                item.completedDate != null ? null : Date.now(),
-                            );
-                        }}
-                        onClick={(evt) => evt.stopPropagation()}
-                    />
-                )}
-                <div
-                    className={`${item.style === 'group' ? styles.groupTitle : styles.itemTitle} ${
-                        item.completedDate != null ? styles.completed : ''
-                    }`}
-                >
-                    {editing != null ? (
-                        <input
-                            autoFocus
-                            className={styles.input}
-                            onClick={(evt) => evt.stopPropagation()}
-                            value={editing}
-                            onChange={(evt) => setEditing(evt.target.value)}
-                            onKeyDown={(evt) => {
-                                if (evt.key === 'Enter' && editing.trim().length > 0) {
-                                    col.setAttribute(id, ['title'], editing);
-                                    setEditing(null);
-                                }
+            <div className={styles.itemWrapper}>
+                <div className={styles.item} style={{ paddingLeft: level * INDENT }}>
+                    {item.style === 'group' || item.children.length > 0 || open ? (
+                        <div
+                            style={{
+                                padding: 4,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
                             }}
-                            onBlur={() => setEditing(null)}
-                        />
+                            onClick={() => setOpen(!open)}
+                        >
+                            {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
+                        </div>
                     ) : (
-                        item.title
+                        <div style={{ width: 32 }} />
                     )}
-                </div>
+                    <div
+                        ref={(node) => {
+                            if (node) {
+                                dragRefs[id] = { id, pid, node };
+                            }
+                        }}
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            flex: 1,
+                            alignItems: 'center',
+                        }}
+                    >
+                        {item.style === 'group' ? (
+                            <div style={{ padding: 9 }}>
+                                <Folder />
+                            </div>
+                        ) : (
+                            <Checkbox
+                                // type="checkbox"
+                                checked={!!item.completedDate}
+                                onChange={() => {
+                                    col.setAttribute(
+                                        id,
+                                        ['completedDate'],
+                                        item.completedDate != null ? null : Date.now(),
+                                    );
+                                }}
+                                onClick={(evt) => evt.stopPropagation()}
+                            />
+                        )}
+                        <div
+                            className={`${
+                                item.style === 'group' ? styles.groupTitle : styles.itemTitle
+                            } ${item.completedDate != null ? styles.completed : ''}`}
+                        >
+                            {editing != null ? (
+                                <input
+                                    autoFocus
+                                    className={styles.input}
+                                    onClick={(evt) => evt.stopPropagation()}
+                                    value={editing}
+                                    onChange={(evt) => setEditing(evt.target.value)}
+                                    onKeyDown={(evt) => {
+                                        if (evt.key === 'Enter' && editing.trim().length > 0) {
+                                            col.setAttribute(id, ['title'], editing);
+                                            setEditing(null);
+                                        }
+                                    }}
+                                    onBlur={() => setEditing(null)}
+                                />
+                            ) : (
+                                item.title
+                            )}
+                        </div>
+                    </div>
 
-                {!open && item.children.length > 0 ? <Chip label={item.children.length} /> : null}
+                    {!open && item.children.length > 0 ? (
+                        <Chip label={item.children.length} />
+                    ) : null}
 
-                <IconButton
+                    <IconButton
+                        aria-label="more"
+                        // aria-controls="long-menu"
+                        aria-haspopup="true"
+                        onMouseDown={(evt) => {
+                            //
+                            onDragStart(id, pid);
+                        }}
+                        // onClick={(evt) => {
+                        //     evt.stopPropagation();
+                        //     setMenu(true);
+                        // }}
+                        ref={setAnchorEl}
+                    >
+                        <MoreVertIcon />
+                    </IconButton>
+
+                    {/* <IconButton
                     aria-label="more"
                     // aria-controls="long-menu"
                     aria-haspopup="true"
@@ -258,8 +297,8 @@ export const Item = React.memo<Props>(({ id, client, level, showAll, pid }: Prop
                     ref={setAnchorEl}
                 >
                     <MoreVertIcon />
-                </IconButton>
-                <Menu
+                </IconButton> */}
+                    {/* <Menu
                     id="long-menu"
                     anchorEl={anchorEl}
                     keepMounted
@@ -278,21 +317,24 @@ export const Item = React.memo<Props>(({ id, client, level, showAll, pid }: Prop
                             {item.title}
                         </MenuItem>
                     ))}
-                </Menu>
+                </Menu> */}
+                </div>
+                {open ? (
+                    <ItemChildren
+                        pid={id}
+                        onDragStart={onDragStart}
+                        dragRefs={dragRefs}
+                        showAll={showAll}
+                        item={item}
+                        level={level}
+                        client={client}
+                        col={col}
+                    />
+                ) : null}
             </div>
-            {open ? (
-                <ItemChildren
-                    pid={id}
-                    showAll={showAll}
-                    item={item}
-                    level={level}
-                    client={client}
-                    col={col}
-                />
-            ) : null}
-        </div>
-    );
-});
+        );
+    },
+);
 
 const useStyles = makeStyles(
     (theme) => (
