@@ -14,9 +14,9 @@ const darkTheme = createMuiTheme({
     palette: {
         type: 'dark',
 
-        primary: { main: '#9c27b0' },
+        primary: { main: '#4caf50' },
         secondary: {
-            main: '#00b0ff',
+            main: '#76ff03',
         },
     },
 });
@@ -33,9 +33,7 @@ window.addEventListener('load', () => {
             <CssBaseline />
             <Auth
                 host={host}
-                render={(auth, logout) => (
-                    <App auth={auth} logout={logout} host={host} />
-                )}
+                render={(auth, logout) => <App auth={auth} logout={logout} host={host} />}
             />
         </ThemeProvider>,
         node,

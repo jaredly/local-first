@@ -34,7 +34,7 @@ const TopBar = ({
                     <MenuIcon />
                 </IconButton>
                 <Typography variant="h6" className={styles.title}>
-                    Things to Share
+                    Planner
                 </Typography>
             </Toolbar>
         </AppBar>
