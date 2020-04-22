@@ -14,7 +14,7 @@ const useStyles = makeStyles((theme) => ({
     container: {},
 }));
 
-const getPosition = (boxes, clientY) => {
+const getPosition = (boxes, clientY, dragging) => {
     const offsetParent = boxes[0].item.node.offsetParent;
     const offset = offsetParent.getBoundingClientRect().top;
     const y = clientY; // + offset; // include offsetTop?
@@ -23,18 +23,26 @@ const getPosition = (boxes, clientY) => {
         const mid = (current.box.top + current.box.bottom) / 2;
         if (y < mid) {
             return {
-                id: current.item.id,
-                pid: current.item.pid,
-                position: 'top',
+                dragging,
+                dest: {
+                    id: current.item.id,
+                    pid: current.item.pid,
+                    position: 'top',
+                    idx: current.item.idx,
+                },
                 y: current.box.top - offset,
                 left: current.box.left,
                 width: current.box.width,
             };
         } else if (i >= boxes.length - 1 || y < boxes[i + 1].box.top) {
             return {
-                id: current.item.id,
-                pid: current.item.pid,
-                position: 'bottom',
+                dragging,
+                dest: {
+                    id: current.item.id,
+                    pid: current.item.pid,
+                    position: 'bottom',
+                    idx: current.item.idx + 1,
+                },
                 y: current.box.bottom - offset,
                 left: current.box.left,
                 width: current.box.width,
@@ -64,7 +72,7 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                 .map((k) => ({ item: refs[k], box: refs[k].node.getBoundingClientRect() }))
                 .sort((a, b) => a.box.top - b.box.top);
             const move = (evt) => {
-                const position = getPosition(boxes, evt.clientY);
+                const position = getPosition(boxes, evt.clientY, dragger.dragging);
                 if (position) {
                     setDragger(position);
                 }
@@ -80,8 +88,20 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
             };
             const up = (evt) => {
                 const dragger = currentDragger.current;
+                if (!dragger) {
+                    return;
+                }
                 console.log('move to', dragger);
                 // STOPSHIP do the move actually
+                const { dragging, dest } = dragger;
+                if (dragging.pid === dest.pid) {
+                    // col.reorderId(
+                    //     dragging.pid,
+                    // );
+                } else {
+                    col.removeId(dragging.pid, ['children'], dragging.id);
+                    col.insertId(dest.pid, ['children'], dest.idx, dragging.id);
+                }
                 setDragger(null);
             };
             window.addEventListener('mousemove', move, true);
@@ -93,7 +113,7 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
         }
     }, [!!dragger]);
 
-    const onDragStart = React.useCallback((id: string, pid: string) => {
+    const onDragStart = React.useCallback((id: string, pid: string, idx: number) => {
         const item = refs[id];
         if (!item) {
             return;
@@ -101,10 +121,14 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
         const box = item.node.getBoundingClientRect();
         const parent = item.node.offsetParent.getBoundingClientRect();
         setDragger({
-            position: 'top',
+            dragging: { id, pid },
+            dest: {
+                position: 'top',
+                pid,
+                id,
+                idx,
+            },
             y: box.top - parent.top,
-            pid,
-            id,
             left: box.left,
             width: box.width,
         });

@@ -68,19 +68,20 @@ export const ItemChildren = ({
     col: Collection<ItemT>,
     showAll: boolean,
     dragRefs: DragRefs,
-    onDragStart: (id: string, pid: string) => void,
+    onDragStart: (id: string, pid: string, idx: number) => void,
     pid: string,
 }) => {
     const styles = useStyles();
     return (
         <div className={styles.itemChildren}>
-            {item.children.map((child) => (
+            {item.children.map((child, i) => (
                 <Item
                     pid={pid}
                     showAll={showAll}
                     onDragStart={onDragStart}
                     level={level + 1}
                     dragRefs={dragRefs}
+                    idx={i}
                     id={child}
                     key={child}
                     client={client}
@@ -106,10 +107,11 @@ type Props = {
     pid: string,
     level: number,
     id: string,
+    idx: number,
     client: Client<SyncStatus>,
     showAll: boolean,
     dragRefs: DragRefs,
-    onDragStart: (id: string, pid: string) => void,
+    onDragStart: (id: string, pid: string, idx: number) => void,
 };
 
 export type DragRefs = { [key: string]: any };
@@ -130,7 +132,7 @@ const useLocalStorageState = (key, initial) => {
 };
 
 export const Item = React.memo<Props>(
-    ({ id, onDragStart, client, level, showAll, pid, dragRefs }: Props) => {
+    ({ id, idx, onDragStart, client, level, showAll, pid, dragRefs }: Props) => {
         const [col, item] = useItem(React, client, 'items', id);
         const [open, setOpen] = useLocalStorageState(id + '%open', false);
         const [editing, setEditing] = React.useState(null);
@@ -211,7 +213,7 @@ export const Item = React.memo<Props>(
                     <div
                         ref={(node) => {
                             if (node) {
-                                dragRefs[id] = { id, pid, node };
+                                dragRefs[id] = { id, pid, node, idx };
                             }
                         }}
                         style={{
@@ -275,7 +277,7 @@ export const Item = React.memo<Props>(
                         aria-haspopup="true"
                         onMouseDown={(evt) => {
                             //
-                            onDragStart(id, pid);
+                            onDragStart(id, pid, idx);
                         }}
                         // onClick={(evt) => {
                         //     evt.stopPropagation();
@@ -356,9 +358,9 @@ const useStyles = makeStyles(
                 display: 'flex',
                 flexDirection: 'row',
                 alignItems: 'center',
-                '&:hover': {
-                    backgroundColor: theme.palette.primary.light,
-                },
+                // '&:hover': {
+                //     backgroundColor: theme.palette.primary.light,
+                // },
             },
             itemWrapper: {},
             item: {
@@ -367,9 +369,9 @@ const useStyles = makeStyles(
                 alignItems: 'center',
                 cursor: 'pointer',
                 // padding: `${theme.spacing(1)}px ${theme.spacing(3)}px`,
-                '&:hover': {
-                    backgroundColor: theme.palette.primary.light,
-                },
+                // '&:hover': {
+                //     backgroundColor: theme.palette.primary.light,
+                // },
             },
             groupTitle: {
                 flex: 1,
