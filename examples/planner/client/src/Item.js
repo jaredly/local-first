@@ -22,7 +22,15 @@ import { useLocalStorageSharedToggle } from './useLocalStorage';
 
 const INDENT = 24;
 
-export const NewItem = ({ onAdd, level }: { onAdd: (string) => void, level: number }) => {
+export const NewItem = ({
+    onAdd,
+    level,
+    onFocus,
+}: {
+    onAdd: (string) => void,
+    level: number,
+    onFocus: (boolean) => void,
+}) => {
     const [text, setText] = React.useState('');
     const styles = useStyles();
 
@@ -46,6 +54,8 @@ export const NewItem = ({ onAdd, level }: { onAdd: (string) => void, level: numb
                 onChange={(evt) => setText(evt.target.value)}
                 placeholder="Add item"
                 className={styles.input}
+                onFocus={() => onFocus(true)}
+                onBlur={() => onFocus(false)}
                 onKeyDown={(evt) => {
                     if (evt.key === 'Enter' && text.trim().length > 0) {
                         onAdd(text);
@@ -66,6 +76,7 @@ export const ItemChildren = ({
     path,
     dragRefs,
     onDragStart,
+    onNewFocus,
 }: {
     item: ItemT,
     level: number,
@@ -74,6 +85,7 @@ export const ItemChildren = ({
     showAll: boolean,
     dragRefs: DragRefs,
     onDragStart: (DragInit) => void,
+    onNewFocus: (boolean) => void,
     path: Array<string>,
 }) => {
     const styles = useStyles();
@@ -93,6 +105,7 @@ export const ItemChildren = ({
                 />
             ))}
             <NewItem
+                onFocus={onNewFocus}
                 level={level + 1}
                 onAdd={(text) => {
                     const childId = client.getStamp();
@@ -177,8 +190,14 @@ const Description = ({ text, onChange }) => {
             </IconButton>
         </div>
     ) : (
-        <div onClick={() => onEdit(text)}>
-            {!!text ? text : <span style={{ fontStyle: 'italic' }}>Add description</span>}
+        <div
+            onClick={() => onEdit(text)}
+            style={{
+                fontStyle: 'italic',
+                whiteSpace: 'pre-wrap',
+            }}
+        >
+            {!!text ? text : 'Add description'}
         </div>
     );
 };
@@ -197,6 +216,7 @@ export const Item = React.memo<Props>(
         const [menu, setMenu] = React.useState(false);
         const [anchorEl, setAnchorEl] = React.useState(null);
         const [dragging, setDragging] = React.useState(false);
+        const [newFocus, setNewFocus] = React.useState(false);
 
         const childPath = React.useMemo(() => path.concat([id]), [path]);
         // if (!item) {
@@ -312,6 +332,7 @@ export const Item = React.memo<Props>(
                                 delete dragRefs[id];
                             }
                         }}
+                        className={newFocus ? styles.itemNewFocus : undefined}
                         style={{
                             display: 'flex',
                             flexDirection: 'row',
@@ -446,6 +467,7 @@ export const Item = React.memo<Props>(
                 ) : null}
                 {open ? (
                     <ItemChildren
+                        onNewFocus={setNewFocus}
                         path={childPath}
                         onDragStart={onDragStart}
                         dragRefs={dragRefs}
@@ -477,7 +499,7 @@ const useStyles = makeStyles((theme) => ({
         backgroundColor: 'inherit',
         border: 'none',
         // borderBottom: `2px solid ${theme.palette.primary.dark}`,
-        ...theme.typography.h5,
+        ...theme.typography.body1,
         fontWeight: 300,
     },
     inputWrapper: {
@@ -509,10 +531,13 @@ const useStyles = makeStyles((theme) => ({
     itemTitle: {
         flex: 1,
         // padding: theme.spacing(2),
-        ...theme.typography.h5,
+        ...theme.typography.body1,
         fontWeight: 300,
         margin: 5,
         wordBreak: 'break-word',
+        display: 'flex',
+        alignItems: 'center',
+        minHeight: 34,
     },
     itemChildren: {
         // paddingLeft: theme.spacing(2),
@@ -521,5 +546,8 @@ const useStyles = makeStyles((theme) => ({
         textDecoration: 'line-through',
         textDecorationColor: theme.palette.primary.light,
         color: theme.palette.text.disabled,
+    },
+    itemNewFocus: {
+        color: theme.palette.primary.light,
     },
 }));
