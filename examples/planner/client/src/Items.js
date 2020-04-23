@@ -23,6 +23,7 @@ const useStyles = makeStyles((theme) => ({
 const last = (arr) => arr[arr.length - 1];
 
 type DragState = {
+    started: boolean,
     dragging: DragInit,
     dest: ?{ id: string, path: Array<string>, position: 'top' | 'bottom', idx: number },
     y: number,
@@ -39,6 +40,7 @@ const getPosition = (boxes, clientY, dragging): ?DragState => {
         const mid = (current.box.top + current.box.bottom) / 2;
         if (y < mid) {
             return {
+                started: true,
                 dragging,
                 dest: {
                     id: current.item.id,
@@ -52,6 +54,7 @@ const getPosition = (boxes, clientY, dragging): ?DragState => {
             };
         } else if (i >= boxes.length - 1 || y < boxes[i + 1].box.top) {
             return {
+                started: true,
                 dragging,
                 dest: {
                     id: current.item.id,
@@ -88,9 +91,15 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                 .map((k) => ({ item: dragRefs[k], box: dragRefs[k].node.getBoundingClientRect() }))
                 .sort((a, b) => a.box.top - b.box.top);
             const move = (evt) => {
-                // TODO TODO - need to wait for a couple of pixels
-                // before triggering the "onStart"
-                // So I need to track the initial pos
+                if (currentDragger.current && !currentDragger.current.started) {
+                    const pos = currentDragger.current.dragging.pos;
+                    const dist = Math.sqrt(
+                        Math.pow(evt.clientX - pos.x, 2) + Math.pow(evt.clientY - pos.y, 2),
+                    );
+                    if (dist < 10) {
+                        return;
+                    }
+                }
                 if (currentDragger.current && currentDragger.current.dest == null) {
                     currentDragger.current.dragging.onStart();
                 }
@@ -155,13 +164,7 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
         setDragger({
             dragging: config,
             dest: null,
-            // dest: {
-            //     position: 'top',
-            //     pid,
-            //     id,
-            //     idx,
-            // },
-            // y: box.top - parent.top,
+            started: false,
             left: box.left,
             width: box.width,
         });

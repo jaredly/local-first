@@ -108,6 +108,7 @@ export type DragInit = {
     path: Array<string>,
     onStart: () => void,
     onFinish: () => void,
+    pos: { x: number, y: number },
 };
 
 type Props = {
@@ -314,6 +315,7 @@ export const Item = React.memo<Props>(
                                 path,
                                 onStart: () => setDragging(true),
                                 onFinish: () => setDragging(false),
+                                pos: { x: evt.clientX, y: evt.clientY },
                             });
                         }}
                         onClick={(evt) => {
@@ -382,9 +384,6 @@ const useStyles = makeStyles(
                 display: 'flex',
                 flexDirection: 'row',
                 alignItems: 'center',
-                // '&:hover': {
-                //     backgroundColor: theme.palette.primary.light,
-                // },
             },
             itemWrapper: {
                 transition: ` background-color ease .3s`,
@@ -397,10 +396,6 @@ const useStyles = makeStyles(
                 flexDirection: 'row',
                 alignItems: 'center',
                 cursor: 'pointer',
-                // padding: `${theme.spacing(1)}px ${theme.spacing(3)}px`,
-                // '&:hover': {
-                //     backgroundColor: theme.palette.primary.light,
-                // },
             },
             groupTitle: {
                 flex: 1,
