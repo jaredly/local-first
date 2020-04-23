@@ -1,6 +1,7 @@
 // @flow
 import Checkbox from '@material-ui/core/Checkbox';
 import IconButton from '@material-ui/core/IconButton';
+import TextField from '@material-ui/core/TextField';
 import Chip from '@material-ui/core/Chip';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
@@ -9,6 +10,9 @@ import AddBoxOutlined from '@material-ui/icons/Add';
 import Folder from '@material-ui/icons/Folder';
 import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
 import KeyboardArrowDown from '@material-ui/icons/KeyboardArrowDown';
+import CheckCircle from '@material-ui/icons/CheckCircle';
+import Info from '@material-ui/icons/Info';
+import Cancel from '@material-ui/icons/Cancel';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import * as React from 'react';
 import type { Client, Collection, SyncStatus } from '../../../../packages/client-bundle';
@@ -139,10 +143,50 @@ const useLocalStorageState = (key, initial) => {
     return [current, set];
 };
 
+const Description = ({ text, onChange }) => {
+    const [editing, onEdit] = React.useState(null);
+    return editing != null ? (
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+            <TextField
+                multiline
+                style={{ flex: 1 }}
+                value={editing}
+                onChange={(evt) => onEdit(evt.target.value)}
+                onKeyDown={(evt) => {
+                    if (evt.key === 'Enter' && (evt.metaKey || evt.shiftKey || evt.ctrlKey)) {
+                        if (editing != text) {
+                            onChange(editing);
+                        }
+                        onEdit(null);
+                    }
+                }}
+            />
+            <IconButton
+                onClick={() => {
+                    if (editing != text) {
+                        onChange(editing);
+                    }
+                    onEdit(null);
+                }}
+            >
+                <CheckCircle />
+            </IconButton>
+            <IconButton onClick={() => onEdit(null)}>
+                <Cancel />
+            </IconButton>
+        </div>
+    ) : (
+        <div onClick={() => onEdit(text)}>
+            {!!text ? text : <span style={{ fontStyle: 'italic' }}>Add description</span>}
+        </div>
+    );
+};
+
 export const Item = React.memo<Props>(
     ({ id, idx, onDragStart, client, level, showAll, path, dragRefs }: Props) => {
         const [col, item] = useItem(React, client, 'items', id);
         const [open, setOpen] = useLocalStorageState(id + '%open', false);
+        const [showDescription, setShowDescription] = useLocalStorageState(id + '%desc', false);
         const [editing, setEditing] = React.useState(null);
         const styles = useStyles();
 
@@ -179,6 +223,22 @@ export const Item = React.memo<Props>(
         ];
         if (item.children.length === 0 && !open) {
             menuItems.push({ title: 'Add child', onClick: () => setOpen(true) });
+        }
+        if (!showDescription) {
+            menuItems.push({
+                title: item.description ? 'Show description' : 'Add description',
+                onClick: () => {
+                    setShowDescription(true);
+                },
+            });
+        }
+        if (showDescription) {
+            menuItems.push({
+                title: 'Hide description',
+                onClick: () => {
+                    setShowDescription(false);
+                },
+            });
         }
         if (item.style === 'group') {
             menuItems.push({
@@ -218,6 +278,21 @@ export const Item = React.memo<Props>(
                             onClick={() => setOpen(!open)}
                         >
                             {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
+                        </div>
+                    ) : !!item.description ? (
+                        <div
+                            style={{
+                                padding: 4,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                            onClick={() => setShowDescription(!showDescription)}
+                        >
+                            <Info
+                                fontSize="small"
+                                className={showDescription ? styles.infoIcon : styles.infoIconOff}
+                            />
                         </div>
                     ) : (
                         <div style={{ width: 32 }} />
@@ -347,6 +422,16 @@ export const Item = React.memo<Props>(
                         ))}
                     </Menu>
                 </div>
+                {showDescription ? (
+                    <div style={{ paddingLeft: level * INDENT, marginLeft: 42, marginBottom: 8 }}>
+                        <Description
+                            text={item.description}
+                            onChange={(text) => {
+                                col.setAttribute(item.id, ['description'], text);
+                            }}
+                        />
+                    </div>
+                ) : null}
                 {open ? (
                     <ItemChildren
                         path={childPath}
@@ -364,60 +449,61 @@ export const Item = React.memo<Props>(
     },
 );
 
-const useStyles = makeStyles(
-    (theme) => (
-        console.log(theme),
-        {
-            container: {},
-            input: {
-                color: 'inherit',
-                width: '100%',
-                // fontSize: 32,
-                padding: '4px 8px',
-                backgroundColor: 'inherit',
-                border: 'none',
-                borderBottom: `2px solid ${theme.palette.primary.dark}`,
-                ...theme.typography.h5,
-                fontWeight: 300,
-            },
-            inputWrapper: {
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-            },
-            itemWrapper: {
-                transition: ` background-color ease .3s`,
-            },
-            dragItem: {
-                backgroundColor: theme.palette.primary.dark,
-            },
-            item: {
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                cursor: 'pointer',
-            },
-            groupTitle: {
-                flex: 1,
-                // padding: theme.spacing(2),
-                ...theme.typography.h5,
-                fontWeight: 500,
-                // color: theme.palette.primary.dark,
-            },
-            itemTitle: {
-                flex: 1,
-                // padding: theme.spacing(2),
-                ...theme.typography.h5,
-                fontWeight: 300,
-            },
-            itemChildren: {
-                // paddingLeft: theme.spacing(2),
-            },
-            completed: {
-                textDecoration: 'line-through',
-                textDecorationColor: theme.palette.primary.light,
-                color: theme.palette.text.disabled,
-            },
-        }
-    ),
-);
+const useStyles = makeStyles((theme) => ({
+    container: {},
+    infoIconOff: {
+        color: theme.palette.text.disabled,
+    },
+    infoIcon: {
+        color: theme.palette.info.light,
+    },
+    input: {
+        color: 'inherit',
+        width: '100%',
+        // fontSize: 32,
+        padding: '4px 8px',
+        backgroundColor: 'inherit',
+        border: 'none',
+        borderBottom: `2px solid ${theme.palette.primary.dark}`,
+        ...theme.typography.h5,
+        fontWeight: 300,
+    },
+    inputWrapper: {
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    itemWrapper: {
+        transition: ` background-color ease .3s`,
+    },
+    dragItem: {
+        backgroundColor: theme.palette.primary.dark,
+    },
+    item: {
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        cursor: 'pointer',
+    },
+    groupTitle: {
+        flex: 1,
+        // padding: theme.spacing(2),
+        ...theme.typography.h5,
+        fontWeight: 500,
+        // color: theme.palette.primary.dark,
+    },
+    itemTitle: {
+        flex: 1,
+        // padding: theme.spacing(2),
+        ...theme.typography.h5,
+        fontWeight: 300,
+    },
+    itemChildren: {
+        // paddingLeft: theme.spacing(2),
+    },
+    completed: {
+        textDecoration: 'line-through',
+        textDecorationColor: theme.palette.primary.light,
+        color: theme.palette.text.disabled,
+    },
+}));
