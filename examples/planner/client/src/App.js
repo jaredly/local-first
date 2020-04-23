@@ -23,19 +23,30 @@ const schemas = {
     days: DaySchema,
 };
 
-const App = ({ host, auth, logout }: { host: string, auth: ?Data, logout: () => mixed }) => {
+const App = ({
+    dbName,
+    host,
+    auth,
+    logout,
+}: {
+    dbName: string,
+    host: string,
+    auth: ?Data,
+    logout: () => mixed,
+}) => {
     const client = React.useMemo(() => {
         console.log('starting a client', auth);
         // return createInMemoryDeltaClient(schemas, '');
         return auth
             ? createPersistedDeltaClient(
-                  'planner',
+                  dbName,
                   schemas,
                   `${host.startsWith('localhost:') ? 'ws' : 'wss'}://${host}/sync?token=${
                       auth.token
                   }`,
+                  2,
               )
-            : createPersistedBlobClient('planner-blob', schemas, null, 2);
+            : createPersistedBlobClient(dbName, schemas, null, 2);
     }, [auth && auth.token]);
 
     const [showUpgrade, setShowUpgrade] = React.useState(

@@ -21,22 +21,32 @@ const darkTheme = createMuiTheme({
     },
 });
 
-const node = document.createElement('div');
-if (document.body) {
-    document.body.appendChild(node);
-}
 // const host = 'localhost:9090';
 // const host = 'things-to-share.glitch.me';
-window.addEventListener('load', () => {
+// window.addEventListener('load', () => {});
+
+const run = (host: ?string, dbName: string) => {
+    const node = document.createElement('div');
+    if (!document.body) {
+        return;
+    }
+    document.body.appendChild(node);
     render(
         <ThemeProvider theme={darkTheme}>
             <CssBaseline />
-            {/* <Auth
-                host={host}
-                render={(auth, logout) => <App auth={auth} logout={logout} host={host} />}
-            /> */}
-            <App auth={null} logout={() => {}} host={''} />
+            {host != null ? (
+                <Auth
+                    host={host}
+                    render={(auth, logout) => (
+                        <App dbName={dbName} auth={auth} logout={logout} host={host} />
+                    )}
+                />
+            ) : (
+                <App dbName={dbName} auth={null} logout={() => {}} host={''} />
+            )}
         </ThemeProvider>,
         node,
     );
-});
+};
+
+export default run;

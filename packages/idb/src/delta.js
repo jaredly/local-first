@@ -50,9 +50,13 @@ export const applyDeltas = async function<Delta, Data>(
     return map;
 };
 
-const makePersistence = (name: string, collections: Array<string>): DeltaPersistence => {
+const makePersistence = (
+    name: string,
+    collections: Array<string>,
+    version: number,
+): DeltaPersistence => {
     // console.log('Persistence with name', name);
-    const db: Promise<DB> = openDB(name, 1, {
+    const db: Promise<DB> = openDB(name, version, {
         upgrade(db, oldVersion, newVersion, transaction) {
             collections.forEach(name => {
                 db.createObjectStore(name + ':deltas', {

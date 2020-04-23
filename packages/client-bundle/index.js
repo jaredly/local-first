@@ -117,12 +117,13 @@ export const createPersistedDeltaClient = (
     name: string,
     schemas: { [key: string]: Schema },
     url: ?string,
+    version: number,
 ): Client<SyncStatus> => {
     return createDeltaClient(
         clientCrdtImpl,
         schemas,
         new PersistentClock(localStorageClockPersist(name)),
-        makeDeltaPersistence(name, Object.keys(schemas)),
+        makeDeltaPersistence(name, Object.keys(schemas), version),
         url != null ? createWebSocketNetwork(url) : nullNetwork,
     );
 };
