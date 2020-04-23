@@ -76,15 +76,22 @@ const insertIntoArray = function<T, Other>(
     if (meta.items[id] != null && meta.items[id].meta.type !== 't') {
         const prev = meta.items[id];
         const merged = merge(
+            // $FlowFixMe
             prev.meta.type !== 't' ? array[meta.idsInOrder.indexOf(id)] : null,
             prev.meta,
             value.value,
             value.meta,
             mergeOther,
         );
-        const mergedSort = prev.sort.stamp > sort.stamp ? prev.sort : sort;
 
-        if (merged.meta.hlcStamp === prev.meta.hlcStamp) {
+        // ok change the value
+        const idx = meta.idsInOrder.indexOf(id);
+        const newValue = array.slice();
+        newValue[idx] = merged.value;
+
+        const mergedSort = prev.sort.stamp > sort.stamp ? prev.sort : sort;
+        const cmp = sortedArray.compare(prev.sort.idx, sort.idx);
+        if (cmp === 0) {
             return {
                 meta: {
                     ...meta,
@@ -93,12 +100,36 @@ const insertIntoArray = function<T, Other>(
                         [id]: { meta: merged.meta, sort: mergedSort },
                     },
                 },
-                value: array,
+                value: newValue,
             };
         }
 
-        return { meta, value: array };
+        // but what if we change the position?
+        newValue.splice(idx, 1);
+        const idsInOrder = meta.idsInOrder.slice();
+        idsInOrder.splice(idx, 1);
+
+        const newIdx = sortedArray.insertionIndex(
+            idsInOrder,
+            id => meta.items[id].sort.idx,
+            mergedSort.idx,
+            id,
+        );
+
+        const ids = meta.idsInOrder.slice();
+        newValue.splice(newIdx, 0, value.value);
+        ids.splice(newIdx, 0, id);
+        const newMeta = {
+            ...meta,
+            items: {
+                ...meta.items,
+                [id]: { meta: value.meta, sort },
+            },
+            idsInOrder: ids,
+        };
+        return { meta: newMeta, value: newValue };
     }
+
     const newValue = array.slice();
     const idx = sortedArray.insertionIndex(
         meta.idsInOrder,
@@ -106,16 +137,15 @@ const insertIntoArray = function<T, Other>(
         sort.idx,
         id,
     );
-    newValue.splice(idx, 0, value.value);
-    const items = {
-        ...meta.items,
-        [id]: { meta: value.meta, sort },
-    };
     const ids = meta.idsInOrder.slice();
+    newValue.splice(idx, 0, value.value);
     ids.splice(idx, 0, id);
     const newMeta = {
         ...meta,
-        items,
+        items: {
+            ...meta.items,
+            [id]: { meta: value.meta, sort },
+        },
         idsInOrder: ids,
     };
     return { meta: newMeta, value: newValue };
@@ -300,7 +330,7 @@ const arraySet = function<T, Other>(
     const res = array.slice();
     let idsInOrder = meta.idsInOrder;
     if (merged.meta.type === 't' && meta.items[key].meta.type !== 't') {
-        console.log('removing', merged);
+        // console.log('removing', merged);
         res.splice(idx, 1);
         idsInOrder = idsInOrder.slice();
         idsInOrder.splice(idx, 1);
