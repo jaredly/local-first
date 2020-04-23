@@ -7,12 +7,13 @@ export const create = () => {
     let timer = null;
     return {
         add(fn: () => mixed) {
+            // console.log('add undo');
             pending.push(fn);
             if (!timer) {
                 timer = setTimeout(() => {
                     timer = null;
                     if (pending.length) {
-                        console.log('new history');
+                        // console.log('new history', pending.length);
                         history.push(pending);
                     }
                     pending = [];
@@ -21,11 +22,13 @@ export const create = () => {
         },
         undo() {
             if (pending.length) {
+                // console.log('undo pending', pending.length);
                 pending.forEach(fn => fn());
                 pending = [];
             }
             if (history.length) {
                 const last = history.pop();
+                // console.log('undo', last.length);
                 last.forEach(fn => fn());
             }
         },

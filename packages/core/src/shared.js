@@ -98,18 +98,18 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
     schema: Schema,
     undoManager?: UndoManager,
 ): Collection<T> {
-    const applyDelta = async (id: string, delta: Delta, sendNew?: boolean) => {
+    const applyDelta = async (id: string, delta: Delta, sendNew?: boolean, skipUndo) => {
         let plain = null;
 
-        if (undoManager) {
+        if (undoManager && !skipUndo) {
             const inverted =
                 state.cache[id] == null
                     ? crdt.deltas.replace(crdt.createEmpty(getStamp()))
                     : crdt.deltas.invert(state.cache[id], delta, getStamp);
             if (inverted != null) {
                 undoManager.add(() => {
-                    // TODO re-stamp things
-                    applyDelta(id, crdt.deltas.restamp(inverted, getStamp()));
+                    // console.log('undoing', inverted);
+                    applyDelta(id, crdt.deltas.restamp(inverted, getStamp()), false, true);
                 });
             } else {
                 console.log(`Unable to invert delta: undo will be skipped`);
@@ -224,20 +224,20 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             return applyDelta(id, delta);
         },
 
-        async reorderId(id: string, path: Array<string | number>, childId: string, newIdx: number) {
-            const sub = subSchema(schema, path);
+        // async reorderId(id: string, path: Array<string | number>, childId: string, newIdx: number) {
+        //     const sub = subSchema(schema, path);
 
-            if (state.cache[id] == null) {
-                throw new Error(
-                    `As reorder is data-sensitive, we need to have the data cached before we call this`,
-                );
-                // const stored = await persistence.load(colid, id);
-                // if (!stored) {
-                //     throw new Error(`Cannot set attribute, node with id ${id} doesn't exist`);
-                // }
-                // state.cache[id] = stored;
-            }
-        },
+        //     if (state.cache[id] == null) {
+        //         throw new Error(
+        //             `As reorder is data-sensitive, we need to have the data cached before we call this`,
+        //         );
+        //         // const stored = await persistence.load(colid, id);
+        //         // if (!stored) {
+        //         //     throw new Error(`Cannot set attribute, node with id ${id} doesn't exist`);
+        //         // }
+        //         // state.cache[id] = stored;
+        //     }
+        // },
 
         async insertId(id: string, path: Array<string | number>, idx: number, childId: string) {
             // const sub = subSchema(schema, path);
@@ -282,16 +282,36 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         },
 
         async delete(id: string) {
+            const stamp = getStamp();
+
+            if (undoManager) {
+                if (state.cache[id] == null) {
+                    const stored = await persistence.load(colid, id);
+                    if (!stored) {
+                        throw new Error(`Cannot set attribute, node with id ${id} doesn't exist`);
+                    }
+                    state.cache[id] = stored;
+                }
+
+                const inverted = crdt.deltas.invert(
+                    state.cache[id],
+                    crdt.deltas.remove(stamp),
+                    getStamp,
+                );
+                if (inverted != null) {
+                    undoManager.add(() => {
+                        applyDelta(id, crdt.deltas.restamp(inverted, getStamp()), false, true);
+                    });
+                } else {
+                    console.log(`Unable to invert delta: undo will be skipped`);
+                }
+            }
+
             delete state.cache[id];
             send(state, id, null);
-            const stamp = getStamp();
-            await persistence.applyDelta(
-                colid,
-                id,
-                crdt.deltas.remove(stamp),
-                stamp,
-                crdt.deltas.apply,
-            );
+            const delta = crdt.deltas.remove(stamp);
+
+            await persistence.applyDelta(colid, id, delta, stamp, crdt.deltas.apply);
             sendCrossTabChanges({ col: colid, nodes: [id] });
             setDirty();
         },

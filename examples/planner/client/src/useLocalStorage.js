@@ -24,9 +24,6 @@ export const useLocalStorageSharedToggle = (sharedKey: string, key: string) => {
         if (sharedState[sharedKey] == null) {
             const raw = localStorage[sharedKey];
             sharedState[sharedKey] = raw == null ? {} : JSON.parse(raw);
-            // if (sharedState[sharedKey] !== null && initial != null && initial != false) {
-            //     sharedState[sharedKey][key] = initial
-            // }
         }
         return sharedState[sharedKey][key];
     });

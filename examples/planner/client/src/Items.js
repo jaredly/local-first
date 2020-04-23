@@ -79,6 +79,10 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
     const [col, root] = useItem(React, client, 'items', 'root');
     const [showAll, setShowAll] = React.useState(false);
 
+    React.useEffect(() => {
+        col.loadAll();
+    }, []);
+
     const dragRefs = React.useMemo(() => ({}), []);
 
     const [dragger, setDragger] = React.useState(null);

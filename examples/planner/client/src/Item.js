@@ -199,6 +199,9 @@ export const Item = React.memo<Props>(
         const [dragging, setDragging] = React.useState(false);
 
         const childPath = React.useMemo(() => path.concat([id]), [path]);
+        // if (!item) {
+        //     return 'deleted';
+        // }
 
         if (!item || (item.completedDate != null && !showAll)) {
             return null;
@@ -263,8 +266,7 @@ export const Item = React.memo<Props>(
             title: 'Delete',
             onClick: async () => {
                 const pid = path[path.length - 1];
-                await col.clearAttribute(pid, ['children', id]);
-                await col.delete(id);
+                await Promise.all([col.clearAttribute(pid, ['children', id]), col.delete(id)]);
             },
         });
 
@@ -286,7 +288,8 @@ export const Item = React.memo<Props>(
                     ) : !!item.description ? (
                         <div
                             style={{
-                                padding: 4,
+                                padding: 6,
+                                paddingTop: 11,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -313,7 +316,7 @@ export const Item = React.memo<Props>(
                             display: 'flex',
                             flexDirection: 'row',
                             flex: 1,
-                            alignItems: 'center',
+                            alignItems: 'flex-start',
                         }}
                     >
                         {item.style === 'group' ? (
@@ -340,9 +343,14 @@ export const Item = React.memo<Props>(
                             } ${item.completedDate != null ? styles.completed : ''}`}
                         >
                             {editing != null ? (
-                                <input
+                                <TextField
                                     autoFocus
+                                    multiline
                                     className={styles.input}
+                                    // inputProps={{
+                                    //     style: { fontSize: 'inherit' },
+                                    // }}
+                                    // size="medium"
                                     onClick={(evt) => evt.stopPropagation()}
                                     value={editing}
                                     onChange={(evt) => setEditing(evt.target.value)}
@@ -468,7 +476,7 @@ const useStyles = makeStyles((theme) => ({
         padding: '4px 8px',
         backgroundColor: 'inherit',
         border: 'none',
-        borderBottom: `2px solid ${theme.palette.primary.dark}`,
+        // borderBottom: `2px solid ${theme.palette.primary.dark}`,
         ...theme.typography.h5,
         fontWeight: 300,
     },
@@ -486,8 +494,9 @@ const useStyles = makeStyles((theme) => ({
     item: {
         display: 'flex',
         flexDirection: 'row',
-        alignItems: 'center',
-        cursor: 'pointer',
+        // alignItems: 'center',
+        alignItems: 'flex-start',
+        // cursor: 'pointer',
     },
     groupTitle: {
         flex: 1,
@@ -495,12 +504,15 @@ const useStyles = makeStyles((theme) => ({
         ...theme.typography.h5,
         fontWeight: 500,
         // color: theme.palette.primary.dark,
+        margin: 5,
     },
     itemTitle: {
         flex: 1,
         // padding: theme.spacing(2),
         ...theme.typography.h5,
         fontWeight: 300,
+        margin: 5,
+        wordBreak: 'break-word',
     },
     itemChildren: {
         // paddingLeft: theme.spacing(2),
