@@ -14,9 +14,11 @@ const useStyles = makeStyles((theme) => ({
     container: {},
     dragIndicator: {
         position: 'absolute',
-        height: 5,
+        height: 4,
+        marginTop: -2,
         backgroundColor: theme.palette.primary.dark,
         mouseEvents: 'none',
+        transition: `transform ease .1s`,
     },
 }));
 
@@ -191,7 +193,9 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                     style={{
                         left: dragger.left,
                         width: dragger.width,
-                        top: dragger.y,
+                        transform: `translateY(${dragger.y}px)`,
+                        top: 0,
+                        // top: dragger.y,
                     }}
                 ></div>
             ) : null}
