@@ -58,7 +58,7 @@ export const ItemChildren = ({
     client,
     col,
     showAll,
-    pid,
+    path,
     dragRefs,
     onDragStart,
 }: {
@@ -68,15 +68,15 @@ export const ItemChildren = ({
     col: Collection<ItemT>,
     showAll: boolean,
     dragRefs: DragRefs,
-    onDragStart: (id: string, pid: string, idx: number, () => void) => void,
-    pid: string,
+    onDragStart: (DragInit) => void,
+    path: Array<string>,
 }) => {
     const styles = useStyles();
     return (
         <div className={styles.itemChildren}>
             {item.children.map((child, i) => (
                 <Item
-                    pid={pid}
+                    path={path}
                     showAll={showAll}
                     onDragStart={onDragStart}
                     level={level + 1}
@@ -103,15 +103,22 @@ export const ItemChildren = ({
     );
 };
 
+export type DragInit = {
+    id: string,
+    path: Array<string>,
+    onStart: () => void,
+    onFinish: () => void,
+};
+
 type Props = {
-    pid: string,
+    path: Array<string>,
     level: number,
     id: string,
     idx: number,
     client: Client<SyncStatus>,
     showAll: boolean,
     dragRefs: DragRefs,
-    onDragStart: (id: string, pid: string, idx: number, () => void) => void,
+    onDragStart: (DragInit) => void,
 };
 
 export type DragRefs = { [key: string]: any };
@@ -132,7 +139,7 @@ const useLocalStorageState = (key, initial) => {
 };
 
 export const Item = React.memo<Props>(
-    ({ id, idx, onDragStart, client, level, showAll, pid, dragRefs }: Props) => {
+    ({ id, idx, onDragStart, client, level, showAll, path, dragRefs }: Props) => {
         const [col, item] = useItem(React, client, 'items', id);
         const [open, setOpen] = useLocalStorageState(id + '%open', false);
         const [editing, setEditing] = React.useState(null);
@@ -141,6 +148,8 @@ export const Item = React.memo<Props>(
         const [menu, setMenu] = React.useState(false);
         const [anchorEl, setAnchorEl] = React.useState(null);
         const [dragging, setDragging] = React.useState(false);
+
+        const childPath = React.useMemo(() => path.concat([id]), [path]);
 
         if (!item || (item.completedDate != null && !showAll)) {
             return null;
@@ -188,6 +197,7 @@ export const Item = React.memo<Props>(
         menuItems.push({
             title: 'Delete',
             onClick: async () => {
+                const pid = path[path.length - 1];
                 await col.clearAttribute(pid, ['children', id]);
                 await col.delete(id);
             },
@@ -217,7 +227,7 @@ export const Item = React.memo<Props>(
                     <div
                         ref={(node) => {
                             if (node) {
-                                dragRefs[id] = { id, pid, node, idx };
+                                dragRefs[id] = { id, path, node, idx };
                             } else {
                                 delete dragRefs[id];
                             }
@@ -277,7 +287,7 @@ export const Item = React.memo<Props>(
                         <Chip label={item.children.length} />
                     ) : null}
 
-                    <IconButton
+                    {/* <IconButton
                         aria-label="more"
                         // aria-controls="long-menu"
                         aria-haspopup="true"
@@ -293,44 +303,54 @@ export const Item = React.memo<Props>(
                         ref={setAnchorEl}
                     >
                         <MoreVertIcon />
-                    </IconButton>
+                    </IconButton> */}
 
-                    {/* <IconButton
-                    aria-label="more"
-                    // aria-controls="long-menu"
-                    aria-haspopup="true"
-                    onClick={(evt) => {
-                        evt.stopPropagation();
-                        setMenu(true);
-                    }}
-                    ref={setAnchorEl}
-                >
-                    <MoreVertIcon />
-                </IconButton> */}
-                    {/* <Menu
-                    id="long-menu"
-                    anchorEl={anchorEl}
-                    keepMounted
-                    open={menu}
-                    onClick={(evt) => evt.stopPropagation()}
-                    onClose={() => setMenu(false)}
-                >
-                    {menuItems.map((item) => (
-                        <MenuItem
-                            key={item.title}
-                            onClick={() => {
-                                item.onClick();
-                                setMenu(false);
-                            }}
-                        >
-                            {item.title}
-                        </MenuItem>
-                    ))}
-                </Menu> */}
+                    <IconButton
+                        aria-label="more"
+                        // aria-controls="long-menu"
+                        aria-haspopup="true"
+                        onMouseDown={(evt) => {
+                            // um maybe I need to pass an onstart too?
+                            // setDragging(true);
+                            onDragStart({
+                                id,
+                                path,
+                                onStart: () => setDragging(true),
+                                onFinish: () => setDragging(false),
+                            });
+                        }}
+                        onClick={(evt) => {
+                            evt.stopPropagation();
+                            setMenu(true);
+                        }}
+                        ref={setAnchorEl}
+                    >
+                        <MoreVertIcon />
+                    </IconButton>
+                    <Menu
+                        id="long-menu"
+                        anchorEl={anchorEl}
+                        keepMounted
+                        open={menu}
+                        onClick={(evt) => evt.stopPropagation()}
+                        onClose={() => setMenu(false)}
+                    >
+                        {menuItems.map((item) => (
+                            <MenuItem
+                                key={item.title}
+                                onClick={() => {
+                                    item.onClick();
+                                    setMenu(false);
+                                }}
+                            >
+                                {item.title}
+                            </MenuItem>
+                        ))}
+                    </Menu>
                 </div>
                 {open ? (
                     <ItemChildren
-                        pid={id}
+                        path={childPath}
                         onDragStart={onDragStart}
                         dragRefs={dragRefs}
                         showAll={showAll}
@@ -374,6 +394,7 @@ const useStyles = makeStyles(
                 backgroundColor: theme.palette.primary.light,
             },
             item: {
+                transition: ` background-color ease .3s`,
                 display: 'flex',
                 flexDirection: 'row',
                 alignItems: 'center',

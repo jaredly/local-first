@@ -7,12 +7,20 @@ import { makeStyles } from '@material-ui/core/styles';
 import * as React from 'react';
 import type { Client, SyncStatus } from '../../../../packages/client-bundle';
 import { useItem } from '../../../../packages/client-react';
-import { ItemChildren } from './Item';
+import { ItemChildren, type DragInit } from './Item';
 import { newItem } from './types';
 
 const useStyles = makeStyles((theme) => ({
     container: {},
+    dragIndicator: {
+        position: 'absolute',
+        height: 5,
+        backgroundColor: theme.palette.primary.dark,
+        mouseEvents: 'none',
+    },
 }));
+
+const last = (arr) => arr[arr.length - 1];
 
 const getPosition = (boxes, clientY, dragging) => {
     const offsetParent = boxes[0].item.node.offsetParent;
@@ -24,12 +32,15 @@ const getPosition = (boxes, clientY, dragging) => {
         if (y < mid) {
             return {
                 dragging,
-                dest: {
-                    id: current.item.id,
-                    pid: current.item.pid,
-                    position: 'top',
-                    idx: current.item.idx,
-                },
+                dest:
+                    current.item.id === dragging.id
+                        ? null
+                        : {
+                              id: current.item.id,
+                              path: current.item.path,
+                              position: 'top',
+                              idx: current.item.idx,
+                          },
                 y: current.box.top - offset,
                 left: current.box.left,
                 width: current.box.width,
@@ -37,12 +48,15 @@ const getPosition = (boxes, clientY, dragging) => {
         } else if (i >= boxes.length - 1 || y < boxes[i + 1].box.top) {
             return {
                 dragging,
-                dest: {
-                    id: current.item.id,
-                    pid: current.item.pid,
-                    position: 'bottom',
-                    idx: current.item.idx + 1,
-                },
+                dest:
+                    current.item.id === dragging.id
+                        ? null
+                        : {
+                              id: current.item.id,
+                              path: current.item.path,
+                              position: 'bottom',
+                              idx: current.item.idx + 1,
+                          },
                 y: current.box.bottom - offset,
                 left: current.box.left,
                 width: current.box.width,
@@ -72,19 +86,16 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                 .map((k) => ({ item: refs[k], box: refs[k].node.getBoundingClientRect() }))
                 .sort((a, b) => a.box.top - b.box.top);
             const move = (evt) => {
+                // TODO TODO - need to wait for a couple of pixels
+                // before triggering the "onStart"
+                // So I need to track the initial pos
+                if (currentDragger.current && currentDragger.current.dest == null) {
+                    currentDragger.current.dragging.onStart();
+                }
                 const position = getPosition(boxes, evt.clientY, dragger.dragging);
                 if (position) {
                     setDragger(position);
                 }
-                // for (let i = 0; i < boxes.length; i++) {
-                //     if (boxes[i].box.bottom > evt.clientY) {
-                //         if (boxes[i].box.top <= evt.clientY) {
-                //             const parent = boxes[i].node.offsetParent.getBoundingClientRect();
-                //             setDragger({ top: boxes[i].box.top - parent.top, id: boxes[i].id });
-                //         }
-                //         break;
-                //     }
-                // }
             };
             const up = (evt) => {
                 const dragger = currentDragger.current;
@@ -92,20 +103,26 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                     return;
                 }
                 console.log('move to', dragger);
+                // ok instead of PID, need to use the whole
+                // path, so we don't make loops.
                 // STOPSHIP do the move actually
                 const { dragging, dest } = dragger;
-                if (dragging.pid === dest.pid) {
-                    // console.log(dest);
-                    col.reorderIdRelative(
-                        dragging.pid,
-                        ['children'],
-                        dragging.id,
-                        dest.id,
-                        dest.position === 'top',
-                    );
-                } else {
-                    col.removeId(dragging.pid, ['children'], dragging.id);
-                    col.insertId(dest.pid, ['children'], dest.idx, dragging.id);
+                if (dest && dest.id !== dragging.id) {
+                    const oldPid = last(dragging.path);
+                    const newPid = last(dest.path);
+                    if (oldPid === newPid) {
+                        // console.log(dest);
+                        col.reorderIdRelative(
+                            newPid,
+                            ['children'],
+                            dragging.id,
+                            dest.id,
+                            dest.position === 'top',
+                        );
+                    } else {
+                        col.removeId(oldPid, ['children'], dragging.id);
+                        col.insertId(newPid, ['children'], dest.idx, dragging.id);
+                    }
                 }
                 dragging.onFinish();
                 setDragger(null);
@@ -119,29 +136,29 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
         }
     }, [!!dragger]);
 
-    const onDragStart = React.useCallback(
-        (id: string, pid: string, idx: number, onFinish: () => void) => {
-            const item = refs[id];
-            if (!item) {
-                return;
-            }
-            const box = item.node.getBoundingClientRect();
-            const parent = item.node.offsetParent.getBoundingClientRect();
-            setDragger({
-                dragging: { id, pid, idx, onFinish },
-                dest: {
-                    position: 'top',
-                    pid,
-                    id,
-                    idx,
-                },
-                y: box.top - parent.top,
-                left: box.left,
-                width: box.width,
-            });
-        },
-        [],
-    );
+    const onDragStart = React.useCallback((config: DragInit) => {
+        const item = refs[config.id];
+        if (!item) {
+            return;
+        }
+        const box = item.node.getBoundingClientRect();
+        const parent = item.node.offsetParent.getBoundingClientRect();
+        setDragger({
+            dragging: config,
+            dest: null,
+            // dest: {
+            //     position: 'top',
+            //     pid,
+            //     id,
+            //     idx,
+            // },
+            // y: box.top - parent.top,
+            left: box.left,
+            width: box.width,
+        });
+    }, []);
+
+    const path = React.useMemo(() => ['root'], []);
 
     return (
         <Container maxWidth="sm" className={styles.container}>
@@ -156,22 +173,19 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                 label="Show completed"
             />
             <Button onClick={() => client.undo()}>Undo</Button>
-            {dragger != null ? (
+            {dragger != null && dragger.y != null && dragger.dest != null ? (
                 <div
+                    className={styles.dragIndicator}
                     style={{
-                        position: 'absolute',
                         left: dragger.left,
                         width: dragger.width,
                         top: dragger.y,
-                        height: 5,
-                        backgroundColor: 'red',
-                        mouseEvents: 'none',
                     }}
                 ></div>
             ) : null}
             {root ? (
                 <ItemChildren
-                    pid="root"
+                    path={path}
                     dragRefs={refs}
                     onDragStart={onDragStart}
                     showAll={showAll}
