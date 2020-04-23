@@ -8,6 +8,7 @@ import * as React from 'react';
 import {
     createPersistedBlobClient,
     createPersistedDeltaClient,
+    createInMemoryDeltaClient,
 } from '../../../../packages/client-bundle';
 // import Adder from './Adder';
 import type { Data } from './auth-api';
@@ -25,6 +26,7 @@ const schemas = {
 const App = ({ host, auth, logout }: { host: string, auth: ?Data, logout: () => mixed }) => {
     const client = React.useMemo(() => {
         console.log('starting a client', auth);
+        // return createInMemoryDeltaClient(schemas, '');
         return auth
             ? createPersistedDeltaClient(
                   'planner',
@@ -33,7 +35,7 @@ const App = ({ host, auth, logout }: { host: string, auth: ?Data, logout: () => 
                       auth.token
                   }`,
               )
-            : createPersistedBlobClient('planner', schemas, null, 2);
+            : createPersistedBlobClient('planner-blob', schemas, null, 2);
     }, [auth && auth.token]);
 
     const [showUpgrade, setShowUpgrade] = React.useState(

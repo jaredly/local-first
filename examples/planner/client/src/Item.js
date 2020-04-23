@@ -68,7 +68,7 @@ export const ItemChildren = ({
     col: Collection<ItemT>,
     showAll: boolean,
     dragRefs: DragRefs,
-    onDragStart: (id: string, pid: string, idx: number) => void,
+    onDragStart: (id: string, pid: string, idx: number, () => void) => void,
     pid: string,
 }) => {
     const styles = useStyles();
@@ -111,7 +111,7 @@ type Props = {
     client: Client<SyncStatus>,
     showAll: boolean,
     dragRefs: DragRefs,
-    onDragStart: (id: string, pid: string, idx: number) => void,
+    onDragStart: (id: string, pid: string, idx: number, () => void) => void,
 };
 
 export type DragRefs = { [key: string]: any };
@@ -140,6 +140,7 @@ export const Item = React.memo<Props>(
 
         const [menu, setMenu] = React.useState(false);
         const [anchorEl, setAnchorEl] = React.useState(null);
+        const [dragging, setDragging] = React.useState(false);
 
         if (!item || (item.completedDate != null && !showAll)) {
             return null;
@@ -194,7 +195,10 @@ export const Item = React.memo<Props>(
 
         return (
             <div className={styles.itemWrapper}>
-                <div className={styles.item} style={{ paddingLeft: level * INDENT }}>
+                <div
+                    className={styles.item + (dragging ? ' ' + styles.dragItem : '')}
+                    style={{ paddingLeft: level * INDENT }}
+                >
                     {item.style === 'group' || item.children.length > 0 || open ? (
                         <div
                             style={{
@@ -214,6 +218,8 @@ export const Item = React.memo<Props>(
                         ref={(node) => {
                             if (node) {
                                 dragRefs[id] = { id, pid, node, idx };
+                            } else {
+                                delete dragRefs[id];
                             }
                         }}
                         style={{
@@ -277,7 +283,8 @@ export const Item = React.memo<Props>(
                         aria-haspopup="true"
                         onMouseDown={(evt) => {
                             //
-                            onDragStart(id, pid, idx);
+                            setDragging(true);
+                            onDragStart(id, pid, idx, () => setDragging(false));
                         }}
                         // onClick={(evt) => {
                         //     evt.stopPropagation();
@@ -363,6 +370,9 @@ const useStyles = makeStyles(
                 // },
             },
             itemWrapper: {},
+            dragItem: {
+                backgroundColor: theme.palette.primary.light,
+            },
             item: {
                 display: 'flex',
                 flexDirection: 'row',

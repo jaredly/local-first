@@ -25,16 +25,17 @@ const node = document.createElement('div');
 if (document.body) {
     document.body.appendChild(node);
 }
-const host = 'localhost:9090';
+// const host = 'localhost:9090';
 // const host = 'things-to-share.glitch.me';
 window.addEventListener('load', () => {
     render(
         <ThemeProvider theme={darkTheme}>
             <CssBaseline />
-            <Auth
+            {/* <Auth
                 host={host}
                 render={(auth, logout) => <App auth={auth} logout={logout} host={host} />}
-            />
+            /> */}
+            <App auth={null} logout={() => {}} host={''} />
         </ThemeProvider>,
         node,
     );

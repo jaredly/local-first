@@ -59,6 +59,14 @@ export type CRDTImpl<Delta, Data> = {
         replace(Data): Delta,
         remove(string): Delta,
         insert(Data, Array<string | number>, number, string, Data, string): Delta,
+        reorderRelative(
+            Data,
+            path: Array<string | number>,
+            childId: string,
+            relativeTo: string,
+            before: boolean,
+            stamp: string,
+        ): Delta,
         // $FlowFixMe
         other<Other>(Data, Array<string | number>, Other, string): Delta,
         apply(Data, Delta): Data,

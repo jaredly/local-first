@@ -291,7 +291,10 @@ export const deltas = {
             stamp,
             idx: newSort,
         };
-        // console.log(without, )
+        // console.log('sorting to', idx, relIdx, sort, prev, after);
+        // console.log(meta.idsInOrder);
+        // console.log(id, relativeTo);
+        // ooh ok so idx can be -1? That's not great.
         return {
             type: 'reorder',
             path: makeKeyPath(current.meta, path.concat([id])),

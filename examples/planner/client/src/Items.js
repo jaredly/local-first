@@ -95,17 +95,19 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                 // STOPSHIP do the move actually
                 const { dragging, dest } = dragger;
                 if (dragging.pid === dest.pid) {
+                    // console.log(dest);
                     col.reorderIdRelative(
                         dragging.pid,
                         ['children'],
-                        dragging.idx,
+                        dragging.id,
                         dest.id,
-                        dest.position === 'before',
+                        dest.position === 'top',
                     );
                 } else {
                     col.removeId(dragging.pid, ['children'], dragging.id);
                     col.insertId(dest.pid, ['children'], dest.idx, dragging.id);
                 }
+                dragging.onFinish();
                 setDragger(null);
             };
             window.addEventListener('mousemove', move, true);
@@ -117,26 +119,29 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
         }
     }, [!!dragger]);
 
-    const onDragStart = React.useCallback((id: string, pid: string, idx: number) => {
-        const item = refs[id];
-        if (!item) {
-            return;
-        }
-        const box = item.node.getBoundingClientRect();
-        const parent = item.node.offsetParent.getBoundingClientRect();
-        setDragger({
-            dragging: { id, pid, idx },
-            dest: {
-                position: 'top',
-                pid,
-                id,
-                idx,
-            },
-            y: box.top - parent.top,
-            left: box.left,
-            width: box.width,
-        });
-    }, []);
+    const onDragStart = React.useCallback(
+        (id: string, pid: string, idx: number, onFinish: () => void) => {
+            const item = refs[id];
+            if (!item) {
+                return;
+            }
+            const box = item.node.getBoundingClientRect();
+            const parent = item.node.offsetParent.getBoundingClientRect();
+            setDragger({
+                dragging: { id, pid, idx, onFinish },
+                dest: {
+                    position: 'top',
+                    pid,
+                    id,
+                    idx,
+                },
+                y: box.top - parent.top,
+                left: box.left,
+                width: box.width,
+            });
+        },
+        [],
+    );
 
     return (
         <Container maxWidth="sm" className={styles.container}>
