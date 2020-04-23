@@ -204,11 +204,8 @@ export const Item = React.memo<Props>(
         });
 
         return (
-            <div className={styles.itemWrapper}>
-                <div
-                    className={styles.item + (dragging ? ' ' + styles.dragItem : '')}
-                    style={{ paddingLeft: level * INDENT }}
-                >
+            <div className={styles.itemWrapper + (dragging ? ' ' + styles.dragItem : '')}>
+                <div className={styles.item} style={{ paddingLeft: level * INDENT }}>
                     {item.style === 'group' || item.children.length > 0 || open ? (
                         <div
                             style={{
@@ -389,12 +386,13 @@ const useStyles = makeStyles(
                 //     backgroundColor: theme.palette.primary.light,
                 // },
             },
-            itemWrapper: {},
+            itemWrapper: {
+                transition: ` background-color ease .3s`,
+            },
             dragItem: {
-                backgroundColor: theme.palette.primary.light,
+                backgroundColor: theme.palette.primary.dark,
             },
             item: {
-                transition: ` background-color ease .3s`,
                 display: 'flex',
                 flexDirection: 'row',
                 alignItems: 'center',

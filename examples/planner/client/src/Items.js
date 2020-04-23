@@ -22,7 +22,15 @@ const useStyles = makeStyles((theme) => ({
 
 const last = (arr) => arr[arr.length - 1];
 
-const getPosition = (boxes, clientY, dragging) => {
+type DragState = {
+    dragging: DragInit,
+    dest: ?{ id: string, path: Array<string>, position: 'top' | 'bottom', idx: number },
+    y: number,
+    left: number,
+    width: number,
+};
+
+const getPosition = (boxes, clientY, dragging): ?DragState => {
     const offsetParent = boxes[0].item.node.offsetParent;
     const offset = offsetParent.getBoundingClientRect().top;
     const y = clientY; // + offset; // include offsetTop?
@@ -32,15 +40,12 @@ const getPosition = (boxes, clientY, dragging) => {
         if (y < mid) {
             return {
                 dragging,
-                dest:
-                    current.item.id === dragging.id
-                        ? null
-                        : {
-                              id: current.item.id,
-                              path: current.item.path,
-                              position: 'top',
-                              idx: current.item.idx,
-                          },
+                dest: {
+                    id: current.item.id,
+                    path: current.item.path,
+                    position: 'top',
+                    idx: current.item.idx,
+                },
                 y: current.box.top - offset,
                 left: current.box.left,
                 width: current.box.width,
@@ -48,15 +53,12 @@ const getPosition = (boxes, clientY, dragging) => {
         } else if (i >= boxes.length - 1 || y < boxes[i + 1].box.top) {
             return {
                 dragging,
-                dest:
-                    current.item.id === dragging.id
-                        ? null
-                        : {
-                              id: current.item.id,
-                              path: current.item.path,
-                              position: 'bottom',
-                              idx: current.item.idx + 1,
-                          },
+                dest: {
+                    id: current.item.id,
+                    path: current.item.path,
+                    position: 'bottom',
+                    idx: current.item.idx + 1,
+                },
                 y: current.box.bottom - offset,
                 left: current.box.left,
                 width: current.box.width,
@@ -72,7 +74,7 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
     const [col, root] = useItem(React, client, 'items', 'root');
     const [showAll, setShowAll] = React.useState(false);
 
-    const refs = React.useMemo(() => ({}), []);
+    const dragRefs = React.useMemo(() => ({}), []);
 
     const [dragger, setDragger] = React.useState(null);
     const currentDragger = React.useRef(dragger);
@@ -82,8 +84,8 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
         if (dragger != null) {
             console.log('initializing dragger');
             const positions = {};
-            const boxes = Object.keys(refs)
-                .map((k) => ({ item: refs[k], box: refs[k].node.getBoundingClientRect() }))
+            const boxes = Object.keys(dragRefs)
+                .map((k) => ({ item: dragRefs[k], box: dragRefs[k].node.getBoundingClientRect() }))
                 .sort((a, b) => a.box.top - b.box.top);
             const move = (evt) => {
                 // TODO TODO - need to wait for a couple of pixels
@@ -94,6 +96,13 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                 }
                 const position = getPosition(boxes, evt.clientY, dragger.dragging);
                 if (position) {
+                    if (
+                        position.dest &&
+                        (position.dest.id === position.dragging.id ||
+                            position.dest.path.includes(position.dragging.id))
+                    ) {
+                        position.dest = null;
+                    }
                     setDragger(position);
                 }
             };
@@ -102,7 +111,7 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                 if (!dragger) {
                     return;
                 }
-                console.log('move to', dragger);
+                // console.log('move to', dragger);
                 // ok instead of PID, need to use the whole
                 // path, so we don't make loops.
                 // STOPSHIP do the move actually
@@ -137,7 +146,7 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
     }, [!!dragger]);
 
     const onDragStart = React.useCallback((config: DragInit) => {
-        const item = refs[config.id];
+        const item = dragRefs[config.id];
         if (!item) {
             return;
         }
@@ -186,7 +195,7 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
             {root ? (
                 <ItemChildren
                     path={path}
-                    dragRefs={refs}
+                    dragRefs={dragRefs}
                     onDragStart={onDragStart}
                     showAll={showAll}
                     level={-1}
