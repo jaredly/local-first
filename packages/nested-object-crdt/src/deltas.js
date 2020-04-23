@@ -257,10 +257,52 @@ export const deltas = {
             value,
         };
     },
+    reorderRelative<T, Other>(
+        current: CRDT<T, Other>,
+        path: Array<string | number>,
+        id: string,
+        relativeTo: string,
+        before: boolean,
+        stamp: string,
+    ): HostDelta<T, Other> {
+        const array = get(current, path);
+        if (!array || array.meta.type !== 'array') {
+            throw new Error(
+                `Can only insert into an array, not a ${array ? array.meta.type : 'null'}`,
+            );
+        }
+        const meta = array.meta;
+
+        const idx = meta.idsInOrder.indexOf(id);
+
+        const without = meta.idsInOrder.slice();
+        const [_] = without.splice(idx, 1);
+
+        const relIdx = without.indexOf(relativeTo);
+        const [prev, after] = before
+            ? [without[relIdx - 1], relativeTo]
+            : [relativeTo, without[relIdx + 1]];
+        const newSort = sortedArray.between(
+            prev ? meta.items[prev].sort.idx : null,
+            after ? meta.items[after].sort.idx : null,
+        );
+
+        const sort = {
+            stamp,
+            idx: newSort,
+        };
+        // console.log(without, )
+        return {
+            type: 'reorder',
+            path: makeKeyPath(current.meta, path.concat([id])),
+            sort,
+        };
+    },
     reorder<T, Other>(
         current: CRDT<T, Other>,
         path: Array<string | number>,
         idx: number,
+        // newIdx is *after* the item has been removed.
         newIdx: number,
         stamp: string,
     ): HostDelta<T, Other> {

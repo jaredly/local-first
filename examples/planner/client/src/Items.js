@@ -95,9 +95,13 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                 // STOPSHIP do the move actually
                 const { dragging, dest } = dragger;
                 if (dragging.pid === dest.pid) {
-                    // col.reorderId(
-                    //     dragging.pid,
-                    // );
+                    col.reorderIdRelative(
+                        dragging.pid,
+                        ['children'],
+                        dragging.idx,
+                        dest.id,
+                        dest.position === 'before',
+                    );
                 } else {
                     col.removeId(dragging.pid, ['children'], dragging.id);
                     col.insertId(dest.pid, ['children'], dest.idx, dragging.id);
@@ -121,7 +125,7 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
         const box = item.node.getBoundingClientRect();
         const parent = item.node.offsetParent.getBoundingClientRect();
         setDragger({
-            dragging: { id, pid },
+            dragging: { id, pid, idx },
             dest: {
                 position: 'top',
                 pid,

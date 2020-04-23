@@ -186,18 +186,50 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             return applyDelta(id, delta);
         },
 
-        // async reorderId(id: string, path: Array<string|number>, childId: string, newIdx: number) {
-        //     const sub = subSchema(schema, path);
+        async reorderIdRelative(
+            id: string,
+            path: Array<string | number>,
+            childId: string,
+            relativeTo: string,
+            before: boolean,
+        ) {
+            const sub = subSchema(schema, path);
 
-        //     if (state.cache[id] == null) {
-        //         const stored = await persistence.load(colid, id);
-        //         if (!stored) {
-        //             throw new Error(`Cannot set attribute, node with id ${id} doesn't exist`);
-        //         }
-        //         state.cache[id] = stored;
-        //     }
+            if (state.cache[id] == null) {
+                const stored = await persistence.load(colid, id);
+                if (!stored) {
+                    throw new Error(`Cannot set attribute, node with id ${id} doesn't exist`);
+                }
+                state.cache[id] = stored;
+            }
 
-        // },
+            const stamp = getStamp();
+            const delta = crdt.deltas.reorderRelative(
+                state.cache[id],
+                path,
+                childId,
+                relativeTo,
+                before,
+                stamp,
+            );
+
+            return applyDelta(id, delta);
+        },
+
+        async reorderId(id: string, path: Array<string | number>, childId: string, newIdx: number) {
+            const sub = subSchema(schema, path);
+
+            if (state.cache[id] == null) {
+                throw new Error(
+                    `As reorder is data-sensitive, we need to have the data cached before we call this`,
+                );
+                // const stored = await persistence.load(colid, id);
+                // if (!stored) {
+                //     throw new Error(`Cannot set attribute, node with id ${id} doesn't exist`);
+                // }
+                // state.cache[id] = stored;
+            }
+        },
 
         async insertId(id: string, path: Array<string | number>, idx: number, childId: string) {
             // const sub = subSchema(schema, path);
