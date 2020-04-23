@@ -22,8 +22,9 @@
         "typeface-roboto": "^0.0.75"
     },
     "scripts": {
-        "deploy": "npm run build && cd dist && surge . things-to-share.surge.sh",
-        "build": "rm -rf dist && parcel build index.html"
+        "deploy": "npm run build && cd dist && surge . local-planner.surge.sh",
+        "build": "parcel build index.html",
+        "start": "parcel index.html"
     },
     "browserslist": [
         "last 1 Chrome versions"

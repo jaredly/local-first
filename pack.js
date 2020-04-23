@@ -2,59 +2,63 @@
 // const fs = require('fs');
 const pack = require('./packages/monorepo-pack');
 
-// const packages = {
-//     // 'hybrid-logical-clock': true,
-//     // ummm
-//     'local-first-bundle': {
-//         external: [],
-//     },
-// };
+const packages = [
+    {
+        name: 'planner',
+        entry: 'examples/planner/server/glitch.js',
+        dest: 'public/planner-server',
+        start: true,
+    },
+    {
+        name: 'things-to-share',
+        entry: 'examples/things-to-share/server/glitch.js',
+        dest: 'public/things-to-share-server',
+        start: true,
+    },
+    {
+        name: 'example',
+        entry: 'examples/whiteboard/server/glitch.js',
+        dest: 'public/whiteboard-server',
+        start: true,
+    },
+    {
+        name: 'example',
+        entry: 'packages/server-bundle/index.js',
+        dest: 'public/server-bundle',
+    },
+    {
+        name: 'example',
+        entry: 'packages/client-bundle/index.js',
+        dest: 'public/client-bundle',
+    },
+    {
+        name: 'rich-text-crdt',
+        entry: 'packages/rich-text-crdt/index.js',
+        dest: 'public/rich-text-crdt',
+    },
+    {
+        name: 'nested-object-crdt',
+        entry: 'packages/nested-object-crdt/src/new.js',
+        dest: 'public/nested-object-crdt',
+    },
+];
 
-// pack({
-//     name: 'example',
-//     entry: 'examples/simple-example/server/index.js',
-//     dest: 'public/example-server',
-// });
+const [_, __, arg] = process.argv;
 
-pack({
-    name: 'things-to-share',
-    entry: 'examples/things-to-share/server/glitch.js',
-    dest: 'public/things-to-share-server',
-    start: true,
-});
-
-pack({
-    name: 'example',
-    entry: 'examples/whiteboard/server/glitch.js',
-    dest: 'public/whiteboard-server',
-    start: true,
-});
-
-fail;
-
-pack({
-    name: 'example',
-    entry: 'packages/server-bundle/index.js',
-    dest: 'public/server-bundle',
-});
-
-pack({
-    name: 'example',
-    entry: 'packages/client-bundle/index.js',
-    dest: 'public/client-bundle',
-});
-
-pack({
-    name: 'rich-text-crdt',
-    entry: 'packages/rich-text-crdt/index.js',
-    dest: 'public/rich-text-crdt',
-});
-
-pack({
-    name: 'nested-object-crdt',
-    entry: 'packages/nested-object-crdt/src/new.js',
-    dest: 'public/nested-object-crdt',
-});
+if (arg) {
+    if (
+        !packages.some(package => {
+            if (package.name === arg) {
+                pack(package);
+                return true;
+            }
+        })
+    ) {
+        console.error(`No package named ${arg}`);
+    }
+} else {
+    packages.forEach(pack);
+}
 
 // pack({
 //     name: 'hybrid-logical-clock',

@@ -15,8 +15,8 @@
             "sizes": "192x192"
         }
     ],
-    "background_color": "#9c27b0",
+    "background_color": "#4caf50",
     "display": "standalone",
     "scope": "/",
-    "theme_color": "#9c27b0"
+    "theme_color": "#4caf50"
 }
