@@ -18,6 +18,7 @@ import * as React from 'react';
 import type { Client, Collection, SyncStatus } from '../../../../packages/client-bundle';
 import { useItem } from '../../../../packages/client-react';
 import { type ItemT, newItem } from './types';
+import { useLocalStorageSharedToggle } from './useLocalStorage';
 
 const INDENT = 24;
 
@@ -128,20 +129,20 @@ type Props = {
 
 export type DragRefs = { [key: string]: any };
 
-const useLocalStorageState = (key, initial) => {
-    const [current, setCurrent] = React.useState(() => {
-        const raw = localStorage[key];
-        return raw == null ? initial : JSON.parse(raw);
-    });
-    const set = React.useCallback(
-        (value) => {
-            localStorage[key] = JSON.stringify(value);
-            setCurrent(value);
-        },
-        [setCurrent],
-    );
-    return [current, set];
-};
+// const useLocalStorageState = (key, initial) => {
+//     const [current, setCurrent] = React.useState(() => {
+//         const raw = localStorage[key];
+//         return raw == null ? initial : JSON.parse(raw);
+//     });
+//     const set = React.useCallback(
+//         (value) => {
+//             localStorage[key] = JSON.stringify(value);
+//             setCurrent(value);
+//         },
+//         [setCurrent],
+//     );
+//     return [current, set];
+// };
 
 const Description = ({ text, onChange }) => {
     const [editing, onEdit] = React.useState(null);
@@ -185,8 +186,11 @@ const Description = ({ text, onChange }) => {
 export const Item = React.memo<Props>(
     ({ id, idx, onDragStart, client, level, showAll, path, dragRefs }: Props) => {
         const [col, item] = useItem(React, client, 'items', id);
-        const [open, setOpen] = useLocalStorageState(id + '%open', false);
-        const [showDescription, setShowDescription] = useLocalStorageState(id + '%desc', false);
+        const [open, setOpen] = useLocalStorageSharedToggle('planner-ui-state', id + '%open');
+        const [showDescription, setShowDescription] = useLocalStorageSharedToggle(
+            'planner-ui-state',
+            id + '%desc',
+        );
         const [editing, setEditing] = React.useState(null);
         const styles = useStyles();
 
