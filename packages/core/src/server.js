@@ -166,6 +166,7 @@ export const onMessage = function<Delta, Data>(
             const error = schemaChecker(delta.delta);
             if (error != null) {
                 console.error(`Delta on ${delta.node} failed schema check! ${error}`);
+                console.error(delta.delta);
                 return;
             }
         }

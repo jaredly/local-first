@@ -23,7 +23,7 @@
     },
     "scripts": {
         "deploy": "npm run build && cd dist && surge . things-to-share.surge.sh",
-        "build": "rm -rf dist && parcel build index.html"
+        "build": "parcel build index.html"
     },
     "browserslist": [
         "last 1 Chrome versions"

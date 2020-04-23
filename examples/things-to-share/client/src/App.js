@@ -12,6 +12,7 @@ import {
 import Adder from './Adder';
 import type { Data } from './auth-api';
 import Home from './Home';
+import { useCollection } from '../../../../packages/client-react';
 // import { default as makeDeltaInMemoryPersistence } from '../../../../packages/idb/src/delta-mem';
 import { LinkSchema, type LinkT, TagSchema } from './types';
 
@@ -23,6 +24,37 @@ const schemas = {
 const rx = /https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
 const fullRx = /^https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?$/gi;
 const endRx = /https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?$/gi;
+
+const AdderTagWrapper = ({ client, host, addingUrl, linksCol }) => {
+    const [tagsCol, tags] = useCollection(React, client, 'tags');
+
+    return (
+        <Adder
+            host={host}
+            initialUrl={addingUrl}
+            tags={tags}
+            onCancel={() => {
+                window.close();
+            }}
+            onAdd={(url, fetchedContent) => {
+                const id = client.getStamp();
+                linksCol
+                    .save(id, {
+                        id,
+                        url,
+                        fetchedContent,
+                        added: Date.now(),
+                        tags: {},
+                        description: null,
+                        completed: null,
+                    })
+                    .then(() => {
+                        window.close();
+                    });
+            }}
+        />
+    );
+};
 
 const App = ({
     host,
@@ -107,28 +139,11 @@ const App = ({
 
     const contents = addingUrl ? (
         <div>
-            <Adder
+            <AdderTagWrapper
                 host={host}
-                initialUrl={addingUrl}
-                onCancel={() => {
-                    window.close();
-                }}
-                onAdd={(url, fetchedContent) => {
-                    const id = client.getStamp();
-                    linksCol
-                        .save(id, {
-                            id,
-                            url,
-                            fetchedContent,
-                            added: Date.now(),
-                            tags: {},
-                            description: null,
-                            completed: null,
-                        })
-                        .then(() => {
-                            window.close();
-                        });
-                }}
+                addingUrl={addingUrl}
+                linksCol={linksCol}
+                client={client}
             />
         </div>
     ) : (

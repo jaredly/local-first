@@ -32,7 +32,7 @@ export const applyDelta = function<T, O, Other, OtherDelta>(
         case 'set':
             return set(crdt, delta.path, delta.value, mergeOther);
         case 'insert':
-            return insert(crdt, delta.path, delta.sort, delta.value);
+            return insert(crdt, delta.path, delta.sort, delta.value, mergeOther);
         case 'reorder':
             return reorder(crdt, delta.path, delta.sort);
         case 'other':
@@ -68,14 +68,35 @@ const insertIntoArray = function<T, Other>(
     id: string,
     sort: { idx: Sort, stamp: string },
     value: CRDT<T, Other>,
+    mergeOther: OtherMerge<Other>,
 ): CRDT<$ReadOnlyArray<T>, Other> {
     if (value.meta.type === 't') {
         throw new Error(`Cannot insert a tombstone into an array`);
     }
-    if (meta.items[id] != null) {
-        console.error('WAIT folks, double insert');
-        // STOPSHIP need to check stamps of the sort to see if I need
-        // to reorder
+    if (meta.items[id] != null && meta.items[id].meta.type !== 't') {
+        const prev = meta.items[id];
+        const merged = merge(
+            prev.meta.type !== 't' ? array[meta.idsInOrder.indexOf(id)] : null,
+            prev.meta,
+            value.value,
+            value.meta,
+            mergeOther,
+        );
+        const mergedSort = prev.sort.stamp > sort.stamp ? prev.sort : sort;
+
+        if (merged.meta.hlcStamp === prev.meta.hlcStamp) {
+            return {
+                meta: {
+                    ...meta,
+                    items: {
+                        ...meta.items,
+                        [id]: { meta: merged.meta, sort: mergedSort },
+                    },
+                },
+                value: array,
+            };
+        }
+
         return { meta, value: array };
     }
     const newValue = array.slice();
@@ -144,6 +165,7 @@ export const insert = function<T, O, Other>(
     key: KeyPath,
     sort: { idx: Sort, stamp: string },
     value: CRDT<O, Other>,
+    otherMerge: OtherMerge<Other>,
 ): CRDT<T, Other> {
     return applyInner(crdt, key, (inner, id) => {
         if (!inner) {
@@ -154,7 +176,7 @@ export const insert = function<T, O, Other>(
             throw new Error(`Cannot insert into a ${inner.meta.type}`);
         }
 
-        return insertIntoArray(inner.value, inner.meta, id, sort, value);
+        return insertIntoArray(inner.value, inner.meta, id, sort, value, otherMerge);
     });
 };
 

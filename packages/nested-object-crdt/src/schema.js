@@ -32,9 +32,10 @@ class ValidationError extends Error {
     path: Array<string | number>;
     constructor(message, value, path: Array<string | number>) {
         super(
-            `${message} ${JSON.stringify(value) ?? 'undefined'} ${path
-                .map(m => m.toString())
-                .join(' - ')}`,
+            `${message} ${
+                // $FlowFixMe
+                JSON.stringify(value)
+            } ${path.map(m => m.toString()).join(' - ')}`,
         );
         this.value = value;
         this.path = path;
