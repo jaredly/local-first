@@ -23,7 +23,7 @@ import ImportDialog from './ImportDialog';
 import TopBar from './TopBar';
 import EditTagDialog from './EditTagDialog';
 import Items from './Items';
-import { newDay } from './types';
+import { newDay, type ItemT } from './types';
 import { useParams } from 'react-router-dom';
 
 /*
@@ -80,65 +80,79 @@ const ShowItem = ({ client, id, onClick }) => {
     );
 };
 
-const depthFirst = (data, rootId, filter) => {
+const depthFirst = (
+    data: { [key: string]: ItemT },
+    rootId: string,
+    filter: (ItemT) => boolean,
+): Array<{ node: ItemT, path: Array<ItemT> }> => {
     console.log('depth from ', rootId);
     const root = data[rootId];
-    const items = [];
-    const next = [root];
+    if (!root) {
+        console.log('no root');
+        return [];
+    }
+    const items: Array<{ node: ItemT, path: Array<ItemT> }> = [];
+    const next = [{ node: root, path: [] }];
     const seen = {};
     while (next.length) {
         const item = next.shift();
-        item.children.forEach((id) => {
+        const path = item.node.id === 'root' ? [] : item.path.concat(item.node);
+        item.node.children.forEach((id) => {
             if (seen[id]) {
                 return;
             }
             seen[id] = true;
             const child = data[id];
             if (child && filter(child)) {
-                items.push(child);
+                items.push({ node: child, path });
             }
             if (child && child.children.length) {
-                next.push(child);
+                next.push({ node: child, path });
             }
         });
     }
     return items;
 };
 
+const interleave = (items, fn) => {
+    const res = [];
+    items.forEach((item, i) => {
+        if (i > 0) {
+            res.push(fn(i));
+        }
+        res.push(item);
+    });
+    return res;
+};
+
+// Hmm maybe best to show them hierarchically?
 const FilterPicker = ({ data, setFilter }) => {
     const styles = useStyles();
     const items = React.useMemo(() => {
-        // const root = data.root;
-        // const items = [];
-        // const next = [root];
-        // const seen = {};
-        // while (next.length) {
-        //     const item = next.shift();
-        //     if (item.id !== 'root') {
-        //         items.push(item);
-        //     }
-        //     item.children.forEach((id) => {
-        //         const child = data[id];
-        //         if (child && child.children.length) {
-        //             if (seen[id]) {
-        //                 return;
-        //             }
-        //             seen[id] = true;
-        //             next.push(child);
-        //         }
-        //     });
-        // }
-        // return items;
         return depthFirst(data, 'root', (item) => item.id !== 'root' && item.style === 'group');
     }, [data]);
 
     return (
         <div>
             <Button onClick={() => setFilter(false)}>Cancel</Button>
-            {items.map((item) => (
-                <div key={item.id} onClick={() => setFilter(item.id)} className={styles.item}>
+            {items.map(({ node, path }) => (
+                <div
+                    key={node.id}
+                    onClick={() => setFilter(node.id)}
+                    className={styles.item}
+                    style={{
+                        display: 'flex',
+                    }}
+                >
                     <Folder />
-                    {item.title}
+                    {node.title}
+                    <div style={{ flex: 1 }} />
+                    {interleave(
+                        path.map((node) => <span key={node.id}>{node.title}</span>),
+                        (i) => (
+                            <div>&nbsp;&gt;&nbsp;</div>
+                        ),
+                    )}
                 </div>
             ))}
         </div>
@@ -151,19 +165,24 @@ const ItemPicker = ({ client, onPick }) => {
     const styles = useStyles();
 
     const items = React.useMemo(() => {
-        if (filter) {
+        if (filter != null && filter !== false) {
             return depthFirst(
                 data,
                 filter,
                 (item) => item.style !== 'group' && item.completedDate == null,
-            );
+            ); //.map((m) => m.node);
         } else {
-            return Object.keys(data)
-                .filter((k) => data[k].completedDate == null && data[k].style !== 'group')
-                .map((k) => data[k])
-                .sort((a, b) => b.createdDate - a.createdDate);
+            return depthFirst(
+                data,
+                'root',
+                (item) => item.style !== 'group' && item.completedDate == null,
+            ).sort((a, b) => b.node.createdDate - a.node.createdDate);
+            // return Object.keys(data)
+            //     .filter((k) => data[k].completedDate == null && data[k].style !== 'group')
+            //     .map((k) => data[k])
+            //     .sort((a, b) => b.createdDate - a.createdDate);
         }
-    }, [data, !!filter ? filter : null]);
+    }, [data, typeof filter === 'string' ? filter : null]);
 
     if (filter === null) {
         return <FilterPicker data={data} setFilter={setFilter} />;
@@ -172,9 +191,25 @@ const ItemPicker = ({ client, onPick }) => {
         <div>
             <Button onClick={() => onPick(null)}>Cancel</Button>
             <Button onClick={() => setFilter(null)}>Filter</Button>
-            {items.map((item) => (
-                <div key={item.id} onClick={() => onPick(item.id)} className={styles.item}>
-                    {item.title}
+            {items.map(({ node, path }) => (
+                <div
+                    key={node.id}
+                    onClick={() => onPick(node.id)}
+                    className={styles.item}
+                    style={{
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                    }}
+                >
+                    <div>{node.title}</div>
+                    <div style={{ display: 'flex', fontSize: '80%' }} className={styles.breadcrumb}>
+                        {interleave(
+                            path.map((node) => <span key={node.id}>{node.title}</span>),
+                            (i) => (
+                                <div style={{ padding: '0 4px' }}>·</div>
+                            ),
+                        )}
+                    </div>
                 </div>
             ))}
         </div>
@@ -203,7 +238,7 @@ const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) =>
             <ItemPicker
                 client={client}
                 onPick={(itemId) => {
-                    if (!itemId) {
+                    if (itemId == null) {
                         return setPicking(null);
                     }
                     if (picking === 'one') {
@@ -359,6 +394,9 @@ const useStyles = makeStyles((theme) => ({
         '&:hover': {
             backgroundColor: theme.palette.primary.dark,
         },
+    },
+    breadcrumb: {
+        color: theme.palette.text.disabled,
     },
 }));
 
