@@ -78,11 +78,11 @@ const getPosition = (boxes, clientY, dragging): ?DragState => {
     }
 };
 
-const Items = ({ client }: { client: Client<SyncStatus> }) => {
+const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boolean }) => {
     const styles = useStyles();
 
     const [col, root] = useItem(React, client, 'items', 'root');
-    const [showAll, setShowAll] = React.useState(false);
+    // const [showAll, setShowAll] = React.useState(false);
 
     React.useEffect(() => {
         col.loadAll();
@@ -205,7 +205,7 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
 
     return (
         <Container maxWidth="sm" className={styles.container}>
-            <FormControlLabel
+            {/* <FormControlLabel
                 control={
                     <Switch
                         checked={showAll}
@@ -214,7 +214,7 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                     />
                 }
                 label="Show completed"
-            />
+            /> */}
             <Button onClick={() => client.undo()}>Undo</Button>
             {dragger != null && dragger.y != null && dragger.dest != null ? (
                 <div

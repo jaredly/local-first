@@ -1,29 +1,16 @@
 // @flow
-import Button from '@material-ui/core/Button';
 import Container from '@material-ui/core/Container';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import Divider from '@material-ui/core/Divider';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import ListItemText from '@material-ui/core/ListItemText';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import Switch from '@material-ui/core/Switch';
-import AccountCircle from '@material-ui/icons/AccountCircle';
-import ExitToApp from '@material-ui/icons/ExitToApp';
-import GetApp from '@material-ui/icons/GetApp';
-import Publish from '@material-ui/icons/Publish';
 import { makeStyles } from '@material-ui/core/styles';
 import * as React from 'react';
-import { type Client, type SyncStatus } from '../../../../packages/client-bundle';
+import type { Client, SyncStatus } from '../../../../packages/client-bundle';
 import { useCollection } from '../../../../packages/client-react';
 import type { Data } from './auth-api';
+import Drawer from './Drawer';
+import EditTagDialog from './EditTagDialog';
 import ExportDialog from './ExportDialog';
 import ImportDialog from './ImportDialog';
-import TopBar from './TopBar';
-import EditTagDialog from './EditTagDialog';
 import Items from './Items';
-
-import Drawer from './Drawer';
+import TopBar from './TopBar';
 
 const Home = ({
     client,
@@ -37,48 +24,14 @@ const Home = ({
     auth: ?Data,
 }) => {
     const [tagsCol, tags] = useCollection(React, client, 'tags');
-    // const [linksCol, links] = useCollection(React, client, 'links');
     const [showAll, setShowAll] = React.useState(false);
-    const [numToShow, setNumToShow] = React.useState(20);
+    // const [numToShow, setNumToShow] = React.useState(20);
     const [dialog, setDialog] = React.useState(null);
     const [menu, setMenu] = React.useState(false);
 
-    // We want to show any links that, at first load of this screen,
-    // were not collapsed.
-    // const [initiallyCompleted, setInitiallyCompleted] = React.useState(() => {
-    //     const completed = {};
-    //     Object.keys(links).forEach((k) => {
-    //         if (links[k].completed) {
-    //             completed[k] = true;
-    //         }
-    //     });
-    //     return completed;
-    // });
-    // const lastLinks = React.useRef(links);
-
     const [editTag, setEditTag] = React.useState(false);
 
-    // React.useEffect(() => {
-    //     console.log('links changed');
-    //     const newCompleted = {};
-    //     let hasNew = false;
-    //     Object.keys(links).forEach((k) => {
-    //         if (!lastLinks.current[k] && links[k].completed) {
-    //             newCompleted[k] = true;
-    //             hasNew = true;
-    //         }
-    //     });
-    //     lastLinks.current = links;
-    //     if (hasNew) {
-    //         setInitiallyCompleted((state) => ({ ...state, ...newCompleted }));
-    //     }
-    // }, [links]);
-
     const styles = useStyles();
-
-    // let linksToShow = Object.keys(links)
-    //     .filter((k) => (showAll ? true : !initiallyCompleted[k]))
-    //     .sort((a, b) => links[b].added - links[a].added);
 
     return (
         <React.Fragment>
@@ -101,7 +54,7 @@ const Home = ({
                 editTag={setEditTag}
             />
             <Container maxWidth="sm" className={styles.container}>
-                <Items client={client} />
+                <Items client={client} showAll={showAll} />
                 {/* <div style={{ height: 12 }} /> */}
             </Container>
             {/* {dialogNode} */}
