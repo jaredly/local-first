@@ -340,7 +340,8 @@ export const Item = React.memo<Props>(
                                     path,
                                     node,
                                     idx,
-                                    parent: item.children.length > 0 || item.style === 'group',
+                                    parent:
+                                        item.children.length > 0 || item.style === 'group' || open,
                                 };
                             } else {
                                 delete dragRefs[id];
@@ -429,7 +430,21 @@ export const Item = React.memo<Props>(
                         aria-label="more"
                         // aria-controls="long-menu"
                         aria-haspopup="true"
+                        // style={{ touchAction: 'none' }}
+                        onTouchStart={(evt) => {
+                            console.log('touch');
+                            // evt.preventDefault();
+                            onDragStart({
+                                id,
+                                path,
+                                onStart: () => setDragging(true),
+                                onFinish: () => setDragging(false),
+                                pos: { x: evt.clientX, y: evt.clientY },
+                            });
+                        }}
                         onMouseDown={(evt) => {
+                            console.log('hello');
+                            // evt.preventDefault();
                             // um maybe I need to pass an onstart too?
                             // setDragging(true);
                             onDragStart({
@@ -448,26 +463,28 @@ export const Item = React.memo<Props>(
                     >
                         <MoreVertIcon />
                     </IconButton>
-                    <Menu
-                        id="long-menu"
-                        anchorEl={anchorEl}
-                        keepMounted
-                        open={menu}
-                        onClick={(evt) => evt.stopPropagation()}
-                        onClose={() => setMenu(false)}
-                    >
-                        {menuItems.map((item) => (
-                            <MenuItem
-                                key={item.title}
-                                onClick={() => {
-                                    item.onClick();
-                                    setMenu(false);
-                                }}
-                            >
-                                {item.title}
-                            </MenuItem>
-                        ))}
-                    </Menu>
+                    {menu ? (
+                        <Menu
+                            id="long-menu"
+                            anchorEl={anchorEl}
+                            keepMounted
+                            open={menu}
+                            onClick={(evt) => evt.stopPropagation()}
+                            onClose={() => setMenu(false)}
+                        >
+                            {menuItems.map((item) => (
+                                <MenuItem
+                                    key={item.title}
+                                    onClick={() => {
+                                        item.onClick();
+                                        setMenu(false);
+                                    }}
+                                >
+                                    {item.title}
+                                </MenuItem>
+                            ))}
+                        </Menu>
+                    ) : null}
                 </div>
                 {showDescription ? (
                     <div style={{ paddingLeft: level * INDENT, marginLeft: 42, marginBottom: 8 }}>

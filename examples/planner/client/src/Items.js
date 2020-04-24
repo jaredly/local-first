@@ -96,17 +96,25 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
 
     React.useEffect(() => {
         if (dragger != null) {
-            console.log('initializing dragger');
+            // console.log('initializing dragger');
             const positions = {};
             const boxes = Object.keys(dragRefs)
                 .map((k) => ({ item: dragRefs[k], box: dragRefs[k].node.getBoundingClientRect() }))
                 .sort((a, b) => a.box.top - b.box.top);
             const move = (evt) => {
+                // console.log('ok', evt.clientY, evt);
+                const { x, y } =
+                    evt.clientY == null
+                        ? evt.touches.length > 0
+                            ? { x: evt.touches[0].clientX, y: evt.touches[0].clientY }
+                            : { x: 0, y: null }
+                        : { x: evt.clientX, y: evt.clientY };
+                if (y == null) {
+                    return;
+                }
                 if (currentDragger.current && !currentDragger.current.started) {
                     const pos = currentDragger.current.dragging.pos;
-                    const dist = Math.sqrt(
-                        Math.pow(evt.clientX - pos.x, 2) + Math.pow(evt.clientY - pos.y, 2),
-                    );
+                    const dist = Math.sqrt(Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2));
                     if (dist < 10) {
                         return;
                     }
@@ -114,7 +122,7 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                 if (currentDragger.current && currentDragger.current.dest == null) {
                     currentDragger.current.dragging.onStart();
                 }
-                const position = getPosition(boxes, evt.clientY, dragger.dragging);
+                const position = getPosition(boxes, y, dragger.dragging);
                 if (position) {
                     if (
                         position.dest &&
@@ -164,9 +172,13 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                 dragging.onFinish();
                 setDragger(null);
             };
+            window.addEventListener('touchmove', move, true);
+            window.addEventListener('touchend', up, true);
             window.addEventListener('mousemove', move, true);
             window.addEventListener('mouseup', up, true);
             return () => {
+                window.removeEventListener('touchmove', move, true);
+                window.removeEventListener('touchend', up, true);
                 window.removeEventListener('mousemove', move, true);
                 window.removeEventListener('mouseup', up, true);
             };
