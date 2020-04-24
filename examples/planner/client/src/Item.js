@@ -140,7 +140,15 @@ type Props = {
     onDragStart: (DragInit) => void,
 };
 
-export type DragRefs = { [key: string]: any };
+export type DragRefs = {
+    [key: string]: {
+        id: string,
+        path: Array<string>,
+        parent: boolean,
+        node: any,
+        idx: number,
+    },
+};
 
 // const useLocalStorageState = (key, initial) => {
 //     const [current, setCurrent] = React.useState(() => {
@@ -327,7 +335,13 @@ export const Item = React.memo<Props>(
                     <div
                         ref={(node) => {
                             if (node) {
-                                dragRefs[id] = { id, path, node, idx };
+                                dragRefs[id] = {
+                                    id,
+                                    path,
+                                    node,
+                                    idx,
+                                    parent: item.children.length > 0 || item.style === 'group',
+                                };
                             } else {
                                 delete dragRefs[id];
                             }

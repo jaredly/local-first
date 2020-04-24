@@ -13,6 +13,12 @@
             "src": "/icons/icon192.png",
             "type": "image/png",
             "sizes": "192x192"
+        },
+        {
+            "src": "/icons/maskable_icon.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "maskable"
         }
     ],
     "background_color": "#9c27b0",

@@ -27,7 +27,12 @@ const last = (arr) => arr[arr.length - 1];
 type DragState = {
     started: boolean,
     dragging: DragInit,
-    dest: ?{ id: string, path: Array<string>, position: 'top' | 'bottom', idx: number },
+    dest: ?{
+        id: string,
+        path: Array<string>,
+        position: 'top' | 'bottom' | 'first-child',
+        idx: number,
+    },
     y: number,
     left: number,
     width: number,
@@ -55,21 +60,21 @@ const getPosition = (boxes, clientY, dragging): ?DragState => {
                 width: current.box.width,
             };
         } else if (i >= boxes.length - 1 || y < boxes[i + 1].box.top) {
+            const leftOffset = current.item.parent ? 32 : 0;
             return {
                 started: true,
                 dragging,
                 dest: {
                     id: current.item.id,
                     path: current.item.path,
-                    position: 'bottom',
+                    position: current.item.parent ? 'first-child' : 'bottom',
                     idx: current.item.idx + 1,
                 },
                 y: current.box.bottom - offset,
-                left: current.box.left,
-                width: current.box.width,
+                left: current.box.left + leftOffset,
+                width: current.box.width - leftOffset,
             };
         }
-        // "if we've gotten this far, and the top is "
     }
 };
 
@@ -134,7 +139,15 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                 if (dest && dest.id !== dragging.id) {
                     const oldPid = last(dragging.path);
                     const newPid = last(dest.path);
-                    if (oldPid === newPid) {
+                    if (dest.position === 'first-child') {
+                        if (dest.id === oldPid) {
+                            // dunno what to do here
+                            // STOPSHIP
+                        } else {
+                            col.removeId(oldPid, ['children'], dragging.id);
+                            col.insertId(dest.id, ['children'], 0, dragging.id);
+                        }
+                    } else if (oldPid === newPid) {
                         // console.log(dest);
                         col.reorderIdRelative(
                             newPid,
@@ -199,12 +212,12 @@ const Items = ({ client }: { client: Client<SyncStatus> }) => {
                         width: dragger.width,
                         transform: `translateY(${dragger.y}px)`,
                         top: 0,
-                        // top: dragger.y,
                     }}
                 ></div>
             ) : null}
             {root ? (
                 <ItemChildren
+                    onNewFocus={() => {}}
                     path={path}
                     dragRefs={dragRefs}
                     onDragStart={onDragStart}
