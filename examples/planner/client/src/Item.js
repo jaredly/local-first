@@ -430,7 +430,7 @@ export const Item = React.memo<Props>(
                         aria-label="more"
                         // aria-controls="long-menu"
                         aria-haspopup="true"
-                        // style={{ touchAction: 'none' }}
+                        style={{ touchAction: 'none' }}
                         onTouchStart={(evt) => {
                             console.log('touch');
                             // evt.preventDefault();
@@ -539,7 +539,7 @@ const useStyles = makeStyles((theme) => ({
         alignItems: 'center',
     },
     itemWrapper: {
-        transition: ` background-color ease .3s`,
+        transition: `background-color ease .5s`,
     },
     dragItem: {
         backgroundColor: theme.palette.primary.dark,
