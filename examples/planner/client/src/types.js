@@ -91,9 +91,25 @@ export const HabitSchema: Schema = {
     },
 };
 
+export const newDay = (id: string) => ({
+    id,
+    // date: number, // like date but w/o the hours, minutes, miliseconds? hmm no. "days since X" might be it.
+    notes: '',
+    dailyInTermsOfWeekly: '',
+    habits: {},
+    schedule: {},
+    toDoList: {
+        topTwo: {
+            one: null,
+            two: null,
+        },
+        others: [],
+    },
+});
+
 export type Day = {
     id: string,
-    date: number, // like date but w/o the hours, minutes, miliseconds? hmm no. "days since X" might be it.
+    // date: number, // like date but w/o the hours, minutes, miliseconds? hmm no. "days since X" might be it.
     notes: string,
     dailyInTermsOfWeekly: string,
     habits: {
@@ -126,7 +142,7 @@ export const DaySchema: Schema = {
     type: 'object',
     attributes: {
         id: 'string',
-        date: 'number',
+        // date: 'number',
         notes: 'string',
         dailyInTermsOfWeekly: 'string',
         habits: {

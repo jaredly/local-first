@@ -1,4 +1,6 @@
 // @flow
+import { Switch, Route, Link, useRouteMatch, useParams } from 'react-router-dom';
+
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import Snackbar from '@material-ui/core/Snackbar';
@@ -15,6 +17,7 @@ import type { Data } from './auth-api';
 
 import Home from './Home';
 import { ItemSchema, TagSchema, HabitSchema, DaySchema } from './types';
+import Schedule from './Schedule';
 
 const schemas = {
     items: ItemSchema,
@@ -69,7 +72,19 @@ const App = ({
         }
     }, []);
 
-    const contents = <Home client={client} host={host} logout={logout} auth={auth} />;
+    let match = useRouteMatch();
+    console.log(match);
+
+    const contents = (
+        <Switch>
+            <Route path={`${match.path == '/' ? '' : match.path}/day/:day`}>
+                <Schedule client={client} host={host} logout={logout} auth={auth} />
+            </Route>
+            <Route path={match.path}>
+                <Home client={client} host={host} logout={logout} auth={auth} />;
+            </Route>
+        </Switch>
+    );
     // const contents = addingUrl ? (
     //     <div>
     //         <Adder
