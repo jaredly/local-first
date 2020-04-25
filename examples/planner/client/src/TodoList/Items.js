@@ -179,7 +179,6 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
     const styles = useStyles();
     const history = useHistory();
 
-    // const [rootPath, setRootPath] = React.useState(['root']); // TODO use url path
     const rootPath = React.useMemo(() => {
         if (!ids) {
             return ['root'];
@@ -188,7 +187,6 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
         if (path === '') {
             return ['root'];
         }
-        // ['root'].concat(ids ? ids.split('/') : []);
         return ['root'].concat(path.split('/'));
     }, [ids]);
     const setRootPath = React.useCallback((path) => {
@@ -200,14 +198,12 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
         }
     }, []);
 
-    // const [col, root] = useItem(React, client, 'items', rootPath[rootPath.length - 1]);
     const [col, breadcrumbItems] = useItems(React, client, 'items', rootPath);
 
     const rootId = rootPath[rootPath.length - 1];
     const root = breadcrumbItems[rootId];
 
     const [_, childItems] = useItems(React, client, 'items', root ? root.children : []);
-    // const [showAll, setShowAll] = React.useState(false);
 
     React.useEffect(() => {
         col.loadAll();
@@ -221,7 +217,6 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
 
     React.useEffect(() => {
         if (dragger != null) {
-            // console.log('initializing dragger');
             return setupDragListeners(dragRefs, currentDragger, setDragger, col);
         }
     }, [!!dragger]);
@@ -241,8 +236,6 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
             width: box.width,
         });
     }, []);
-
-    // const path = React.useMemo(() => ['root'], []);
 
     return (
         <Container maxWidth="sm" className={styles.container}>

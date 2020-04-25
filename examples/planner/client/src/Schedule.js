@@ -1,5 +1,6 @@
 // @flow
 import Button from '@material-ui/core/Button';
+import IconButton from '@material-ui/core/IconButton';
 import Container from '@material-ui/core/Container';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
@@ -13,6 +14,7 @@ import Folder from '@material-ui/icons/Folder';
 import ExitToApp from '@material-ui/icons/ExitToApp';
 import GetApp from '@material-ui/icons/GetApp';
 import Publish from '@material-ui/icons/Publish';
+import Cancel from '@material-ui/icons/Cancel';
 import { makeStyles } from '@material-ui/core/styles';
 import * as React from 'react';
 import { type Client, type SyncStatus } from '../../../../packages/client-bundle';
@@ -23,9 +25,11 @@ import ImportDialog from './ImportDialog';
 import TopBar from './TopBar';
 import EditTagDialog from './EditTagDialog';
 import Items from './TodoList/Items';
-import { newDay, type ItemT } from './types';
+import { newDay, type ItemT, type Day } from './types';
 import { useParams } from 'react-router-dom';
 import { Item } from './TodoList/Item';
+import { showDate, parseDate, nextDay, prevDay } from './utils';
+import { Link } from 'react-router-dom';
 
 /*
 
@@ -69,32 +73,37 @@ topTwo
 
 */
 
-const ShowItem = ({ client, id, onClick }) => {
+const ShowItem = ({ client, id, onClear }) => {
     const [col, item] = useItem(React, client, 'items', id);
     const styles = useStyles();
 
     if (!item) return 'loading or deleted';
     return (
         <div
-            onClick={onClick}
+            // onClick={onClick}
             className={styles.item}
             style={{
                 display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'stretch',
+                flexDirection: 'row',
+                alignItems: 'center',
             }}
         >
-            <Item
-                client={client}
-                item={item}
-                level={0}
-                showAll={true}
-                path={[]}
-                dragRefs={{}}
-                onDragStart={() => {}}
-                setRootPath={() => {}}
-                idx={0}
-            />
+            <div style={{ flex: 1 }}>
+                <Item
+                    client={client}
+                    item={item}
+                    level={0}
+                    showAll={true}
+                    path={[]}
+                    dragRefs={{}}
+                    onDragStart={() => {}}
+                    setRootPath={() => {}}
+                    idx={0}
+                />
+            </div>
+            <IconButton onClick={onClear}>
+                <Cancel />
+            </IconButton>
             {/* {item.title} */}
         </div>
     );
@@ -237,19 +246,35 @@ const ItemPicker = ({ client, onPick }) => {
 };
 
 const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) => {
-    const [col, day] = useItem(React, client, 'days', id);
+    const [col, day] = useItem<Day, SyncStatus>(React, client, 'days', id);
 
     const [picking, setPicking] = React.useState(null);
+    const styles = useStyles();
+
+    const todayDate = parseDate(id);
+    const yesterdayId = showDate(prevDay(todayDate));
+    const tomorrowId = showDate(nextDay(todayDate));
 
     if (!day) {
         return (
-            <button
-                onClick={() => {
-                    col.save(id, newDay(id));
-                }}
-            >
-                Start scheduling
-            </button>
+            <div>
+                <div className={styles.topLinks}>
+                    <Link className={styles.link} to={`/day/${yesterdayId}`}>
+                        {yesterdayId}
+                    </Link>
+                    <div className={styles.today}>{id}</div>
+                    <Link className={styles.link} to={`/day/${tomorrowId}`}>
+                        {tomorrowId}
+                    </Link>
+                </div>
+                <Button
+                    onClick={() => {
+                        col.save(id, newDay(id));
+                    }}
+                >
+                    Start scheduling
+                </Button>
+            </div>
         );
     }
 
@@ -265,8 +290,13 @@ const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) =>
                         col.setAttribute(id, ['toDoList', 'topTwo', 'one'], itemId);
                     } else if (picking === 'two') {
                         col.setAttribute(id, ['toDoList', 'topTwo', 'two'], itemId);
-                    } else {
-                        // TODO general todo list
+                    } else if (picking === 'other') {
+                        col.insertId(
+                            id,
+                            ['toDoList', 'others'],
+                            day.toDoList.others.length,
+                            itemId,
+                        );
                     }
                     setPicking(null);
                 }}
@@ -276,25 +306,42 @@ const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) =>
 
     return (
         <div>
-            <div>
+            <div className={styles.topLinks}>
+                <Link className={styles.link} to={`/day/${yesterdayId}`}>
+                    {yesterdayId}
+                </Link>
+                <div className={styles.today}>{id}</div>
+                <Link className={styles.link} to={`/day/${tomorrowId}`}>
+                    {tomorrowId}
+                </Link>
+            </div>
+            <h1>Top Two</h1>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {day.toDoList.topTwo.one != null ? (
                     <ShowItem
-                        onClick={() => setPicking('one')}
+                        onClear={() => col.clearAttribute(id, ['toDoList', 'topTwo', 'one'])}
                         id={day.toDoList.topTwo.one}
                         client={client}
                     />
                 ) : (
-                    <button onClick={() => setPicking('one')}>Select Top 1</button>
+                    <Button onClick={() => setPicking('one')}>Select Top 1</Button>
                 )}
                 {day.toDoList.topTwo.two != null ? (
                     <ShowItem
-                        onClick={() => setPicking('two')}
+                        onClear={() => col.clearAttribute(id, ['toDoList', 'topTwo', 'two'])}
                         id={day.toDoList.topTwo.two}
                         client={client}
                     />
                 ) : (
-                    <button onClick={() => setPicking('two')}>Select Top 2</button>
+                    <Button onClick={() => setPicking('two')}>Select Top 2</Button>
                 )}
+            </div>
+            <h2>Other To Do</h2>
+            <div>
+                {day.toDoList.others.map((id) => (
+                    <ShowItem id={id} key={id} client={client} onClick={() => {}} />
+                ))}
+                <Button onClick={() => setPicking('other')}>Add Other Item</Button>
             </div>
         </div>
     );
@@ -401,7 +448,7 @@ const useStyles = makeStyles((theme) => ({
         minWidth: 0,
     },
     item: {
-        cursor: 'pointer',
+        // cursor: 'pointer',
         flex: 1,
         padding: `${theme.spacing(1)}px ${theme.spacing(2)}px`,
         ...theme.typography.body1,
@@ -411,13 +458,25 @@ const useStyles = makeStyles((theme) => ({
         display: 'flex',
         alignItems: 'center',
         minHeight: 34,
-        '&:hover': {
-            backgroundColor: theme.palette.primary.dark,
-        },
+        // '&:hover': {
+        //     backgroundColor: theme.palette.primary.dark,
+        // },
     },
     breadcrumb: {
         color: theme.palette.text.disabled,
     },
+    link: {
+        color: theme.palette.text.secondary,
+    },
+    today: {
+        fontWeight: 'bold',
+        padding: theme.spacing(2),
+    },
+    topLinks: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+    }
 }));
 
 export default ScheduleWrapper;

@@ -1,7 +1,7 @@
 // @flow
 // import React from '../../examples/whiteboard/node_modules/react';
 
-import { type Client } from '../client-bundle';
+import { type Client, type Collection } from '../client-bundle';
 
 export const useSyncStatus = function<SyncStatus>(React: *, client: Client<SyncStatus>) {
     const [status, setStatus] = React.useState(client.getSyncStatus());
@@ -19,7 +19,7 @@ export const useItems = function<T: {}, SyncStatus>(
     client: Client<SyncStatus>,
     colid: string,
     ids: Array<string>,
-) {
+): [Collection<T>, { [key: string]: ?T }] {
     const col = React.useMemo(() => client.getCollection<T>(colid), []);
     // TODO something to indicate whether we've loaded from the database yet
     // also something to indicate whether we've ever synced with a server.
@@ -47,7 +47,7 @@ export const useItem = function<T: {}, SyncStatus>(
     client: Client<SyncStatus>,
     colid: string,
     id: string,
-) {
+): [Collection<T>, ?T] {
     const col = React.useMemo(() => client.getCollection<T>(colid), []);
     // TODO something to indicate whether we've loaded from the database yet
     // also something to indicate whether we've ever synced with a server.
