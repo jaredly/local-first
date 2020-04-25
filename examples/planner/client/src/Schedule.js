@@ -92,6 +92,7 @@ const ShowItem = ({ client, id, onClick }) => {
                 path={[]}
                 dragRefs={{}}
                 onDragStart={() => {}}
+                setRootPath={() => {}}
                 idx={0}
             />
             {/* {item.title} */}

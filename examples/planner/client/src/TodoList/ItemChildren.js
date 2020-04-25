@@ -21,6 +21,7 @@ export const ItemChildren = ({
     dragRefs,
     onDragStart,
     onNewFocus,
+    setRootPath,
 }: {|
     item: ItemT,
     level: number,
@@ -32,6 +33,7 @@ export const ItemChildren = ({
     onDragStart: (DragInit) => void,
     onNewFocus: (boolean) => void,
     path: Array<string>,
+    setRootPath: (Array<string>) => void,
 |}) => {
     const styles = useStyles();
 
@@ -57,13 +59,11 @@ export const ItemChildren = ({
                 .filter((item) => showAll || item.completedDate == null)
                 .map((item, i) => (
                     <Item
-                        // TODO pass in the item itself probably?
                         key={item.id}
-                        // id={child}
                         item={item}
-                        // col={col}
                         path={path}
                         showAll={showAll}
+                        setRootPath={setRootPath}
                         onDragStart={onDragStart}
                         level={level + 1}
                         dragRefs={dragRefs}

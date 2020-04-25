@@ -12,6 +12,8 @@ import ImportDialog from './ImportDialog';
 import Items from './TodoList/Items';
 import TopBar from './TopBar';
 
+import { Route, Switch, useRouteMatch } from 'react-router-dom';
+
 const Home = ({
     client,
     logout,
@@ -32,6 +34,8 @@ const Home = ({
     const [editTag, setEditTag] = React.useState(false);
 
     const styles = useStyles();
+
+    const match = useRouteMatch();
 
     return (
         <React.Fragment>
@@ -54,7 +58,14 @@ const Home = ({
                 editTag={setEditTag}
             />
             <Container maxWidth="sm" className={styles.container}>
-                <Items client={client} showAll={showAll} />
+                <Switch>
+                    <Route path={`${match.path == '/' ? '' : match.path}/item/:ids+`}>
+                        <Items client={client} showAll={showAll} />
+                    </Route>
+                    <Route path={`${match.path == '/' ? '' : match.path}`}>
+                        <Items client={client} showAll={showAll} />
+                    </Route>
+                </Switch>
                 {/* <div style={{ height: 12 }} /> */}
             </Container>
             {/* {dialogNode} */}

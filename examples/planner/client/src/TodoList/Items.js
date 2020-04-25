@@ -10,6 +10,9 @@ import { useItem, useItems } from '../../../../../packages/client-react';
 import { type DragInit } from './Item';
 import { ItemChildren } from './ItemChildren';
 import { newItem } from '../types';
+import { useParams, useHistory } from 'react-router-dom';
+import pako from 'pako';
+import { interleave } from '../utils';
 
 const useStyles = makeStyles((theme) => ({
     container: {},
@@ -79,11 +82,131 @@ const getPosition = (boxes, clientY, dragging): ?DragState => {
     }
 };
 
-const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boolean }) => {
-    const styles = useStyles();
+const setupDragListeners = (dragRefs, currentDragger, setDragger, col) => {
+    const positions = {};
+    const boxes = Object.keys(dragRefs)
+        .map((k) => ({ item: dragRefs[k], box: dragRefs[k].node.getBoundingClientRect() }))
+        .sort((a, b) => a.box.top - b.box.top);
+    const move = (evt) => {
+        // console.log('ok', evt.clientY, evt);
+        const { x, y } =
+            evt.clientY == null
+                ? evt.touches.length > 0
+                    ? { x: evt.touches[0].clientX, y: evt.touches[0].clientY }
+                    : { x: 0, y: null }
+                : { x: evt.clientX, y: evt.clientY };
+        if (y == null) {
+            return;
+        }
+        const current = currentDragger.current;
+        if (!current) {
+            return;
+        }
+        if (!current.started) {
+            const pos = current.dragging.pos;
+            const dist = Math.sqrt(Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2));
+            if (dist < 10) {
+                return;
+            }
+        }
+        if (current.dest == null) {
+            current.dragging.onStart();
+        }
+        const position = getPosition(boxes, y, current.dragging);
+        if (position) {
+            if (
+                position.dest &&
+                (position.dest.id === position.dragging.id ||
+                    position.dest.path.includes(position.dragging.id))
+            ) {
+                position.dest = null;
+            }
+            setDragger(position);
+        }
+    };
+    const up = (evt) => {
+        const dragger = currentDragger.current;
+        if (!dragger) {
+            return;
+        }
+        // console.log('move to', dragger);
+        // ok instead of PID, need to use the whole
+        // path, so we don't make loops.
+        // STOPSHIP do the move actually
+        const { dragging, dest } = dragger;
+        if (dest && dest.id !== dragging.id) {
+            const oldPid = last(dragging.path);
+            const newPid = last(dest.path);
+            if (dest.position === 'first-child') {
+                if (dest.id === oldPid) {
+                    // dunno what to do here
+                    // STOPSHIP
+                } else {
+                    col.removeId(oldPid, ['children'], dragging.id);
+                    col.insertId(dest.id, ['children'], 0, dragging.id);
+                }
+            } else if (oldPid === newPid) {
+                // console.log(dest);
+                col.reorderIdRelative(
+                    newPid,
+                    ['children'],
+                    dragging.id,
+                    dest.id,
+                    dest.position === 'top',
+                );
+            } else {
+                col.removeId(oldPid, ['children'], dragging.id);
+                col.insertId(newPid, ['children'], dest.idx, dragging.id);
+            }
+        }
+        dragging.onFinish();
+        setDragger(null);
+    };
+    window.addEventListener('touchmove', move, true);
+    window.addEventListener('touchend', up, true);
+    window.addEventListener('mousemove', move, true);
+    window.addEventListener('mouseup', up, true);
+    return () => {
+        window.removeEventListener('touchmove', move, true);
+        window.removeEventListener('touchend', up, true);
+        window.removeEventListener('mousemove', move, true);
+        window.removeEventListener('mouseup', up, true);
+    };
+};
 
-    const [col, root] = useItem(React, client, 'items', 'root');
-    const [_, items] = useItems(React, client, 'items', root ? root.children : []);
+const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boolean }) => {
+    const { ids } = useParams();
+    const styles = useStyles();
+    const history = useHistory();
+
+    // const [rootPath, setRootPath] = React.useState(['root']); // TODO use url path
+    const rootPath = React.useMemo(() => {
+        if (!ids) {
+            return ['root'];
+        }
+        const path = pako.inflate(atob(ids), { to: 'string' });
+        if (path === '') {
+            return ['root'];
+        }
+        // ['root'].concat(ids ? ids.split('/') : []);
+        return ['root'].concat(path.split('/'));
+    }, [ids]);
+    const setRootPath = React.useCallback((path) => {
+        if (path.length === 1) {
+            history.push('/');
+        } else {
+            const raw = btoa(pako.deflate(path.slice(1).join('/'), { to: 'string' }));
+            history.push(`/item/${raw}`);
+        }
+    }, []);
+
+    // const [col, root] = useItem(React, client, 'items', rootPath[rootPath.length - 1]);
+    const [col, breadcrumbItems] = useItems(React, client, 'items', rootPath);
+
+    const rootId = rootPath[rootPath.length - 1];
+    const root = breadcrumbItems[rootId];
+
+    const [_, childItems] = useItems(React, client, 'items', root ? root.children : []);
     // const [showAll, setShowAll] = React.useState(false);
 
     React.useEffect(() => {
@@ -99,91 +222,7 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
     React.useEffect(() => {
         if (dragger != null) {
             // console.log('initializing dragger');
-            const positions = {};
-            const boxes = Object.keys(dragRefs)
-                .map((k) => ({ item: dragRefs[k], box: dragRefs[k].node.getBoundingClientRect() }))
-                .sort((a, b) => a.box.top - b.box.top);
-            const move = (evt) => {
-                // console.log('ok', evt.clientY, evt);
-                const { x, y } =
-                    evt.clientY == null
-                        ? evt.touches.length > 0
-                            ? { x: evt.touches[0].clientX, y: evt.touches[0].clientY }
-                            : { x: 0, y: null }
-                        : { x: evt.clientX, y: evt.clientY };
-                if (y == null) {
-                    return;
-                }
-                if (currentDragger.current && !currentDragger.current.started) {
-                    const pos = currentDragger.current.dragging.pos;
-                    const dist = Math.sqrt(Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2));
-                    if (dist < 10) {
-                        return;
-                    }
-                }
-                if (currentDragger.current && currentDragger.current.dest == null) {
-                    currentDragger.current.dragging.onStart();
-                }
-                const position = getPosition(boxes, y, dragger.dragging);
-                if (position) {
-                    if (
-                        position.dest &&
-                        (position.dest.id === position.dragging.id ||
-                            position.dest.path.includes(position.dragging.id))
-                    ) {
-                        position.dest = null;
-                    }
-                    setDragger(position);
-                }
-            };
-            const up = (evt) => {
-                const dragger = currentDragger.current;
-                if (!dragger) {
-                    return;
-                }
-                // console.log('move to', dragger);
-                // ok instead of PID, need to use the whole
-                // path, so we don't make loops.
-                // STOPSHIP do the move actually
-                const { dragging, dest } = dragger;
-                if (dest && dest.id !== dragging.id) {
-                    const oldPid = last(dragging.path);
-                    const newPid = last(dest.path);
-                    if (dest.position === 'first-child') {
-                        if (dest.id === oldPid) {
-                            // dunno what to do here
-                            // STOPSHIP
-                        } else {
-                            col.removeId(oldPid, ['children'], dragging.id);
-                            col.insertId(dest.id, ['children'], 0, dragging.id);
-                        }
-                    } else if (oldPid === newPid) {
-                        // console.log(dest);
-                        col.reorderIdRelative(
-                            newPid,
-                            ['children'],
-                            dragging.id,
-                            dest.id,
-                            dest.position === 'top',
-                        );
-                    } else {
-                        col.removeId(oldPid, ['children'], dragging.id);
-                        col.insertId(newPid, ['children'], dest.idx, dragging.id);
-                    }
-                }
-                dragging.onFinish();
-                setDragger(null);
-            };
-            window.addEventListener('touchmove', move, true);
-            window.addEventListener('touchend', up, true);
-            window.addEventListener('mousemove', move, true);
-            window.addEventListener('mouseup', up, true);
-            return () => {
-                window.removeEventListener('touchmove', move, true);
-                window.removeEventListener('touchend', up, true);
-                window.removeEventListener('mousemove', move, true);
-                window.removeEventListener('mouseup', up, true);
-            };
+            return setupDragListeners(dragRefs, currentDragger, setDragger, col);
         }
     }, [!!dragger]);
 
@@ -203,7 +242,7 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
         });
     }, []);
 
-    const path = React.useMemo(() => ['root'], []);
+    // const path = React.useMemo(() => ['root'], []);
 
     return (
         <Container maxWidth="sm" className={styles.container}>
@@ -220,18 +259,40 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
                 ></div>
             ) : null}
             {root ? (
-                <ItemChildren
-                    onNewFocus={() => {}}
-                    path={path}
-                    items={items}
-                    dragRefs={dragRefs}
-                    onDragStart={onDragStart}
-                    showAll={showAll}
-                    level={-1}
-                    item={root}
-                    client={client}
-                    col={col}
-                />
+                <div>
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+                        {interleave(
+                            rootPath
+                                .map((id) => breadcrumbItems[id])
+                                // .filter(Boolean)
+                                .map((item, i) =>
+                                    item ? (
+                                        <Button
+                                            key={item.id}
+                                            onClick={() => setRootPath(rootPath.slice(0, i + 1))}
+                                        >
+                                            {item.title}
+                                        </Button>
+                                    ) : null,
+                                )
+                                .filter(Boolean),
+                            (i) => ' • ',
+                        )}
+                    </div>
+                    <ItemChildren
+                        setRootPath={setRootPath}
+                        onNewFocus={() => {}}
+                        path={rootPath}
+                        items={childItems}
+                        dragRefs={dragRefs}
+                        onDragStart={onDragStart}
+                        showAll={showAll}
+                        level={-1}
+                        item={root}
+                        client={client}
+                        col={col}
+                    />
+                </div>
             ) : (
                 <div className={styles.empty}>
                     Hello! Let's get you started.

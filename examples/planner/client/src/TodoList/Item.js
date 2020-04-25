@@ -43,6 +43,7 @@ type Props = {
     showAll: boolean,
     dragRefs: DragRefs,
     onDragStart: (DragInit) => void,
+    setRootPath: (Array<string>) => void,
 };
 
 export type DragRefs = {
@@ -131,7 +132,7 @@ const getMenuItems = ({
 };
 
 export const Item = React.memo<Props>(
-    ({ item, idx, onDragStart, client, level, showAll, path, dragRefs }: Props) => {
+    ({ item, idx, onDragStart, client, level, showAll, path, dragRefs, setRootPath }: Props) => {
         const [col, items] = useItems(React, client, 'items', item.children);
 
         const [open, setOpen] = useLocalStorageSharedToggle('planner-ui-state', item.id + '%open');
@@ -226,7 +227,10 @@ export const Item = React.memo<Props>(
                         }}
                     >
                         {item.style === 'group' ? (
-                            <div style={{ padding: 9 }}>
+                            <div
+                                style={{ padding: 9 }}
+                                onClick={() => setRootPath(path.concat([item.id]))}
+                            >
                                 <Folder />
                             </div>
                         ) : (
@@ -367,6 +371,7 @@ export const Item = React.memo<Props>(
                 {open ? (
                     <ItemChildren
                         onNewFocus={setNewFocus}
+                        setRootPath={setRootPath}
                         path={childPath}
                         onDragStart={onDragStart}
                         dragRefs={dragRefs}

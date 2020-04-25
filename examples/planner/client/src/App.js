@@ -81,39 +81,10 @@ const App = ({
                 <Schedule client={client} host={host} logout={logout} auth={auth} />
             </Route>
             <Route path={match.path}>
-                <Home client={client} host={host} logout={logout} auth={auth} />;
+                <Home client={client} host={host} logout={logout} auth={auth} />
             </Route>
         </Switch>
     );
-    // const contents = addingUrl ? (
-    //     <div>
-    //         <Adder
-    //             host={host}
-    //             initialUrl={addingUrl}
-    //             onCancel={() => {
-    //                 window.close();
-    //             }}
-    //             onAdd={(url, fetchedContent) => {
-    //                 const id = client.getStamp();
-    //                 linksCol
-    //                     .save(id, {
-    //                         id,
-    //                         url,
-    //                         fetchedContent,
-    //                         added: Date.now(),
-    //                         tags: {},
-    //                         description: null,
-    //                         completed: null,
-    //                     })
-    //                     .then(() => {
-    //                         window.close();
-    //                     });
-    //             }}
-    //         />
-    //     </div>
-    // ) : (
-    //     <Home client={client} auth={auth} logout={logout} host={host} />
-    // );
 
     return (
         <React.Fragment>
