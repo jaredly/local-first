@@ -22,10 +22,10 @@ import ExportDialog from './ExportDialog';
 import ImportDialog from './ImportDialog';
 import TopBar from './TopBar';
 import EditTagDialog from './EditTagDialog';
-import Items from './Items';
+import Items from './TodoList/Items';
 import { newDay, type ItemT } from './types';
 import { useParams } from 'react-router-dom';
-import { Item } from './Item';
+import { Item } from './TodoList/Item';
 
 /*
 
@@ -86,7 +86,7 @@ const ShowItem = ({ client, id, onClick }) => {
         >
             <Item
                 client={client}
-                id={item.id}
+                item={item}
                 level={0}
                 showAll={true}
                 path={[]}

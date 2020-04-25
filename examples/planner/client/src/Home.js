@@ -9,7 +9,7 @@ import Drawer from './Drawer';
 import EditTagDialog from './EditTagDialog';
 import ExportDialog from './ExportDialog';
 import ImportDialog from './ImportDialog';
-import Items from './Items';
+import Items from './TodoList/Items';
 import TopBar from './TopBar';
 
 const Home = ({

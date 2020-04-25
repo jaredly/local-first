@@ -15,134 +15,15 @@ import Info from '@material-ui/icons/Info';
 import Cancel from '@material-ui/icons/Cancel';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import * as React from 'react';
-import type { Client, Collection, SyncStatus } from '../../../../packages/client-bundle';
-import { useItem, useItems } from '../../../../packages/client-react';
-import { type ItemT, newItem } from './types';
-import { useLocalStorageSharedToggle } from './useLocalStorage';
+import type { Client, Collection, SyncStatus } from '../../../../../packages/client-bundle';
+import { useItem, useItems } from '../../../../../packages/client-react';
+import { type ItemT, newItem } from '../types';
+import { useLocalStorageSharedToggle } from '../useLocalStorage';
+
+import { ItemChildren } from './ItemChildren';
+import Description from './Description';
 
 const INDENT = 24;
-
-export const NewItem = ({
-    onAdd,
-    level,
-    onFocus,
-}: {
-    onAdd: (string) => void,
-    level: number,
-    onFocus: (boolean) => void,
-}) => {
-    const [text, setText] = React.useState('');
-    const styles = useStyles();
-
-    return (
-        <div className={styles.inputWrapper} style={{ paddingLeft: level * INDENT }}>
-            <div style={{ width: 32, flexShrink: 0 }} />
-            <IconButton
-                style={{ padding: 9 }}
-                onClick={() => {
-                    if (text.trim().length > 0) {
-                        onAdd(text);
-                        setText('');
-                    }
-                }}
-            >
-                <AddBoxOutlined />
-            </IconButton>
-            <input
-                type="text"
-                value={text}
-                onChange={(evt) => setText(evt.target.value)}
-                placeholder="Add item"
-                className={styles.input}
-                onFocus={() => onFocus(true)}
-                onBlur={() => onFocus(false)}
-                onKeyDown={(evt) => {
-                    if (evt.key === 'Enter' && text.trim().length > 0) {
-                        onAdd(text);
-                        setText('');
-                    }
-                }}
-            />
-        </div>
-    );
-};
-
-export const ItemChildren = ({
-    item,
-    level,
-    client,
-    items,
-    col,
-    showAll,
-    path,
-    dragRefs,
-    onDragStart,
-    onNewFocus,
-}: {|
-    item: ItemT,
-    level: number,
-    items: { [key: string]: ?ItemT },
-    client: Client<SyncStatus>,
-    col: Collection<ItemT>,
-    showAll: boolean,
-    dragRefs: DragRefs,
-    onDragStart: (DragInit) => void,
-    onNewFocus: (boolean) => void,
-    path: Array<string>,
-|}) => {
-    const styles = useStyles();
-
-    const numHidden = showAll
-        ? 0
-        : item.children.filter((id) => items[id] && !!items[id].completedDate).length;
-
-    return (
-        <div className={styles.itemChildren}>
-            {numHidden > 0 ? (
-                <div
-                    className={styles.numHidden}
-                    style={{
-                        marginLeft: (level + 2) * INDENT,
-                    }}
-                >
-                    {numHidden} items hidden
-                </div>
-            ) : null}
-            {item.children
-                .map((id) => items[id])
-                .filter(Boolean)
-                .map((item, i) => (
-                    <Item
-                        // TODO pass in the item itself probably?
-                        key={item.id}
-                        // id={child}
-                        item={item}
-                        // col={col}
-                        path={path}
-                        showAll={showAll}
-                        onDragStart={onDragStart}
-                        level={level + 1}
-                        dragRefs={dragRefs}
-                        idx={i}
-                        client={client}
-                    />
-                ))}
-            <NewItem
-                onFocus={onNewFocus}
-                level={level + 1}
-                onAdd={(text) => {
-                    const childId = client.getStamp();
-                    if (text.startsWith('# ')) {
-                        col.save(childId, { ...newItem(childId, text.slice(2)), style: 'group' });
-                    } else {
-                        col.save(childId, newItem(childId, text));
-                    }
-                    col.insertId(item.id, ['children'], item.children.length, childId);
-                }}
-            />
-        </div>
-    );
-};
 
 export type DragInit = {
     id: string,
@@ -174,64 +55,79 @@ export type DragRefs = {
     },
 };
 
-// const useLocalStorageState = (key, initial) => {
-//     const [current, setCurrent] = React.useState(() => {
-//         const raw = localStorage[key];
-//         return raw == null ? initial : JSON.parse(raw);
-//     });
-//     const set = React.useCallback(
-//         (value) => {
-//             localStorage[key] = JSON.stringify(value);
-//             setCurrent(value);
-//         },
-//         [setCurrent],
-//     );
-//     return [current, set];
-// };
-
-const Description = ({ text, onChange }) => {
-    const [editing, onEdit] = React.useState(null);
-    return editing != null ? (
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-            <TextField
-                multiline
-                style={{ flex: 1 }}
-                value={editing}
-                onChange={(evt) => onEdit(evt.target.value)}
-                onKeyDown={(evt) => {
-                    if (evt.key === 'Enter' && (evt.metaKey || evt.shiftKey || evt.ctrlKey)) {
-                        if (editing != text) {
-                            onChange(editing);
-                        }
-                        onEdit(null);
-                    }
-                }}
-            />
-            <IconButton
-                onClick={() => {
-                    if (editing != text) {
-                        onChange(editing);
-                    }
-                    onEdit(null);
-                }}
-            >
-                <CheckCircle />
-            </IconButton>
-            <IconButton onClick={() => onEdit(null)}>
-                <Cancel />
-            </IconButton>
-        </div>
-    ) : (
-        <div
-            onClick={() => onEdit(text)}
-            style={{
-                fontStyle: 'italic',
-                whiteSpace: 'pre-wrap',
-            }}
-        >
-            {!!text ? text : 'Add description'}
-        </div>
-    );
+const getMenuItems = ({
+    item,
+    col,
+    path,
+    setEditing,
+    showDescription,
+    setShowDescription,
+    setOpen,
+    open,
+}) => {
+    const menuItems = [
+        {
+            title: 'Edit text',
+            onClick: () => {
+                setTimeout(() => {
+                    setEditing(item.title);
+                }, 5);
+            },
+        },
+    ];
+    if (item.style !== 'group') {
+        menuItems.push({
+            title: 'Add attempt',
+            onClick: () => {
+                col.setAttribute(item.id, ['checkDates', Date.now().toString(36)], true);
+            },
+        });
+    }
+    if (item.children.length === 0 && !open) {
+        menuItems.push({ title: 'Add child', onClick: () => setOpen(true) });
+    }
+    if (!showDescription) {
+        menuItems.push({
+            title: item.description ? 'Show description' : 'Add description',
+            onClick: () => {
+                setShowDescription(true);
+            },
+        });
+    }
+    if (showDescription) {
+        menuItems.push({
+            title: 'Hide description',
+            onClick: () => {
+                setShowDescription(false);
+            },
+        });
+    }
+    if (item.style === 'group') {
+        menuItems.push({
+            title: 'Convert to checkbox',
+            onClick: () => {
+                col.setAttribute(item.id, ['style'], null);
+            },
+        });
+    } else {
+        menuItems.push({
+            title: 'Convert to group',
+            onClick: () => {
+                col.setAttribute(item.id, ['style'], 'group');
+            },
+        });
+    }
+    menuItems.push({
+        title: 'Delete',
+        onClick: async () => {
+            const pid = path[path.length - 1];
+            await Promise.all([
+                col.clearAttribute(pid, ['children', item.id]),
+                col.delete(item.id),
+            ]);
+        },
+    });
+    return menuItems;
 };
 
 export const Item = React.memo<Props>(
@@ -253,71 +149,15 @@ export const Item = React.memo<Props>(
 
         const childPath = React.useMemo(() => path.concat([item.id]), [path]);
 
-        if (item.completedDate != null && !showAll) {
-            return null;
-        }
-
-        const menuItems = [
-            {
-                title: 'Edit text',
-                onClick: () => {
-                    setTimeout(() => {
-                        setEditing(item.title);
-                    }, 5);
-                },
-            },
-        ];
-        if (item.style !== 'group') {
-            menuItems.push({
-                title: 'Add attempt',
-                onClick: () => {
-                    col.setAttribute(item.id, ['checkDates', Date.now().toString(36)], true);
-                },
-            });
-        }
-        if (item.children.length === 0 && !open) {
-            menuItems.push({ title: 'Add child', onClick: () => setOpen(true) });
-        }
-        if (!showDescription) {
-            menuItems.push({
-                title: item.description ? 'Show description' : 'Add description',
-                onClick: () => {
-                    setShowDescription(true);
-                },
-            });
-        }
-        if (showDescription) {
-            menuItems.push({
-                title: 'Hide description',
-                onClick: () => {
-                    setShowDescription(false);
-                },
-            });
-        }
-        if (item.style === 'group') {
-            menuItems.push({
-                title: 'Convert to checkbox',
-                onClick: () => {
-                    col.setAttribute(item.id, ['style'], null);
-                },
-            });
-        } else {
-            menuItems.push({
-                title: 'Convert to group',
-                onClick: () => {
-                    col.setAttribute(item.id, ['style'], 'group');
-                },
-            });
-        }
-        menuItems.push({
-            title: 'Delete',
-            onClick: async () => {
-                const pid = path[path.length - 1];
-                await Promise.all([
-                    col.clearAttribute(pid, ['children', item.id]),
-                    col.delete(item.id),
-                ]);
-            },
+        const menuItems = getMenuItems({
+            item,
+            col,
+            path,
+            setEditing,
+            showDescription,
+            setShowDescription,
+            setOpen,
+            open,
         });
 
         const visibleChildren = Object.keys(items)
@@ -453,24 +293,6 @@ export const Item = React.memo<Props>(
                     </div>
 
                     {!open && visibleChildren > 0 ? <Chip label={visibleChildren} /> : null}
-
-                    {/* <IconButton
-                        aria-label="more"
-                        // aria-controls="long-menu"
-                        aria-haspopup="true"
-                        onMouseDown={(evt) => {
-                            //
-                            setDragging(true);
-                            onDragStart(id, pid, idx, () => setDragging(false));
-                        }}
-                        // onClick={(evt) => {
-                        //     evt.stopPropagation();
-                        //     setMenu(true);
-                        // }}
-                        ref={setAnchorEl}
-                    >
-                        <MoreVertIcon />
-                    </IconButton> */}
 
                     <IconButton
                         aria-label="more"

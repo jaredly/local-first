@@ -5,10 +5,11 @@ import Switch from '@material-ui/core/Switch';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import { makeStyles } from '@material-ui/core/styles';
 import * as React from 'react';
-import type { Client, SyncStatus } from '../../../../packages/client-bundle';
-import { useItem, useItems } from '../../../../packages/client-react';
-import { ItemChildren, type DragInit } from './Item';
-import { newItem } from './types';
+import type { Client, SyncStatus } from '../../../../../packages/client-bundle';
+import { useItem, useItems } from '../../../../../packages/client-react';
+import { type DragInit } from './Item';
+import { ItemChildren } from './ItemChildren';
+import { newItem } from '../types';
 
 const useStyles = makeStyles((theme) => ({
     container: {},
@@ -206,16 +207,6 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
 
     return (
         <Container maxWidth="sm" className={styles.container}>
-            {/* <FormControlLabel
-                control={
-                    <Switch
-                        checked={showAll}
-                        onChange={() => setShowAll(!showAll)}
-                        color="primary"
-                    />
-                }
-                label="Show completed"
-            /> */}
             <Button onClick={() => client.undo()}>Undo</Button>
             {dragger != null && dragger.y != null && dragger.dest != null ? (
                 <div
