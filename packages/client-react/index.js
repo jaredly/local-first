@@ -14,6 +14,34 @@ export const useSyncStatus = function<SyncStatus>(React: *, client: Client<SyncS
     return status;
 };
 
+export const useItems = function<T: {}, SyncStatus>(
+    React: *,
+    client: Client<SyncStatus>,
+    colid: string,
+    ids: Array<string>,
+) {
+    const col = React.useMemo(() => client.getCollection<T>(colid), []);
+    // TODO something to indicate whether we've loaded from the database yet
+    // also something to indicate whether we've ever synced with a server.
+    const [items, setItems] = React.useState(() => {
+        const items = {};
+        ids.forEach(id => (items[id] = col.getCached(id)));
+        return items;
+    });
+    React.useEffect(() => {
+        const listeners = ids.map(id => {
+            if (!items[id]) {
+                col.load(id).then(data => {
+                    setItems(items => ({ ...items, [id]: data }));
+                });
+            }
+            return col.onItemChange(id, data => setItems(items => ({ ...items, [id]: data })));
+        });
+        return () => listeners.forEach(fn => fn());
+    }, [ids]);
+    return [col, items];
+};
+
 export const useItem = function<T: {}, SyncStatus>(
     React: *,
     client: Client<SyncStatus>,

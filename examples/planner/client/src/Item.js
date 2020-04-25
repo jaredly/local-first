@@ -16,7 +16,7 @@ import Cancel from '@material-ui/icons/Cancel';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import * as React from 'react';
 import type { Client, Collection, SyncStatus } from '../../../../packages/client-bundle';
-import { useItem } from '../../../../packages/client-react';
+import { useItem, useItems } from '../../../../packages/client-react';
 import { type ItemT, newItem } from './types';
 import { useLocalStorageSharedToggle } from './useLocalStorage';
 
@@ -88,19 +88,36 @@ export const ItemChildren = ({
     onNewFocus: (boolean) => void,
     path: Array<string>,
 }) => {
+    const [_, items] = useItems(React, client, 'items', item.children);
     const styles = useStyles();
+
+    const numHidden = showAll
+        ? 0
+        : item.children.filter((id) => items[id] && !!items[id].completedDate).length;
+
     return (
         <div className={styles.itemChildren}>
+            {numHidden > 0 ? (
+                <div
+                    className={styles.numHidden}
+                    style={{
+                        marginLeft: (level + 2) * INDENT,
+                    }}
+                >
+                    {numHidden} items hidden
+                </div>
+            ) : null}
             {item.children.map((child, i) => (
                 <Item
+                    // TODO pass in the item itself probably?
+                    key={child}
+                    id={child}
                     path={path}
                     showAll={showAll}
                     onDragStart={onDragStart}
                     level={level + 1}
                     dragRefs={dragRefs}
                     idx={i}
-                    id={child}
-                    key={child}
                     client={client}
                 />
             ))}
@@ -420,7 +437,10 @@ export const Item = React.memo<Props>(
                                 }}
                             >
                                 {Object.keys(item.checkDates).map((date) => (
-                                    <div title={new Date(parseInt(date, 36)).toLocaleString()}>
+                                    <div
+                                        key={date}
+                                        title={new Date(parseInt(date, 36)).toLocaleString()}
+                                    >
                                         ✅
                                     </div>
                                 ))}
@@ -604,5 +624,10 @@ const useStyles = makeStyles((theme) => ({
     },
     itemNewFocus: {
         color: theme.palette.primary.light,
+    },
+    numHidden: {
+        color: theme.palette.text.disabled,
+        paddingLeft: theme.spacing(2),
+        marginBottom: theme.spacing(1),
     },
 }));
