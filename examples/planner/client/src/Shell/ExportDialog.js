@@ -6,7 +6,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import Typography from '@material-ui/core/Typography';
 import pako from 'pako';
 import * as React from 'react';
-import type { Client, SyncStatus } from '../../../../packages/client-bundle';
+import type { Client, SyncStatus } from '../../../../../packages/client-bundle';
 
 const genId = () => Math.random().toString(36).slice(2);
 

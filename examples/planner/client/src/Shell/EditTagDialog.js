@@ -7,12 +7,8 @@ import { makeStyles } from '@material-ui/core/styles';
 import Typography from '@material-ui/core/Typography';
 import pako from 'pako';
 import * as React from 'react';
-import type {
-    Client,
-    SyncStatus,
-    Collection,
-} from '../../../../packages/client-bundle';
-import type { TagT } from './types';
+import type { Client, SyncStatus, Collection } from '../../../../../packages/client-bundle';
+import type { TagT } from '../types';
 
 const genId = () => Math.random().toString(36).slice(2);
 
@@ -50,22 +46,16 @@ const EditTagDialog = ({
     const [loading, setLoading] = React.useState(false);
     const id = React.useMemo(() => 'id-' + genId(), []);
 
-    const [tagData, setTagData] = React.useState(
-        tag != null ? { ...tag } : emptyTag,
-    );
+    const [tagData, setTagData] = React.useState(tag != null ? { ...tag } : emptyTag);
 
     return (
         <Dialog open={true} aria-labelledby={id} onClose={onClose}>
-            <DialogTitle id={id}>
-                {tag === null ? 'Create Tag' : 'Edit Tag'}
-            </DialogTitle>
+            <DialogTitle id={id}>{tag === null ? 'Create Tag' : 'Edit Tag'}</DialogTitle>
             <div className={styles.container}>
                 <TextField
                     placeholder="Tag Title"
                     value={tagData.title}
-                    onChange={(evt) =>
-                        setTagData({ ...tagData, title: evt.target.value })
-                    }
+                    onChange={(evt) => setTagData({ ...tagData, title: evt.target.value })}
                 />
                 <div className={styles.buttons}>
                     <Button
@@ -81,18 +71,10 @@ const EditTagDialog = ({
                                 tagsCol.save(tag.id, tag);
                             } else {
                                 if (tagData.title !== tag.title) {
-                                    tagsCol.setAttribute(
-                                        tagData.id,
-                                        ['title'],
-                                        tagData.title,
-                                    );
+                                    tagsCol.setAttribute(tagData.id, ['title'], tagData.title);
                                 }
                                 if (tagData.color !== tag.color) {
-                                    tagsCol.setAttribute(
-                                        tagData.id,
-                                        ['color'],
-                                        tagData.color,
-                                    );
+                                    tagsCol.setAttribute(tagData.id, ['color'], tagData.color);
                                 }
                             }
                             onClose();

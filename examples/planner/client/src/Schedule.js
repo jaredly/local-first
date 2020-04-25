@@ -1,37 +1,18 @@
 // @flow
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
-import Container from '@material-ui/core/Container';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import Divider from '@material-ui/core/Divider';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import ListItemText from '@material-ui/core/ListItemText';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import Switch from '@material-ui/core/Switch';
-import AccountCircle from '@material-ui/icons/AccountCircle';
-import Folder from '@material-ui/icons/Folder';
-import ExitToApp from '@material-ui/icons/ExitToApp';
-import GetApp from '@material-ui/icons/GetApp';
-import Publish from '@material-ui/icons/Publish';
-import Cancel from '@material-ui/icons/Cancel';
 import { makeStyles } from '@material-ui/core/styles';
+import Cancel from '@material-ui/icons/Cancel';
+import Folder from '@material-ui/icons/Folder';
 import * as React from 'react';
-import { type Client, type SyncStatus } from '../../../../packages/client-bundle';
+import { Link, useParams } from 'react-router-dom';
+import type { Client, SyncStatus } from '../../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../../packages/client-react';
-import type { Data } from './auth-api';
-import ExportDialog from './ExportDialog';
-import ImportDialog from './ImportDialog';
-import TopBar from './TopBar';
-import EditTagDialog from './EditTagDialog';
-import Items from './TodoList/Items';
-import { newDay, type ItemT, type Day } from './types';
-import { useParams } from 'react-router-dom';
-import { Item } from './TodoList/Item';
-import { showDate, parseDate, nextDay, prevDay } from './utils';
-import { Link } from 'react-router-dom';
-import AppShell from './AppShell';
 import type { AuthData } from './App';
+import AppShell from './Shell/AppShell';
+import { Item } from './TodoList/Item';
+import { type Day, type ItemT, newDay } from './types';
+import { nextDay, parseDate, prevDay, showDate } from './utils';
 
 /*
 

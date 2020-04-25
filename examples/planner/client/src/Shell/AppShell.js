@@ -4,15 +4,15 @@ import ListItem from '@material-ui/core/ListItem';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import { makeStyles } from '@material-ui/core/styles';
 import * as React from 'react';
-import type { Client, SyncStatus } from '../../../../packages/client-bundle';
-import { useCollection } from '../../../../packages/client-react';
-import type { Data } from './auth-api';
+import type { Client, SyncStatus } from '../../../../../packages/client-bundle';
+import { useCollection } from '../../../../../packages/client-react';
+import type { Data } from '../auth-api';
 import Drawer from './Drawer';
-import Items from './TodoList/Items';
+import Items from '../TodoList/Items';
 import TopBar from './TopBar';
 
 import { Route, Switch, useRouteMatch } from 'react-router-dom';
-import type { AuthData } from './App';
+import type { AuthData } from '../App';
 
 const AppShell = ({
     client,

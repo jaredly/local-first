@@ -6,9 +6,9 @@ import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import MenuIcon from '@material-ui/icons/Menu';
 import * as React from 'react';
-import type { Data } from './auth-api';
+import type { Data } from '../auth-api';
 import { Link } from 'react-router-dom';
-import { showDate, today, tomorrow } from './utils';
+import { showDate, today, tomorrow } from '../utils';
 
 const TopBar = ({ openMenu }: { openMenu: () => void }) => {
     const styles = useStyles();

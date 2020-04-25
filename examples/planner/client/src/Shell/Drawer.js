@@ -15,16 +15,20 @@ import LabelOutlined from '@material-ui/icons/LabelOutlined';
 import GetApp from '@material-ui/icons/GetApp';
 import Publish from '@material-ui/icons/Publish';
 import * as React from 'react';
-import type { Data } from './auth-api';
-import type { TagT } from './types';
-import { type Client, type SyncStatus, type Collection } from '../../../../packages/client-bundle';
-import { useCollection } from '../../../../packages/client-react';
+import type { Data } from '../auth-api';
+import type { TagT } from '../types';
+import {
+    type Client,
+    type SyncStatus,
+    type Collection,
+} from '../../../../../packages/client-bundle';
+import { useCollection } from '../../../../../packages/client-react';
 import EditTagDialog from './EditTagDialog';
 import ExportDialog from './ExportDialog';
 import ImportDialog from './ImportDialog';
 import { Switch, Route, Link } from 'react-router-dom';
-import { showDate, today } from './utils';
-import type { AuthData } from './App';
+import { showDate, today } from '../utils';
+import type { AuthData } from '../App';
 
 const MyDrawer = ({
     open,

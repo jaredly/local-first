@@ -9,7 +9,7 @@ import type { Client, SyncStatus } from '../../../../packages/client-bundle';
 import type { Data } from './auth-api';
 import Items from './TodoList/Items';
 
-import AppShell from './AppShell';
+import AppShell from './Shell/AppShell';
 
 import { Route, Switch as RouteSwitch, useRouteMatch } from 'react-router-dom';
 import type { AuthData } from './App';
