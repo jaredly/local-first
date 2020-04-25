@@ -30,6 +30,15 @@ export type Client<SyncStatus> = {
 export type Collection<T> = {
     save: (id: string, value: T) => Promise<void>,
     insertId: (id: string, path: Array<string | number>, idx: number, id: string) => Promise<void>,
+    removeId: (id: string, path: Array<string | number>, id: string) => Promise<void>,
+    reorderIdRelative: (
+        id: string,
+        path: Array<string | number>,
+        childId: string,
+        relativeTo: string,
+        before: boolean,
+    ) => Promise<void>,
+
     clearAttribute: (id: string, path: Array<string | number>) => Promise<void>,
     setAttribute: (id: string, path: Array<string | number>, value: any) => Promise<void>,
     getCached: (id: string) => ?T,

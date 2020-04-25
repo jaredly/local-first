@@ -338,8 +338,15 @@ const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) =>
             </div>
             <h2>Other To Do</h2>
             <div>
-                {day.toDoList.others.map((id) => (
-                    <ShowItem id={id} key={id} client={client} onClick={() => {}} />
+                {day.toDoList.others.map((otherId) => (
+                    <ShowItem
+                        id={otherId}
+                        key={otherId}
+                        client={client}
+                        onClear={() => {
+                            col.removeId(id, ['toDoList', 'others'], otherId);
+                        }}
+                    />
                 ))}
                 <Button onClick={() => setPicking('other')}>Add Other Item</Button>
             </div>
@@ -476,7 +483,7 @@ const useStyles = makeStyles((theme) => ({
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-    }
+    },
 }));
 
 export default ScheduleWrapper;
