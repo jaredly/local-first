@@ -25,11 +25,16 @@ export const useItem = function<T: {}, SyncStatus>(
     // also something to indicate whether we've ever synced with a server.
     const [item, setItem] = React.useState(col.getCached(id));
     React.useEffect(() => {
-        col.load(id).then(data => {
-            setItem(data);
-        });
+        if (item == null || id !== item.id) {
+            if (item) {
+                setItem(null);
+            }
+            col.load(id).then(data => {
+                setItem(data);
+            });
+        }
         return col.onItemChange(id, setItem);
-    }, []);
+    }, [id]);
     return [col, item];
 };
 

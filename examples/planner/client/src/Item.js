@@ -256,6 +256,14 @@ export const Item = React.memo<Props>(
                 },
             },
         ];
+        if (item.style !== 'group') {
+            menuItems.push({
+                title: 'Add attempt',
+                onClick: () => {
+                    col.setAttribute(item.id, ['checkDates', Date.now().toString(36)], true);
+                },
+            });
+        }
         if (item.children.length === 0 && !open) {
             menuItems.push({ title: 'Add child', onClick: () => setOpen(true) });
         }
@@ -349,6 +357,7 @@ export const Item = React.memo<Props>(
                         }}
                         className={newFocus ? styles.itemNewFocus : undefined}
                         style={{
+                            position: 'relative',
                             display: 'flex',
                             flexDirection: 'row',
                             flex: 1,
@@ -402,6 +411,21 @@ export const Item = React.memo<Props>(
                                 item.title
                             )}
                         </div>
+                        {Object.keys(item.checkDates).length ? (
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    right: 0,
+                                }}
+                            >
+                                {Object.keys(item.checkDates).map((date) => (
+                                    <div title={new Date(parseInt(date, 36)).toLocaleString()}>
+                                        ✅
+                                    </div>
+                                ))}
+                            </div>
+                        ) : null}
                     </div>
 
                     {!open && item.children.length > 0 ? (

@@ -25,6 +25,7 @@ import EditTagDialog from './EditTagDialog';
 import Items from './Items';
 import { newDay, type ItemT } from './types';
 import { useParams } from 'react-router-dom';
+import { Item } from './Item';
 
 /*
 
@@ -74,8 +75,26 @@ const ShowItem = ({ client, id, onClick }) => {
 
     if (!item) return 'loading or deleted';
     return (
-        <div onClick={onClick} className={styles.item}>
-            {item.title}
+        <div
+            onClick={onClick}
+            className={styles.item}
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+            }}
+        >
+            <Item
+                client={client}
+                id={item.id}
+                level={0}
+                showAll={true}
+                path={[]}
+                dragRefs={{}}
+                onDragStart={() => {}}
+                idx={0}
+            />
+            {/* {item.title} */}
         </div>
     );
 };

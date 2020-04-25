@@ -7,6 +7,27 @@ import Typography from '@material-ui/core/Typography';
 import MenuIcon from '@material-ui/icons/Menu';
 import * as React from 'react';
 import type { Data } from './auth-api';
+import { Link } from 'react-router-dom';
+
+const today = () => {
+    const now = new Date();
+    // start of day
+    now.setHours(0, 0, 0, 0);
+    return now;
+};
+
+const tomorrow = () => {
+    const now = today();
+    // half a day should get us to tomorrow
+    now.setTime(now.getTime() + 36 * 3600 * 1000);
+    now.setHours(0, 0, 0, 0);
+    return now;
+};
+
+const showDate = (date) =>
+    `${date.getFullYear()}-${(date.getMonth() + 1)
+        .toString()
+        .padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
 
 const TopBar = ({
     auth,
@@ -36,6 +57,8 @@ const TopBar = ({
                 <Typography variant="h6" className={styles.title}>
                     Planner
                 </Typography>
+                <Link to={`/day/${showDate(today())}`}>Today's Schedule</Link>
+                <Link to={`/day/${showDate(tomorrow())}`}>Tomorrow's Schedule</Link>
             </Toolbar>
         </AppBar>
     );
