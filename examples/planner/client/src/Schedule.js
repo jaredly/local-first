@@ -30,6 +30,7 @@ import { useParams } from 'react-router-dom';
 import { Item } from './TodoList/Item';
 import { showDate, parseDate, nextDay, prevDay } from './utils';
 import { Link } from 'react-router-dom';
+import AppShell from './AppShell';
 
 /*
 
@@ -377,47 +378,9 @@ const ScheduleWrapper = ({
     const styles = useStyles();
 
     return (
-        <React.Fragment>
-            <TopBar
-                auth={auth}
-                setDialog={setDialog}
-                logout={logout}
-                openMenu={() => setMenu(true)}
-            />
-            {/* <Drawer
-                onClose={() => setMenu(false)}
-                open={menu}
-                auth={auth}
-                setDialog={setDialog}
-                showAll={showAll}
-                setShowAll={setShowAll}
-                logout={logout}
-                tags={tags}
-                tagsCol={tagsCol}
-                editTag={setEditTag}
-            /> */}
-            <Container maxWidth="sm" className={styles.container}>
-                <Schedule client={client} id={day} />
-            </Container>
-            <ExportDialog
-                open={dialog === 'export'}
-                client={client}
-                onClose={() => setDialog(null)}
-            />
-            <ImportDialog
-                open={dialog === 'import'}
-                client={client}
-                onClose={() => setDialog(null)}
-            />
-            {editTag !== false ? (
-                <EditTagDialog
-                    client={client}
-                    tagsCol={tagsCol}
-                    tag={editTag}
-                    onClose={() => setEditTag(false)}
-                />
-            ) : null}
-        </React.Fragment>
+        <AppShell auth={auth} logout={logout} client={client} host={host} drawerItems={null}>
+            <Schedule client={client} id={day} />
+        </AppShell>
     );
 };
 

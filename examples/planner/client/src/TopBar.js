@@ -12,13 +12,11 @@ import { showDate, today, tomorrow } from './utils';
 
 const TopBar = ({
     auth,
-    setDialog,
     openMenu,
     logout,
 }: {
     auth: ?Data,
     openMenu: () => void,
-    setDialog: ('export' | 'import') => void,
     logout: () => mixed,
 }) => {
     const styles = useStyles();

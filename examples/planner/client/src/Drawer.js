@@ -7,7 +7,6 @@ import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
-import Switch from '@material-ui/core/Switch';
 import AccountCircle from '@material-ui/icons/AccountCircle';
 import ExitToApp from '@material-ui/icons/ExitToApp';
 import Label from '@material-ui/icons/Label';
@@ -18,98 +17,126 @@ import * as React from 'react';
 import type { Data } from './auth-api';
 import type { TagT } from './types';
 import { type Client, type SyncStatus, type Collection } from '../../../../packages/client-bundle';
+import { useCollection } from '../../../../packages/client-react';
+import EditTagDialog from './EditTagDialog';
+import ExportDialog from './ExportDialog';
+import ImportDialog from './ImportDialog';
+import { Switch, Route, Link } from 'react-router-dom';
+import { showDate, today } from './utils';
 
 const MyDrawer = ({
-    onClose,
     auth,
     open,
-    setDialog,
-    showAll,
-    setShowAll,
+    onClose,
+    client,
     logout,
-    tags,
-    tagsCol,
-    editTag,
+    pageItems,
 }: {
+    client: Client<SyncStatus>,
     open: boolean,
-    setDialog: ('export' | 'import') => void,
-    showAll: boolean,
-    setShowAll: (boolean) => void,
+    onClose: () => void,
     logout: () => mixed,
     auth: ?Data,
-    onClose: () => void,
-    tags: { [key: string]: TagT },
-    tagsCol: Collection<TagT>,
-    editTag: (?TagT) => void,
+    pageItems: React.Node,
 }) => {
+    const [tagsCol, tags] = useCollection(React, client, 'tags');
+    const [editTag, setEditTag] = React.useState(false);
+    const [dialog, setDialog] = React.useState(null);
+
     return (
-        <Drawer anchor={'left'} open={open} onClose={onClose}>
-            <List>
-                {auth ? (
+        <React.Fragment>
+            <Drawer anchor={'left'} open={open} onClose={onClose}>
+                <List>
+                    {auth ? (
+                        <ListItem>
+                            <ListItemIcon>
+                                <AccountCircle />
+                            </ListItemIcon>
+                            <ListItemText primary={auth.user.email} />
+                        </ListItem>
+                    ) : (
+                        <ListItem button>
+                            <ListItemIcon>
+                                <AccountCircle />
+                            </ListItemIcon>
+                            <ListItemText primary="Sign in" />
+                        </ListItem>
+                    )}
+                    <Divider />
+                    {pageItems}
+                    <Divider />
                     <ListItem>
-                        <ListItemIcon>
-                            <AccountCircle />
-                        </ListItemIcon>
-                        <ListItemText primary={auth.user.email} />
+                        <Link to="/">Home</Link>
                     </ListItem>
-                ) : (
-                    <ListItem button>
-                        <ListItemIcon>
-                            <AccountCircle />
-                        </ListItemIcon>
-                        <ListItemText primary="Sign in" />
+                    <ListItem>
+                        <Link to={`/day/${showDate(today())}`}>Today's Schedule</Link>
                     </ListItem>
-                )}
-                <Divider />
-                <ListItem button onClick={() => setDialog('export')}>
-                    <ListItemIcon>
-                        <GetApp />
-                    </ListItemIcon>
-                    <ListItemText primary="Export" />
-                </ListItem>
-                <ListItem button onClick={() => setDialog('import')}>
-                    <ListItemIcon>
-                        <Publish />
-                    </ListItemIcon>
-                    <ListItemText primary="Import" />
-                </ListItem>
-                <ListItem>
-                    <FormControlLabel
-                        control={
-                            <Switch
-                                checked={showAll}
-                                onChange={() => setShowAll(!showAll)}
-                                color="primary"
-                            />
-                        }
-                        label="Show completed"
-                    />
-                </ListItem>
-                <Divider />
-                {Object.keys(tags).map((k) => (
-                    <ListItem button onClick={() => editTag(tags[k])} key={k}>
+                    {/* <Switch>
+                        <Route path={`/`} exact>
+                        </Route>
+                        <Route>
+                            <ListItem>
+                                <Link to="/">Home</Link>
+                            </ListItem>
+                        </Route>
+                    </Switch> */}
+                    <Divider />
+                    <ListItem button onClick={() => setDialog('export')}>
                         <ListItemIcon>
-                            <Label />
+                            <GetApp />
                         </ListItemIcon>
-                        <ListItemText primary={tags[k].title} />
+                        <ListItemText primary="Export" />
                     </ListItem>
-                ))}
-                <ListItem button onClick={() => editTag(null)}>
-                    <ListItemIcon>
-                        <LabelOutlined />
-                    </ListItemIcon>
-                    <ListItemText primary="New Tag" />
-                </ListItem>
+                    <ListItem button onClick={() => setDialog('import')}>
+                        <ListItemIcon>
+                            <Publish />
+                        </ListItemIcon>
+                        <ListItemText primary="Import" />
+                    </ListItem>
+                    <Divider />
+                    {Object.keys(tags).map((k) => (
+                        <ListItem button onClick={() => setEditTag(tags[k])} key={k}>
+                            <ListItemIcon>
+                                <Label />
+                            </ListItemIcon>
+                            <ListItemText primary={tags[k].title} />
+                        </ListItem>
+                    ))}
+                    <ListItem button onClick={() => setEditTag(null)}>
+                        <ListItemIcon>
+                            <LabelOutlined />
+                        </ListItemIcon>
+                        <ListItemText primary="New Tag" />
+                    </ListItem>
+                    <Divider />
+                    <ListItem button onClick={logout}>
+                        <ListItemIcon>
+                            <ExitToApp />
+                        </ListItemIcon>
+                        <ListItemText primary="Sign out" />
+                    </ListItem>
+                </List>
                 <Divider />
-                <ListItem button onClick={logout}>
-                    <ListItemIcon>
-                        <ExitToApp />
-                    </ListItemIcon>
-                    <ListItemText primary="Sign out" />
-                </ListItem>
-            </List>
-            <Divider />
-        </Drawer>
+            </Drawer>
+            <ExportDialog
+                open={dialog === 'export'}
+                client={client}
+                onClose={() => setDialog(null)}
+            />
+            <ImportDialog
+                open={dialog === 'import'}
+                client={client}
+                onClose={() => setDialog(null)}
+            />
+            {editTag !== false ? (
+                <EditTagDialog
+                    client={client}
+                    tagsCol={tagsCol}
+                    tag={editTag}
+                    onClose={() => setEditTag(false)}
+                />
+            ) : null}
+        </React.Fragment>
     );
 };
 
