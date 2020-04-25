@@ -71,24 +71,24 @@ export const ItemChildren = ({
     item,
     level,
     client,
-    col,
+    // col,
     showAll,
     path,
     dragRefs,
     onDragStart,
     onNewFocus,
-}: {
+}: {|
     item: ItemT,
     level: number,
     client: Client<SyncStatus>,
-    col: Collection<ItemT>,
+    // col: Collection<ItemT>,
     showAll: boolean,
     dragRefs: DragRefs,
     onDragStart: (DragInit) => void,
     onNewFocus: (boolean) => void,
     path: Array<string>,
-}) => {
-    const [_, items] = useItems(React, client, 'items', item.children);
+|}) => {
+    const [col, items] = useItems(React, client, 'items', item.children);
     const styles = useStyles();
 
     const numHidden = showAll
@@ -107,20 +107,24 @@ export const ItemChildren = ({
                     {numHidden} items hidden
                 </div>
             ) : null}
-            {item.children.map((child, i) => (
-                <Item
-                    // TODO pass in the item itself probably?
-                    key={child}
-                    id={child}
-                    path={path}
-                    showAll={showAll}
-                    onDragStart={onDragStart}
-                    level={level + 1}
-                    dragRefs={dragRefs}
-                    idx={i}
-                    client={client}
-                />
-            ))}
+            {item.children
+                .filter((id) => !!items[id])
+                .map((child, i) => (
+                    <Item
+                        // TODO pass in the item itself probably?
+                        key={child}
+                        // id={child}
+                        item={items[child]}
+                        col={col}
+                        path={path}
+                        showAll={showAll}
+                        onDragStart={onDragStart}
+                        level={level + 1}
+                        dragRefs={dragRefs}
+                        idx={i}
+                        client={client}
+                    />
+                ))}
             <NewItem
                 onFocus={onNewFocus}
                 level={level + 1}
@@ -147,9 +151,10 @@ export type DragInit = {
 };
 
 type Props = {
+    col: Collection<ItemT>,
     path: Array<string>,
     level: number,
-    id: string,
+    item: ItemT,
     idx: number,
     client: Client<SyncStatus>,
     showAll: boolean,
@@ -228,12 +233,12 @@ const Description = ({ text, onChange }) => {
 };
 
 export const Item = React.memo<Props>(
-    ({ id, idx, onDragStart, client, level, showAll, path, dragRefs }: Props) => {
-        const [col, item] = useItem(React, client, 'items', id);
-        const [open, setOpen] = useLocalStorageSharedToggle('planner-ui-state', id + '%open');
+    ({ col, item, idx, onDragStart, client, level, showAll, path, dragRefs }: Props) => {
+        // const [col, item] = useItem(React, client, 'items', item.id);
+        const [open, setOpen] = useLocalStorageSharedToggle('planner-ui-state', item.id + '%open');
         const [showDescription, setShowDescription] = useLocalStorageSharedToggle(
             'planner-ui-state',
-            id + '%desc',
+            item.id + '%desc',
         );
         const [editing, setEditing] = React.useState(null);
         const styles = useStyles();
@@ -243,12 +248,12 @@ export const Item = React.memo<Props>(
         const [dragging, setDragging] = React.useState(false);
         const [newFocus, setNewFocus] = React.useState(false);
 
-        const childPath = React.useMemo(() => path.concat([id]), [path]);
+        const childPath = React.useMemo(() => path.concat([item.id]), [path]);
         // if (!item) {
         //     return 'deleted';
         // }
 
-        if (!item || (item.completedDate != null && !showAll)) {
+        if (item.completedDate != null && !showAll) {
             return null;
         }
 
@@ -304,14 +309,14 @@ export const Item = React.memo<Props>(
             menuItems.push({
                 title: 'Convert to checkbox',
                 onClick: () => {
-                    col.setAttribute(id, ['style'], null);
+                    col.setAttribute(item.id, ['style'], null);
                 },
             });
         } else {
             menuItems.push({
                 title: 'Convert to group',
                 onClick: () => {
-                    col.setAttribute(id, ['style'], 'group');
+                    col.setAttribute(item.id, ['style'], 'group');
                 },
             });
         }
@@ -319,7 +324,10 @@ export const Item = React.memo<Props>(
             title: 'Delete',
             onClick: async () => {
                 const pid = path[path.length - 1];
-                await Promise.all([col.clearAttribute(pid, ['children', id]), col.delete(id)]);
+                await Promise.all([
+                    col.clearAttribute(pid, ['children', item.id]),
+                    col.delete(item.id),
+                ]);
             },
         });
 
@@ -360,8 +368,8 @@ export const Item = React.memo<Props>(
                     <div
                         ref={(node) => {
                             if (node) {
-                                dragRefs[id] = {
-                                    id,
+                                dragRefs[item.id] = {
+                                    id: item.id,
                                     path,
                                     node,
                                     idx,
@@ -369,7 +377,7 @@ export const Item = React.memo<Props>(
                                         item.children.length > 0 || item.style === 'group' || open,
                                 };
                             } else {
-                                delete dragRefs[id];
+                                delete dragRefs[item.id];
                             }
                         }}
                         className={newFocus ? styles.itemNewFocus : undefined}
@@ -391,7 +399,7 @@ export const Item = React.memo<Props>(
                                 checked={!!item.completedDate}
                                 onChange={() => {
                                     col.setAttribute(
-                                        id,
+                                        item.id,
                                         ['completedDate'],
                                         item.completedDate != null ? null : Date.now(),
                                     );
@@ -418,7 +426,7 @@ export const Item = React.memo<Props>(
                                     onChange={(evt) => setEditing(evt.target.value)}
                                     onKeyDown={(evt) => {
                                         if (evt.key === 'Enter' && editing.trim().length > 0) {
-                                            col.setAttribute(id, ['title'], editing);
+                                            col.setAttribute(item.id, ['title'], editing);
                                             setEditing(null);
                                         }
                                     }}
@@ -479,7 +487,7 @@ export const Item = React.memo<Props>(
                             console.log('touch');
                             // evt.preventDefault();
                             onDragStart({
-                                id,
+                                id: item.id,
                                 path,
                                 onStart: () => setDragging(true),
                                 onFinish: () => setDragging(false),
@@ -492,7 +500,7 @@ export const Item = React.memo<Props>(
                             // um maybe I need to pass an onstart too?
                             // setDragging(true);
                             onDragStart({
-                                id,
+                                id: item.id,
                                 path,
                                 onStart: () => setDragging(true),
                                 onFinish: () => setDragging(false),
@@ -550,7 +558,7 @@ export const Item = React.memo<Props>(
                         item={item}
                         level={level}
                         client={client}
-                        col={col}
+                        // col={col}
                     />
                 ) : null}
             </div>
