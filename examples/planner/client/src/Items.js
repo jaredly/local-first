@@ -6,7 +6,7 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import { makeStyles } from '@material-ui/core/styles';
 import * as React from 'react';
 import type { Client, SyncStatus } from '../../../../packages/client-bundle';
-import { useItem } from '../../../../packages/client-react';
+import { useItem, useItems } from '../../../../packages/client-react';
 import { ItemChildren, type DragInit } from './Item';
 import { newItem } from './types';
 
@@ -82,6 +82,7 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
     const styles = useStyles();
 
     const [col, root] = useItem(React, client, 'items', 'root');
+    const [_, items] = useItems(React, client, 'items', root ? root.children : []);
     // const [showAll, setShowAll] = React.useState(false);
 
     React.useEffect(() => {
@@ -231,6 +232,7 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
                 <ItemChildren
                     onNewFocus={() => {}}
                     path={path}
+                    items={items}
                     dragRefs={dragRefs}
                     onDragStart={onDragStart}
                     showAll={showAll}

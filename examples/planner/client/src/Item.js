@@ -71,7 +71,8 @@ export const ItemChildren = ({
     item,
     level,
     client,
-    // col,
+    items,
+    col,
     showAll,
     path,
     dragRefs,
@@ -80,15 +81,15 @@ export const ItemChildren = ({
 }: {|
     item: ItemT,
     level: number,
+    items: { [key: string]: ?ItemT },
     client: Client<SyncStatus>,
-    // col: Collection<ItemT>,
+    col: Collection<ItemT>,
     showAll: boolean,
     dragRefs: DragRefs,
     onDragStart: (DragInit) => void,
     onNewFocus: (boolean) => void,
     path: Array<string>,
 |}) => {
-    const [col, items] = useItems(React, client, 'items', item.children);
     const styles = useStyles();
 
     const numHidden = showAll
@@ -108,14 +109,15 @@ export const ItemChildren = ({
                 </div>
             ) : null}
             {item.children
-                .filter((id) => !!items[id])
-                .map((child, i) => (
+                .map((id) => items[id])
+                .filter(Boolean)
+                .map((item, i) => (
                     <Item
                         // TODO pass in the item itself probably?
-                        key={child}
+                        key={item.id}
                         // id={child}
-                        item={items[child]}
-                        col={col}
+                        item={item}
+                        // col={col}
                         path={path}
                         showAll={showAll}
                         onDragStart={onDragStart}
@@ -151,7 +153,7 @@ export type DragInit = {
 };
 
 type Props = {
-    col: Collection<ItemT>,
+    // col: Collection<ItemT>,
     path: Array<string>,
     level: number,
     item: ItemT,
@@ -233,8 +235,9 @@ const Description = ({ text, onChange }) => {
 };
 
 export const Item = React.memo<Props>(
-    ({ col, item, idx, onDragStart, client, level, showAll, path, dragRefs }: Props) => {
-        // const [col, item] = useItem(React, client, 'items', item.id);
+    ({ item, idx, onDragStart, client, level, showAll, path, dragRefs }: Props) => {
+        const [col, items] = useItems(React, client, 'items', item.children);
+
         const [open, setOpen] = useLocalStorageSharedToggle('planner-ui-state', item.id + '%open');
         const [showDescription, setShowDescription] = useLocalStorageSharedToggle(
             'planner-ui-state',
@@ -249,24 +252,10 @@ export const Item = React.memo<Props>(
         const [newFocus, setNewFocus] = React.useState(false);
 
         const childPath = React.useMemo(() => path.concat([item.id]), [path]);
-        // if (!item) {
-        //     return 'deleted';
-        // }
 
         if (item.completedDate != null && !showAll) {
             return null;
         }
-
-        // if (!item) {
-        //     return (
-        //         <div
-        //             className={styles.itemWrapper + ' ' + styles.item + ' ' + styles.itemTitle}
-        //             style={{ padding: 8 }}
-        //         >
-        //             &nbsp;
-        //         </div>
-        //     );
-        // }
 
         const menuItems = [
             {
@@ -330,6 +319,13 @@ export const Item = React.memo<Props>(
                 ]);
             },
         });
+
+        const visibleChildren = Object.keys(items)
+            .map((k) => items[k])
+            .filter(Boolean)
+            .filter((item) =>
+                showAll ? true : item.style === 'group' || item.completedDate == null,
+            ).length;
 
         return (
             <div className={styles.itemWrapper + (dragging ? ' ' + styles.dragItem : '')}>
@@ -456,9 +452,7 @@ export const Item = React.memo<Props>(
                         ) : null}
                     </div>
 
-                    {!open && item.children.length > 0 ? (
-                        <Chip label={item.children.length} />
-                    ) : null}
+                    {!open && visibleChildren > 0 ? <Chip label={visibleChildren} /> : null}
 
                     {/* <IconButton
                         aria-label="more"
@@ -556,9 +550,10 @@ export const Item = React.memo<Props>(
                         dragRefs={dragRefs}
                         showAll={showAll}
                         item={item}
+                        items={items}
                         level={level}
                         client={client}
-                        // col={col}
+                        col={col}
                     />
                 ) : null}
             </div>
