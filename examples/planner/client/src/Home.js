@@ -12,17 +12,20 @@ import Items from './TodoList/Items';
 import AppShell from './AppShell';
 
 import { Route, Switch as RouteSwitch, useRouteMatch } from 'react-router-dom';
+import type { AuthData } from './App';
 
 const Home = ({
     client,
-    logout,
-    host,
-    auth,
+    // logout,
+    // host,
+    // auth,
+    authData,
 }: {
     client: Client<SyncStatus>,
-    logout: () => mixed,
-    host: string,
-    auth: ?Data,
+    // logout: () => mixed,
+    // host: string,
+    // auth: ?Data,
+    authData: ?AuthData,
 }) => {
     const [showAll, setShowAll] = React.useState(false);
     const [menu, setMenu] = React.useState(false);
@@ -48,9 +51,10 @@ const Home = ({
                     />
                 </ListItem>
             }
-            auth={auth}
-            host={host}
-            logout={logout}
+            authData={authData}
+            // auth={auth}
+            // host={host}
+            // logout={logout}
             client={client}
         >
             <RouteSwitch>

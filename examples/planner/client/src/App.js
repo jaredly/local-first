@@ -26,31 +26,35 @@ const schemas = {
     days: DaySchema,
 };
 
+export type AuthData = { host: string, auth: Data, logout: () => mixed };
+
 const App = ({
     dbName,
-    host,
-    auth,
-    logout,
-}: {
+    authData,
+}: // host,
+// auth,
+// logout,
+{
     dbName: string,
-    host: string,
-    auth: ?Data,
-    logout: () => mixed,
+    authData: ?AuthData,
+    // host: string,
+    // auth: ?Data,
+    // logout: () => mixed,
 }) => {
     const client = React.useMemo(() => {
-        console.log('starting a client', auth);
+        console.log('starting a client', authData);
         // return createInMemoryDeltaClient(schemas, '');
-        return auth
+        return authData
             ? createPersistedDeltaClient(
                   dbName,
                   schemas,
-                  `${host.startsWith('localhost:') ? 'ws' : 'wss'}://${host}/sync?token=${
-                      auth.token
-                  }`,
+                  `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${
+                      authData.host
+                  }/sync?token=${authData.auth.token}`,
                   2,
               )
             : createPersistedBlobClient(dbName, schemas, null, 2);
-    }, [auth && auth.token]);
+    }, [authData]);
 
     const [showUpgrade, setShowUpgrade] = React.useState(
         window.upgradeAvailable && window.upgradeAvailable.installed,
@@ -75,13 +79,19 @@ const App = ({
     let match = useRouteMatch();
     console.log(match);
 
+    const pathPrefix = match.path == '/' ? '' : match.path;
+
     const contents = (
         <Switch>
-            <Route path={`${match.path == '/' ? '' : match.path}/day/:day`}>
-                <Schedule client={client} host={host} logout={logout} auth={auth} />
+            <Route path={`${pathPrefix}/day/:day`}>
+                <Schedule client={client} authData={authData} />
             </Route>
+            {/* TODO combine host, login, auth */}
+            {/* <Route path={`${pathPrefix}/habits`}>
+                <Habits client={client} host={host} auth={auth} logout={logout} />
+            </Route> */}
             <Route path={match.path}>
-                <Home client={client} host={host} logout={logout} auth={auth} />
+                <Home client={client} authData={authData} />
             </Route>
         </Switch>
     );

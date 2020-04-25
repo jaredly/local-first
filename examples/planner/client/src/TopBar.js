@@ -10,15 +10,7 @@ import type { Data } from './auth-api';
 import { Link } from 'react-router-dom';
 import { showDate, today, tomorrow } from './utils';
 
-const TopBar = ({
-    auth,
-    openMenu,
-    logout,
-}: {
-    auth: ?Data,
-    openMenu: () => void,
-    logout: () => mixed,
-}) => {
+const TopBar = ({ openMenu }: { openMenu: () => void }) => {
     const styles = useStyles();
 
     return (

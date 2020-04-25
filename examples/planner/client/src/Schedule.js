@@ -31,6 +31,7 @@ import { Item } from './TodoList/Item';
 import { showDate, parseDate, nextDay, prevDay } from './utils';
 import { Link } from 'react-router-dom';
 import AppShell from './AppShell';
+import type { AuthData } from './App';
 
 /*
 
@@ -357,14 +358,16 @@ const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) =>
 
 const ScheduleWrapper = ({
     client,
-    logout,
-    host,
-    auth,
+    // logout,
+    // host,
+    // auth,
+    authData,
 }: {
     client: Client<SyncStatus>,
-    logout: () => mixed,
-    host: string,
-    auth: ?Data,
+    // logout: () => mixed,
+    // host: string,
+    // auth: ?Data,
+    authData: ?AuthData,
 }) => {
     const { day } = useParams();
     const [tagsCol, tags] = useCollection(React, client, 'tags');
@@ -378,7 +381,7 @@ const ScheduleWrapper = ({
     const styles = useStyles();
 
     return (
-        <AppShell auth={auth} logout={logout} client={client} host={host} drawerItems={null}>
+        <AppShell authData={authData} client={client} drawerItems={null}>
             <Schedule client={client} id={day} />
         </AppShell>
     );

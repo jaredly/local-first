@@ -2,6 +2,7 @@
 
 import Divider from '@material-ui/core/Divider';
 import Drawer from '@material-ui/core/Drawer';
+import Button from '@material-ui/core/Button';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
@@ -23,20 +24,23 @@ import ExportDialog from './ExportDialog';
 import ImportDialog from './ImportDialog';
 import { Switch, Route, Link } from 'react-router-dom';
 import { showDate, today } from './utils';
+import type { AuthData } from './App';
 
 const MyDrawer = ({
-    auth,
     open,
     onClose,
+    authData,
     client,
-    logout,
+    // auth,
+    // logout,
     pageItems,
 }: {
     client: Client<SyncStatus>,
     open: boolean,
     onClose: () => void,
-    logout: () => mixed,
-    auth: ?Data,
+    authData: ?AuthData,
+    // logout: () => mixed,
+    // auth: ?Data,
     pageItems: React.Node,
 }) => {
     const [tagsCol, tags] = useCollection(React, client, 'tags');
@@ -47,12 +51,12 @@ const MyDrawer = ({
         <React.Fragment>
             <Drawer anchor={'left'} open={open} onClose={onClose}>
                 <List>
-                    {auth ? (
+                    {authData ? (
                         <ListItem>
                             <ListItemIcon>
                                 <AccountCircle />
                             </ListItemIcon>
-                            <ListItemText primary={auth.user.email} />
+                            <ListItemText primary={authData.auth.user.email} />
                         </ListItem>
                     ) : (
                         <ListItem button>
@@ -65,21 +69,15 @@ const MyDrawer = ({
                     <Divider />
                     {pageItems}
                     <Divider />
-                    <ListItem>
-                        <Link to="/">Home</Link>
+                    <ListItem button component={Link} to="/">
+                        Home
                     </ListItem>
-                    <ListItem>
-                        <Link to={`/day/${showDate(today())}`}>Today's Schedule</Link>
+                    <ListItem button component={Link} to={`/day/${showDate(today())}`}>
+                        Today's Schedule
                     </ListItem>
-                    {/* <Switch>
-                        <Route path={`/`} exact>
-                        </Route>
-                        <Route>
-                            <ListItem>
-                                <Link to="/">Home</Link>
-                            </ListItem>
-                        </Route>
-                    </Switch> */}
+                    <ListItem button component={Link} to={`/habits`}>
+                        Habits &amp; recurring tasks
+                    </ListItem>
                     <Divider />
                     <ListItem button onClick={() => setDialog('export')}>
                         <ListItemIcon>
@@ -109,12 +107,14 @@ const MyDrawer = ({
                         <ListItemText primary="New Tag" />
                     </ListItem>
                     <Divider />
-                    <ListItem button onClick={logout}>
-                        <ListItemIcon>
-                            <ExitToApp />
-                        </ListItemIcon>
-                        <ListItemText primary="Sign out" />
-                    </ListItem>
+                    {authData ? (
+                        <ListItem button onClick={authData.logout}>
+                            <ListItemIcon>
+                                <ExitToApp />
+                            </ListItemIcon>
+                            <ListItemText primary="Sign out" />
+                        </ListItem>
+                    ) : null}
                 </List>
                 <Divider />
             </Drawer>

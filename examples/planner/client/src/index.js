@@ -52,11 +52,11 @@ const Main = ({ host, dbName }: { host: ?string, dbName: string }) => {
                 <Auth
                     host={host}
                     render={(auth, logout) => (
-                        <App dbName={dbName} auth={auth} logout={logout} host={host} />
+                        <App dbName={dbName} authData={{ host, auth, logout }} />
                     )}
                 />
             ) : (
-                <App dbName={dbName} auth={null} logout={() => {}} host={''} />
+                <App dbName={dbName} authData={null} />
             )}
         </ThemeProvider>
     );

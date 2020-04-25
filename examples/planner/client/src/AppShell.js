@@ -12,19 +12,22 @@ import Items from './TodoList/Items';
 import TopBar from './TopBar';
 
 import { Route, Switch, useRouteMatch } from 'react-router-dom';
+import type { AuthData } from './App';
 
 const AppShell = ({
     client,
-    logout,
-    host,
-    auth,
+    // logout,
+    // host,
+    // auth,
+    authData,
     drawerItems,
     children,
 }: {
     client: Client<SyncStatus>,
-    logout: () => mixed,
-    host: string,
-    auth: ?Data,
+    // logout: () => mixed,
+    // host: string,
+    // auth: ?Data,
+    authData: ?AuthData,
     children: React.Node,
     drawerItems: React.Node,
 }) => {
@@ -34,13 +37,12 @@ const AppShell = ({
 
     return (
         <React.Fragment>
-            <TopBar auth={auth} logout={logout} openMenu={() => setMenu(true)} />
+            <TopBar openMenu={() => setMenu(true)} />
             <Drawer
                 pageItems={drawerItems}
                 onClose={() => setMenu(false)}
                 open={menu}
-                auth={auth}
-                logout={logout}
+                authData={authData}
                 client={client}
             />
             <Container maxWidth="sm" className={styles.container}>
