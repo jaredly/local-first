@@ -4,6 +4,10 @@ import IconButton from '@material-ui/core/IconButton';
 import { makeStyles } from '@material-ui/core/styles';
 import Cancel from '@material-ui/icons/Cancel';
 import Folder from '@material-ui/icons/Folder';
+import RadioButtonUnchecked from '@material-ui/icons/RadioButtonUnchecked';
+import CheckCircle from '@material-ui/icons/CheckCircle';
+import CheckBox from '@material-ui/icons/CheckBox';
+import CheckBoxOutlined from '@material-ui/icons/CheckBoxOutlineBlank';
 import * as React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import type { Client, SyncStatus } from '../../../../../packages/client-bundle';
@@ -11,7 +15,7 @@ import { useCollection, useItem } from '../../../../../packages/client-react';
 import type { AuthData } from '../App';
 import AppShell from '../Shell/AppShell';
 import { Item } from '../TodoList/Item';
-import { type Day, type ItemT, newDay } from '../types';
+import { type Day, type ItemT, type HabitT, newDay } from '../types';
 import { nextDay, parseDate, prevDay, showDate } from '../utils';
 import ItemPicker from './ItemPicker';
 import ShowItem from './ShowItem';
@@ -58,8 +62,64 @@ topTwo
 
 */
 
+const ShowHabit = ({ client, id, completed, setCompleted }) => {
+    const [col, habit] = useItem<HabitT, SyncStatus>(React, client, 'habits', id);
+    if (!habit) {
+        return 'Habit not found';
+    }
+    return (
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+            <IconButton
+                onClick={() => {
+                    setCompleted(completed == null ? Date.now() : null);
+                }}
+            >
+                {completed == null ? <CheckBoxOutlined /> : <CheckBox />}
+            </IconButton>
+            {habit.title}
+        </div>
+    );
+};
+
+const HabitsPicker = ({ client, onSelect, onCancel, initialSelected }) => {
+    const [col, habits] = useCollection(React, client, 'habits');
+    const [selected, setSelected] = React.useState(() => {
+        const res = {};
+        initialSelected.forEach((k) => (res[k] = true));
+        return res;
+    });
+
+    return (
+        <div>
+            {Object.keys(habits).map((k) => (
+                <div>
+                    <IconButton
+                        onClick={() => {
+                            if (selected[k]) {
+                                setSelected((sel) => {
+                                    const res = { ...sel };
+                                    delete res[k];
+                                    return res;
+                                });
+                            } else {
+                                setSelected((sel) => ({ ...sel, [k]: true }));
+                            }
+                        }}
+                    >
+                        {selected[k] ? <CheckCircle /> : <RadioButtonUnchecked />}
+                    </IconButton>
+                    {habits[k].title}
+                </div>
+            ))}
+            <Button onClick={() => onCancel()}>Cancel</Button>
+            <Button onClick={() => onSelect(Object.keys(selected))}>Save</Button>
+        </div>
+    );
+};
+
 const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) => {
     const [col, day] = useItem<Day, SyncStatus>(React, client, 'days', id);
+    // const [habitsCol, habits] = useCollection(React, client, 'habits');
 
     const [picking, setPicking] = React.useState(null);
     const styles = useStyles();
@@ -91,7 +151,31 @@ const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) =>
         );
     }
 
-    if (picking != null) {
+    if (picking === 'habits') {
+        return (
+            <HabitsPicker
+                client={client}
+                initialSelected={Object.keys(day.habits)}
+                onSelect={(ids) => {
+                    Object.keys(day.habits).forEach((k) => {
+                        if (!ids.includes(k)) {
+                            col.clearAttribute(id, ['habits', k]);
+                        }
+                    });
+                    ids.forEach((newId) => {
+                        if (day.habits[newId] == null) {
+                            col.setAttribute(id, ['habits', newId], {
+                                completed: null,
+                                notes: null,
+                            });
+                        }
+                    });
+                    setPicking(null);
+                }}
+                onCancel={() => setPicking(null)}
+            />
+        );
+    } else if (picking != null) {
         return (
             <ItemPicker
                 client={client}
@@ -127,6 +211,25 @@ const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) =>
                 <Link className={styles.link} to={`/day/${tomorrowId}`}>
                     {tomorrowId}
                 </Link>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h1>Habits</h1>
+                <Button onClick={() => setPicking('habits')}>Select habits</Button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {Object.keys(day.habits).map((k) => (
+                    <ShowHabit
+                        key={k}
+                        id={k}
+                        setCompleted={(completd) =>
+                            col.setAttribute(id, ['habits', k, 'completed'], completd)
+                        }
+                        client={client}
+                        completed={day.habits[k].completed}
+                        notes={day.habits[k].notes}
+                    />
+                ))}
+                {Object.keys(day.habits).length === 0 ? <h3>No habits selected</h3> : null}
             </div>
             <h1>Top Two</h1>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
