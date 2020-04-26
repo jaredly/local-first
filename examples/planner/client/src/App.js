@@ -18,6 +18,7 @@ import type { Data } from './auth-api';
 import Home from './Home';
 import { ItemSchema, TagSchema, HabitSchema, DaySchema } from './types';
 import Schedule from './Schedule';
+import Habits from './Habits/Habits';
 
 const schemas = {
     items: ItemSchema,
@@ -87,9 +88,9 @@ const App = ({
                 <Schedule client={client} authData={authData} />
             </Route>
             {/* TODO combine host, login, auth */}
-            {/* <Route path={`${pathPrefix}/habits`}>
-                <Habits client={client} host={host} auth={auth} logout={logout} />
-            </Route> */}
+            <Route path={`${pathPrefix}/habits`}>
+                <Habits client={client} authData={authData} />
+            </Route>
             <Route path={match.path}>
                 <Home client={client} authData={authData} />
             </Route>

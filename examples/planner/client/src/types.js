@@ -86,6 +86,20 @@ export type HabitT = {
     // how do we know how we're doing? We load up the last 7 days I guess
 };
 
+export const newHabit = (
+    id: string,
+    title: string,
+    description: string,
+    goalFrequency: ?number,
+) => ({
+    id,
+    title,
+    description,
+    createdDate: Date.now(),
+    archived: null,
+    goalFrequency,
+});
+
 export const HabitSchema: Schema = {
     type: 'object',
     attributes: {

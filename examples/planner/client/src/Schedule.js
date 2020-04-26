@@ -339,27 +339,12 @@ const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) =>
 
 const ScheduleWrapper = ({
     client,
-    // logout,
-    // host,
-    // auth,
     authData,
 }: {
     client: Client<SyncStatus>,
-    // logout: () => mixed,
-    // host: string,
-    // auth: ?Data,
     authData: ?AuthData,
 }) => {
     const { day } = useParams();
-    const [tagsCol, tags] = useCollection(React, client, 'tags');
-    const [showAll, setShowAll] = React.useState(false);
-    // const [numToShow, setNumToShow] = React.useState(20);
-    const [dialog, setDialog] = React.useState(null);
-    const [menu, setMenu] = React.useState(false);
-
-    const [editTag, setEditTag] = React.useState(false);
-
-    const styles = useStyles();
 
     return (
         <AppShell authData={authData} client={client} drawerItems={null}>
