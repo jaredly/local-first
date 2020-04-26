@@ -35,7 +35,6 @@ export type DragInit = {
 };
 
 type Props = {
-    // col: Collection<ItemT>,
     path: Array<string>,
     level: number,
     item: ItemT,
