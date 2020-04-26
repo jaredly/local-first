@@ -28,11 +28,7 @@ const Home = ({
     authData: ?AuthData,
 }) => {
     const [showAll, setShowAll] = React.useState(false);
-    const [menu, setMenu] = React.useState(false);
-    console.log(showAll);
-
     const styles = useStyles();
-
     const match = useRouteMatch();
 
     return (

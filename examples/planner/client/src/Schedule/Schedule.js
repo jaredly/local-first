@@ -9,7 +9,7 @@ import CheckCircle from '@material-ui/icons/CheckCircle';
 import CheckBox from '@material-ui/icons/CheckBox';
 import CheckBoxOutlined from '@material-ui/icons/CheckBoxOutlineBlank';
 import * as React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useRouteMatch } from 'react-router-dom';
 import type { Client, SyncStatus } from '../../../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../../../packages/client-react';
 import type { AuthData } from '../App';
@@ -117,8 +117,11 @@ const HabitsPicker = ({ client, onSelect, onCancel, initialSelected }) => {
     );
 };
 
-const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) => {
+export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) => {
     const [col, day] = useItem<Day, SyncStatus>(React, client, 'days', id);
+    const match = useRouteMatch();
+    const matchBase = match.url.split('/').slice(0, -1).join('/');
+    console.log('match', match);
     // const [habitsCol, habits] = useCollection(React, client, 'habits');
 
     const [picking, setPicking] = React.useState(null);
@@ -132,11 +135,11 @@ const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) =>
         return (
             <div>
                 <div className={styles.topLinks}>
-                    <Link className={styles.link} to={`/day/${yesterdayId}`}>
+                    <Link className={styles.link} to={`${matchBase}/${yesterdayId}`}>
                         {yesterdayId}
                     </Link>
                     <div className={styles.today}>{id}</div>
-                    <Link className={styles.link} to={`/day/${tomorrowId}`}>
+                    <Link className={styles.link} to={`${matchBase}/${tomorrowId}`}>
                         {tomorrowId}
                     </Link>
                 </div>
@@ -204,11 +207,11 @@ const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) =>
     return (
         <div>
             <div className={styles.topLinks}>
-                <Link className={styles.link} to={`/day/${yesterdayId}`}>
+                <Link className={styles.link} to={`${matchBase}/${yesterdayId}`}>
                     {yesterdayId}
                 </Link>
                 <div className={styles.today}>{id}</div>
-                <Link className={styles.link} to={`/day/${tomorrowId}`}>
+                <Link className={styles.link} to={`${matchBase}/${tomorrowId}`}>
                     {tomorrowId}
                 </Link>
             </div>

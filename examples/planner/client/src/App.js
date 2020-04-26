@@ -18,6 +18,7 @@ import type { Data } from './auth-api';
 import Home from './Home';
 import { ItemSchema, TagSchema, HabitSchema, DaySchema } from './types';
 import Schedule from './Schedule/Schedule';
+import Split from './Split';
 import Habits from './Habits/Habits';
 
 const schemas = {
@@ -29,19 +30,7 @@ const schemas = {
 
 export type AuthData = { host: string, auth: Data, logout: () => mixed };
 
-const App = ({
-    dbName,
-    authData,
-}: // host,
-// auth,
-// logout,
-{
-    dbName: string,
-    authData: ?AuthData,
-    // host: string,
-    // auth: ?Data,
-    // logout: () => mixed,
-}) => {
+const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
     const client = React.useMemo(() => {
         console.log('starting a client', authData);
         // return createInMemoryDeltaClient(schemas, '');
@@ -84,6 +73,9 @@ const App = ({
 
     const contents = (
         <Switch>
+            <Route path={`${pathPrefix}/split/:day`}>
+                <Split client={client} authData={authData} />
+            </Route>
             <Route path={`${pathPrefix}/day/:day`}>
                 <Schedule client={client} authData={authData} />
             </Route>

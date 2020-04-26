@@ -22,6 +22,7 @@ const AppShell = ({
     authData,
     drawerItems,
     children,
+    noContainer,
 }: {
     client: Client<SyncStatus>,
     // logout: () => mixed,
@@ -30,6 +31,7 @@ const AppShell = ({
     authData: ?AuthData,
     children: React.Node,
     drawerItems: React.Node,
+    noContainer?: boolean,
 }) => {
     const [menu, setMenu] = React.useState(false);
     const styles = useStyles();
@@ -37,7 +39,7 @@ const AppShell = ({
 
     return (
         <React.Fragment>
-            <TopBar openMenu={() => setMenu(true)} />
+            <TopBar openMenu={() => setMenu(true)} client={client} />
             <Drawer
                 pageItems={drawerItems}
                 onClose={() => setMenu(false)}
@@ -45,7 +47,7 @@ const AppShell = ({
                 authData={authData}
                 client={client}
             />
-            <Container maxWidth="sm" className={styles.container}>
+            <Container maxWidth={noContainer ? undefined : 'sm'} className={styles.container}>
                 {children}
             </Container>
         </React.Fragment>

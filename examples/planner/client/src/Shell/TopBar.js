@@ -5,13 +5,18 @@ import { makeStyles } from '@material-ui/core/styles';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import MenuIcon from '@material-ui/icons/Menu';
+import Wifi from '@material-ui/icons/Wifi';
+import WifiOff from '@material-ui/icons/WifiOff';
 import * as React from 'react';
 import type { Data } from '../auth-api';
 import { Link } from 'react-router-dom';
 import { showDate, today, tomorrow } from '../utils';
+import type { Client, SyncStatus } from '../../../../../packages/client-bundle';
+import { useSyncStatus } from '../../../../../packages/client-react';
 
-const TopBar = ({ openMenu }: { openMenu: () => void }) => {
+const TopBar = ({ openMenu, client }: { client: Client<SyncStatus>, openMenu: () => void }) => {
     const styles = useStyles();
+    const syncStatus = useSyncStatus(React, client);
 
     return (
         <AppBar position="sticky">
@@ -30,14 +35,24 @@ const TopBar = ({ openMenu }: { openMenu: () => void }) => {
                         Planner
                     </Link>
                 </Typography>
-                <Link to={`/day/${showDate(today())}`}>Today's Schedule</Link>
-                <Link to={`/day/${showDate(tomorrow())}`}>Tomorrow's Schedule</Link>
+                {/* {JSON.stringify(syncStatus)} */}
+                {syncStatus.status === 'connected' ? (
+                    <Wifi className={styles.connected} />
+                ) : (
+                    <WifiOff className={styles.disconnected} />
+                )}
             </Toolbar>
         </AppBar>
     );
 };
 
 const useStyles = makeStyles((theme) => ({
+    connected: {
+        color: theme.palette.primary.dark,
+    },
+    disconnected: {
+        color: theme.palette.text.disabled,
+    },
     title: {
         flexGrow: 1,
     },
