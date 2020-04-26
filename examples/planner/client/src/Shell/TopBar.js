@@ -38,9 +38,9 @@ const TopBar = ({ openMenu, client }: { client: Client<SyncStatus>, openMenu: ()
                 {/* {JSON.stringify(syncStatus)} */}
                 {syncStatus.status === 'connected' ? (
                     <Wifi className={styles.connected} />
-                ) : (
+                ) : syncStatus.status === 'disconnected' ? (
                     <WifiOff className={styles.disconnected} />
-                )}
+                ) : null}
             </Toolbar>
         </AppBar>
     );
