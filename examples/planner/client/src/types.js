@@ -97,7 +97,7 @@ export type HabitT = {
     // um so do we want a "goal" here?
     // or just a "frequency"?
     // don't need to be too fancy here.
-    goalFrequency: number, // in X per Week. 0 means no goal. 0.5 is every other week or so? maybe
+    goalFrequency: ?number, // in X per Week. 0 means no goal. 0.5 is every other week or so? maybe
     // how do we know how we're doing? We load up the last 7 days I guess
 };
 
@@ -123,7 +123,7 @@ export const HabitSchema: Schema = {
         description: 'string',
         createdDate: 'number',
         archived: { type: 'optional', value: 'number' },
-        goalFrequency: 'number',
+        goalFrequency: { type: 'optional', value: 'number' },
     },
 };
 
