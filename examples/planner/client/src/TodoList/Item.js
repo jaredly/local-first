@@ -17,8 +17,9 @@ import MoreVertIcon from '@material-ui/icons/MoreVert';
 import * as React from 'react';
 import type { Client, Collection, SyncStatus } from '../../../../../packages/client-bundle';
 import { useItem, useItems } from '../../../../../packages/client-react';
-import { type ItemT, newItem } from '../types';
+import { type ItemT, newItem, newDay } from '../types';
 import { useLocalStorageSharedToggle } from '../useLocalStorage';
+import { showDate, today, tomorrow } from '../utils';
 
 import { ItemChildren } from './ItemChildren';
 import Description from './Description';
@@ -56,7 +57,18 @@ export type DragRefs = {
     },
 };
 
+const scheduleItem = async (client, id, dayId) => {
+    const dayCol = client.getCollection('days');
+    let day = await dayCol.load(dayId);
+    if (day == null) {
+        day = newDay(dayId);
+        await dayCol.save(dayId, day);
+    }
+    dayCol.insertId(dayId, ['toDoList', 'others'], day.toDoList.others.length, id);
+};
+
 const getMenuItems = ({
+    client,
     item,
     col,
     path,
@@ -92,6 +104,20 @@ const getMenuItems = ({
             title: item.description ? 'Show description' : 'Add description',
             onClick: () => {
                 setShowDescription(true);
+            },
+        });
+    }
+    if (item.completedDate == null && item.style !== 'group') {
+        menuItems.push({
+            title: 'Schedule today',
+            onClick: () => {
+                scheduleItem(client, item.id, showDate(today()));
+            },
+        });
+        menuItems.push({
+            title: 'Schedule tomorrow',
+            onClick: () => {
+                scheduleItem(client, item.id, showDate(tomorrow()));
             },
         });
     }
@@ -151,6 +177,7 @@ export const Item = React.memo<Props>(
         const childPath = React.useMemo(() => path.concat([item.id]), [path]);
 
         const menuItems = getMenuItems({
+            client,
             item,
             col,
             path,

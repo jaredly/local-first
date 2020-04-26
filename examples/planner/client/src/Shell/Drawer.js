@@ -79,6 +79,9 @@ const MyDrawer = ({
                     <ListItem button component={Link} to={`/day/${showDate(today())}`}>
                         Today's Schedule
                     </ListItem>
+                    <ListItem button component={Link} to={`/split/${showDate(today())}`}>
+                        Today's Schedule (split)
+                    </ListItem>
                     <ListItem button component={Link} to={`/habits`}>
                         Habits &amp; recurring tasks
                     </ListItem>
@@ -87,7 +90,7 @@ const MyDrawer = ({
                         <ListItemIcon>
                             <GetApp />
                         </ListItemIcon>
-                        <ListItemText primary="Export" />
+                        <ListItemText primary="Export all data" />
                     </ListItem>
                     <ListItem button onClick={() => setDialog('import')}>
                         <ListItemIcon>
