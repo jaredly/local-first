@@ -32,6 +32,7 @@ export type ItemT = {
     timeEstimate?: ?number,
     tags: { [tagId: string]: number },
     emojis: { [emoji: string]: number },
+    comments: ?{ [key: string]: { text: 'string', created: number } },
 
     // parent: ?{ id: string, idx: Sort },
     children: Array<string>,
@@ -46,6 +47,7 @@ export const newItem = (id: string, title: string) => ({
     tags: {},
     emojis: {},
     children: [],
+    comments: {},
 });
 
 export const ItemSchema: Schema = {
@@ -64,6 +66,19 @@ export const ItemSchema: Schema = {
         timeEstimate: { type: 'optional', value: 'number' },
         tags: { type: 'map', value: 'number' },
         emojis: { type: 'map', value: 'number' },
+        comments: {
+            type: 'optional',
+            value: {
+                type: 'map',
+                value: {
+                    type: 'object',
+                    attributes: {
+                        text: 'string',
+                        date: 'number',
+                    },
+                },
+            },
+        },
         // parent: {
         //     type: 'optional',
         //     value: { type: 'object', attributes: { id: 'string', idx: 'array' } },
