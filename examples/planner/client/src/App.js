@@ -17,7 +17,7 @@ import type { Data } from './auth-api';
 
 import Home from './Home';
 import { ItemSchema, TagSchema, HabitSchema, DaySchema } from './types';
-import Schedule from './Schedule';
+import Schedule from './Schedule/Schedule';
 import Habits from './Habits/Habits';
 
 const schemas = {
