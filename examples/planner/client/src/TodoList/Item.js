@@ -474,9 +474,11 @@ const useStyles = makeStyles((theme) => ({
         // paddingLeft: theme.spacing(2),
     },
     completed: {
-        textDecoration: 'line-through',
-        textDecorationColor: theme.palette.primary.light,
-        color: theme.palette.text.disabled,
+        // textDecoration: 'line-through',
+        // textDecorationColor: theme.palette.text.disabled,
+        fontStyle: 'italic',
+        // textDecorationColor: theme.palette.primary.light,
+        color: theme.palette.primary.light,
     },
     itemNewFocus: {
         color: theme.palette.primary.light,

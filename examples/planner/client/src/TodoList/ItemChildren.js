@@ -36,16 +36,34 @@ export const ItemChildren = ({
     setRootPath: (Array<string>) => void,
 |}) => {
     const styles = useStyles();
+    const [showAnyway, setShowAnyway] = React.useState(false);
 
-    const numHidden = showAll
-        ? 0
-        : item.children.filter((id) => items[id] && !!items[id].completedDate).length;
+    const completed = item.children
+        .filter((id) => items[id] && items[id].completedDate != null)
+        // $FlowFixMe
+        .sort((a, b) => items[b].completedDate - items[a].completedDate);
+    const showAlso = {};
+    for (let i = 0; i < 2 && i < completed.length; i++) {
+        showAlso[completed[i]] = true;
+    }
+
+    const existent = item.children.map((id) => items[id]).filter(Boolean);
+
+    const toShow = existent.filter(
+        (item) => showAll || showAnyway || item.completedDate == null || showAlso[item.id],
+    );
+
+    const numHidden = existent.length - toShow.length;
+    // showAll
+    //     ? 0
+    //     : item.children.filter((id) => items[id] && !!items[id].completedDate).length;
 
     return (
         <div className={styles.itemChildren}>
             {numHidden > 0 ? (
                 <div
                     className={styles.numHidden}
+                    onClick={() => setShowAnyway(true)}
                     style={{
                         marginLeft: (level + 2) * INDENT,
                     }}
@@ -53,24 +71,31 @@ export const ItemChildren = ({
                     {numHidden} items hidden
                 </div>
             ) : null}
-            {item.children
-                .map((id) => items[id])
-                .filter(Boolean)
-                .filter((item) => showAll || item.completedDate == null)
-                .map((item, i) => (
-                    <Item
-                        key={item.id}
-                        item={item}
-                        path={path}
-                        showAll={showAll}
-                        setRootPath={setRootPath}
-                        onDragStart={onDragStart}
-                        level={level + 1}
-                        dragRefs={dragRefs}
-                        idx={i}
-                        client={client}
-                    />
-                ))}
+            {showAnyway ? (
+                <div
+                    className={styles.numHidden}
+                    onClick={() => setShowAnyway(false)}
+                    style={{
+                        marginLeft: (level + 2) * INDENT,
+                    }}
+                >
+                    Hide old completed items
+                </div>
+            ) : null}
+            {toShow.map((item, i) => (
+                <Item
+                    key={item.id}
+                    item={item}
+                    path={path}
+                    showAll={showAll}
+                    setRootPath={setRootPath}
+                    onDragStart={onDragStart}
+                    level={level + 1}
+                    dragRefs={dragRefs}
+                    idx={i}
+                    client={client}
+                />
+            ))}
             <NewItem
                 onFocus={onNewFocus}
                 level={level + 1}
