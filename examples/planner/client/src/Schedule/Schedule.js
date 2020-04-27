@@ -16,7 +16,7 @@ import type { AuthData } from '../App';
 import AppShell from '../Shell/AppShell';
 import { Item } from '../TodoList/Item';
 import { type Day, type ItemT, type HabitT, newDay } from '../types';
-import { nextDay, parseDate, prevDay, showDate } from '../utils';
+import { nextDay, parseDate, prevDay, showDate, today } from '../utils';
 import ItemPicker from './ItemPicker';
 import ShowItem from './ShowItem';
 
@@ -130,6 +130,53 @@ const HabitsPicker = ({
     );
 };
 
+const days = 'Sun,Mon,Tue,Wed,Thu,Fri,Sat'.split(',');
+const months = 'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec'.split(',');
+
+const humanReadable = (date: Date) => {
+    // const now = new Date();
+    const todayDate = today();
+    if (date.getTime() === todayDate.getTime()) {
+        return 'Today';
+    }
+    const tomorrowDate = nextDay(todayDate);
+    if (date.getTime() === tomorrowDate.getTime()) {
+        return 'Tomorrow';
+    }
+    const yesterDate = prevDay(todayDate);
+    if (date.getTime() === yesterDate.getTime()) {
+        return 'Yesterday';
+    }
+    // return date.toLocaleDateString();
+    // return date.toDateString();
+    return `${days[date.getDay()]} ${months[date.getMonth()]} ${date.getDate()}`;
+    // console.log(date.getTime() - todayDate.getTime());
+    // return showDate(date);
+};
+
+const NavBar = ({ id }: { id: string }) => {
+    const match = useRouteMatch();
+    const matchBase = match.url.split('/').slice(0, -1).join('/');
+    const styles = useStyles();
+    const currentDate = parseDate(id);
+    const prevDate = prevDay(currentDate);
+    const prevDayId = showDate(prevDate);
+    const nextDate = nextDay(currentDate);
+    const nextDayId = showDate(nextDate);
+
+    return (
+        <div className={styles.topLinks}>
+            <Link className={styles.link} to={`${matchBase}/${prevDayId}`}>
+                {humanReadable(prevDate)}
+            </Link>
+            <div className={styles.today}>{humanReadable(currentDate)}</div>
+            <Link className={styles.link} to={`${matchBase}/${nextDayId}`}>
+                {humanReadable(nextDate)}
+            </Link>
+        </div>
+    );
+};
+
 export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) => {
     const [col, day] = useItem<Day, SyncStatus>(React, client, 'days', id);
     const match = useRouteMatch();
@@ -140,23 +187,11 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
     const [picking, setPicking] = React.useState(null);
     const styles = useStyles();
 
-    const todayDate = parseDate(id);
-    const yesterdayId = showDate(prevDay(todayDate));
-    const tomorrowId = showDate(nextDay(todayDate));
-
     if (day === false) {
         // return null; // loading!
         return (
             <div>
-                <div className={styles.topLinks}>
-                    <Link className={styles.link} to={`${matchBase}/${yesterdayId}`}>
-                        {yesterdayId}
-                    </Link>
-                    <div className={styles.today}>{id}</div>
-                    <Link className={styles.link} to={`${matchBase}/${tomorrowId}`}>
-                        {tomorrowId}
-                    </Link>
-                </div>
+                <NavBar id={id} />
             </div>
         );
     }
@@ -165,15 +200,7 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
         // not yet created!
         return (
             <div>
-                <div className={styles.topLinks}>
-                    <Link className={styles.link} to={`${matchBase}/${yesterdayId}`}>
-                        {yesterdayId}
-                    </Link>
-                    <div className={styles.today}>{id}</div>
-                    <Link className={styles.link} to={`${matchBase}/${tomorrowId}`}>
-                        {tomorrowId}
-                    </Link>
-                </div>
+                <NavBar id={id} />
                 <Button
                     onClick={() => {
                         col.save(id, newDay(id));
@@ -237,15 +264,7 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
 
     return (
         <div>
-            <div className={styles.topLinks}>
-                <Link className={styles.link} to={`${matchBase}/${yesterdayId}`}>
-                    {yesterdayId}
-                </Link>
-                <div className={styles.today}>{id}</div>
-                <Link className={styles.link} to={`${matchBase}/${tomorrowId}`}>
-                    {tomorrowId}
-                </Link>
-            </div>
+            <NavBar id={id} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h1>Habits</h1>
                 <Button onClick={() => setPicking('habits')}>Select habits</Button>
