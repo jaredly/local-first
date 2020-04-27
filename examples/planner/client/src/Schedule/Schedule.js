@@ -64,6 +64,9 @@ topTwo
 
 const ShowHabit = ({ client, id, completed, setCompleted }) => {
     const [col, habit] = useItem<HabitT, SyncStatus>(React, client, 'habits', id);
+    if (habit === false) {
+        return null; // loading
+    }
     if (!habit) {
         return 'Habit not found';
     }
@@ -81,7 +84,17 @@ const ShowHabit = ({ client, id, completed, setCompleted }) => {
     );
 };
 
-const HabitsPicker = ({ client, onSelect, onCancel, initialSelected }) => {
+const HabitsPicker = ({
+    client,
+    onSelect,
+    onCancel,
+    initialSelected,
+}: {
+    client: Client<SyncStatus>,
+    onSelect: (Array<string>) => mixed,
+    onCancel: () => void,
+    initialSelected: Array<string>,
+}) => {
     const [col, habits] = useCollection(React, client, 'habits');
     const [selected, setSelected] = React.useState(() => {
         const res = {};
@@ -131,7 +144,25 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
     const yesterdayId = showDate(prevDay(todayDate));
     const tomorrowId = showDate(nextDay(todayDate));
 
-    if (!day) {
+    if (day === false) {
+        // return null; // loading!
+        return (
+            <div>
+                <div className={styles.topLinks}>
+                    <Link className={styles.link} to={`${matchBase}/${yesterdayId}`}>
+                        {yesterdayId}
+                    </Link>
+                    <div className={styles.today}>{id}</div>
+                    <Link className={styles.link} to={`${matchBase}/${tomorrowId}`}>
+                        {tomorrowId}
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
+    if (day == null) {
+        // not yet created!
         return (
             <div>
                 <div className={styles.topLinks}>

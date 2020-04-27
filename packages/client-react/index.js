@@ -51,15 +51,29 @@ export const useItem = function<T: {}, SyncStatus>(
     client: Client<SyncStatus>,
     colid: string,
     id: string,
-): [Collection<T>, ?T] {
+): [Collection<T>, ?T | false] {
     const col = React.useMemo(() => client.getCollection<T>(colid), []);
     // TODO something to indicate whether we've loaded from the database yet
     // also something to indicate whether we've ever synced with a server.
-    const [item, setItem] = React.useState(col.getCached(id));
+    const [item, setItem] = React.useState(() => {
+        const data = col.getCached(id);
+        if (data == null) {
+            return false;
+        }
+        return data;
+    });
     React.useEffect(() => {
-        if (item == null || id !== item.id) {
+        if (item == null || item === false || id !== item.id) {
             if (item) {
-                setItem(null);
+                const newCached = col.getCached(id);
+                if (newCached != null) {
+                    setItem(newCached);
+                    return; // don't need to load here
+                } else {
+                    // loading state
+                    console.log('switch! reloading', id, item.id);
+                    setItem(false);
+                }
             }
             col.load(id).then(data => {
                 setItem(data);

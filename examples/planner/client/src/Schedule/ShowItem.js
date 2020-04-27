@@ -19,7 +19,20 @@ const ShowItem = ({
     const [col, item] = useItem(React, client, 'items', id);
     const styles = useStyles();
 
-    if (!item) return 'loading or deleted';
+    if (item === false) {
+        return null; // loading
+    }
+
+    if (item == null) {
+        return (
+            <div className={styles.item}>
+                <div style={{ flex: 1 }}>Deleted</div>
+                <IconButton onClick={onClear}>
+                    <Cancel />
+                </IconButton>
+            </div>
+        );
+    }
     return (
         <div
             // onClick={onClick}
