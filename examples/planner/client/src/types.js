@@ -18,6 +18,11 @@ export const TagSchema: Schema = {
     },
 };
 
+// How do we handle pauses?
+// hmm. We could do "pauseTime" and ""
+// Buut how does this mesh with...
+// ok, so we could just have an object that is "pauses"
+// and the key is the startTime, and the value is the endTime.
 export type TimeT = {
     id: string, // will be "item:itemid-notherstamp" or "habit:habitid-notherstamp" I think?
     // so you parse out the ID to get the thing this is referring to. And you can
@@ -27,6 +32,7 @@ export type TimeT = {
     notes: ?string, // can be like "goals for this session" or something probably
     // maybe have a flag indicating whether this was the one that "completed" it?
     // can infer that probably, or also add it in later :shrug:
+    pauses: { [startTime: string]: number },
 };
 
 export const TimeSchema: Schema = {
@@ -36,8 +42,25 @@ export const TimeSchema: Schema = {
         start: 'number',
         end: { type: 'optional', value: 'number' },
         notes: { type: 'optional', value: 'string' },
+        pauese: { type: 'map', value: 'number' },
     },
 };
+
+export const newItemTime = (itemId: string, stamp: string) => ({
+    id: `item:${itemId}-${stamp}`,
+    start: Date.now(),
+    end: null,
+    notes: null,
+    pauses: {},
+});
+
+export const newHabitTime = (habitId: string, stamp: string) => ({
+    id: `habit:${habitId}-${stamp}`,
+    start: Date.now(),
+    end: null,
+    notes: null,
+    pauses: {},
+});
 
 export type ItemT = {
     id: string,
@@ -53,7 +76,12 @@ export type ItemT = {
     timeEstimate?: ?number,
     tags: { [tagId: string]: number },
     emojis: { [emoji: string]: number },
-    comments: ?{ [key: string]: { text: 'string', created: number } },
+    comments: ?{ [key: string]: { text: string, date: number } },
+    timeTracked?: number, // the most recent time that a tracker was started
+    // if the time is fairly recent, we can do a lookup for all the trackers
+    // for this node, to display accurate time info.
+    // If it's old, we can just show an icon or something, which you can click
+    // to get that info fetched.
 
     // parent: ?{ id: string, idx: Sort },
     children: Array<string>,
@@ -79,6 +107,7 @@ export const ItemSchema: Schema = {
         style: { type: 'optional', value: 'string' },
         description: 'string',
         createdDate: 'number',
+        timeTracked: { type: 'optional', value: 'number' },
         trashedDate: { type: 'optional', value: 'number' },
         deferUntil: { type: 'optional', value: 'number' },
         completedDate: { type: 'optional', value: 'number' },

@@ -76,6 +76,7 @@ const getMenuItems = ({
     setShowDescription,
     setOpen,
     open,
+    setCommenting,
 }) => {
     const menuItems = [
         {
@@ -160,6 +161,10 @@ const getMenuItems = ({
         });
     }
     menuItems.push({
+        title: 'Add comment',
+        onClick: () => setCommenting(true),
+    });
+    menuItems.push({
         title: 'Delete',
         onClick: async () => {
             const pid = path[path.length - 1];
@@ -183,6 +188,7 @@ export const Item = React.memo<Props>(
         );
         const [editing, setEditing] = React.useState(null);
         const styles = useStyles();
+        const [commenting, setCommenting] = React.useState(false);
 
         const [menu, setMenu] = React.useState(false);
         const [anchorEl, setAnchorEl] = React.useState(null);
@@ -196,6 +202,7 @@ export const Item = React.memo<Props>(
             item,
             col,
             path,
+            setCommenting,
             setEditing,
             showDescription,
             setShowDescription,
@@ -426,10 +433,65 @@ export const Item = React.memo<Props>(
                         col={col}
                     />
                 ) : null}
+                {commenting ? (
+                    <AddCommentDialog
+                        onClose={() => setCommenting(false)}
+                        onAdd={(text) => {
+                            const id = client.getStamp();
+                            if (!item.comments) {
+                                // TODO we want this "comments" object to have the MIN stamp
+                                // ideally
+                                col.setAttribute(item.id, ['comments'], {
+                                    [id]: { date: Date.now(), text },
+                                });
+                            } else {
+                                col.setAttribute(item.id, ['comments', id], {
+                                    date: Date.now(),
+                                    text,
+                                });
+                            }
+                            setCommenting(false);
+                        }}
+                    />
+                ) : null}
             </div>
         );
     },
 );
+
+import Dialog from '@material-ui/core/Dialog';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import Button from '@material-ui/core/Button';
+const genId = () => Math.random().toString(36).slice(2);
+const AddCommentDialog = ({ onClose, onAdd }) => {
+    const id = React.useMemo(() => 'id-' + genId(), []);
+    const [text, setText] = React.useState('');
+    return (
+        <Dialog open={true}>
+            <DialogTitle id={id}>Data Export</DialogTitle>
+            <div style={{ padding: 16 }}>
+                <TextField
+                    label="Comment text"
+                    value={text}
+                    fullWidth
+                    multiline
+                    onChange={(evt) => setText(evt.target.value)}
+                />
+                <Button
+                    onClick={() => {
+                        if (text.trim().length > 0) {
+                            onAdd(text);
+                        }
+                    }}
+                    disabled={text.trim().length === 0}
+                >
+                    Add comment
+                </Button>
+                <Button onClick={() => onClose()}>Cancel</Button>
+            </div>
+        </Dialog>
+    );
+};
 
 const useStyles = makeStyles((theme) => ({
     container: {},
