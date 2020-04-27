@@ -18,6 +18,27 @@ export const TagSchema: Schema = {
     },
 };
 
+export type TimeT = {
+    id: string, // will be "item:itemid-notherstamp" or "habit:habitid-notherstamp" I think?
+    // so you parse out the ID to get the thing this is referring to. And you can
+    // query like "id range" "item:itemid_" to "item:itemid_+" or something
+    start: number, // timestamp yup
+    end: ?number, // can query on null for "currently running"
+    notes: ?string, // can be like "goals for this session" or something probably
+    // maybe have a flag indicating whether this was the one that "completed" it?
+    // can infer that probably, or also add it in later :shrug:
+};
+
+export const TimeSchema: Schema = {
+    type: 'object',
+    attributes: {
+        id: 'string',
+        start: 'number',
+        end: { type: 'optional', value: 'number' },
+        notes: { type: 'optional', value: 'string' },
+    },
+};
+
 export type ItemT = {
     id: string,
     title: string,

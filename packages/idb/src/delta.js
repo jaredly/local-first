@@ -50,23 +50,49 @@ export const applyDeltas = async function<Delta, Data>(
     return map;
 };
 
+export type IndexConfig = {
+    keyPath: Array<string> | string,
+};
+
+const hasStore = (db, storeName) => {};
+
 const makePersistence = (
     name: string,
     collections: Array<string>,
     version: number,
+    indexes: { [colid: string]: { [indexId: string]: IndexConfig } },
 ): DeltaPersistence => {
     // console.log('Persistence with name', name);
     const db: Promise<DB> = openDB(name, version, {
         upgrade(db, oldVersion, newVersion, transaction) {
+            const currentStores = db.objectStoreNames;
             collections.forEach(name => {
-                db.createObjectStore(name + ':deltas', {
-                    keyPath: 'stamp',
-                });
-                db.createObjectStore(name + ':nodes', { keyPath: 'id' });
+                if (!currentStores.contains(name + ':deltas')) {
+                    console.log('deltas');
+                    db.createObjectStore(name + ':deltas', {
+                        keyPath: 'stamp',
+                    });
+                }
+                let nodeStore;
+                if (!currentStores.contains(name + ':nodes')) {
+                    nodeStore = db.createObjectStore(name + ':nodes', { keyPath: 'id' });
+                } else {
+                    nodeStore = transaction.objectStore(name + ':nodes');
+                }
+                if (indexes[name]) {
+                    Object.keys(indexes[name]).forEach(indexName => {
+                        const config = indexes[name][indexName];
+                        if (!nodeStore.indexNames.contains(indexName)) {
+                            nodeStore.createIndex(indexName, config.keyPath, { unique: false });
+                        }
+                    });
+                }
                 // stores "cursor", and that's it for the moment
                 // In a multi-delta-persistence world, it would
                 // store a cursor for each server.
-                db.createObjectStore(name + ':meta');
+                if (!currentStores.contains(name + ':meta')) {
+                    db.createObjectStore(name + ':meta');
+                }
             });
             console.log('made object stores');
         },

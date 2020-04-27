@@ -16,7 +16,7 @@ import {
 import type { Data } from './auth-api';
 
 import Home from './Home';
-import { ItemSchema, TagSchema, HabitSchema, DaySchema } from './types';
+import { ItemSchema, TagSchema, HabitSchema, DaySchema, TimeSchema } from './types';
 import Schedule from './Schedule/Schedule';
 import Split from './Split';
 import Habits from './Habits/Habits';
@@ -26,6 +26,7 @@ const schemas = {
     tags: TagSchema,
     habits: HabitSchema,
     days: DaySchema,
+    times: TimeSchema,
 };
 
 export type AuthData = { host: string, auth: Data, logout: () => mixed };
@@ -41,9 +42,23 @@ const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
                   `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${
                       authData.host
                   }/sync?token=${authData.auth.token}`,
-                  2,
+                  3,
+                  {
+                      times: {
+                          // for getting in-process time tracks
+                          end: { keyPath: ['value', 'value', 'end'] },
+                      },
+                      items: {
+                          completedDate: { keyPath: ['value', 'value', 'completedDate'] },
+                          dueDate: { keyPath: ['value', 'value', 'dueDate'] },
+                          style: { keyPath: ['value', 'value', 'style'] },
+                      },
+                      habits: {
+                          archived: { keyPath: ['value', 'value', 'archived'] },
+                      },
+                  },
               )
-            : createPersistedBlobClient(dbName, schemas, null, 2);
+            : createPersistedBlobClient(dbName, schemas, null, 3);
     }, [authData]);
 
     const [showUpgrade, setShowUpgrade] = React.useState(
