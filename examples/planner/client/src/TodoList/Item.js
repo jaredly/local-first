@@ -94,6 +94,22 @@ const getMenuItems = ({
                 col.setAttribute(item.id, ['checkDates', Date.now().toString(36)], true);
             },
         });
+    } else {
+        if (item.completedDate == null) {
+            menuItems.push({
+                title: 'Mark completed',
+                onClick: () => {
+                    col.setAttribute(item.id, ['completedDate'], Date.now());
+                },
+            });
+        } else {
+            menuItems.push({
+                title: 'Mark incomplete',
+                onClick: () => {
+                    col.setAttribute(item.id, ['completedDate'], null);
+                },
+            });
+        }
     }
     if (item.children.length === 0 && !open) {
         menuItems.push({ title: 'Add child', onClick: () => setOpen(true) });
@@ -186,6 +202,11 @@ export const Item = React.memo<Props>(
             setOpen,
             open,
         });
+
+        if (!items) {
+            // I think this is what we want?
+            return null;
+        }
 
         const visibleChildren = Object.keys(items)
             .map((k) => items[k])
@@ -341,10 +362,6 @@ export const Item = React.memo<Props>(
                             });
                         }}
                         onMouseDown={(evt) => {
-                            console.log('hello');
-                            // evt.preventDefault();
-                            // um maybe I need to pass an onstart too?
-                            // setDragging(true);
                             onDragStart({
                                 id: item.id,
                                 path,
@@ -478,7 +495,8 @@ const useStyles = makeStyles((theme) => ({
         // textDecorationColor: theme.palette.text.disabled,
         fontStyle: 'italic',
         // textDecorationColor: theme.palette.primary.light,
-        color: theme.palette.primary.light,
+        // color: theme.palette.primary.light,
+        color: theme.palette.text.disabled,
     },
     itemNewFocus: {
         color: theme.palette.primary.light,

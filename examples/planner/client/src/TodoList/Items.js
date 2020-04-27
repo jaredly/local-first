@@ -201,7 +201,7 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
     const [col, breadcrumbItems] = useItems(React, client, 'items', rootPath);
 
     const rootId = rootPath[rootPath.length - 1];
-    const root = breadcrumbItems[rootId];
+    const root = breadcrumbItems ? breadcrumbItems[rootId] : null;
 
     const [_, childItems] = useItems(React, client, 'items', root ? root.children : []);
 
@@ -237,6 +237,11 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
         });
     }, []);
 
+    if (!childItems) {
+        // wait for the child items to load
+        return null;
+    }
+
     return (
         <Container maxWidth="sm" className={styles.container}>
             <Button onClick={() => client.undo()}>Undo</Button>
@@ -254,23 +259,27 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
             {root ? (
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-                        {interleave(
-                            rootPath
-                                .map((id) => breadcrumbItems[id])
-                                // .filter(Boolean)
-                                .map((item, i) =>
-                                    item ? (
-                                        <Button
-                                            key={item.id}
-                                            onClick={() => setRootPath(rootPath.slice(0, i + 1))}
-                                        >
-                                            {item.title}
-                                        </Button>
-                                    ) : null,
-                                )
-                                .filter(Boolean),
-                            (i) => ' • ',
-                        )}
+                        {breadcrumbItems
+                            ? interleave(
+                                  rootPath
+                                      .map((id) => breadcrumbItems[id])
+                                      // .filter(Boolean)
+                                      .map((item, i) =>
+                                          item ? (
+                                              <Button
+                                                  key={item.id}
+                                                  onClick={() =>
+                                                      setRootPath(rootPath.slice(0, i + 1))
+                                                  }
+                                              >
+                                                  {item.title}
+                                              </Button>
+                                          ) : null,
+                                      )
+                                      .filter(Boolean),
+                                  (i) => ' • ',
+                              )
+                            : null}
                     </div>
                     <ItemChildren
                         setRootPath={setRootPath}
