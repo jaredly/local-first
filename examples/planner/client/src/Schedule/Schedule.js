@@ -105,7 +105,7 @@ const HabitsPicker = ({
     return (
         <div>
             {Object.keys(habits).map((k) => (
-                <div>
+                <div key={k}>
                     <IconButton
                         onClick={() => {
                             if (selected[k]) {

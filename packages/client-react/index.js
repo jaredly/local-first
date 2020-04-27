@@ -68,7 +68,7 @@ export const useItem = function<T: {}, SyncStatus>(
                 const newCached = col.getCached(id);
                 if (newCached != null) {
                     setItem(newCached);
-                    return; // don't need to load here
+                    return col.onItemChange(id, setItem);
                 } else {
                     // loading state
                     console.log('switch! reloading', id, item.id);
