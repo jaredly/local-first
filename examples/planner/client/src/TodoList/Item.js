@@ -237,7 +237,8 @@ export const Item = React.memo<Props>(
                         >
                             {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
                         </div>
-                    ) : !!item.description ? (
+                    ) : !!item.description ||
+                      (item.comments && Object.keys(item.comments).length) ? (
                         <div
                             style={{
                                 padding: 6,
@@ -416,6 +417,16 @@ export const Item = React.memo<Props>(
                                 col.setAttribute(item.id, ['description'], text);
                             }}
                         />
+                        {item.comments
+                            ? Object.keys(item.comments).map((id) => (
+                                  <div style={{ padding: 8 }}>
+                                      {item.comments[id].text}
+                                      <div style={{ fontStyle: 'italic', textAlign: 'right' }}>
+                                          {new Date(item.comments[id].date).toDateString()}
+                                      </div>
+                                  </div>
+                              ))
+                            : null}
                     </div>
                 ) : null}
                 {open ? (
