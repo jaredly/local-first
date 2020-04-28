@@ -138,6 +138,7 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
             return setupDragListeners(
                 calculateDragTargets(dragRefs, dragger.dragging),
                 currentDragger,
+                false,
                 setDragger,
                 (dragging, dest) => {
                     console.log('drop', dragging, dest);

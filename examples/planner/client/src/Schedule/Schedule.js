@@ -237,7 +237,7 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                 onCancel={() => setPicking(null)}
             />
         );
-    } else if (picking != null) {
+    } else if (picking === 'other') {
         return (
             <ItemPicker
                 client={client}
@@ -312,7 +312,7 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                             client={client}
                         />
                     ) : (
-                        <Button onClick={() => setPicking('one')}>Select Top 1</Button>
+                        'Drop something here'
                     )}
                     {day.toDoList.topTwo.two != null ? (
                         <ShowItem
@@ -321,7 +321,7 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                             client={client}
                         />
                     ) : (
-                        <Button onClick={() => setPicking('two')}>Select Top 2</Button>
+                        'Drop something here'
                     )}
                 </div>
                 <h2>Other To Do</h2>

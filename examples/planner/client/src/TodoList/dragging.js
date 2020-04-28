@@ -17,18 +17,28 @@ export type DragState<Dest> = {
     width: number,
 };
 
+const inside = (x, box) => box.left <= x && x <= box.left + box.width;
+
 const getPosition = function <Dest>(
     boxes: Array<DropTarget<Dest>>,
     pos: { x: number, y: number },
+    limitX: boolean,
     dragging,
 ): ?DragState<Dest> {
     const offsetParent = boxes[0].offsetParent;
     const offset = offsetParent.getBoundingClientRect().top;
-    const y = pos.y; // + offset; // include offsetTop?
     for (let i = 0; i < boxes.length; i++) {
+        if (limitX && !inside(pos.x, boxes[i])) {
+            continue;
+        }
         // if we're closer to the current than the next one, go with it
         const d0 = Math.abs(pos.y - boxes[i].y);
-        const dNext = i < boxes.length - 1 ? Math.abs(pos.y - boxes[i + 1].y) : Infinity;
+        const dNext =
+            i < boxes.length - 1
+                ? limitX && !inside(pos.x, boxes[i])
+                    ? Infinity
+                    : Math.abs(pos.y - boxes[i + 1].y)
+                : Infinity;
         if (d0 < dNext) {
             return {
                 started: true,
@@ -103,6 +113,7 @@ export const setupDragListeners = function <Dest: { id: string }>(
     dropTargets: Array<DropTarget<Dest>>,
     // dragRefs: DragRefs,
     currentDragger: { current: ?DragState<Dest> },
+    limitX: boolean,
     setDragger: (?DragState<Dest>) => void,
     onDrop: (DragInit, Dest) => void,
 ) {
@@ -133,7 +144,7 @@ export const setupDragListeners = function <Dest: { id: string }>(
         if (current.dest == null) {
             current.dragging.onStart();
         }
-        const position = getPosition(dropTargets, pos, current.dragging);
+        const position = getPosition(dropTargets, pos, limitX, current.dragging);
         if (position) {
             // exclude these already? yeah
             // if (
