@@ -36,7 +36,7 @@ const TopBar = ({ openMenu, client }: { client: Client<SyncStatus>, openMenu: ()
                         Planner
                     </Link>
                 </Typography>
-                <Typography variant="h7" className={styles.title}>
+                <Typography variant="body1" className={styles.title}>
                     <Link
                         style={{ color: 'inherit', textDecoration: 'none' }}
                         to={`/day/${todayId}`}

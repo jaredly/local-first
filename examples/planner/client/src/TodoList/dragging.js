@@ -1,92 +1,131 @@
 // @flow
-import type { Collection } from '../../../../../packages/client-bundle';
-import { type ItemT } from '../types';
-import { type DragInit, type DragRefs } from './Item';
+import { type DragInit } from './Item';
 
-export type DragState = {
+// export type Dest = {
+//     id: string,
+//     path: Array<string>,
+//     position: 'top' | 'bottom' | 'first-child',
+//     idx: number,
+// };
+
+export type DragState<Dest> = {
     started: boolean,
     dragging: DragInit,
-    dest: ?{
-        id: string,
-        path: Array<string>,
-        position: 'top' | 'bottom' | 'first-child',
-        idx: number,
-    },
+    dest: ?Dest,
     y: ?number,
     left: number,
     width: number,
 };
 
-const last = (arr) => arr[arr.length - 1];
-
-const getPosition = (boxes, clientY, dragging): ?DragState => {
-    const offsetParent = boxes[0].item.node.offsetParent;
+const getPosition = function <Dest>(
+    boxes: Array<DropTarget<Dest>>,
+    pos: { x: number, y: number },
+    dragging,
+): ?DragState<Dest> {
+    const offsetParent = boxes[0].offsetParent;
     const offset = offsetParent.getBoundingClientRect().top;
-    const y = clientY; // + offset; // include offsetTop?
+    const y = pos.y; // + offset; // include offsetTop?
     for (let i = 0; i < boxes.length; i++) {
-        const current = boxes[i];
-        const mid = (current.box.top + current.box.bottom) / 2;
-        if (y < mid) {
+        // if we're closer to the current than the next one, go with it
+        const d0 = Math.abs(pos.y - boxes[i].y);
+        const dNext = i < boxes.length - 1 ? Math.abs(pos.y - boxes[i + 1].y) : Infinity;
+        if (d0 < dNext) {
             return {
                 started: true,
                 dragging,
-                dest: {
-                    id: current.item.id,
-                    path: current.item.path,
-                    position: 'top',
-                    idx: current.item.idx,
-                },
-                y: current.box.top - offset,
-                left: current.box.left,
-                width: current.box.width,
-            };
-        } else if (i >= boxes.length - 1 || y < boxes[i + 1].box.top) {
-            const leftOffset = current.item.parent ? 32 : 0;
-            return {
-                started: true,
-                dragging,
-                dest: {
-                    id: current.item.id,
-                    path: current.item.path,
-                    position: current.item.parent ? 'first-child' : 'bottom',
-                    idx: current.item.idx + 1,
-                },
-                y: current.box.bottom - offset,
-                left: current.box.left + leftOffset,
-                width: current.box.width - leftOffset,
+                dest: boxes[i].contents,
+                y: boxes[i].y - offset,
+                left: boxes[i].left,
+                width: boxes[i].width,
             };
         }
     }
+    return null;
+    // for (let i = 0; i < boxes.length; i++) {
+    //     const current = boxes[i];
+    //     const mid = (current.box.top + current.box.bottom) / 2;
+    //     if (y < mid) {
+    //         return {
+    //             started: true,
+    //             dragging,
+    //             dest: {
+    //                 id: current.item.id,
+    //                 path: current.item.path,
+    //                 position: 'top',
+    //                 idx: current.item.idx,
+    //             },
+    //             y: current.box.top - offset,
+    //             left: current.box.left,
+    //             width: current.box.width,
+    //         };
+    //     } else if (i >= boxes.length - 1 || y < boxes[i + 1].box.top) {
+    //         const leftOffset = current.item.parent ? 32 : 0;
+    //         return {
+    //             started: true,
+    //             dragging,
+    //             dest: {
+    //                 id: current.item.id,
+    //                 path: current.item.path,
+    //                 position: current.item.parent ? 'first-child' : 'bottom',
+    //                 idx: current.item.idx + 1,
+    //             },
+    //             y: current.box.bottom - offset,
+    //             left: current.box.left + leftOffset,
+    //             width: current.box.width - leftOffset,
+    //         };
+    //     }
+    // }
 };
 
-export const setupDragListeners = (
-    dragRefs: DragRefs,
-    currentDragger: { current: ?DragState },
-    setDragger: (?DragState) => void,
-    col: Collection<ItemT>,
-) => {
+const getMainEvtPos = (evt) =>
+    evt.clientY == null
+        ? evt.touches.length > 0
+            ? { x: evt.touches[0].clientX, y: evt.touches[0].clientY }
+            : null
+        : { x: evt.clientX, y: evt.clientY };
+
+// So we want a function that turns
+// the dragRefs
+// into a series of y positions.
+// and then we can just do "what are we closest to"
+// probably with an optional "targetOffset" to show the line
+// in a slightly different place
+
+export type DropTarget<T> = {
+    y: number,
+    left: number,
+    width: number,
+    offsetParent: HTMLDivElement,
+    contents: T,
+};
+
+export const setupDragListeners = function <Dest: { id: string }>(
+    dropTargets: Array<DropTarget<Dest>>,
+    // dragRefs: DragRefs,
+    currentDragger: { current: ?DragState<Dest> },
+    setDragger: (?DragState<Dest>) => void,
+    onDrop: (DragInit, Dest) => void,
+) {
     const positions = {};
-    const boxes = Object.keys(dragRefs)
-        .map((k) => ({ item: dragRefs[k], box: dragRefs[k].node.getBoundingClientRect() }))
-        .sort((a, b) => a.box.top - b.box.top);
+
+    // const boxes = Object.keys(dragRefs)
+    //     .map((k) => ({ item: dragRefs[k], box: dragRefs[k].node.getBoundingClientRect() }))
+    //     .sort((a, b) => a.box.top - b.box.top);
+
     const move = (evt) => {
-        // console.log('ok', evt.clientY, evt);
-        const { x, y } =
-            evt.clientY == null
-                ? evt.touches.length > 0
-                    ? { x: evt.touches[0].clientX, y: evt.touches[0].clientY }
-                    : { x: 0, y: null }
-                : { x: evt.clientX, y: evt.clientY };
-        if (y == null) {
-            return;
-        }
         const current = currentDragger.current;
         if (!current) {
             return;
         }
+        const pos = getMainEvtPos(evt);
+        if (pos == null) {
+            return;
+        }
         if (!current.started) {
-            const pos = current.dragging.pos;
-            const dist = Math.sqrt(Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2));
+            const initialPos = current.dragging.pos;
+            const dist = Math.sqrt(
+                Math.pow(pos.x - initialPos.x, 2) + Math.pow(pos.y - initialPos.y, 2),
+            );
             if (dist < 10) {
                 return;
             }
@@ -94,15 +133,16 @@ export const setupDragListeners = (
         if (current.dest == null) {
             current.dragging.onStart();
         }
-        const position = getPosition(boxes, y, current.dragging);
+        const position = getPosition(dropTargets, pos, current.dragging);
         if (position) {
-            if (
-                position.dest &&
-                (position.dest.id === position.dragging.id ||
-                    position.dest.path.includes(position.dragging.id))
-            ) {
-                position.dest = null;
-            }
+            // exclude these already? yeah
+            // if (
+            //     position.dest &&
+            //     (position.dest.id === position.dragging.id ||
+            //         position.dest.path.includes(position.dragging.id))
+            // ) {
+            //     position.dest = null;
+            // }
             setDragger(position);
         }
     };
@@ -117,29 +157,7 @@ export const setupDragListeners = (
         // STOPSHIP do the move actually
         const { dragging, dest } = dragger;
         if (dest && dest.id !== dragging.id) {
-            const oldPid = last(dragging.path);
-            const newPid = last(dest.path);
-            if (dest.position === 'first-child') {
-                if (dest.id === oldPid) {
-                    // dunno what to do here
-                    // STOPSHIP
-                } else {
-                    col.removeId(oldPid, ['children'], dragging.id);
-                    col.insertId(dest.id, ['children'], 0, dragging.id);
-                }
-            } else if (oldPid === newPid) {
-                // console.log(dest);
-                col.reorderIdRelative(
-                    newPid,
-                    ['children'],
-                    dragging.id,
-                    dest.id,
-                    dest.position === 'top',
-                );
-            } else {
-                col.removeId(oldPid, ['children'], dragging.id);
-                col.insertId(newPid, ['children'], dest.idx, dragging.id);
-            }
+            onDrop(dragging, dest);
         }
         dragging.onFinish();
         setDragger(null);

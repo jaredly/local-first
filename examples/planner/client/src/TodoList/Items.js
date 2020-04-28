@@ -12,8 +12,71 @@ import { newItem } from '../types';
 import { useParams, useHistory } from 'react-router-dom';
 import pako from 'pako';
 import { interleave } from '../utils';
-import { type DragInit } from './Item';
+import { type DragInit, type DragRefs } from './Item';
 import { setupDragListeners, type DragState } from './dragging';
+
+type Dest = {
+    id: string,
+    path: Array<string>,
+    position: 'top' | 'bottom' | 'first-child',
+    idx: number,
+};
+
+const calculateDragTargets = (dragRefs: DragRefs, current: DragInit) => {
+    const targets = [];
+
+    Object.keys(dragRefs).forEach((k) => {
+        const item = dragRefs[k];
+        if (k === current.id || item.path.includes(current.id)) {
+            return;
+        }
+        const box = item.node.getBoundingClientRect();
+        targets.push({
+            y: box.top,
+            left: box.left,
+            width: box.width,
+            offsetParent: item.node.offsetParent,
+            contents: {
+                id: item.id,
+                path: item.path,
+                position: 'top',
+                idx: item.idx,
+            },
+        });
+        if (item.parent) {
+            const offset = 32;
+            targets.push({
+                y: box.bottom,
+                left: box.left + offset,
+                width: box.width - offset,
+                offsetParent: item.node.offsetParent,
+                contents: {
+                    id: item.id,
+                    path: item.path,
+                    position: 'first-child',
+                    idx: 0,
+                },
+            });
+        } else {
+            targets.push({
+                y: box.bottom,
+                left: box.left,
+                width: box.width,
+                offsetParent: item.node.offsetParent,
+                contents: {
+                    id: item.id,
+                    path: item.path,
+                    position: 'bottom',
+                    idx: item.idx + 1,
+                },
+            });
+        }
+    });
+    // .map((k) => ({ item: dragRefs[k], box: dragRefs[k].node.getBoundingClientRect() }))
+    // .sort((a, b) => a.box.top - b.box.top);
+
+    return targets.sort((a, b) => a.y - b.y);
+};
 
 const useStyles = makeStyles((theme) => ({
     container: {},
@@ -26,6 +89,8 @@ const useStyles = makeStyles((theme) => ({
         transition: `transform ease .1s`,
     },
 }));
+
+const last = (arr) => arr[arr.length - 1];
 
 const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boolean }) => {
     const { ids } = useParams();
@@ -64,13 +129,44 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
 
     const dragRefs = React.useMemo(() => ({}), []);
 
-    const [dragger, setDragger] = React.useState((null: ?DragState));
+    const [dragger, setDragger] = React.useState((null: ?DragState<Dest>));
     const currentDragger = React.useRef(dragger);
     currentDragger.current = dragger;
 
     React.useEffect(() => {
         if (dragger != null) {
-            return setupDragListeners(dragRefs, currentDragger, setDragger, col);
+            return setupDragListeners(
+                calculateDragTargets(dragRefs, dragger.dragging),
+                currentDragger,
+                setDragger,
+                (dragging, dest) => {
+                    console.log('drop', dragging, dest);
+                    const oldPid = last(dragging.path);
+                    const newPid = last(dest.path);
+                    if (dest.position === 'first-child') {
+                        if (dest.id === oldPid) {
+                            // dunno what to do here
+                            // STOPSHIP
+                        } else {
+                            col.removeId(oldPid, ['children'], dragging.id);
+                            col.insertId(dest.id, ['children'], 0, dragging.id);
+                        }
+                    } else if (oldPid === newPid) {
+                        // console.log(dest);
+                        col.reorderIdRelative(
+                            newPid,
+                            ['children'],
+                            dragging.id,
+                            dest.id,
+                            dest.position === 'top',
+                        );
+                    } else {
+                        col.removeId(oldPid, ['children'], dragging.id);
+                        console.log('inserting', newPid, dest.id, dest.idx, dragging.id);
+                        col.insertId(newPid, ['children'], dest.idx, dragging.id);
+                    }
+                },
+            );
         }
     }, [!!dragger]);
 
