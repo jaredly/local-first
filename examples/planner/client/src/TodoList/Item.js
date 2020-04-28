@@ -8,6 +8,7 @@ import MenuItem from '@material-ui/core/MenuItem';
 import { makeStyles } from '@material-ui/core/styles';
 import AddBoxOutlined from '@material-ui/icons/Add';
 import Folder from '@material-ui/icons/Folder';
+import RadioButtonUnchecked from '@material-ui/icons/RadioButtonUnchecked';
 import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
 import KeyboardArrowDown from '@material-ui/icons/KeyboardArrowDown';
 import CheckCircle from '@material-ui/icons/CheckCircle';
@@ -40,10 +41,13 @@ type Props = {
     item: ItemT,
     idx: number,
     client: Client<SyncStatus>,
-    showAll: boolean,
+    // showAll: boolean,
+    show: (ItemT) => boolean,
     dragRefs: DragRefs,
     onDragStart: (DragInit) => void,
     setRootPath: (Array<string>) => void,
+
+    selection?: ?{ map: { [key: string]: boolean }, set: (string, boolean) => void },
 };
 
 export type DragRefs = {
@@ -177,15 +181,35 @@ const getMenuItems = ({
     return menuItems;
 };
 
+const SelectionButton = ({ selection, id }) => {
+    return (
+        <IconButton onClick={() => selection.set(id, !selection.map[id])}>
+            {selection.map[id] ? <CheckCircle /> : <RadioButtonUnchecked />}
+        </IconButton>
+    );
+};
+
 export const Item = React.memo<Props>(
-    ({ item, idx, onDragStart, client, level, showAll, path, dragRefs, setRootPath }: Props) => {
+    ({
+        item,
+        idx,
+        onDragStart,
+        client,
+        level,
+        show,
+        path,
+        dragRefs,
+        setRootPath,
+        selection,
+    }: Props) => {
         const [col, items] = useItems(React, client, 'items', item.children);
 
-        const [open, setOpen] = useLocalStorageSharedToggle('planner-ui-state', item.id + '%open');
-        const [showDescription, setShowDescription] = useLocalStorageSharedToggle(
-            'planner-ui-state',
-            item.id + '%desc',
-        );
+        const [open, setOpen] = selection
+            ? React.useState(item.style === 'group' ? level < 3 : false)
+            : useLocalStorageSharedToggle('planner-ui-state', item.id + '%open');
+        const [showDescription, setShowDescription] = selection
+            ? React.useState(false)
+            : useLocalStorageSharedToggle('planner-ui-state', item.id + '%desc');
         const [editing, setEditing] = React.useState(null);
         const styles = useStyles();
         const [commenting, setCommenting] = React.useState(false);
@@ -219,7 +243,8 @@ export const Item = React.memo<Props>(
             .map((k) => items[k])
             .filter(Boolean)
             .filter((item) =>
-                showAll ? true : item.style === 'group' || item.completedDate == null,
+                // showAll ? true : item.style === 'group' || item.completedDate == null,
+                show(item),
             ).length;
 
         return (
@@ -288,6 +313,8 @@ export const Item = React.memo<Props>(
                             >
                                 <Folder />
                             </div>
+                        ) : selection ? (
+                            <SelectionButton selection={selection} id={item.id} />
                         ) : (
                             <Checkbox
                                 // type="checkbox"
@@ -417,26 +444,18 @@ export const Item = React.memo<Props>(
                                 col.setAttribute(item.id, ['description'], text);
                             }}
                         />
-                        {item.comments
-                            ? Object.keys(item.comments).map((id) => (
-                                  <div style={{ padding: 8 }}>
-                                      {item.comments[id].text}
-                                      <div style={{ fontStyle: 'italic', textAlign: 'right' }}>
-                                          {new Date(item.comments[id].date).toDateString()}
-                                      </div>
-                                  </div>
-                              ))
-                            : null}
+                        {item.comments ? <ShowComments comments={item.comments} /> : null}
                     </div>
                 ) : null}
                 {open ? (
                     <ItemChildren
+                        selection={selection}
                         onNewFocus={setNewFocus}
                         setRootPath={setRootPath}
                         path={childPath}
                         onDragStart={onDragStart}
                         dragRefs={dragRefs}
-                        showAll={showAll}
+                        show={show}
                         item={item}
                         items={items}
                         level={level}
@@ -469,6 +488,21 @@ export const Item = React.memo<Props>(
         );
     },
 );
+
+const ShowComments = ({ comments }) => {
+    return (
+        <React.Fragment>
+            {Object.keys(comments).map((id) => (
+                <div style={{ padding: 8 }}>
+                    {comments[id].text}
+                    <div style={{ fontStyle: 'italic', textAlign: 'right' }}>
+                        {new Date(comments[id].date).toDateString()}
+                    </div>
+                </div>
+            ))}
+        </React.Fragment>
+    );
+};
 
 import Dialog from '@material-ui/core/Dialog';
 import DialogTitle from '@material-ui/core/DialogTitle';

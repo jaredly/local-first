@@ -16,47 +16,46 @@ export const ItemChildren = ({
     client,
     items,
     col,
-    showAll,
+    show,
     path,
     dragRefs,
     onDragStart,
     onNewFocus,
     setRootPath,
+    selection,
 }: {|
     item: ItemT,
     level: number,
     items: { [key: string]: ?ItemT },
     client: Client<SyncStatus>,
     col: Collection<ItemT>,
-    showAll: boolean,
+    show: (ItemT) => boolean,
     dragRefs: DragRefs,
     onDragStart: (DragInit) => void,
     onNewFocus: (boolean) => void,
     path: Array<string>,
     setRootPath: (Array<string>) => void,
+    selection?: ?{ map: { [key: string]: boolean }, set: (string, boolean) => void },
 |}) => {
     const styles = useStyles();
     const [showAnyway, setShowAnyway] = React.useState(false);
 
-    const completed = item.children
-        .filter((id) => items[id] && items[id].completedDate != null)
-        // $FlowFixMe
-        .sort((a, b) => items[b].completedDate - items[a].completedDate);
     const showAlso = {};
-    for (let i = 0; i < 2 && i < completed.length; i++) {
-        showAlso[completed[i]] = true;
+    if (!selection) {
+        const completed = item.children
+            .filter((id) => items[id] && items[id].completedDate != null)
+            // $FlowFixMe
+            .sort((a, b) => items[b].completedDate - items[a].completedDate);
+        for (let i = 0; i < 2 && i < completed.length; i++) {
+            showAlso[completed[i]] = true;
+        }
     }
 
     const existent = item.children.map((id) => items[id]).filter(Boolean);
 
-    const toShow = existent.filter(
-        (item) => showAll || showAnyway || item.completedDate == null || showAlso[item.id],
-    );
+    const toShow = existent.filter((item) => showAnyway || showAlso[item.id] || show(item));
 
     const numHidden = existent.length - toShow.length;
-    // showAll
-    //     ? 0
-    //     : item.children.filter((id) => items[id] && !!items[id].completedDate).length;
 
     return (
         <div className={styles.itemChildren}>
@@ -87,12 +86,13 @@ export const ItemChildren = ({
                     key={item.id}
                     item={item}
                     path={path}
-                    showAll={showAll}
+                    show={show}
                     setRootPath={setRootPath}
                     onDragStart={onDragStart}
                     level={level + 1}
                     dragRefs={dragRefs}
                     idx={i}
+                    selection={selection}
                     client={client}
                 />
             ))}

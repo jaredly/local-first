@@ -19,6 +19,8 @@ const ShowItem = ({
     const [col, item] = useItem(React, client, 'items', id);
     const styles = useStyles();
 
+    const show = React.useCallback((item) => true, []);
+
     if (item === false) {
         return null; // loading
     }
@@ -48,7 +50,7 @@ const ShowItem = ({
                     client={client}
                     item={item}
                     level={0}
-                    showAll={true}
+                    show={show}
                     path={[]}
                     dragRefs={{}}
                     onDragStart={() => {}}

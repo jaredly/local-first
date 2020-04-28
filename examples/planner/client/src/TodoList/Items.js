@@ -237,6 +237,13 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
         });
     }, []);
 
+    const show = React.useCallback(
+        (item) => {
+            return showAll || item.style === 'group' || item.completedDate == null;
+        },
+        [showAll],
+    );
+
     if (!childItems) {
         // wait for the child items to load
         return null;
@@ -288,7 +295,7 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
                         items={childItems}
                         dragRefs={dragRefs}
                         onDragStart={onDragStart}
-                        showAll={showAll}
+                        show={show}
                         level={-1}
                         item={root}
                         client={client}

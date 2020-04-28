@@ -17,7 +17,7 @@ import AppShell from '../Shell/AppShell';
 import { Item } from '../TodoList/Item';
 import { type Day, type ItemT, type HabitT, newDay } from '../types';
 import { nextDay, parseDate, prevDay, showDate, today } from '../utils';
-import ItemPicker from './ItemPicker';
+import ItemPicker from './HierarchicalItemPicker';
 import ShowItem from './ShowItem';
 import Hourly from './Hourly';
 
@@ -241,22 +241,34 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
         return (
             <ItemPicker
                 client={client}
-                onPick={(itemId) => {
-                    if (itemId == null) {
+                initial={day.toDoList.others}
+                onPick={(items) => {
+                    if (items == null) {
                         return setPicking(null);
                     }
-                    if (picking === 'one') {
-                        col.setAttribute(id, ['toDoList', 'topTwo', 'one'], itemId);
-                    } else if (picking === 'two') {
-                        col.setAttribute(id, ['toDoList', 'topTwo', 'two'], itemId);
-                    } else if (picking === 'other') {
-                        col.insertId(
-                            id,
-                            ['toDoList', 'others'],
-                            day.toDoList.others.length,
-                            itemId,
-                        );
-                    }
+                    items.forEach((item) => {
+                        if (!day.toDoList.others.includes(item)) {
+                            col.insertId(day.id, ['toDoList', 'others'], 0, item);
+                        }
+                    });
+                    day.toDoList.others.forEach((id) => {
+                        if (!items.includes(id)) {
+                            col.removeId(day.id, ['toDoList', 'others'], id);
+                        }
+                    });
+                    // TODO support top 1 and 2 again
+                    // if (picking === 'one') {
+                    //     col.setAttribute(id, ['toDoList', 'topTwo', 'one'], itemId);
+                    // } else if (picking === 'two') {
+                    //     col.setAttribute(id, ['toDoList', 'topTwo', 'two'], itemId);
+                    // } else if (picking === 'other') {
+                    //     col.insertId(
+                    //         id,
+                    //         ['toDoList', 'others'],
+                    //         day.toDoList.others.length,
+                    //         itemId,
+                    //     );
+                    // }
                     setPicking(null);
                 }}
             />
