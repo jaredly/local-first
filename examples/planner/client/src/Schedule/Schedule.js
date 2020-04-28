@@ -179,7 +179,7 @@ const NavBar = ({ id }: { id: string }) => {
 };
 
 import { type DragRefs, calculateDragTargets, type Dest } from './dragging';
-import { setupDragListeners, type DragState } from '../TodoList/dragging';
+import { setupDragListeners, type DragState, type DragInit } from '../TodoList/dragging';
 
 export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) => {
     const [col, day] = useItem<Day, SyncStatus>(React, client, 'days', id);
@@ -197,6 +197,19 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
         () => ({ hourly: null, others: {}, topOne: null, topTwo: null }),
         [],
     );
+
+    // const onDragStart = React.useCallback()
+
+    const onDragStart = React.useCallback((config: DragInit) => {
+        // TODO differentiate between a "top two" thing and
+        // an "other" thing, which should be draggable to the top two places
+        setDragger({
+            dragging: config,
+            dest: null,
+            started: false,
+            dims: null,
+        });
+    }, []);
 
     React.useEffect(() => {
         if (dragger != null) {
@@ -311,6 +324,17 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
     return (
         <div style={{ display: 'flex' }}>
             <div style={{ flex: 1 }}>
+                {dragger != null && dragger.dims != null && dragger.dest != null ? (
+                    <div
+                        className={styles.dragIndicator}
+                        style={{
+                            left: dragger.dims.left,
+                            width: dragger.dims.width,
+                            transform: `translateY(${dragger.dims.y}px)`,
+                            top: 0,
+                        }}
+                    ></div>
+                ) : null}
                 <div
                     style={{
                         display: 'flex',
@@ -343,6 +367,13 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                             onClear={() => col.clearAttribute(id, ['toDoList', 'topTwo', 'one'])}
                             id={day.toDoList.topTwo.one}
                             client={client}
+                            onDragStart={onDragStart}
+                            onDragRef={(_, data) => {
+                                if (data) {
+                                    // $FlowFixMe
+                                    refs.topOne = data.node;
+                                }
+                            }}
                         />
                     ) : (
                         'Drop something here'
@@ -352,6 +383,13 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                             onClear={() => col.clearAttribute(id, ['toDoList', 'topTwo', 'two'])}
                             id={day.toDoList.topTwo.two}
                             client={client}
+                            onDragStart={onDragStart}
+                            onDragRef={(_, data) => {
+                                if (data) {
+                                    // $FlowFixMe
+                                    refs.topTwo = data.node;
+                                }
+                            }}
                         />
                     ) : (
                         'Drop something here'
@@ -359,13 +397,24 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                 </div>
                 <h2>Other To Do</h2>
                 <div>
-                    {day.toDoList.others.map((otherId) => (
+                    {day.toDoList.others.map((otherId, i) => (
                         <ShowItem
                             id={otherId}
                             key={otherId}
                             client={client}
+                            onDragStart={onDragStart}
                             onClear={() => {
                                 col.removeId(id, ['toDoList', 'others'], otherId);
+                            }}
+                            onDragRef={(id, data) => {
+                                if (data && data.path.length === 0) {
+                                    refs.others[id] = {
+                                        id,
+                                        idx: i,
+                                        // $FlowFixMe
+                                        node: data.node,
+                                    };
+                                }
                             }}
                         />
                     ))}
@@ -465,6 +514,14 @@ const useStyles = makeStyles((theme) => ({
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    dragIndicator: {
+        position: 'absolute',
+        height: 4,
+        marginTop: -2,
+        backgroundColor: theme.palette.primary.dark,
+        mouseEvents: 'none',
+        transition: `transform ease .1s`,
     },
 }));
 

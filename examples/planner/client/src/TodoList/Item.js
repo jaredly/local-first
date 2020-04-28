@@ -25,7 +25,7 @@ import { showDate, today, tomorrow } from '../utils';
 import { ItemChildren } from './ItemChildren';
 import Description from './Description';
 
-import { type DragInit } from './dragging';
+import { type DragInit, type OnDragRef } from './dragging';
 
 const INDENT = 24;
 
@@ -37,7 +37,7 @@ type Props = {
     client: Client<SyncStatus>,
     // showAll: boolean,
     show: (ItemT) => boolean,
-    dragRefs: DragRefs,
+    onDragRef: OnDragRef,
     onDragStart: (DragInit) => void,
     setRootPath: (Array<string>) => void,
 
@@ -192,7 +192,7 @@ export const Item = React.memo<Props>(
         level,
         show,
         path,
-        dragRefs,
+        onDragRef,
         setRootPath,
         selection,
     }: Props) => {
@@ -279,16 +279,24 @@ export const Item = React.memo<Props>(
                     <div
                         ref={(node) => {
                             if (node) {
-                                dragRefs[item.id] = {
-                                    id: item.id,
+                                onDragRef(item.id, {
                                     path,
                                     node,
                                     idx,
                                     parent:
                                         item.children.length > 0 || item.style === 'group' || open,
-                                };
+                                });
+                                // dragRefs[item.id] = {
+                                //     id: item.id,
+                                //     path,
+                                //     node,
+                                //     idx,
+                                //     parent:
+                                //         item.children.length > 0 || item.style === 'group' || open,
+                                // };
                             } else {
-                                delete dragRefs[item.id];
+                                // delete dragRefs[item.id];
+                                onDragRef(item.id, null);
                             }
                         }}
                         className={newFocus ? styles.itemNewFocus : undefined}
@@ -448,7 +456,7 @@ export const Item = React.memo<Props>(
                         setRootPath={setRootPath}
                         path={childPath}
                         onDragStart={onDragStart}
-                        dragRefs={dragRefs}
+                        onDragRef={onDragRef}
                         show={show}
                         item={item}
                         items={items}

@@ -8,7 +8,7 @@ import type { Client, Collection, SyncStatus } from '../../../../../packages/cli
 const INDENT = 24;
 
 import type { DragRefs } from './Item';
-import type { DragInit } from './dragging';
+import type { DragInit, OnDragRef } from './dragging';
 import { Item } from './Item';
 
 export const ItemChildren = ({
@@ -19,7 +19,7 @@ export const ItemChildren = ({
     col,
     show,
     path,
-    dragRefs,
+    onDragRef,
     onDragStart,
     onNewFocus,
     setRootPath,
@@ -31,7 +31,7 @@ export const ItemChildren = ({
     client: Client<SyncStatus>,
     col: Collection<ItemT>,
     show: (ItemT) => boolean,
-    dragRefs: DragRefs,
+    onDragRef: OnDragRef,
     onDragStart: (DragInit) => void,
     onNewFocus: (boolean) => void,
     path: Array<string>,
@@ -91,7 +91,7 @@ export const ItemChildren = ({
                     setRootPath={setRootPath}
                     onDragStart={onDragStart}
                     level={level + 1}
-                    dragRefs={dragRefs}
+                    onDragRef={onDragRef}
                     idx={i}
                     selection={selection}
                     client={client}

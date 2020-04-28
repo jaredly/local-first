@@ -129,6 +129,20 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
 
     const dragRefs = React.useMemo(() => ({}), []);
 
+    const onDragRef = React.useCallback((id, item) => {
+        if (item) {
+            dragRefs[id] = {
+                id,
+                path: item.path,
+                idx: item.idx,
+                parent: item.parent,
+                node: item.node,
+            };
+        } else {
+            delete dragRefs[id];
+        }
+    }, []);
+
     const [dragger, setDragger] = React.useState((null: ?DragState<Dest>));
     const currentDragger = React.useRef(dragger);
     currentDragger.current = dragger;
@@ -179,15 +193,13 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
         if (!item) {
             return;
         }
-        const box = item.node.getBoundingClientRect();
-        const parent = item.node.offsetParent.getBoundingClientRect();
+        // const box = item.node.getBoundingClientRect();
+        // const parent = item.node.offsetParent.getBoundingClientRect();
         setDragger({
             dragging: config,
             dest: null,
             started: false,
-            y: null,
-            left: box.left,
-            width: box.width,
+            dims: null,
         });
     }, []);
 
@@ -206,13 +218,13 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
     return (
         <Container maxWidth="sm" className={styles.container}>
             <Button onClick={() => client.undo()}>Undo</Button>
-            {dragger != null && dragger.y != null && dragger.dest != null ? (
+            {dragger != null && dragger.dims != null && dragger.dest != null ? (
                 <div
                     className={styles.dragIndicator}
                     style={{
-                        left: dragger.left,
-                        width: dragger.width,
-                        transform: `translateY(${dragger.y}px)`,
+                        left: dragger.dims.left,
+                        width: dragger.dims.width,
+                        transform: `translateY(${dragger.dims.y}px)`,
                         top: 0,
                     }}
                 ></div>
@@ -247,7 +259,7 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
                         onNewFocus={() => {}}
                         path={rootPath}
                         items={childItems}
-                        dragRefs={dragRefs}
+                        onDragRef={onDragRef}
                         onDragStart={onDragStart}
                         show={show}
                         level={-1}

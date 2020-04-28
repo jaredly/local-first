@@ -18,10 +18,22 @@ export type DragState<Dest> = {
     started: boolean,
     dragging: DragInit,
     dest: ?Dest,
-    y: ?number,
-    left: number,
-    width: number,
+    dims: ?{
+        y: number,
+        left: number,
+        width: number,
+    },
 };
+
+export type OnDragRef = (
+    id: string,
+    val: ?{
+        path: Array<string>,
+        node: Element,
+        idx: number,
+        parent: boolean,
+    },
+) => void;
 
 const inside = (x, box) => box.left <= x && x <= box.left + box.width;
 
@@ -50,9 +62,11 @@ const getPosition = function <Dest>(
                 started: true,
                 dragging,
                 dest: boxes[i].contents,
-                y: boxes[i].y - offset,
-                left: boxes[i].left,
-                width: boxes[i].width,
+                dims: {
+                    y: boxes[i].y - offset,
+                    left: boxes[i].left,
+                    width: boxes[i].width,
+                },
             };
         }
     }

@@ -6,15 +6,20 @@ import * as React from 'react';
 import type { Client, SyncStatus } from '../../../../../packages/client-bundle';
 import { useItem } from '../../../../../packages/client-react';
 import { Item } from '../TodoList/Item';
+import type { OnDragRef, DragInit } from '../TodoList/dragging';
 
 const ShowItem = ({
     client,
     id,
     onClear,
+    onDragRef,
+    onDragStart,
 }: {
     client: Client<SyncStatus>,
     id: string,
     onClear: () => mixed,
+    onDragRef: OnDragRef,
+    onDragStart: (DragInit) => void,
 }) => {
     const [col, item] = useItem(React, client, 'items', id);
     const styles = useStyles();
@@ -52,8 +57,8 @@ const ShowItem = ({
                     level={0}
                     show={show}
                     path={[]}
-                    dragRefs={{}}
-                    onDragStart={() => {}}
+                    onDragRef={onDragRef}
+                    onDragStart={onDragStart}
                     setRootPath={() => {}}
                     idx={0}
                 />

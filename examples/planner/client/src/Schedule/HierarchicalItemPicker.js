@@ -53,7 +53,7 @@ const ItemPicker = ({
 
     const [_, childItems] = useItems(React, client, 'items', root ? root.children : []);
 
-    const dragRefs = React.useMemo(() => ({}), []);
+    const onDragRef = React.useCallback(() => {}, []);
     const onDragStart = React.useCallback(() => {}, []);
 
     // const [selectionMap, setSelectionMap] =
@@ -114,7 +114,7 @@ const ItemPicker = ({
                 onNewFocus={() => {}}
                 path={rootPath}
                 items={childItems}
-                dragRefs={dragRefs}
+                onDragRef={onDragRef}
                 onDragStart={onDragStart}
                 show={show}
                 selection={selection}
