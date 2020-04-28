@@ -1,12 +1,18 @@
 // @flow
-import { type DragInit } from './Item';
-
 // export type Dest = {
 //     id: string,
 //     path: Array<string>,
 //     position: 'top' | 'bottom' | 'first-child',
 //     idx: number,
 // };
+
+export type DragInit = {
+    id: string,
+    path: Array<string>,
+    onStart: () => void,
+    onFinish: () => void,
+    pos: { x: number, y: number },
+};
 
 export type DragState<Dest> = {
     started: boolean,
@@ -26,7 +32,7 @@ const getPosition = function <Dest>(
     dragging,
 ): ?DragState<Dest> {
     const offsetParent = boxes[0].offsetParent;
-    const offset = offsetParent.getBoundingClientRect().top;
+    const offset = offsetParent ? offsetParent.getBoundingClientRect().top : 0;
     for (let i = 0; i < boxes.length; i++) {
         if (limitX && !inside(pos.x, boxes[i])) {
             continue;
@@ -105,11 +111,11 @@ export type DropTarget<T> = {
     y: number,
     left: number,
     width: number,
-    offsetParent: HTMLDivElement,
+    offsetParent: ?Element,
     contents: T,
 };
 
-export const setupDragListeners = function <Dest: { id: string }>(
+export const setupDragListeners = function <Dest: {}>(
     dropTargets: Array<DropTarget<Dest>>,
     // dragRefs: DragRefs,
     currentDragger: { current: ?DragState<Dest> },
@@ -167,7 +173,7 @@ export const setupDragListeners = function <Dest: { id: string }>(
         // path, so we don't make loops.
         // STOPSHIP do the move actually
         const { dragging, dest } = dragger;
-        if (dest && dest.id !== dragging.id) {
+        if (dest) {
             onDrop(dragging, dest);
         }
         dragging.onFinish();

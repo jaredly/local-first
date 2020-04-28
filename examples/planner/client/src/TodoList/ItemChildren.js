@@ -7,7 +7,8 @@ import type { Client, Collection, SyncStatus } from '../../../../../packages/cli
 
 const INDENT = 24;
 
-import type { DragRefs, DragInit } from './Item';
+import type { DragRefs } from './Item';
+import type { DragInit } from './dragging';
 import { Item } from './Item';
 
 export const ItemChildren = ({

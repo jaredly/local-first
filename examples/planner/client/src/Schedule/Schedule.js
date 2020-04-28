@@ -178,18 +178,65 @@ const NavBar = ({ id }: { id: string }) => {
     );
 };
 
+import { type DragRefs, calculateDragTargets, type Dest } from './dragging';
+import { setupDragListeners, type DragState } from '../TodoList/dragging';
+
 export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) => {
     const [col, day] = useItem<Day, SyncStatus>(React, client, 'days', id);
     const match = useRouteMatch();
     const matchBase = match.url.split('/').slice(0, -1).join('/');
-    console.log('match', match);
-    // const [habitsCol, habits] = useCollection(React, client, 'habits');
 
     const [picking, setPicking] = React.useState(null);
     const styles = useStyles();
 
+    const [dragger, setDragger] = React.useState((null: ?DragState<Dest>));
+    const currentDragger = React.useRef(dragger);
+    currentDragger.current = dragger;
+
+    const refs: DragRefs = React.useMemo(
+        () => ({ hourly: null, others: {}, topOne: null, topTwo: null }),
+        [],
+    );
+
+    React.useEffect(() => {
+        if (dragger != null) {
+            return setupDragListeners(
+                calculateDragTargets(refs, dragger.dragging),
+                currentDragger,
+                false,
+                setDragger,
+                (dragging, dest) => {
+                    console.log('drop', dragging, dest);
+                    // const oldPid = last(dragging.path);
+                    // const newPid = last(dest.path);
+                    // if (dest.position === 'first-child') {
+                    //     if (dest.id === oldPid) {
+                    //         // dunno what to do here
+                    //         // STOPSHIP
+                    //     } else {
+                    //         col.removeId(oldPid, ['children'], dragging.id);
+                    //         col.insertId(dest.id, ['children'], 0, dragging.id);
+                    //     }
+                    // } else if (oldPid === newPid) {
+                    //     // console.log(dest);
+                    //     col.reorderIdRelative(
+                    //         newPid,
+                    //         ['children'],
+                    //         dragging.id,
+                    //         dest.id,
+                    //         dest.position === 'top',
+                    //     );
+                    // } else {
+                    //     col.removeId(oldPid, ['children'], dragging.id);
+                    //     console.log('inserting', newPid, dest.id, dest.idx, dragging.id);
+                    //     col.insertId(newPid, ['children'], dest.idx, dragging.id);
+                    // }
+                },
+            );
+        }
+    }, [!!dragger]);
+
     if (day === false) {
-        // return null; // loading!
         return (
             <div>
                 <NavBar id={id} />
@@ -198,7 +245,6 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
     }
 
     if (day == null) {
-        // not yet created!
         return (
             <div>
                 <NavBar id={id} />
@@ -256,19 +302,6 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                             col.removeId(day.id, ['toDoList', 'others'], id);
                         }
                     });
-                    // TODO support top 1 and 2 again
-                    // if (picking === 'one') {
-                    //     col.setAttribute(id, ['toDoList', 'topTwo', 'one'], itemId);
-                    // } else if (picking === 'two') {
-                    //     col.setAttribute(id, ['toDoList', 'topTwo', 'two'], itemId);
-                    // } else if (picking === 'other') {
-                    //     col.insertId(
-                    //         id,
-                    //         ['toDoList', 'others'],
-                    //         day.toDoList.others.length,
-                    //         itemId,
-                    //     );
-                    // }
                     setPicking(null);
                 }}
             />
@@ -341,7 +374,13 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
             </div>
             <div style={{ flex: 1 }}>
                 <h1>Schedule</h1>
-                <Hourly col={col} day={day} />
+                <Hourly
+                    col={col}
+                    day={day}
+                    onRef={(hourly) => {
+                        refs.hourly = hourly;
+                    }}
+                />
             </div>
         </div>
     );

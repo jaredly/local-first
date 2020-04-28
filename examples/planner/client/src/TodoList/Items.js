@@ -12,8 +12,8 @@ import { newItem } from '../types';
 import { useParams, useHistory } from 'react-router-dom';
 import pako from 'pako';
 import { interleave } from '../utils';
-import { type DragInit, type DragRefs } from './Item';
-import { setupDragListeners, type DragState } from './dragging';
+import { type DragRefs } from './Item';
+import { type DragInit, setupDragListeners, type DragState } from './dragging';
 
 type Dest = {
     id: string,
@@ -141,6 +141,9 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
                 false,
                 setDragger,
                 (dragging, dest) => {
+                    if (dest.id === dragging.id) {
+                        return;
+                    }
                     console.log('drop', dragging, dest);
                     const oldPid = last(dragging.path);
                     const newPid = last(dest.path);

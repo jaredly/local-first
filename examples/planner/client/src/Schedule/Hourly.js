@@ -32,7 +32,15 @@ const ap = (hour) => (hour >= 12 ? 'pm' : 'am');
 //     return hour - 12 + 'pm';
 // };
 
-const Hourly = ({ col, day }: { col: Collection<Day>, day: Day }) => {
+const Hourly = ({
+    col,
+    day,
+    onRef,
+}: {
+    col: Collection<Day>,
+    day: Day,
+    onRef: (HTMLDivElement) => void,
+}) => {
     const styles = useStyles();
     // oh, need to be able to configure start & end hours
     const startHour = 3;
@@ -47,7 +55,18 @@ const Hourly = ({ col, day }: { col: Collection<Day>, day: Day }) => {
             </div>,
         );
     }
-    return <div className={styles.hourly}>{slots}</div>;
+    return (
+        <div
+            className={styles.hourly}
+            ref={(node) => {
+                if (node) {
+                    onRef(node);
+                }
+            }}
+        >
+            {slots}
+        </div>
+    );
 };
 
 const useStyles = makeStyles((theme) => ({

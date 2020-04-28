@@ -25,15 +25,9 @@ import { showDate, today, tomorrow } from '../utils';
 import { ItemChildren } from './ItemChildren';
 import Description from './Description';
 
-const INDENT = 24;
+import { type DragInit } from './dragging';
 
-export type DragInit = {
-    id: string,
-    path: Array<string>,
-    onStart: () => void,
-    onFinish: () => void,
-    pos: { x: number, y: number },
-};
+const INDENT = 24;
 
 type Props = {
     path: Array<string>,
