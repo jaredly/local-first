@@ -6,6 +6,16 @@
 //     idx: number,
 // };
 
+export type DropTarget<T> = {
+    top: number,
+    height: number,
+    // y: number,
+    left: number,
+    width: number,
+    offsetParent: ?Element,
+    contents: T,
+};
+
 export type DragInit = {
     id: string,
     path: Array<string>,
@@ -19,7 +29,9 @@ export type DragState<Dest> = {
     dragging: DragInit,
     dest: ?Dest,
     dims: ?{
-        y: number,
+        // y: number,
+        top: number,
+        height: number,
         left: number,
         width: number,
     },
@@ -50,12 +62,12 @@ const getPosition = function <Dest>(
             continue;
         }
         // if we're closer to the current than the next one, go with it
-        const d0 = Math.abs(pos.y - boxes[i].y);
+        const d0 = Math.abs(pos.y - (boxes[i].top + boxes[i].height / 2));
         const dNext =
             i < boxes.length - 1
                 ? limitX && !inside(pos.x, boxes[i])
                     ? Infinity
-                    : Math.abs(pos.y - boxes[i + 1].y)
+                    : Math.abs(pos.y - (boxes[i + 1].top + boxes[i + 1].height / 2))
                 : Infinity;
         if (d0 < dNext) {
             return {
@@ -63,7 +75,9 @@ const getPosition = function <Dest>(
                 dragging,
                 dest: boxes[i].contents,
                 dims: {
-                    y: boxes[i].y - offset,
+                    top: boxes[i].top,
+                    height: boxes[i].height,
+                    // y: boxes[i].y - offset,
                     left: boxes[i].left,
                     width: boxes[i].width,
                 },
@@ -120,14 +134,6 @@ const getMainEvtPos = (evt) =>
 // and then we can just do "what are we closest to"
 // probably with an optional "targetOffset" to show the line
 // in a slightly different place
-
-export type DropTarget<T> = {
-    y: number,
-    left: number,
-    width: number,
-    offsetParent: ?Element,
-    contents: T,
-};
 
 export const setupDragListeners = function <Dest: {}>(
     dropTargets: Array<DropTarget<Dest>>,

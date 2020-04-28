@@ -40,7 +40,9 @@ export const calculateDragTargets = (
         const topOne = refs.topOne;
         const box = topOne.getBoundingClientRect();
         boxes.push({
-            y: box.top + box.height / 2,
+            top: box.top,
+            height: box.height,
+            // y: box.top + box.height / 2,
             left: box.left,
             width: box.width,
             offsetParent: topOne.offsetParent,
@@ -55,7 +57,9 @@ export const calculateDragTargets = (
         const topTwo = refs.topTwo;
         const box = topTwo.getBoundingClientRect();
         boxes.push({
-            y: box.top + box.height / 2,
+            // y: box.top + box.height / 2,
+            top: box.top,
+            height: box.height,
             left: box.left,
             width: box.width,
             offsetParent: topTwo.offsetParent,
@@ -69,7 +73,9 @@ export const calculateDragTargets = (
     Object.keys(refs.others).forEach((key) => {
         const box = refs.others[key].node.getBoundingClientRect();
         boxes.push({
-            y: box.top,
+            // y: box.top,
+            top: box.top,
+            height: 0,
             left: box.left,
             width: box.width,
             offsetParent: refs.others[key].node.offsetParent,
@@ -80,7 +86,8 @@ export const calculateDragTargets = (
         });
 
         boxes.push({
-            y: box.bottom,
+            top: box.bottom,
+            height: 0,
             left: box.left,
             width: box.width,
             offsetParent: refs.others[key].node.offsetParent,
@@ -90,6 +97,25 @@ export const calculateDragTargets = (
             },
         });
     });
+
+    if (refs.hourly) {
+        const offsetParent = refs.hourly.offsetParent;
+        const hourBox = refs.hourly.getBoundingClientRect();
+        const minHour = 3;
+        const maxHour = 22;
+        const steps = maxHour - minHour;
+        for (let i = minHour; i <= maxHour; i += 0.5) {
+            const amt = (i - minHour) / (maxHour - minHour);
+            boxes.push({
+                offsetParent: offsetParent,
+                top: hourBox.top + hourBox.height * amt,
+                height: hourBox.height / steps / 2,
+                left: hourBox.left,
+                width: hourBox.width,
+                contents: { type: 'hourly', time: i },
+            });
+        }
+    }
 
     return boxes;
 };

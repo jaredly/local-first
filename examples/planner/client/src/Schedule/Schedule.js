@@ -216,7 +216,7 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
             return setupDragListeners(
                 calculateDragTargets(refs, dragger.dragging),
                 currentDragger,
-                false,
+                true,
                 setDragger,
                 (dragging, dest) => {
                     console.log('drop', dragging, dest);
@@ -330,7 +330,8 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                         style={{
                             left: dragger.dims.left,
                             width: dragger.dims.width,
-                            transform: `translateY(${dragger.dims.y}px)`,
+                            height: dragger.dims.height + 4,
+                            transform: `translateY(${dragger.dims.top}px)`,
                             top: 0,
                         }}
                     ></div>
@@ -376,7 +377,16 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                             }}
                         />
                     ) : (
-                        'Drop something here'
+                        <div
+                            ref={(node) => {
+                                if (node) {
+                                    // $FlowFixMe
+                                    refs.topOne = node;
+                                }
+                            }}
+                        >
+                            Drop something here
+                        </div>
                     )}
                     {day.toDoList.topTwo.two != null ? (
                         <ShowItem
@@ -392,7 +402,16 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                             }}
                         />
                     ) : (
-                        'Drop something here'
+                        <div
+                            ref={(node) => {
+                                if (node) {
+                                    // $FlowFixMe
+                                    refs.topTwo = node;
+                                }
+                            }}
+                        >
+                            Drop something here
+                        </div>
                     )}
                 </div>
                 <h2>Other To Do</h2>
@@ -520,6 +539,7 @@ const useStyles = makeStyles((theme) => ({
         height: 4,
         marginTop: -2,
         backgroundColor: theme.palette.primary.dark,
+        opacity: 0.5,
         mouseEvents: 'none',
         transition: `transform ease .1s`,
     },

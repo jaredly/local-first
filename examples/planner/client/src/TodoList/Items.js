@@ -32,7 +32,9 @@ const calculateDragTargets = (dragRefs: DragRefs, current: DragInit) => {
         }
         const box = item.node.getBoundingClientRect();
         targets.push({
-            y: box.top,
+            // y: box.top,
+            top: box.top,
+            height: 0,
             left: box.left,
             width: box.width,
             offsetParent: item.node.offsetParent,
@@ -46,7 +48,9 @@ const calculateDragTargets = (dragRefs: DragRefs, current: DragInit) => {
         if (item.parent) {
             const offset = 32;
             targets.push({
-                y: box.bottom,
+                // y: box.bottom,
+                top: box.bottom,
+                height: 0,
                 left: box.left + offset,
                 width: box.width - offset,
                 offsetParent: item.node.offsetParent,
@@ -59,7 +63,9 @@ const calculateDragTargets = (dragRefs: DragRefs, current: DragInit) => {
             });
         } else {
             targets.push({
-                y: box.bottom,
+                // y: box.bottom,
+                top: box.bottom,
+                height: 0,
                 left: box.left,
                 width: box.width,
                 offsetParent: item.node.offsetParent,
@@ -75,7 +81,7 @@ const calculateDragTargets = (dragRefs: DragRefs, current: DragInit) => {
     // .map((k) => ({ item: dragRefs[k], box: dragRefs[k].node.getBoundingClientRect() }))
     // .sort((a, b) => a.box.top - b.box.top);
 
-    return targets.sort((a, b) => a.y - b.y);
+    return targets.sort((a, b) => a.top - b.top);
 };
 
 const useStyles = makeStyles((theme) => ({
@@ -224,7 +230,8 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
                     style={{
                         left: dragger.dims.left,
                         width: dragger.dims.width,
-                        transform: `translateY(${dragger.dims.y}px)`,
+                        transform: `translateY(${dragger.dims.top}px)`,
+                        height: dragger.dims.height + 4,
                         top: 0,
                     }}
                 ></div>
