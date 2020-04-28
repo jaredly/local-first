@@ -19,6 +19,7 @@ import { type Day, type ItemT, type HabitT, newDay } from '../types';
 import { nextDay, parseDate, prevDay, showDate, today } from '../utils';
 import ItemPicker from './ItemPicker';
 import ShowItem from './ShowItem';
+import Hourly from './Hourly';
 
 /*
 
@@ -263,61 +264,72 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
     }
 
     return (
-        <div>
-            <NavBar id={id} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h1>Habits</h1>
-                <Button onClick={() => setPicking('habits')}>Select habits</Button>
+        <div style={{ display: 'flex' }}>
+            <div style={{ flex: 1 }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                    }}
+                >
+                    <h1>Habits / Recurring</h1>
+                    <Button onClick={() => setPicking('habits')}>Select habits</Button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    {Object.keys(day.habits).map((k) => (
+                        <ShowHabit
+                            key={k}
+                            id={k}
+                            setCompleted={(completd) =>
+                                col.setAttribute(id, ['habits', k, 'completed'], completd)
+                            }
+                            client={client}
+                            completed={day.habits[k].completed}
+                            notes={day.habits[k].notes}
+                        />
+                    ))}
+                    {Object.keys(day.habits).length === 0 ? <h3>No habits selected</h3> : null}
+                </div>
+                <h1>Top Two</h1>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    {day.toDoList.topTwo.one != null ? (
+                        <ShowItem
+                            onClear={() => col.clearAttribute(id, ['toDoList', 'topTwo', 'one'])}
+                            id={day.toDoList.topTwo.one}
+                            client={client}
+                        />
+                    ) : (
+                        <Button onClick={() => setPicking('one')}>Select Top 1</Button>
+                    )}
+                    {day.toDoList.topTwo.two != null ? (
+                        <ShowItem
+                            onClear={() => col.clearAttribute(id, ['toDoList', 'topTwo', 'two'])}
+                            id={day.toDoList.topTwo.two}
+                            client={client}
+                        />
+                    ) : (
+                        <Button onClick={() => setPicking('two')}>Select Top 2</Button>
+                    )}
+                </div>
+                <h2>Other To Do</h2>
+                <div>
+                    {day.toDoList.others.map((otherId) => (
+                        <ShowItem
+                            id={otherId}
+                            key={otherId}
+                            client={client}
+                            onClear={() => {
+                                col.removeId(id, ['toDoList', 'others'], otherId);
+                            }}
+                        />
+                    ))}
+                    <Button onClick={() => setPicking('other')}>Add Other Item</Button>
+                </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {Object.keys(day.habits).map((k) => (
-                    <ShowHabit
-                        key={k}
-                        id={k}
-                        setCompleted={(completd) =>
-                            col.setAttribute(id, ['habits', k, 'completed'], completd)
-                        }
-                        client={client}
-                        completed={day.habits[k].completed}
-                        notes={day.habits[k].notes}
-                    />
-                ))}
-                {Object.keys(day.habits).length === 0 ? <h3>No habits selected</h3> : null}
-            </div>
-            <h1>Top Two</h1>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {day.toDoList.topTwo.one != null ? (
-                    <ShowItem
-                        onClear={() => col.clearAttribute(id, ['toDoList', 'topTwo', 'one'])}
-                        id={day.toDoList.topTwo.one}
-                        client={client}
-                    />
-                ) : (
-                    <Button onClick={() => setPicking('one')}>Select Top 1</Button>
-                )}
-                {day.toDoList.topTwo.two != null ? (
-                    <ShowItem
-                        onClear={() => col.clearAttribute(id, ['toDoList', 'topTwo', 'two'])}
-                        id={day.toDoList.topTwo.two}
-                        client={client}
-                    />
-                ) : (
-                    <Button onClick={() => setPicking('two')}>Select Top 2</Button>
-                )}
-            </div>
-            <h2>Other To Do</h2>
-            <div>
-                {day.toDoList.others.map((otherId) => (
-                    <ShowItem
-                        id={otherId}
-                        key={otherId}
-                        client={client}
-                        onClear={() => {
-                            col.removeId(id, ['toDoList', 'others'], otherId);
-                        }}
-                    />
-                ))}
-                <Button onClick={() => setPicking('other')}>Add Other Item</Button>
+            <div style={{ flex: 1 }}>
+                <h1>Schedule</h1>
+                <Hourly col={col} day={day} />
             </div>
         </div>
     );
@@ -333,7 +345,8 @@ const ScheduleWrapper = ({
     const { day } = useParams();
 
     return (
-        <AppShell authData={authData} client={client} drawerItems={null}>
+        <AppShell authData={authData} client={client} noContainer drawerItems={null}>
+            <NavBar id={day} />
             <Schedule client={client} id={day} />
         </AppShell>
     );
