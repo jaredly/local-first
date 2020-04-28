@@ -17,6 +17,7 @@ import { useSyncStatus } from '../../../../../packages/client-react';
 const TopBar = ({ openMenu, client }: { client: Client<SyncStatus>, openMenu: () => void }) => {
     const styles = useStyles();
     const syncStatus = useSyncStatus(React, client);
+    const todayId = showDate(today());
 
     return (
         <AppBar position="sticky">
@@ -35,6 +36,15 @@ const TopBar = ({ openMenu, client }: { client: Client<SyncStatus>, openMenu: ()
                         Planner
                     </Link>
                 </Typography>
+                <Typography variant="h7" className={styles.title}>
+                    <Link
+                        style={{ color: 'inherit', textDecoration: 'none' }}
+                        to={`/day/${todayId}`}
+                    >
+                        Today
+                    </Link>
+                </Typography>
+                <div style={{ flex: 1 }} />
                 {/* {JSON.stringify(syncStatus)} */}
                 {syncStatus.status === 'connected' ? (
                     <Wifi className={styles.connected} />
@@ -54,7 +64,8 @@ const useStyles = makeStyles((theme) => ({
         color: theme.palette.text.disabled,
     },
     title: {
-        flexGrow: 1,
+        // flexGrow: 1,
+        marginRight: theme.spacing(2),
     },
     menuButton: {
         marginRight: (console.log(theme.palette), theme.spacing(2)),
