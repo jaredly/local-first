@@ -187,6 +187,9 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
                     } else {
                         col.removeId(oldPid, ['children'], dragging.id);
                         console.log('inserting', newPid, dest.id, dest.idx, dragging.id);
+                        // STOPSHIP: figure out why inserting was
+                        // so often in the wrong place when using
+                        // the `insertId` function (in previous commit)
                         // col.insertId(newPid, ['children'], dest.idx, dragging.id);
                         col.insertIdRelative(
                             newPid,
