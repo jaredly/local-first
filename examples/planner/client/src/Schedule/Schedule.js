@@ -288,6 +288,15 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                         );
                     } else if (dest.type === 'hourly') {
                         console.log('hour');
+                        const scheduleId = client.getStamp();
+                        col.setAttribute(id, ['schedule', scheduleId], {
+                            id: scheduleId,
+                            itemId: dragging.id,
+                            startTime: dest.time * 60, // in minutes
+                            endTime: dest.time * 60 + 30,
+                            notes: null,
+                            completed: null,
+                        });
                     }
                 },
             );
@@ -492,11 +501,13 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                     <Button onClick={() => setPicking('other')}>Add Other Item</Button>
                 </div>
             </div>
+            <div style={{ width: 12 }} />
             <div style={{ flex: 1 }}>
                 <h1>Schedule</h1>
                 <Hourly
                     col={col}
                     day={day}
+                    client={client}
                     onRef={(hourly) => {
                         refs.hourly = hourly;
                     }}
