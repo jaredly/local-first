@@ -119,7 +119,10 @@ export const validateDelta = function<T, Other, OtherDelta>(
                         t,
                         delta.path.map(p => p.key),
                         // either it must be allowed to be empty (e.g. optional), or the path must be toplevel
-                        inner => {
+                        (inner, parent) => {
+                            if (parent && parent.type === 'map') {
+                                return; // all good
+                            }
                             if (inner.type !== 'optional' && delta.path.length > 0) {
                                 throw new ValidationError(
                                     `Clearing out something that's not optional`,
@@ -177,11 +180,12 @@ export const validateDelta = function<T, Other, OtherDelta>(
 export const validatePath = (
     t: Type,
     setPath: Array<string | number>,
-    check: Type => void,
+    check: (Type, ?Type) => void,
     path: Array<string | number> = [],
+    parent: ?Type,
 ) => {
     if (setPath.length === 0) {
-        return check(t);
+        return check(t, parent);
     }
     const attr = setPath[0];
     if (t === 'id-array') {
@@ -196,11 +200,11 @@ export const validatePath = (
     }
     switch (t.type) {
         case 'array':
-            return validatePath(t.item, setPath.slice(1), check, path.concat([attr]));
+            return validatePath(t.item, setPath.slice(1), check, path.concat([attr]), t);
         case 'optional':
             return validatePath(t.value, setPath, check, path);
         case 'map':
-            return validatePath(t.value, setPath.slice(1), check, path.concat([attr]));
+            return validatePath(t.value, setPath.slice(1), check, path.concat([attr]), t);
         case 'object':
             if (typeof attr !== 'string') {
                 throw new Error(`Object attributes must be strings`);
@@ -208,7 +212,13 @@ export const validatePath = (
             if (!t.attributes[attr]) {
                 throw new ValidationError(`Invalid sub path`, t, path.concat([attr]));
             }
-            return validatePath(t.attributes[attr], setPath.slice(1), check, path.concat([attr]));
+            return validatePath(
+                t.attributes[attr],
+                setPath.slice(1),
+                check,
+                path.concat([attr]),
+                t,
+            );
         default:
             throw new Error(`Invalid type schema ${JSON.stringify(t)}`);
     }
