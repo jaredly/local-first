@@ -257,6 +257,48 @@ export const deltas = {
             value,
         };
     },
+    insertRelative<T, Other>(
+        current: CRDT<T, Other>,
+        path: Array<string | number>,
+        id: string,
+        relativeTo: string,
+        before: boolean,
+        value: CRDT<T, Other>,
+        stamp: string,
+    ): HostDelta<T, Other> {
+        const array = get(current, path);
+        if (!array || array.meta.type !== 'array') {
+            throw new Error(
+                `Can only insert into an array, not a ${array ? array.meta.type : 'null'}`,
+            );
+        }
+        const meta = array.meta;
+
+        const relIdx = meta.idsInOrder.indexOf(relativeTo);
+        if (relIdx === -1) {
+            throw new Error(
+                `Relative ${relativeTo} not in children ${meta.idsInOrder.join(', ')}}`,
+            );
+        }
+        const [prev, after] = before
+            ? [meta.idsInOrder[relIdx - 1], relativeTo]
+            : [relativeTo, meta.idsInOrder[relIdx + 1]];
+        const newSort = sortedArray.between(
+            prev ? meta.items[prev].sort.idx : null,
+            after ? meta.items[after].sort.idx : null,
+        );
+
+        const sort = {
+            stamp,
+            idx: newSort,
+        };
+        return {
+            type: 'insert',
+            path: makeKeyPath(current.meta, path.concat([id])),
+            sort,
+            value,
+        };
+    },
     reorderRelative<T, Other>(
         current: CRDT<T, Other>,
         path: Array<string | number>,

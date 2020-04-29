@@ -278,6 +278,16 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                             col.setAttribute(id, ['toDoList', 'topTwo', 'one'], two);
                         }
                         col.setAttribute(id, ['toDoList', 'topTwo', 'two'], dragging.id);
+                    } else if (dest.type === 'other') {
+                        col.reorderIdRelative(
+                            id,
+                            ['toDoList', 'others'],
+                            dragging.id,
+                            dest.id,
+                            dest.before,
+                        );
+                    } else if (dest.type === 'hourly') {
+                        console.log('hour');
                     }
                 },
             );

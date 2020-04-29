@@ -12,7 +12,6 @@ export const interleave = function <T>(items: Array<T>, fn: (number) => T): Arra
 };
 
 export const sameDay = (one: Date, two: Date) => {
-    console.log('is same', one.toDateString(), two.toDateString());
     return (
         one.getFullYear() === two.getFullYear() &&
         one.getMonth() === two.getMonth() &&

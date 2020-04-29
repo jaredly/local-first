@@ -11,7 +11,8 @@ export type Dest =
       }
     | {
           type: 'other',
-          index: number,
+          //   index: number,
+          before: boolean,
           id: string,
       }
     | {
@@ -83,7 +84,8 @@ export const calculateDragTargets = (
                 contents: {
                     type: 'other',
                     id: key,
-                    index: refs.others[key].idx,
+                    // index: refs.others[key].idx,
+                    before: true,
                 },
             });
 
@@ -96,7 +98,8 @@ export const calculateDragTargets = (
                 contents: {
                     type: 'other',
                     id: key,
-                    index: refs.others[key].idx + 1,
+                    // index: refs.others[key].idx + 1,
+                    before: false,
                 },
             });
         });
@@ -120,6 +123,8 @@ export const calculateDragTargets = (
             });
         }
     }
+
+    boxes.sort((a, b) => a.top - b.top);
 
     return boxes;
 };

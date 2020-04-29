@@ -173,7 +173,7 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
                             // STOPSHIP
                         } else {
                             col.removeId(oldPid, ['children'], dragging.id);
-                            col.insertId(dest.id, ['children'], 0, dragging.id);
+                            col.insertId(newPid, ['children'], 0, dragging.id);
                         }
                     } else if (oldPid === newPid) {
                         // console.log(dest);
@@ -187,7 +187,14 @@ const Items = ({ client, showAll }: { client: Client<SyncStatus>, showAll: boole
                     } else {
                         col.removeId(oldPid, ['children'], dragging.id);
                         console.log('inserting', newPid, dest.id, dest.idx, dragging.id);
-                        col.insertId(newPid, ['children'], dest.idx, dragging.id);
+                        // col.insertId(newPid, ['children'], dest.idx, dragging.id);
+                        col.insertIdRelative(
+                            newPid,
+                            ['children'],
+                            dragging.id,
+                            dest.id,
+                            dest.position === 'top',
+                        );
                     }
                 },
             );

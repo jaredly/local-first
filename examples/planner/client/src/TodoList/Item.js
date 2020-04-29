@@ -278,6 +278,7 @@ export const Item = React.memo<Props>(
                         <div style={{ width: 32 }} />
                     )}
                     <div
+                        style={{ display: 'flex', flex: 1, alignItems: 'flex-start' }}
                         ref={(node) => {
                             if (node) {
                                 onDragRef(item.id, {
@@ -300,131 +301,136 @@ export const Item = React.memo<Props>(
                                 onDragRef(item.id, null);
                             }
                         }}
-                        className={newFocus ? styles.itemNewFocus : undefined}
-                        style={{
-                            position: 'relative',
-                            display: 'flex',
-                            flexDirection: 'row',
-                            flex: 1,
-                            alignItems: 'flex-start',
-                        }}
                     >
-                        {item.style === 'group' ? (
-                            <div
-                                style={{ padding: 9 }}
-                                onClick={() => setRootPath(path.concat([item.id]))}
-                            >
-                                <Folder />
-                            </div>
-                        ) : selection ? (
-                            <SelectionButton selection={selection} id={item.id} />
-                        ) : (
-                            <Checkbox
-                                // type="checkbox"
-                                checked={!!item.completedDate}
-                                onChange={() => {
-                                    col.setAttribute(
-                                        item.id,
-                                        ['completedDate'],
-                                        item.completedDate != null ? null : Date.now(),
-                                    );
-                                }}
-                                onClick={(evt) => evt.stopPropagation()}
-                            />
-                        )}
                         <div
-                            className={`${
-                                item.style === 'group' ? styles.groupTitle : styles.itemTitle
-                            } ${item.completedDate != null ? styles.completed : ''}`}
+                            className={newFocus ? styles.itemNewFocus : undefined}
+                            style={{
+                                position: 'relative',
+                                display: 'flex',
+                                flexDirection: 'row',
+                                flex: 1,
+                                alignItems: 'flex-start',
+                            }}
                         >
-                            {editing != null ? (
-                                <TextField
-                                    autoFocus
-                                    multiline
-                                    className={styles.input}
-                                    // inputProps={{
-                                    //     style: { fontSize: 'inherit' },
-                                    // }}
-                                    // size="medium"
-                                    onClick={(evt) => evt.stopPropagation()}
-                                    value={editing}
-                                    onChange={(evt) => setEditing(evt.target.value)}
-                                    onKeyDown={(evt) => {
-                                        if (evt.key === 'Enter' && editing.trim().length > 0) {
-                                            col.setAttribute(item.id, ['title'], editing);
-                                            setEditing(null);
-                                        }
-                                    }}
-                                    onBlur={() => setEditing(null)}
-                                />
+                            {item.style === 'group' ? (
+                                <div
+                                    style={{ padding: 9 }}
+                                    onClick={() => setRootPath(path.concat([item.id]))}
+                                >
+                                    <Folder />
+                                </div>
+                            ) : selection ? (
+                                <SelectionButton selection={selection} id={item.id} />
                             ) : (
-                                item.title
+                                <Checkbox
+                                    // type="checkbox"
+                                    checked={!!item.completedDate}
+                                    onChange={() => {
+                                        col.setAttribute(
+                                            item.id,
+                                            ['completedDate'],
+                                            item.completedDate != null ? null : Date.now(),
+                                        );
+                                    }}
+                                    onClick={(evt) => evt.stopPropagation()}
+                                />
                             )}
-                        </div>
-                        {Object.keys(item.checkDates).length ? (
                             <div
-                                style={{
-                                    position: 'absolute',
-                                    bottom: 0,
-                                    right: 0,
-                                    display: 'flex',
-                                    flexDirection: 'row',
-                                }}
+                                className={`${
+                                    item.style === 'group' ? styles.groupTitle : styles.itemTitle
+                                } ${item.completedDate != null ? styles.completed : ''}`}
                             >
-                                {Object.keys(item.checkDates).map((date) => {
-                                    const today = isToday(new Date(parseInt(date, 36)));
-                                    return (
-                                        <div
-                                            key={date}
-                                            className={today ? styles.checkToday : styles.check}
-                                            title={new Date(parseInt(date, 36)).toLocaleString()}
-                                        >
-                                            <Check
-                                                color={today ? 'primary' : 'disabled'}
-                                                fontSize="inherit"
-                                            />
-                                        </div>
-                                    );
-                                })}
+                                {editing != null ? (
+                                    <TextField
+                                        autoFocus
+                                        multiline
+                                        className={styles.input}
+                                        // inputProps={{
+                                        //     style: { fontSize: 'inherit' },
+                                        // }}
+                                        // size="medium"
+                                        onClick={(evt) => evt.stopPropagation()}
+                                        value={editing}
+                                        onChange={(evt) => setEditing(evt.target.value)}
+                                        onKeyDown={(evt) => {
+                                            if (evt.key === 'Enter' && editing.trim().length > 0) {
+                                                col.setAttribute(item.id, ['title'], editing);
+                                                setEditing(null);
+                                            }
+                                        }}
+                                        onBlur={() => setEditing(null)}
+                                    />
+                                ) : (
+                                    item.title
+                                )}
                             </div>
-                        ) : null}
+                            {Object.keys(item.checkDates).length ? (
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        bottom: 0,
+                                        right: 0,
+                                        display: 'flex',
+                                        flexDirection: 'row',
+                                    }}
+                                >
+                                    {Object.keys(item.checkDates).map((date) => {
+                                        const today = isToday(new Date(parseInt(date, 36)));
+                                        return (
+                                            <div
+                                                key={date}
+                                                className={today ? styles.checkToday : styles.check}
+                                                title={new Date(
+                                                    parseInt(date, 36),
+                                                ).toLocaleString()}
+                                            >
+                                                <Check
+                                                    color={today ? 'primary' : 'disabled'}
+                                                    fontSize="inherit"
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : null}
+                        </div>
+
+                        {!open && visibleChildren > 0 ? <Chip label={visibleChildren} /> : null}
+
+                        <IconButton
+                            aria-label="more"
+                            // aria-controls="long-menu"
+                            aria-haspopup="true"
+                            style={{ touchAction: 'none' }}
+                            onTouchStart={(evt) => {
+                                console.log('touch');
+                                // evt.preventDefault();
+                                onDragStart({
+                                    id: item.id,
+                                    path,
+                                    onStart: () => setDragging(true),
+                                    onFinish: () => setDragging(false),
+                                    pos: { x: evt.clientX, y: evt.clientY },
+                                });
+                            }}
+                            onMouseDown={(evt) => {
+                                onDragStart({
+                                    id: item.id,
+                                    path,
+                                    onStart: () => setDragging(true),
+                                    onFinish: () => setDragging(false),
+                                    pos: { x: evt.clientX, y: evt.clientY },
+                                });
+                            }}
+                            onClick={(evt) => {
+                                evt.stopPropagation();
+                                setMenu(true);
+                            }}
+                            ref={setAnchorEl}
+                        >
+                            <MoreVertIcon />
+                        </IconButton>
                     </div>
-
-                    {!open && visibleChildren > 0 ? <Chip label={visibleChildren} /> : null}
-
-                    <IconButton
-                        aria-label="more"
-                        // aria-controls="long-menu"
-                        aria-haspopup="true"
-                        style={{ touchAction: 'none' }}
-                        onTouchStart={(evt) => {
-                            console.log('touch');
-                            // evt.preventDefault();
-                            onDragStart({
-                                id: item.id,
-                                path,
-                                onStart: () => setDragging(true),
-                                onFinish: () => setDragging(false),
-                                pos: { x: evt.clientX, y: evt.clientY },
-                            });
-                        }}
-                        onMouseDown={(evt) => {
-                            onDragStart({
-                                id: item.id,
-                                path,
-                                onStart: () => setDragging(true),
-                                onFinish: () => setDragging(false),
-                                pos: { x: evt.clientX, y: evt.clientY },
-                            });
-                        }}
-                        onClick={(evt) => {
-                            evt.stopPropagation();
-                            setMenu(true);
-                        }}
-                        ref={setAnchorEl}
-                    >
-                        <MoreVertIcon />
-                    </IconButton>
                     {menu ? (
                         <Menu
                             id="long-menu"

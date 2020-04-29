@@ -59,6 +59,15 @@ export type CRDTImpl<Delta, Data> = {
         replace(Data): Delta,
         remove(string): Delta,
         insert(Data, Array<string | number>, number, string, Data, string): Delta,
+        insertRelative(
+            Data,
+            Array<string | number>,
+            chidlId: string,
+            relativeTo: string,
+            before: boolean,
+            Data,
+            string,
+        ): Delta,
         reorderRelative(
             Data,
             path: Array<string | number>,
@@ -224,24 +233,36 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             return applyDelta(id, delta);
         },
 
-        // async reorderId(id: string, path: Array<string | number>, childId: string, newIdx: number) {
-        //     const sub = subSchema(schema, path);
+        async insertIdRelative(
+            id: string,
+            path: Array<string | number>,
+            childId: string,
+            relativeTo: string,
+            before: boolean,
+        ) {
+            if (state.cache[id] == null) {
+                const stored = await persistence.load(colid, id);
+                if (!stored) {
+                    throw new Error(`Cannot set attribute, node with id ${id} doesn't exist`);
+                }
+                state.cache[id] = stored;
+            }
 
-        //     if (state.cache[id] == null) {
-        //         throw new Error(
-        //             `As reorder is data-sensitive, we need to have the data cached before we call this`,
-        //         );
-        //         // const stored = await persistence.load(colid, id);
-        //         // if (!stored) {
-        //         //     throw new Error(`Cannot set attribute, node with id ${id} doesn't exist`);
-        //         // }
-        //         // state.cache[id] = stored;
-        //     }
-        // },
+            const stamp = getStamp();
+            const delta = crdt.deltas.insertRelative(
+                state.cache[id],
+                path,
+                childId,
+                relativeTo,
+                before,
+                crdt.createValue(childId, stamp, getStamp, 'string'),
+                stamp,
+            );
+
+            return applyDelta(id, delta);
+        },
 
         async insertId(id: string, path: Array<string | number>, idx: number, childId: string) {
-            // const sub = subSchema(schema, path);
-
             if (state.cache[id] == null) {
                 const stored = await persistence.load(colid, id);
                 if (!stored) {
