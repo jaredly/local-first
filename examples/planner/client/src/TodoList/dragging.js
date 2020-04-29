@@ -58,29 +58,30 @@ const getPosition = function <Dest>(
 ): ?DragState<Dest> {
     const offsetParent = boxes[0].offsetParent;
     const offset = offsetParent ? offsetParent.getBoundingClientRect().top : 0;
-    for (let i = 0; i < boxes.length; i++) {
-        if (limitX && !inside(pos.x, boxes[i])) {
-            continue;
-        }
+    const matchingBoxes = limitX ? boxes.filter((box) => inside(pos.x, box)) : boxes;
+    for (let i = 0; i < matchingBoxes.length; i++) {
+        // if (limitX && !inside(pos.x, matchingBoxes[i])) {
+        //     continue;
+        // }
         // if we're closer to the current than the next one, go with it
-        const d0 = Math.abs(pos.y - (boxes[i].top + boxes[i].height / 2));
+        const d0 = Math.abs(pos.y - (matchingBoxes[i].top + matchingBoxes[i].height / 2));
         const dNext =
-            i < boxes.length - 1
-                ? limitX && !inside(pos.x, boxes[i])
+            i < matchingBoxes.length - 1
+                ? limitX && !inside(pos.x, matchingBoxes[i])
                     ? Infinity
-                    : Math.abs(pos.y - (boxes[i + 1].top + boxes[i + 1].height / 2))
+                    : Math.abs(pos.y - (matchingBoxes[i + 1].top + matchingBoxes[i + 1].height / 2))
                 : Infinity;
         if (d0 < dNext) {
             return {
                 started: true,
                 dragging,
-                dest: boxes[i].contents,
+                dest: matchingBoxes[i].contents,
                 dims: {
-                    top: boxes[i].top,
-                    height: boxes[i].height,
-                    // y: boxes[i].y - offset,
-                    left: boxes[i].left,
-                    width: boxes[i].width,
+                    top: matchingBoxes[i].top,
+                    height: matchingBoxes[i].height,
+                    // y: matchingBoxes[i].y - offset,
+                    left: matchingBoxes[i].left,
+                    width: matchingBoxes[i].width,
                 },
             };
         }

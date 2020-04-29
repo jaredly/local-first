@@ -590,7 +590,7 @@ const useStyles = makeStyles((theme) => ({
         position: 'absolute',
         height: 4,
         marginTop: -2,
-        backgroundColor: theme.palette.primary.dark,
+        backgroundColor: theme.palette.warning.dark,
         opacity: 0.5,
         mouseEvents: 'none',
         // transition: `transform ease .1s`,
