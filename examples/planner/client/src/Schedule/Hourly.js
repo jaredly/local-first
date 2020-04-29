@@ -35,22 +35,135 @@ const ap = (hour) => (hour >= 12 ? 'pm' : 'am');
 const startHour = 3;
 const endHour = 21;
 
-const ScheduledItem = ({ client, item, divHeight }) => {
+const ScheduledItem = ({
+    setStart,
+    setDuration,
+    client,
+    item,
+    div,
+    dragging,
+    setDragging,
+    onRemove,
+}) => {
+    const divHeight = div ? div.offsetHeight : 0;
     const styles = useStyles();
     const [_, todo] =
         item.itemId != null ? useItem(React, client, 'items', item.itemId) : [null, null];
+
+    const currentDragging = React.useRef(dragging);
+    currentDragging.current = dragging;
+
+    React.useEffect(() => {
+        if (dragging && dragging.id === item.id) {
+            if (dragging.type === 'move') {
+                const move = (evt) => {
+                    const top = evt.clientY - div.offsetTop;
+                    const hour = (top / divHeight) * (endHour + 1 - startHour) + startHour;
+                    const stock = Math.min(Math.max(startHour, parseInt(hour * 4) / 4), endHour);
+                    setDragging({ id: item.id, top: stock, type: 'move' });
+                };
+                const up = (evt) => {
+                    if (currentDragging.current && currentDragging.current.top != null) {
+                        const { top } = currentDragging.current;
+                        if (top * 60 !== item.startTime) {
+                            setStart(top * 60);
+                        }
+                    }
+                    console.log(currentDragging.current);
+                    setDragging(null);
+                };
+                window.addEventListener('mousemove', move, true);
+                window.addEventListener('mouseup', up, true);
+                return () => {
+                    window.removeEventListener('mousemove', move, true);
+                    window.removeEventListener('mouseup', up, true);
+                };
+            } else {
+                const move = (evt) => {
+                    const top = evt.clientY - div.offsetTop;
+                    const hour = (top / divHeight) * (endHour + 1 - startHour) + startHour;
+                    const stock = Math.min(Math.max(startHour, parseInt(hour * 4) / 4), endHour);
+                    setDragging({
+                        id: item.id,
+                        top: Math.max(15, stock * 60 - item.startTime),
+                        type: 'resize',
+                    });
+                };
+                const up = (evt) => {
+                    if (currentDragging.current && currentDragging.current.top != null) {
+                        const { top } = currentDragging.current;
+                        if (top !== item.duration) {
+                            setDuration(top);
+                        }
+                    }
+                    console.log(currentDragging.current);
+                    setDragging(null);
+                };
+                window.addEventListener('mousemove', move, true);
+                window.addEventListener('mouseup', up, true);
+                return () => {
+                    window.removeEventListener('mousemove', move, true);
+                    window.removeEventListener('mouseup', up, true);
+                };
+            }
+        }
+    }, [!!dragging]);
+
+    const currentTop = ((item.startTime / 60 - startHour) / (endHour + 1 - startHour)) * divHeight;
+
     return (
         <div
             className={styles.schedule}
+            onMouseDown={(evt) => {
+                evt.preventDefault();
+                // pos
+                // if (evt.clientX < )
+                setDragging({ id: item.id, top: null, type: 'move' });
+            }}
             style={{
                 height:
-                    ((item.endTime - item.startTime) / 60 / (endHour + 1 - startHour)) * divHeight,
-                top: ((item.startTime / 60 - startHour) / (endHour + 1 - startHour)) * divHeight,
+                    dragging &&
+                    dragging.id === item.id &&
+                    dragging.top != null &&
+                    dragging.type === 'resize'
+                        ? (dragging.top / 60 / (endHour + 1 - startHour)) * divHeight
+                        : (Math.max(30, item.duration || 0) / 60 / (endHour + 1 - startHour)) *
+                          divHeight,
+                top:
+                    dragging &&
+                    dragging.id === item.id &&
+                    dragging.top != null &&
+                    dragging.type === 'move'
+                        ? ((dragging.top - startHour) / (endHour + 1 - startHour)) * divHeight
+                        : currentTop,
             }}
         >
-            {/* {item.itemId} */}
-            {/* {item.startTime / 60} */}
             {todo != null && todo !== false ? todo.title : null}
+            <button
+                onClick={() => {
+                    onRemove();
+                }}
+            >
+                x
+            </button>
+            <div
+                style={{
+                    position: 'absolute',
+                    cursor: 'ns-resize',
+                    bottom: 0,
+                    height: 4,
+                    left: 0,
+                    right: 0,
+                    // backgroundColor: 'red',
+                }}
+                onMouseDown={(evt) => {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    // pos
+                    // if (evt.clientX < )
+                    setDragging({ id: item.id, top: null, type: 'resize' });
+                }}
+            />
         </div>
     );
 };
@@ -80,7 +193,8 @@ const Hourly = ({
     }
 
     const [div, setDiv] = React.useState(null);
-    const divHeight = div ? div.offsetHeight : 0;
+
+    const [dragging, setDragging] = React.useState(null);
 
     return (
         <div
@@ -99,7 +213,19 @@ const Hourly = ({
                 ? Object.keys(day.schedule).map((k) => (
                       <ScheduledItem
                           key={k}
-                          divHeight={divHeight}
+                          onRemove={() => {
+                              col.clearAttribute(day.id, ['schedule', k]);
+                          }}
+                          setStart={(start) =>
+                              col.setAttribute(day.id, ['schedule', k, 'startTime'], start)
+                          }
+                          setDuration={(duration) =>
+                              col.setAttribute(day.id, ['schedule', k, 'duration'], duration)
+                          }
+                          dragging={dragging}
+                          setDragging={setDragging}
+                          div={div}
+                          //   divHeight={divHeight}
                           item={day.schedule[k]}
                           client={client}
                       />
@@ -111,6 +237,7 @@ const Hourly = ({
 
 const useStyles = makeStyles((theme) => ({
     schedule: {
+        cursor: 'move',
         position: 'absolute',
         //   backgroundColor: 'rgba(255,255,255,0.1)',
         backgroundColor: theme.palette.background.paper,

@@ -72,6 +72,7 @@ export type ItemT = {
     trashedDate?: ?number,
     deferUntil?: ?number,
     checkDates: { [date: string]: boolean },
+    horizon?: ?number, // 0 for immediate, 1 for near, 2 for far
     dueDate?: ?number,
     timeEstimate?: ?number,
     tags: { [tagId: string]: number },
@@ -107,6 +108,7 @@ export const ItemSchema: Schema = {
         style: { type: 'optional', value: 'string' },
         description: 'string',
         createdDate: 'number',
+        horizon: { type: 'optional', value: 'number' },
         timeTracked: { type: 'optional', value: 'number' },
         trashedDate: { type: 'optional', value: 'number' },
         deferUntil: { type: 'optional', value: 'number' },
@@ -209,7 +211,7 @@ export type Day = {
             id: string,
             itemId: ?string,
             startTime: number,
-            endTime: number,
+            duration: number,
             notes: ?string,
             completed: ?number,
             // TODO maybe keep track of modification history? idk
@@ -249,7 +251,7 @@ export const DaySchema: Schema = {
                     id: 'string',
                     itemId: { type: 'optional', value: 'string' },
                     startTime: 'number',
-                    endTime: 'number',
+                    duration: 'number',
                     notes: { type: 'optional', value: 'string' },
                     completed: { type: 'optional', value: 'number' },
                 },

@@ -293,7 +293,7 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                             id: scheduleId,
                             itemId: dragging.id,
                             startTime: dest.time * 60, // in minutes
-                            endTime: dest.time * 60 + 30,
+                            duration: 30,
                             notes: null,
                             completed: null,
                         });
