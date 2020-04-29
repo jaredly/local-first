@@ -14,31 +14,33 @@ import deepEqual from 'fast-deep-equal';
 import { type PeerChange } from './types';
 
 export const peerTabAwareNetworks = function<SyncStatus>(
-    handleCrossTabChanges: (PeerChange) => mixed,
+    name: string,
+    handleCrossTabChanges: PeerChange => mixed,
     networks: { [key: string]: Network<SyncStatus> },
 ): OldNetwork<{ [key: string]: SyncStatus }> {
     const connectionListeners = [];
     let currentSyncStatus = {};
-    Object.keys(networks).forEach((key) => (currentSyncStatus[key] = networks[key].initial));
+    Object.keys(networks).forEach(key => (currentSyncStatus[key] = networks[key].initial));
 
     const { sendCrossTabChange, sync } = peerTabAwareSync(
-        (status) => {
+        name,
+        status => {
             // STOPSHIP: this status tracking is *broken*, we need to track which network it was
             // when we send status across tabs
-            Object.keys(networks).forEach((key) => (currentSyncStatus[key] = status));
+            Object.keys(networks).forEach(key => (currentSyncStatus[key] = status));
             // currentSyncStatus[] = status;
-            connectionListeners.forEach((f) => f(currentSyncStatus));
+            connectionListeners.forEach(f => f(currentSyncStatus));
         },
-        (peerChange) => {
+        peerChange => {
             // console.log('received peer change');
             handleCrossTabChanges(peerChange);
         },
         // Create the thing.
         (sendCrossTabChange, onStatus) => {
             const syncs = {};
-            Object.keys(networks).forEach((key) => {
+            Object.keys(networks).forEach(key => {
                 syncs[key] = networks[key].createSync(sendCrossTabChange, onStatus, () => {
-                    Object.keys(syncs).forEach((k) => {
+                    Object.keys(syncs).forEach(k => {
                         if (k !== key) {
                             syncs[k](true);
                         }
@@ -46,7 +48,7 @@ export const peerTabAwareNetworks = function<SyncStatus>(
                 });
             });
             return () => {
-                Object.keys(syncs).forEach((k) => {
+                Object.keys(syncs).forEach(k => {
                     syncs[k]();
                 });
             };
@@ -55,7 +57,7 @@ export const peerTabAwareNetworks = function<SyncStatus>(
 
     return {
         setDirty: sync,
-        onSyncStatus: (fn) => {
+        onSyncStatus: fn => {
             connectionListeners.push(fn);
         },
         getSyncStatus() {
@@ -68,18 +70,20 @@ export const peerTabAwareNetworks = function<SyncStatus>(
 };
 
 export const peerTabAwareNetwork = function<SyncStatus>(
-    handleCrossTabChanges: (PeerChange) => mixed,
+    name: string,
+    handleCrossTabChanges: PeerChange => mixed,
     network: Network<SyncStatus>,
 ): OldNetwork<SyncStatus> {
     const connectionListeners = [];
     let currentSyncStatus = network.initial;
 
     const { sendCrossTabChange, sync } = peerTabAwareSync(
-        (status) => {
+        name,
+        status => {
             currentSyncStatus = status;
-            connectionListeners.forEach((f) => f(currentSyncStatus));
+            connectionListeners.forEach(f => f(currentSyncStatus));
         },
-        (peerChange) => {
+        peerChange => {
             // console.log('received peer change');
             handleCrossTabChanges(peerChange);
         },
@@ -93,7 +97,7 @@ export const peerTabAwareNetwork = function<SyncStatus>(
 
     return {
         setDirty: sync,
-        onSyncStatus: (fn) => {
+        onSyncStatus: fn => {
             connectionListeners.push(fn);
         },
         getSyncStatus() {
@@ -106,15 +110,16 @@ export const peerTabAwareNetwork = function<SyncStatus>(
 };
 
 export const peerTabAwareSync = function<SyncStatus>(
-    onStatus: (SyncStatus) => void,
-    handleCrossTabChange: (PeerChange) => void,
+    name: string,
+    onStatus: SyncStatus => void,
+    handleCrossTabChange: PeerChange => void,
     makeLeaderSync: (
         sendCrossTabChanges: (PeerChange) => void,
         onStatus: (SyncStatus) => void,
     ) => () => void,
 ) {
     const { BroadcastChannel, createLeaderElection } = require('broadcast-channel');
-    const channel = new BroadcastChannel('local-first', {
+    const channel = new BroadcastChannel(name, {
         webWorkerSupport: false,
     });
 
@@ -150,7 +155,7 @@ export const peerTabAwareSync = function<SyncStatus>(
     const elector = createLeaderElection(channel);
     let sync = originalSync;
     elector.awaitLeadership().then(() => {
-        sync = makeLeaderSync(sendCrossTabChange, (status) => {
+        sync = makeLeaderSync(sendCrossTabChange, status => {
             onStatus(status);
             sendConnectionStatus(status);
         });

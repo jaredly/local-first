@@ -191,6 +191,7 @@ const tabIsolatedNetwork = function<SyncStatus>(
 };
 
 function createClient<Delta, Data, SyncStatus>(
+    name: string,
     crdt: CRDTImpl<Delta, Data>,
     schemas: { [colid: string]: Schema },
     clock: PersistentClock,
@@ -211,9 +212,13 @@ function createClient<Delta, Data, SyncStatus>(
 
     const network = persistence.tabIsolated
         ? tabIsolatedNetwork(innerNetwork)
-        : peerTabAwareNetwork((msg: PeerChange) => {
-              return onCrossTabChanges(crdt, persistence, state[msg.col], msg.col, msg.nodes);
-          }, innerNetwork);
+        : peerTabAwareNetwork(
+              name,
+              (msg: PeerChange) => {
+                  return onCrossTabChanges(crdt, persistence, state[msg.col], msg.col, msg.nodes);
+              },
+              innerNetwork,
+          );
 
     const collections = {};
 

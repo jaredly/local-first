@@ -105,6 +105,7 @@ export const createPersistedBlobClient = (
     version: number,
 ): Client<BlobSyncStatus> => {
     return createBlobClient<Delta, Data, BlobSyncStatus>(
+        name,
         clientCrdtImpl,
         schemas,
         new PersistentClock(localStorageClockPersist(name)),
@@ -121,6 +122,7 @@ export const createPersistedDeltaClient = (
     indexes: { [colid: string]: { [indexId: string]: IndexConfig } },
 ): Client<SyncStatus> => {
     return createDeltaClient(
+        name,
         clientCrdtImpl,
         schemas,
         new PersistentClock(localStorageClockPersist(name)),
@@ -134,6 +136,7 @@ export const createInMemoryDeltaClient = (
     url: string,
 ): Client<SyncStatus> => {
     return createDeltaClient(
+        'in-memory',
         clientCrdtImpl,
         schemas,
         new PersistentClock(inMemoryClockPersist()),

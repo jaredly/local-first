@@ -91,6 +91,7 @@ export const updateCacheAndNotify = function<Delta, Data>(
 };
 
 function createClient<Delta, Data, SyncStatus>(
+    name: string,
     crdt: CRDTImpl<Delta, Data>,
     schemas: { [colid: string]: Schema },
     clock: PersistentClock,
@@ -101,6 +102,7 @@ function createClient<Delta, Data, SyncStatus>(
     persistence.collections.forEach(id => (state[id] = newCollection()));
 
     const network = peerTabAwareNetwork(
+        name,
         (msg: PeerChange) => {
             return onCrossTabChanges(crdt, persistence, state[msg.col], msg.col, msg.nodes);
         },
