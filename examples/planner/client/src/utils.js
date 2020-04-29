@@ -11,6 +11,19 @@ export const interleave = function <T>(items: Array<T>, fn: (number) => T): Arra
     return res;
 };
 
+export const sameDay = (one: Date, two: Date) => {
+    console.log('is same', one.toDateString(), two.toDateString());
+    return (
+        one.getFullYear() === two.getFullYear() &&
+        one.getMonth() === two.getMonth() &&
+        one.getDate() === two.getDate()
+    );
+};
+
+export const isToday = (date: Date) => {
+    return sameDay(date, today());
+};
+
 export const today = () => {
     const now = new Date();
     // start of day

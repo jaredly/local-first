@@ -12,6 +12,7 @@ import RadioButtonUnchecked from '@material-ui/icons/RadioButtonUnchecked';
 import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
 import KeyboardArrowDown from '@material-ui/icons/KeyboardArrowDown';
 import CheckCircle from '@material-ui/icons/CheckCircle';
+import Check from '@material-ui/icons/Check';
 import Info from '@material-ui/icons/Info';
 import Cancel from '@material-ui/icons/Cancel';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
@@ -20,7 +21,7 @@ import type { Client, Collection, SyncStatus } from '../../../../../packages/cli
 import { useItem, useItems } from '../../../../../packages/client-react';
 import { type ItemT, newItem, newDay } from '../types';
 import { useLocalStorageSharedToggle } from '../useLocalStorage';
-import { showDate, today, tomorrow } from '../utils';
+import { showDate, today, isToday, tomorrow } from '../utils';
 
 import { ItemChildren } from './ItemChildren';
 import Description from './Description';
@@ -366,16 +367,25 @@ export const Item = React.memo<Props>(
                                     position: 'absolute',
                                     bottom: 0,
                                     right: 0,
+                                    display: 'flex',
+                                    flexDirection: 'row',
                                 }}
                             >
-                                {Object.keys(item.checkDates).map((date) => (
-                                    <div
-                                        key={date}
-                                        title={new Date(parseInt(date, 36)).toLocaleString()}
-                                    >
-                                        ✅
-                                    </div>
-                                ))}
+                                {Object.keys(item.checkDates).map((date) => {
+                                    const today = isToday(new Date(parseInt(date, 36)));
+                                    return (
+                                        <div
+                                            key={date}
+                                            className={today ? styles.checkToday : styles.check}
+                                            title={new Date(parseInt(date, 36)).toLocaleString()}
+                                        >
+                                            <Check
+                                                color={today ? 'primary' : 'disabled'}
+                                                fontSize="inherit"
+                                            />
+                                        </div>
+                                    );
+                                })}
                             </div>
                         ) : null}
                     </div>
@@ -614,5 +624,13 @@ const useStyles = makeStyles((theme) => ({
         color: theme.palette.text.disabled,
         paddingLeft: theme.spacing(2),
         marginBottom: theme.spacing(1),
+    },
+    checkToday: {
+        // color: theme.palette.primary.light,
+        fontSize: 20,
+    },
+    check: {
+        // color: theme.palette.text.disabled,
+        fontSize: 20,
     },
 }));
