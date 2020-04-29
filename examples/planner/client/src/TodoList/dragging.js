@@ -18,6 +18,7 @@ export type DropTarget<T> = {
 
 export type DragInit = {
     id: string,
+    type?: string,
     path: Array<string>,
     onStart: () => void,
     onFinish: () => void,

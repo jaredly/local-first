@@ -135,7 +135,6 @@ const days = 'Sun,Mon,Tue,Wed,Thu,Fri,Sat'.split(',');
 const months = 'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec'.split(',');
 
 const humanReadable = (date: Date) => {
-    // const now = new Date();
     const todayDate = today();
     if (date.getTime() === todayDate.getTime()) {
         return 'Today';
@@ -148,11 +147,7 @@ const humanReadable = (date: Date) => {
     if (date.getTime() === yesterDate.getTime()) {
         return 'Yesterday';
     }
-    // return date.toLocaleDateString();
-    // return date.toDateString();
     return `${days[date.getDay()]} ${months[date.getMonth()]} ${date.getDate()}`;
-    // console.log(date.getTime() - todayDate.getTime());
-    // return showDate(date);
 };
 
 const NavBar = ({ id }: { id: string }) => {
@@ -181,6 +176,22 @@ const NavBar = ({ id }: { id: string }) => {
 import { type DragRefs, calculateDragTargets, type Dest } from './dragging';
 import { setupDragListeners, type DragState, type DragInit } from '../TodoList/dragging';
 
+const isDroppable = (dragger: DragState<Dest>) => {
+    if (!dragger.dims || !dragger.dest) return false;
+    if (dragger.dest.type === 'topone' && dragger.dragging.type === 'topone') {
+        return false;
+    }
+    if (dragger.dest.type === 'toptwo' && dragger.dragging.type === 'toptwo') {
+        return false;
+    }
+    if (dragger.dest.type === 'other' && dragger.dragging.id === dragger.dest.id) {
+        return false;
+    }
+    // console.log('fine', dragger.dest.type, dragger.dragging.type);
+    // if (dragger.dest.id === dragger.dragging.id) return false
+    return true;
+};
+
 export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus> }) => {
     const [col, day] = useItem<Day, SyncStatus>(React, client, 'days', id);
     const match = useRouteMatch();
@@ -193,12 +204,35 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
     const currentDragger = React.useRef(dragger);
     currentDragger.current = dragger;
 
+    const currentDay = React.useRef(day);
+    currentDay.current = day;
+
     const refs: DragRefs = React.useMemo(
         () => ({ hourly: null, others: {}, topOne: null, topTwo: null }),
         [],
     );
 
-    // const onDragStart = React.useCallback()
+    const onDragStartTopOne = React.useCallback((config: DragInit) => {
+        // TODO differentiate between a "top two" thing and
+        // an "other" thing, which should be draggable to the top two places
+        setDragger({
+            dragging: { ...config, type: 'topone' },
+            dest: null,
+            started: false,
+            dims: null,
+        });
+    }, []);
+
+    const onDragStartTopTwo = React.useCallback((config: DragInit) => {
+        // TODO differentiate between a "top two" thing and
+        // an "other" thing, which should be draggable to the top two places
+        setDragger({
+            dragging: { ...config, type: 'toptwo' },
+            dest: null,
+            started: false,
+            dims: null,
+        });
+    }, []);
 
     const onDragStart = React.useCallback((config: DragInit) => {
         // TODO differentiate between a "top two" thing and
@@ -220,34 +254,60 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                 setDragger,
                 (dragging, dest) => {
                     console.log('drop', dragging, dest);
-                    // const oldPid = last(dragging.path);
-                    // const newPid = last(dest.path);
-                    // if (dest.position === 'first-child') {
-                    //     if (dest.id === oldPid) {
-                    //         // dunno what to do here
-                    //         // STOPSHIP
-                    //     } else {
-                    //         col.removeId(oldPid, ['children'], dragging.id);
-                    //         col.insertId(dest.id, ['children'], 0, dragging.id);
-                    //     }
-                    // } else if (oldPid === newPid) {
-                    //     // console.log(dest);
-                    //     col.reorderIdRelative(
-                    //         newPid,
-                    //         ['children'],
-                    //         dragging.id,
-                    //         dest.id,
-                    //         dest.position === 'top',
-                    //     );
-                    // } else {
-                    //     col.removeId(oldPid, ['children'], dragging.id);
-                    //     console.log('inserting', newPid, dest.id, dest.idx, dragging.id);
-                    //     col.insertId(newPid, ['children'], dest.idx, dragging.id);
-                    // }
+                    if (dest.type === 'topone') {
+                        if (dragging.type === 'topone') {
+                            return;
+                        }
+                        if (dragging.type === 'toptwo') {
+                            if (!currentDay.current) {
+                                return;
+                            }
+                            const one = currentDay.current.toDoList.topTwo.one;
+                            col.setAttribute(id, ['toDoList', 'topTwo', 'two'], one);
+                        }
+                        col.setAttribute(id, ['toDoList', 'topTwo', 'one'], dragging.id);
+                    } else if (dest.type === 'toptwo') {
+                        if (dragging.type === 'toptwo') {
+                            return;
+                        }
+                        if (dragging.type === 'topone') {
+                            if (!currentDay.current) {
+                                return;
+                            }
+                            const two = currentDay.current.toDoList.topTwo.two;
+                            col.setAttribute(id, ['toDoList', 'topTwo', 'one'], two);
+                        }
+                        col.setAttribute(id, ['toDoList', 'topTwo', 'two'], dragging.id);
+                    }
                 },
             );
         }
     }, [!!dragger]);
+
+    const oneDragRef = React.useCallback((_, data) => {
+        if (data) {
+            // $FlowFixMe
+            refs.topOne = data.node;
+        }
+    }, []);
+
+    const twoDragRef = React.useCallback((_, data) => {
+        if (data) {
+            // $FlowFixMe
+            refs.topTwo = data.node;
+        }
+    }, []);
+
+    const onDragRef = React.useCallback((id, data) => {
+        if (data && data.path.length === 0) {
+            refs.others[id] = {
+                id,
+                idx: data.idx,
+                // $FlowFixMe
+                node: data.node,
+            };
+        }
+    }, []);
 
     if (day === false) {
         return (
@@ -324,7 +384,7 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
     return (
         <div style={{ display: 'flex' }}>
             <div style={{ flex: 1 }}>
-                {dragger != null && dragger.dims != null && dragger.dest != null ? (
+                {dragger != null && dragger.dims != null && isDroppable(dragger) ? (
                     <div
                         className={styles.dragIndicator}
                         style={{
@@ -368,13 +428,8 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                             onClear={() => col.clearAttribute(id, ['toDoList', 'topTwo', 'one'])}
                             id={day.toDoList.topTwo.one}
                             client={client}
-                            onDragStart={onDragStart}
-                            onDragRef={(_, data) => {
-                                if (data) {
-                                    // $FlowFixMe
-                                    refs.topOne = data.node;
-                                }
-                            }}
+                            onDragStart={onDragStartTopOne}
+                            onDragRef={oneDragRef}
                         />
                     ) : (
                         <div
@@ -393,13 +448,8 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                             onClear={() => col.clearAttribute(id, ['toDoList', 'topTwo', 'two'])}
                             id={day.toDoList.topTwo.two}
                             client={client}
-                            onDragStart={onDragStart}
-                            onDragRef={(_, data) => {
-                                if (data) {
-                                    // $FlowFixMe
-                                    refs.topTwo = data.node;
-                                }
-                            }}
+                            onDragStart={onDragStartTopTwo}
+                            onDragRef={twoDragRef}
                         />
                     ) : (
                         <div
@@ -425,16 +475,8 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                             onClear={() => {
                                 col.removeId(id, ['toDoList', 'others'], otherId);
                             }}
-                            onDragRef={(id, data) => {
-                                if (data && data.path.length === 0) {
-                                    refs.others[id] = {
-                                        id,
-                                        idx: i,
-                                        // $FlowFixMe
-                                        node: data.node,
-                                    };
-                                }
-                            }}
+                            onDragRef={onDragRef}
+                            idx={i}
                         />
                     ))}
                     <Button onClick={() => setPicking('other')}>Add Other Item</Button>
@@ -541,7 +583,7 @@ const useStyles = makeStyles((theme) => ({
         backgroundColor: theme.palette.primary.dark,
         opacity: 0.5,
         mouseEvents: 'none',
-        transition: `transform ease .1s`,
+        // transition: `transform ease .1s`,
     },
 }));
 

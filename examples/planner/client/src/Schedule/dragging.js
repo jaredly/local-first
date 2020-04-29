@@ -12,6 +12,7 @@ export type Dest =
     | {
           type: 'other',
           index: number,
+          id: string,
       }
     | {
           type: 'hourly',
@@ -36,7 +37,7 @@ export const calculateDragTargets = (
     current: DragInit,
 ): Array<DropTarget<Dest>> => {
     const boxes: Array<DropTarget<Dest>> = [];
-    if (refs.topOne && current.id !== ':one:') {
+    if (refs.topOne) {
         const topOne = refs.topOne;
         const box = topOne.getBoundingClientRect();
         boxes.push({
@@ -53,7 +54,7 @@ export const calculateDragTargets = (
         });
     }
 
-    if (refs.topTwo && current.id !== ':two:') {
+    if (refs.topTwo) {
         const topTwo = refs.topTwo;
         const box = topTwo.getBoundingClientRect();
         boxes.push({
@@ -65,38 +66,41 @@ export const calculateDragTargets = (
             offsetParent: topTwo.offsetParent,
             contents: {
                 id: ':two:',
-                type: 'topone',
+                type: 'toptwo',
             },
         });
     }
 
-    Object.keys(refs.others).forEach((key) => {
-        const box = refs.others[key].node.getBoundingClientRect();
-        boxes.push({
-            // y: box.top,
-            top: box.top,
-            height: 0,
-            left: box.left,
-            width: box.width,
-            offsetParent: refs.others[key].node.offsetParent,
-            contents: {
-                type: 'other',
-                index: refs.others[key].idx,
-            },
-        });
+    if (current.type !== 'topone' && current.type !== 'toptwo') {
+        Object.keys(refs.others).forEach((key) => {
+            const box = refs.others[key].node.getBoundingClientRect();
+            boxes.push({
+                top: box.top,
+                height: 0,
+                left: box.left,
+                width: box.width,
+                offsetParent: refs.others[key].node.offsetParent,
+                contents: {
+                    type: 'other',
+                    id: key,
+                    index: refs.others[key].idx,
+                },
+            });
 
-        boxes.push({
-            top: box.bottom,
-            height: 0,
-            left: box.left,
-            width: box.width,
-            offsetParent: refs.others[key].node.offsetParent,
-            contents: {
-                type: 'other',
-                index: refs.others[key].idx + 1,
-            },
+            boxes.push({
+                top: box.bottom,
+                height: 0,
+                left: box.left,
+                width: box.width,
+                offsetParent: refs.others[key].node.offsetParent,
+                contents: {
+                    type: 'other',
+                    id: key,
+                    index: refs.others[key].idx + 1,
+                },
+            });
         });
-    });
+    }
 
     if (refs.hourly) {
         const offsetParent = refs.hourly.offsetParent;

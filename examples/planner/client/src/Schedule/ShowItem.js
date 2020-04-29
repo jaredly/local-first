@@ -8,18 +8,23 @@ import { useItem } from '../../../../../packages/client-react';
 import { Item } from '../TodoList/Item';
 import type { OnDragRef, DragInit } from '../TodoList/dragging';
 
+const path = [];
+const setRootPath = () => {};
+
 const ShowItem = ({
     client,
     id,
     onClear,
     onDragRef,
     onDragStart,
+    idx,
 }: {
     client: Client<SyncStatus>,
     id: string,
     onClear: () => mixed,
     onDragRef: OnDragRef,
     onDragStart: (DragInit) => void,
+    idx?: number,
 }) => {
     const [col, item] = useItem(React, client, 'items', id);
     const styles = useStyles();
@@ -56,11 +61,11 @@ const ShowItem = ({
                     item={item}
                     level={0}
                     show={show}
-                    path={[]}
+                    path={path}
                     onDragRef={onDragRef}
                     onDragStart={onDragStart}
-                    setRootPath={() => {}}
-                    idx={0}
+                    setRootPath={setRootPath}
+                    idx={idx || 0}
                 />
             </div>
             <IconButton onClick={onClear}>
