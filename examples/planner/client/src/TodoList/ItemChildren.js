@@ -97,19 +97,24 @@ export const ItemChildren = ({
                     client={client}
                 />
             ))}
-            <NewItem
-                onFocus={onNewFocus}
-                level={level + 1}
-                onAdd={(text) => {
-                    const childId = client.getStamp();
-                    if (text.startsWith('# ')) {
-                        col.save(childId, { ...newItem(childId, text.slice(2)), style: 'group' });
-                    } else {
-                        col.save(childId, newItem(childId, text));
-                    }
-                    col.insertId(item.id, ['children'], item.children.length, childId);
-                }}
-            />
+            {selection === null ? (
+                <NewItem
+                    onFocus={onNewFocus}
+                    level={level + 1}
+                    onAdd={(text) => {
+                        const childId = client.getStamp();
+                        if (text.startsWith('# ')) {
+                            col.save(childId, {
+                                ...newItem(childId, text.slice(2)),
+                                style: 'group',
+                            });
+                        } else {
+                            col.save(childId, newItem(childId, text));
+                        }
+                        col.insertId(item.id, ['children'], item.children.length, childId);
+                    }}
+                />
+            ) : null}
         </div>
     );
 };
