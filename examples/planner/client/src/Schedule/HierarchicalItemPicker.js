@@ -76,7 +76,7 @@ const ItemPicker = ({
     }, [picked]);
 
     const show = React.useCallback((item) => {
-        return item.completedDate == null;
+        return item.completedDate == null && (item.horizon == null || item.horizon === 0);
     }, []);
 
     if (!root || !childItems) {

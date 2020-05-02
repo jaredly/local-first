@@ -401,8 +401,8 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
     }
 
     return (
-        <div style={{ display: 'flex' }}>
-            <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 300 }}>
                 {dragger != null && dragger.dims != null && isDroppable(dragger) ? (
                     <div
                         className={styles.dragIndicator}
@@ -502,7 +502,7 @@ export const Schedule = ({ client, id }: { id: string, client: Client<SyncStatus
                 </div>
             </div>
             <div style={{ width: 12 }} />
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
                 <h1>Schedule</h1>
                 <Hourly
                     col={col}

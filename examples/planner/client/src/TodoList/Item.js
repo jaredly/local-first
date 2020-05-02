@@ -416,7 +416,7 @@ export const Item = React.memo<Props>(
                                         return (
                                             <div
                                                 key={date}
-                                                className={today ? styles.checkToday : styles.check}
+                                                className={styles.check}
                                                 title={new Date(
                                                     parseInt(date, 36),
                                                 ).toLocaleString()}
@@ -685,25 +685,22 @@ const useStyles = makeStyles((theme) => ({
         paddingLeft: theme.spacing(2),
         marginBottom: theme.spacing(1),
     },
-    checkToday: {
-        // color: theme.palette.primary.light,
-        fontSize: 20,
-    },
     check: {
-        // color: theme.palette.text.disabled,
         fontSize: 20,
     },
-
     horizon: {
-        borderRadius: theme.spacing(2),
+        borderRadius: '50%', // theme.spacing(2),
+        borderWidth: 5,
+        borderColor: 'transparent',
+        borderStyle: 'solid',
     },
     horizonNow: {
-        backgroundColor: fade(theme.palette.error.main, 0.5), // 'red',
+        borderColor: fade(theme.palette.error.main, 0.5), // 'red',
     },
     horizonNear: {
-        backgroundColor: fade(theme.palette.info.main, 0.5),
+        borderColor: fade(theme.palette.info.main, 0.5),
     },
     horizonFar: {
-        backgroundColor: theme.palette.text.disabled,
+        borderColor: theme.palette.text.disabled,
     },
 }));
