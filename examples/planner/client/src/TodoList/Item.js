@@ -21,7 +21,8 @@ import type { Client, Collection, SyncStatus } from '../../../../../packages/cli
 import { useItem, useItems } from '../../../../../packages/client-react';
 import { type ItemT, newItem, newDay } from '../types';
 import { useLocalStorageSharedToggle } from '../useLocalStorage';
-import { showDate, today, isToday, tomorrow } from '../utils';
+import { cx, showDate, today, isToday, tomorrow } from '../utils';
+import { fade } from '@material-ui/core/styles';
 
 import { ItemChildren } from './ItemChildren';
 import Description from './Description';
@@ -86,6 +87,29 @@ const getMenuItems = ({
                 }, 5);
             },
         },
+        [
+            {
+                title: 'now',
+                selected: item.horizon === 0,
+                onClick: () => {
+                    col.setAttribute(item.id, ['horizon'], item.horizon === 0 ? null : 0);
+                },
+            },
+            {
+                title: 'near',
+                selected: item.horizon === 1,
+                onClick: () => {
+                    col.setAttribute(item.id, ['horizon'], item.horizon === 1 ? null : 1);
+                },
+            },
+            {
+                title: 'far',
+                selected: item.horizon === 2,
+                onClick: () => {
+                    col.setAttribute(item.id, ['horizon'], item.horizon === 2 ? null : 2);
+                },
+            },
+        ],
     ];
     if (item.style !== 'group') {
         menuItems.push({
@@ -243,7 +267,7 @@ export const Item = React.memo<Props>(
             ).length;
 
         return (
-            <div className={styles.itemWrapper + (dragging ? ' ' + styles.dragItem : '')}>
+            <div className={cx([styles.itemWrapper, dragging ? styles.dragItem : null])}>
                 <div className={styles.item} style={{ paddingLeft: level * INDENT }}>
                     {item.style === 'group' || item.children.length > 0 || open ? (
                         <div
@@ -312,29 +336,42 @@ export const Item = React.memo<Props>(
                                 alignItems: 'flex-start',
                             }}
                         >
-                            {item.style === 'group' ? (
-                                <div
-                                    style={{ padding: 9 }}
-                                    onClick={() => setRootPath(path.concat([item.id]))}
-                                >
-                                    <Folder />
-                                </div>
-                            ) : selection ? (
-                                <SelectionButton selection={selection} id={item.id} />
-                            ) : (
-                                <Checkbox
-                                    // type="checkbox"
-                                    checked={!!item.completedDate}
-                                    onChange={() => {
-                                        col.setAttribute(
-                                            item.id,
-                                            ['completedDate'],
-                                            item.completedDate != null ? null : Date.now(),
-                                        );
-                                    }}
-                                    onClick={(evt) => evt.stopPropagation()}
-                                />
-                            )}
+                            <div
+                                className={cx([
+                                    styles.horizon,
+                                    item.horizon != null
+                                        ? [
+                                              styles.horizonNow,
+                                              styles.horizonNear,
+                                              styles.horizonFar,
+                                          ][item.horizon]
+                                        : null,
+                                ])}
+                            >
+                                {item.style === 'group' ? (
+                                    <div
+                                        style={{ padding: 9 }}
+                                        onClick={() => setRootPath(path.concat([item.id]))}
+                                    >
+                                        <Folder />
+                                    </div>
+                                ) : selection ? (
+                                    <SelectionButton selection={selection} id={item.id} />
+                                ) : (
+                                    <Checkbox
+                                        // type="checkbox"
+                                        checked={!!item.completedDate}
+                                        onChange={() => {
+                                            col.setAttribute(
+                                                item.id,
+                                                ['completedDate'],
+                                                item.completedDate != null ? null : Date.now(),
+                                            );
+                                        }}
+                                        onClick={(evt) => evt.stopPropagation()}
+                                    />
+                                )}
+                            </div>
                             <div
                                 className={`${
                                     item.style === 'group' ? styles.groupTitle : styles.itemTitle
@@ -440,17 +477,34 @@ export const Item = React.memo<Props>(
                             onClick={(evt) => evt.stopPropagation()}
                             onClose={() => setMenu(false)}
                         >
-                            {menuItems.map((item) => (
-                                <MenuItem
-                                    key={item.title}
-                                    onClick={() => {
-                                        item.onClick();
-                                        setMenu(false);
-                                    }}
-                                >
-                                    {item.title}
-                                </MenuItem>
-                            ))}
+                            {menuItems.map((item, i) =>
+                                Array.isArray(item) ? (
+                                    <div style={{ display: 'flex' }} key={i}>
+                                        {item.map((item, i) => (
+                                            <MenuItem
+                                                selected={item.selected}
+                                                key={item.title}
+                                                onClick={() => {
+                                                    item.onClick();
+                                                    setMenu(false);
+                                                }}
+                                            >
+                                                {item.title}
+                                            </MenuItem>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <MenuItem
+                                        key={item.title}
+                                        onClick={() => {
+                                            item.onClick();
+                                            setMenu(false);
+                                        }}
+                                    >
+                                        {item.title}
+                                    </MenuItem>
+                                ),
+                            )}
                         </Menu>
                     ) : null}
                 </div>
@@ -638,5 +692,18 @@ const useStyles = makeStyles((theme) => ({
     check: {
         // color: theme.palette.text.disabled,
         fontSize: 20,
+    },
+
+    horizon: {
+        borderRadius: theme.spacing(2),
+    },
+    horizonNow: {
+        backgroundColor: fade(theme.palette.error.main, 0.5), // 'red',
+    },
+    horizonNear: {
+        backgroundColor: fade(theme.palette.info.main, 0.5),
+    },
+    horizonFar: {
+        backgroundColor: theme.palette.text.disabled,
     },
 }));

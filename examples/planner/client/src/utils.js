@@ -11,6 +11,8 @@ export const interleave = function <T>(items: Array<T>, fn: (number) => T): Arra
     return res;
 };
 
+export const cx = (items: Array<?string>) => items.filter(Boolean).join(' ');
+
 export const sameDay = (one: Date, two: Date) => {
     return (
         one.getFullYear() === two.getFullYear() &&
