@@ -58,6 +58,7 @@ const getPosition = function <Dest>(
 ): ?DragState<Dest> {
     const offsetParent = boxes[0].offsetParent;
     const offset = offsetParent ? offsetParent.getBoundingClientRect().top : 0;
+    // console.log(offsetParent, offset);
     const matchingBoxes = limitX ? boxes.filter((box) => inside(pos.x, box)) : boxes;
     for (let i = 0; i < matchingBoxes.length; i++) {
         // if (limitX && !inside(pos.x, matchingBoxes[i])) {
@@ -77,7 +78,7 @@ const getPosition = function <Dest>(
                 dragging,
                 dest: matchingBoxes[i].contents,
                 dims: {
-                    top: matchingBoxes[i].top,
+                    top: matchingBoxes[i].top - offset,
                     height: matchingBoxes[i].height,
                     // y: matchingBoxes[i].y - offset,
                     left: matchingBoxes[i].left,

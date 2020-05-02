@@ -3,6 +3,7 @@ import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import { makeStyles } from '@material-ui/core/styles';
 import Cancel from '@material-ui/icons/Cancel';
+import Close from '@material-ui/icons/Close';
 import Folder from '@material-ui/icons/Folder';
 import RadioButtonUnchecked from '@material-ui/icons/RadioButtonUnchecked';
 import CheckCircle from '@material-ui/icons/CheckCircle';
@@ -19,6 +20,7 @@ import { type Day, type ItemT, type HabitT, newDay } from '../types';
 import { nextDay, parseDate, prevDay, showDate, today } from '../utils';
 import ItemPicker from './ItemPicker';
 import ShowItem from './ShowItem';
+import { fade } from '@material-ui/core/styles';
 
 const ap = (hour) => (hour >= 12 ? 'pm' : 'am');
 
@@ -57,7 +59,10 @@ const ScheduledItem = ({
         if (dragging && dragging.id === item.id) {
             if (dragging.type === 'move') {
                 const move = (evt) => {
-                    const top = evt.clientY - div.offsetTop;
+                    // $FlowFixMe
+                    const offset = div.offsetParent.getBoundingClientRect().top;
+                    // console.log('offset', offset, div, div.offsetParent);
+                    const top = evt.clientY - div.offsetTop - offset;
                     const hour = (top / divHeight) * (endHour + 1 - startHour) + startHour;
                     const stock = Math.min(Math.max(startHour, parseInt(hour * 4) / 4), endHour);
                     setDragging({ id: item.id, top: stock, type: 'move' });
@@ -69,7 +74,7 @@ const ScheduledItem = ({
                             setStart(top * 60);
                         }
                     }
-                    console.log(currentDragging.current);
+                    // console.log(currentDragging.current);
                     setDragging(null);
                 };
                 window.addEventListener('mousemove', move, true);
@@ -80,7 +85,9 @@ const ScheduledItem = ({
                 };
             } else {
                 const move = (evt) => {
-                    const top = evt.clientY - div.offsetTop;
+                    // $FlowFixMe
+                    const offset = div.offsetParent.getBoundingClientRect().top;
+                    const top = evt.clientY - div.offsetTop - offset;
                     const hour = (top / divHeight) * (endHour + 1 - startHour) + startHour;
                     const stock = Math.min(Math.max(startHour, parseInt(hour * 4) / 4), endHour);
                     setDragging({
@@ -96,7 +103,7 @@ const ScheduledItem = ({
                             setDuration(top);
                         }
                     }
-                    console.log(currentDragging.current);
+                    // console.log(currentDragging.current);
                     setDragging(null);
                 };
                 window.addEventListener('mousemove', move, true);
@@ -130,21 +137,22 @@ const ScheduledItem = ({
                         : (Math.max(30, item.duration || 0) / 60 / (endHour + 1 - startHour)) *
                           divHeight,
                 top:
-                    dragging &&
+                    (dragging &&
                     dragging.id === item.id &&
                     dragging.top != null &&
                     dragging.type === 'move'
                         ? ((dragging.top - startHour) / (endHour + 1 - startHour)) * divHeight
-                        : currentTop,
+                        : currentTop) + 1,
             }}
         >
             {todo != null && todo !== false ? todo.title : null}
             <button
+                className={styles.closeButton}
                 onClick={() => {
                     onRemove();
                 }}
             >
-                x
+                <Close fontSize="inherit" />
             </button>
             <div
                 style={{
@@ -239,8 +247,7 @@ const useStyles = makeStyles((theme) => ({
     schedule: {
         cursor: 'move',
         position: 'absolute',
-        //   backgroundColor: 'rgba(255,255,255,0.1)',
-        backgroundColor: theme.palette.background.paper,
+        backgroundColor: fade(theme.palette.background.paper, 0.8),
         padding: theme.spacing(1),
         left: 50,
         right: 8,
@@ -263,6 +270,20 @@ const useStyles = makeStyles((theme) => ({
     },
     half: {
         borderTop: '1px dashed #aaa',
+    },
+    closeButton: {
+        margin: 0,
+        padding: 8,
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        backgroundColor: 'transparent',
+        color: theme.palette.text.primary,
+        cursor: 'pointer',
+        border: 'none',
+        '&:hover': {
+            color: theme.palette.error.main,
+        },
     },
 }));
 

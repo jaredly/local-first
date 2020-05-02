@@ -97,7 +97,7 @@ export const ItemChildren = ({
                     client={client}
                 />
             ))}
-            {selection === null ? (
+            {selection == null ? (
                 <NewItem
                     onFocus={onNewFocus}
                     level={level + 1}
