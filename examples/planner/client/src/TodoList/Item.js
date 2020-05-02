@@ -272,6 +272,7 @@ export const Item = React.memo<Props>(
                     {item.style === 'group' || item.children.length > 0 || open ? (
                         <div
                             style={{
+                                marginTop: 4,
                                 padding: 4,
                                 display: 'flex',
                                 alignItems: 'center',
@@ -347,31 +348,30 @@ export const Item = React.memo<Props>(
                                           ][item.horizon]
                                         : null,
                                 ])}
-                            >
-                                {item.style === 'group' ? (
-                                    <div
-                                        style={{ padding: 9 }}
-                                        onClick={() => setRootPath(path.concat([item.id]))}
-                                    >
-                                        <Folder />
-                                    </div>
-                                ) : selection ? (
-                                    <SelectionButton selection={selection} id={item.id} />
-                                ) : (
-                                    <Checkbox
-                                        // type="checkbox"
-                                        checked={!!item.completedDate}
-                                        onChange={() => {
-                                            col.setAttribute(
-                                                item.id,
-                                                ['completedDate'],
-                                                item.completedDate != null ? null : Date.now(),
-                                            );
-                                        }}
-                                        onClick={(evt) => evt.stopPropagation()}
-                                    />
-                                )}
-                            </div>
+                            ></div>
+                            {item.style === 'group' ? (
+                                <div
+                                    style={{ padding: 9 }}
+                                    onClick={() => setRootPath(path.concat([item.id]))}
+                                >
+                                    <Folder />
+                                </div>
+                            ) : selection ? (
+                                <SelectionButton selection={selection} id={item.id} />
+                            ) : (
+                                <Checkbox
+                                    // type="checkbox"
+                                    checked={!!item.completedDate}
+                                    onChange={() => {
+                                        col.setAttribute(
+                                            item.id,
+                                            ['completedDate'],
+                                            item.completedDate != null ? null : Date.now(),
+                                        );
+                                    }}
+                                    onClick={(evt) => evt.stopPropagation()}
+                                />
+                            )}
                             <div
                                 className={`${
                                     item.style === 'group' ? styles.groupTitle : styles.itemTitle
@@ -689,18 +689,21 @@ const useStyles = makeStyles((theme) => ({
         fontSize: 20,
     },
     horizon: {
-        borderRadius: '50%', // theme.spacing(2),
-        borderWidth: 5,
-        borderColor: 'transparent',
-        borderStyle: 'solid',
+        // borderRadius: '50%', // theme.spacing(2),
+        // borderWidth: 5,
+        // borderColor: 'transparent',
+        // borderLeftStyle: 'solid',
+        height: 18,
+        width: 5,
+        marginTop: theme.spacing(2) - 4,
     },
     horizonNow: {
-        borderColor: fade(theme.palette.error.main, 0.5), // 'red',
+        backgroundColor: fade(theme.palette.error.main, 0.5), // 'red',
     },
     horizonNear: {
-        borderColor: fade(theme.palette.info.main, 0.5),
+        backgroundColor: fade(theme.palette.info.main, 0.5),
     },
     horizonFar: {
-        borderColor: theme.palette.text.disabled,
+        backgroundColor: theme.palette.text.disabled,
     },
 }));
