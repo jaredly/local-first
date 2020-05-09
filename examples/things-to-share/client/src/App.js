@@ -74,6 +74,8 @@ const App = ({
                   `${
                       host.startsWith('localhost:') ? 'ws' : 'wss'
                   }://${host}/sync?token=${auth.token}`,
+                  1,
+                  {},
               )
             : createPersistedBlobClient(
                   'things-to-share-blob',
