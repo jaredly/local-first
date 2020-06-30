@@ -129,6 +129,7 @@ const Home = ({
                         {i !== 0 ? <div style={{ height: 12 }} /> : null}
                         <LinkItem
                             tags={tags}
+                            host={host}
                             linksCol={linksCol}
                             link={links[key]}
                             key={key}

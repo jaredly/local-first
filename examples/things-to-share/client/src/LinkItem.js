@@ -16,6 +16,12 @@ import OpenGraph from './OpenGraph';
 import type { LinkT, TagT } from './types';
 import Chip from '@material-ui/core/Chip';
 import { type Collection } from '../../../../packages/client-bundle';
+import { getData } from './Adder';
+
+const hasContent = (content) =>
+    content != null &&
+    Object.keys(content).join(';') !== 'og:site_name' &&
+    Object.keys(content).length > 1;
 
 const useStyles = makeStyles((theme) => ({
     container: {
@@ -71,10 +77,12 @@ const LinkItem = ({
     link,
     linksCol,
     tags,
+    host,
 }: {
     link: LinkT,
     linksCol: Collection<LinkT>,
     tags: { [key: string]: TagT },
+    host: string,
 }) => {
     const styles = useStyles();
     const [open, setOpen] = React.useState(false);
@@ -94,6 +102,8 @@ const LinkItem = ({
     const [editTags, setEditTags] = React.useState(null);
 
     const [reallyDelete, setReallyDelete] = React.useState(false);
+
+    const [loadingContent, setLoadingContent] = React.useState(false);
 
     // if (link.fetchedContent == null) {
     //     return (
@@ -154,13 +164,43 @@ const LinkItem = ({
                 </div>
                 {open ? (
                     <div className={styles.innerOpen}>
-                        {link.fetchedContent != null ? (
+                        {hasContent(link.fetchedContent) ? (
                             <OpenGraph
                                 data={link.fetchedContent}
                                 url={link.url}
                             />
                         ) : (
-                            'Unable to fetch content'
+                            <div>
+                                Unable to fetch content
+                                <Button
+                                    disabled={loadingContent}
+                                    onClick={() => {
+                                        setLoadingContent(true);
+                                        getData(host, link.url).then(
+                                            (ogData) => {
+                                                setLoadingContent(false);
+                                                if (ogData) {
+                                                    // onAdd(link, ogData, editTags);
+                                                    linksCol.setAttribute(
+                                                        link.id,
+                                                        ['fetchedContent'],
+                                                        ogData,
+                                                    );
+                                                }
+                                            },
+                                        );
+                                    }}
+                                >
+                                    Try Again
+                                </Button>
+                                <Button
+                                    href={link.url}
+                                    target="_blank"
+                                    className={styles.inner}
+                                >
+                                    Go to URL
+                                </Button>
+                            </div>
                         )}
                         <div className={styles.bottom}>
                             {editTags ? (

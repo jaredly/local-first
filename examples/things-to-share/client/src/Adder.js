@@ -284,7 +284,7 @@ const AdderBody = ({
     );
 };
 
-const getData = (host, link) =>
+export const getData = (host: string, link: string) =>
     fetch(
         `${
             window.location.protocol
