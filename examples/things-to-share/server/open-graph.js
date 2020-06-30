@@ -32,7 +32,12 @@ const getTwoLevels = async url => {
 
 const getGraphData = async (url, cb) => {
     try {
-        const res = await fetch(url);
+        const res = await fetch(url, {
+            headers: {
+                'User-Agent':
+                    'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+            },
+        });
         if (!res.headers.get('Content-type').startsWith('text/html')) {
             return null;
         }
