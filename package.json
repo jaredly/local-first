@@ -1,0 +1,16 @@
+{
+  "name": "@local-first/client-bundle",
+  "version": "1.0.0-20-07-12",
+  "dependencies": {
+    "regenerator-runtime": "*",
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "express-ws": "^4.0.0",
+    "@birchill/json-equalish": "^1.1.0",
+    "flow-bin": "^0.118.0",
+    "broadcast-channel": "^3.0.3",
+    "fast-deep-equal": "^3.1.1",
+    "idb": "^5.0.1"
+  },
+  "main": "client-bundle/index.js"
+}
