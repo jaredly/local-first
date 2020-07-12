@@ -1,5 +1,6 @@
 {
     "name": "@local-first/server-bundle",
+    "version": "1.0.0-20-07-12-1",
     "dependencies": {
         "better-sqlite3": "^6.0.1",
         "cors": "^2.8.5",

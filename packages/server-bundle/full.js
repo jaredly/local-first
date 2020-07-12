@@ -10,7 +10,7 @@ import setupPersistence from '../server-bundle/sqlite-persistence';
 import setupInMemoryPersistence from '../core/src/memory-persistence';
 import * as auth from '../auth';
 
-import { runServer, setupWebsocket, setupPolling } from './';
+import { runServer, setupWebsocket, setupPolling, setupExpress, setupBlob } from './';
 
 type Delta = NewDelta<any, null, any>;
 type Data = CRDT<any, null>;
@@ -47,6 +47,61 @@ export const serverForUser = (
     );
 };
 
+// is auth shared? yes it's shared.
+// but directories aren't shared I don't think.
+export const runMulti = (
+    dataPath: string,
+    configs: Array<{
+        name: string,
+        getSchemaChecker: string => ?(Delta) => ?string,
+    }>,
+    port: number = 9090,
+) => {
+    const { SECRET: secret } = process.env;
+    if (secret == null) {
+        throw new Error("process.env.SECRET is required if you don't pass process.env.NO_AUTH");
+    }
+
+    const sqlite3 = require('better-sqlite3');
+    const authDb = sqlite3(path.join(dataPath, 'users.db'));
+    auth.createTables(authDb);
+
+    const state = setupExpress();
+
+    configs.forEach(config => {
+        const userServers = {};
+        const currentPath = dataPath + '/' + config.name;
+
+        const getServer = req => {
+            if (!req.auth) {
+                throw new Error(`No auth`);
+            }
+            if (!userServers[req.auth.id]) {
+                userServers[req.auth.id] = serverForUser(
+                    currentPath,
+                    req.auth.id,
+                    config.getSchemaChecker,
+                );
+            }
+            return userServers[req.auth.id];
+        };
+        const middleware = [auth.middleware(authDb, secret)];
+
+        setupBlob(
+            state.app,
+            req => path.join(currentPath, req.auth.id, 'blobs'),
+            middleware,
+            `${config.name}/blob`,
+        );
+        setupPolling(state.app, getServer, middleware, `${config.name}/sync`);
+        setupWebsocket(state.app, getServer, middleware, `${config.name}/sync`);
+    });
+
+    auth.setupAuth(authDb, state.app, secret);
+    state.app.listen(port);
+    return state;
+};
+
 export const run = (
     dataPath: string,
     getSchemaChecker: string => ?(Delta) => ?string,
@@ -65,7 +120,6 @@ export const run = (
         auth.createTables(authDb);
 
         const state = runServer(
-            // port,
             req => path.join(dataPath, req.auth.id, 'blobs'),
             req => {
                 if (!req.auth) {

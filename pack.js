@@ -25,7 +25,7 @@ const packages = [
     // libs
     {
         name: 'server-bundle',
-        entry: 'packages/server-bundle/index.js',
+        entry: 'packages/server-bundle/full.js',
         dest: 'public/server-bundle',
     },
     {
