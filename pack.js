@@ -3,6 +3,7 @@
 const pack = require('./packages/monorepo-pack');
 
 const packages = [
+    // apps
     {
         name: 'planner',
         entry: 'examples/planner/server/glitch.js',
@@ -16,18 +17,19 @@ const packages = [
         start: true,
     },
     {
-        name: 'example',
+        name: 'whiteboard',
         entry: 'examples/whiteboard/server/glitch.js',
         dest: 'public/whiteboard-server',
         start: true,
     },
+    // libs
     {
-        name: 'example',
+        name: 'server-bundle',
         entry: 'packages/server-bundle/index.js',
         dest: 'public/server-bundle',
     },
     {
-        name: 'example',
+        name: 'client-bundle',
         entry: 'packages/client-bundle/index.js',
         dest: 'public/client-bundle',
     },

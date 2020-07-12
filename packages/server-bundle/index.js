@@ -1,6 +1,10 @@
 // @flow
 import type { ClientMessage, ServerMessage, CursorType, ServerState } from '../core/src/server';
 
+import type { Schema } from '../nested-object-crdt/src/schema';
+export { validateDelta, validate, subSchema } from '../nested-object-crdt/src/schema';
+export type { Schema };
+
 import path from 'path';
 import fs from 'fs';
 
@@ -18,7 +22,7 @@ export const setupBlob = (
     app: express,
     getDataPath: req => string,
     middleware: Middleware = [],
-    prefix: string = '/blob'
+    prefix: string = '/blob',
 ) => {
     app.get(prefix + '/:name', middleware, (req, res) => {
         const filePath = path.join(getDataPath(req), req.params['name']);
@@ -35,7 +39,7 @@ export const setupPolling = function<Delta, Data>(
     app: express,
     getServer: req => ServerState<Data, Delta>,
     middleware: Middleware = [],
-    path: string = '/sync'
+    path: string = '/sync',
 ) {
     app.post(path, middleware, (req, res) => {
         if (!req.query.sessionId) {
@@ -49,7 +53,7 @@ export const setupWebsocket = function<Delta, Data>(
     app: express,
     getServer: express.Request => ServerState<Data, Delta>,
     middleware: Middleware = [],
-    path: string = '/sync'
+    path: string = '/sync',
 ) {
     const clients = {};
 
@@ -75,7 +79,7 @@ export const setupWebsocket = function<Delta, Data>(
 export const runServer = <Delta, Data>(
     getBlobDataPath: req => string,
     getServer: req => ServerState<Delta, Data>,
-    middleware: Middleware = []
+    middleware: Middleware = [],
 ) => {
     const app = express();
     const wsInst = ws(app);

@@ -6,6 +6,7 @@ import * as crdt from '../nested-object-crdt/src/new';
 export type { Delta, CRDT as Data } from '../nested-object-crdt/src/types';
 import * as rich from '../rich-text-crdt';
 import type { Schema } from '../nested-object-crdt/src/schema';
+export { validateDelta, validate, subSchema } from '../nested-object-crdt/src/schema';
 export { hlc, crdt, rich };
 export type { Schema };
 
