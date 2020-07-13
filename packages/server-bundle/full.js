@@ -5,6 +5,7 @@ import type { Schema } from '../nested-object-crdt/src/schema.js';
 import type { Delta as NewDelta, CRDT } from '../nested-object-crdt/src/types.js';
 import make from '../core/src/server';
 import path from 'path';
+import fs from 'fs';
 
 import setupPersistence from '../server-bundle/sqlite-persistence';
 import setupInMemoryPersistence from '../core/src/memory-persistence';
@@ -59,7 +60,10 @@ export const runMulti = (
 ) => {
     const { SECRET: secret } = process.env;
     if (secret == null) {
-        throw new Error("process.env.SECRET is required if you don't pass process.env.NO_AUTH");
+        throw new Error('process.env.SECRET is required');
+    }
+    if (!fs.existsSync(dataPath)) {
+        fs.mkdirSync(dataPath);
     }
 
     const sqlite3 = require('better-sqlite3');
@@ -91,10 +95,10 @@ export const runMulti = (
             state.app,
             req => path.join(currentPath, req.auth.id, 'blobs'),
             middleware,
-            `${config.name}/blob`,
+            `dbs/${config.name}/blob`,
         );
-        setupPolling(state.app, getServer, middleware, `${config.name}/sync`);
-        setupWebsocket(state.app, getServer, middleware, `${config.name}/sync`);
+        setupPolling(state.app, getServer, middleware, `dbs/${config.name}/sync`);
+        setupWebsocket(state.app, getServer, middleware, `dbs/${config.name}/sync`);
     });
 
     auth.setupAuth(authDb, state.app, secret);
