@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Ok folks
 // const fs = require('fs');
 const pack = require('./packages/monorepo-pack');

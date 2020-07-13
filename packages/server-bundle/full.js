@@ -1,7 +1,7 @@
 // @flow
 import * as crdt from '../nested-object-crdt/src/new';
 import * as rich from '../rich-text-crdt';
-import type { Schema } from '../nested-object-crdt/src/schema.js';
+import { type Schema, validateDelta } from '../nested-object-crdt/src/schema.js';
 import type { Delta as NewDelta, CRDT } from '../nested-object-crdt/src/types.js';
 import make from '../core/src/server';
 import path from 'path';
@@ -52,10 +52,9 @@ export const serverForUser = (
 // but directories aren't shared I don't think.
 export const runMulti = (
     dataPath: string,
-    configs: Array<{
-        name: string,
-        getSchemaChecker: string => ?(Delta) => ?string,
-    }>,
+    configs: {
+        [name: string]: { [collection: string]: Schema },
+    },
     port: number = 9090,
 ) => {
     const { SECRET: secret } = process.env;
@@ -72,9 +71,13 @@ export const runMulti = (
 
     const state = setupExpress();
 
-    configs.forEach(config => {
+    Object.keys(configs).forEach(name => {
         const userServers = {};
-        const currentPath = dataPath + '/' + config.name;
+        const currentPath = dataPath + '/' + name;
+        const schemas = configs[name];
+
+        const getSchemaChecker = colid =>
+            schemas[colid] ? delta => validateDelta(schemas[colid], delta) : null;
 
         const getServer = req => {
             if (!req.auth) {
@@ -84,7 +87,7 @@ export const runMulti = (
                 userServers[req.auth.id] = serverForUser(
                     currentPath,
                     req.auth.id,
-                    config.getSchemaChecker,
+                    getSchemaChecker,
                 );
             }
             return userServers[req.auth.id];
@@ -95,10 +98,10 @@ export const runMulti = (
             state.app,
             req => path.join(currentPath, req.auth.id, 'blobs'),
             middleware,
-            `dbs/${config.name}/blob`,
+            `dbs/${name}/blob`,
         );
-        setupPolling(state.app, getServer, middleware, `dbs/${config.name}/sync`);
-        setupWebsocket(state.app, getServer, middleware, `dbs/${config.name}/sync`);
+        setupPolling(state.app, getServer, middleware, `dbs/${name}/sync`);
+        setupWebsocket(state.app, getServer, middleware, `dbs/${name}/sync`);
     });
 
     auth.setupAuth(authDb, state.app, secret);
