@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Ok folks
 // const fs = require('fs');
 const pack = require('./packages/monorepo-pack');
@@ -24,8 +25,13 @@ const packages = [
     },
     // libs
     {
+        name: 'server-backup',
+        entry: 'packages/server-backup/index.js',
+        dest: 'public/server-backup',
+    },
+    {
         name: 'server-bundle',
-        entry: 'packages/server-bundle/index.js',
+        entry: 'packages/server-bundle/full.js',
         dest: 'public/server-bundle',
     },
     {

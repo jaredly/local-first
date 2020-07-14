@@ -76,19 +76,24 @@ export const setupWebsocket = function<Delta, Data>(
     });
 };
 
-export const runServer = <Delta, Data>(
-    getBlobDataPath: req => string,
-    getServer: req => ServerState<Delta, Data>,
-    middleware: Middleware = [],
-) => {
+export const setupExpress = () => {
     const app = express();
     const wsInst = ws(app);
     app.use(require('cors')({ exposedHeaders: ['etag', 'X-Session'] }));
     app.use(require('body-parser').json());
 
+    return { app, wsInst };
+};
+
+export const runServer = <Delta, Data>(
+    getBlobDataPath: req => string,
+    getServer: req => ServerState<Delta, Data>,
+    middleware: Middleware = [],
+) => {
+    const { app, wsInst } = setupExpress();
+
     setupBlob(app, getBlobDataPath, middleware);
     setupPolling(app, getServer, middleware);
     setupWebsocket(app, getServer, middleware);
-
     return { app, wsInst };
 };
