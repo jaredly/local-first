@@ -85,5 +85,34 @@ const backupFolder = (bucket, prefix, folder) => {
     });
 };
 
-module.exports = backupFolder;
+const backupRoute = (baseDir, appId) => (req, res) => {
+    admin.initializeApp({
+        credential: admin.credential.applicationDefault(),
+        databaseURL: `https://${appId}.firebaseio.com`,
+        storageBucket: `gs://${appId}.appspot.com/`,
+    });
+    const bucket = admin.storage().bucket();
+    const fs = require('fs');
+    const path = require('path');
+    Promise.all(
+        fs.readdirSync(baseDir).map(name => {
+            console.log('Backing up', name);
+            return backupFolder(bucket, name + '/backup', path.join(baseDir, name));
+        }),
+    ).then(
+        () => {
+            res.send('Done!');
+            res.end();
+        },
+        err => {
+            console.error(err);
+            res.status(500);
+            res.send('Failed :(');
+            res.end();
+        },
+    );
+};
+
+module.exports = backupRoute;
+module.exports.backupFolder = backupFolder;
 module.exports.backup = backup;

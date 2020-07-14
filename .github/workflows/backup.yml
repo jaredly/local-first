@@ -1,0 +1,16 @@
+
+on:
+  schedule:
+    - cron: '32 15 * * *'
+
+jobs:
+  trigger_backup:
+    runs-on: ubuntu-latest
+    steps:
+      - run:
+          curl $BACKUP_URL
+        env:
+          BACKUP_URL: ${{ secrets.BACKUP_URL }}
+
+
+
