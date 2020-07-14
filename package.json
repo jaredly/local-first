@@ -1,0 +1,10 @@
+{
+  "name": "@local-first/server-backup",
+  "version": "1.0.0-2020-07-14-1",
+  "dependencies": {
+    "fast-crc32c": "^2.0.0",
+    "firebase-admin": "^8.13.0",
+    "tar-fs": "^2.1.0"
+  },
+  "main": "index.js"
+}
