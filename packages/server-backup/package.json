@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "fast-crc32c": "^2.0.0",
+    "firebase-admin": "^8.13.0",
+    "jszip": "^3.5.0",
+    "pako": "^1.0.11"
+  }
+}
