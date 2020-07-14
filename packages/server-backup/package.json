@@ -1,8 +1,9 @@
 {
-  "dependencies": {
-    "fast-crc32c": "^2.0.0",
-    "firebase-admin": "^8.13.0",
-    "jszip": "^3.5.0",
-    "pako": "^1.0.11"
-  }
+    "name": "@local-first/server-backup",
+    "version": "1.0.0-2020-07-14",
+    "dependencies": {
+        "fast-crc32c": "^2.0.0",
+        "firebase-admin": "^8.13.0",
+        "tar-fs": "^2.1.0"
+    }
 }

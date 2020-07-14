@@ -25,6 +25,11 @@ const packages = [
     },
     // libs
     {
+        name: 'server-backup',
+        entry: 'packages/server-backup/index.js',
+        dest: 'public/server-backup',
+    },
+    {
         name: 'server-bundle',
         entry: 'packages/server-bundle/full.js',
         dest: 'public/server-bundle',
