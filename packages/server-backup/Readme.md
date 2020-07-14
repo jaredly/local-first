@@ -17,4 +17,4 @@ What's the deal?
 
 // Buut if the backup is going to be the same as the previous onw, hold off.
 // So it won't be strictly "the past n days", it will be "the past N unique daily backups"
-// we can get the remote md5hash to compare
+// we can get the remote md5hash to compare.
