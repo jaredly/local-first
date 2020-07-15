@@ -168,22 +168,27 @@ export const validateSessionToken = (
     try {
         sessionId = jwt.verify(token, secret).data;
     } catch (err) {
+        console.log('Failed to verify jwt:', err);
         return null;
     }
     const stmt = db.prepare(`SELECT * FROM sessions WHERE id = @id`);
     const session = stmt.get({ id: sessionId });
     if (!session) {
+        console.log('no matching session for', sessionId);
         return null;
     }
     if (session.logoutDate != null) {
+        console.log('session has been logged-out');
         return null; // session has been logged-out
     }
     if (session.expirationDate <= Date.now()) {
+        console.log('session has expired');
         return null; // it has expired
     }
     const info = db.prepare('SELECT * from users WHERE id = @id');
     const user = info.get({ id: session.userId });
     if (!user) {
+        console.log('associated user does not exist');
         return null;
     }
     return {

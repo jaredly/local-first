@@ -13,7 +13,7 @@ export const initialStatus = (): Status => {
             if (!user || !token) {
                 throw new Error(`Unexpected data`);
             }
-            console.log('initial loaded status', user, token);
+            console.log('initial loaded status', user, token, storageKey);
             return { user, token };
         } catch {
             return false;
@@ -36,9 +36,7 @@ export const listen = (fn: (data: Status) => mixed) => {
 export const checkEmail = async (host: string, email: string) => {
     // TODO figure out what the behavior is here if we're offline
     const res = await fetch(
-        `${
-            window.location.protocol
-        }//${host}/api/check-login?email=${encodeURIComponent(email)}`,
+        `${window.location.protocol}//${host}/api/check-login?email=${encodeURIComponent(email)}`,
     );
     return res.status >= 200 && res.status < 300;
 };
@@ -48,9 +46,7 @@ const processResponse = async (res, sentToken: ?string) => {
         throw new Error(await res.text());
     }
     const token =
-        sentToken == null || sentToken.length == 0
-            ? res.headers.get('X-Session')
-            : sentToken;
+        sentToken == null || sentToken.length == 0 ? res.headers.get('X-Session') : sentToken;
     if (token == null) {
         localStorage.removeItem(storageKey);
         listeners.forEach((fn) => fn(false));
@@ -120,4 +116,4 @@ export const signup = async (
     return processResponse(res);
 };
 
-export const storageKey = `millder-card-sort-auth`;
+export const storageKey = `tree-notes`;

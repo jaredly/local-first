@@ -27,7 +27,10 @@ export { default as createBasicBlobNetwork } from '../core/src/blob/basic-networ
 
 import { default as createDeltaClient } from '../core/src/delta/create-client';
 import { default as makeDeltaPersistence, type IndexConfig } from '../idb/src/delta';
-import { default as createPollingNetwork } from '../core/src/delta/polling-network';
+import {
+    default as createPollingNetwork,
+    type SyncStatus as PollingSyncStatus,
+} from '../core/src/delta/polling-network';
 import {
     default as createWebSocketNetwork,
     type SyncStatus,
@@ -129,6 +132,23 @@ export const createPersistedDeltaClient = (
         new PersistentClock(localStorageClockPersist(name)),
         makeDeltaPersistence(name, Object.keys(schemas), version, indexes),
         url != null ? createWebSocketNetwork(url) : nullNetwork,
+    );
+};
+
+export const createPollingPersistedDeltaClient = (
+    name: string,
+    schemas: { [colid: string]: Schema },
+    url: ?string,
+    version: number,
+    indexes: { [colid: string]: { [indexId: string]: IndexConfig } },
+): Client<PollingSyncStatus> => {
+    return createDeltaClient(
+        name,
+        clientCrdtImpl,
+        schemas,
+        new PersistentClock(localStorageClockPersist(name)),
+        makeDeltaPersistence(name, Object.keys(schemas), version, indexes),
+        url != null ? createPollingNetwork(url) : nullNetwork,
     );
 };
 

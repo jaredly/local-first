@@ -8,7 +8,7 @@ const reconnectingSocket = (
     url,
     onOpen,
     onMessage: (string, (string) => void) => mixed,
-    updateStatus: (SyncStatus) => mixed,
+    updateStatus: SyncStatus => mixed,
 ) => {
     const state: { socket: ?WebSocket } = {
         socket: null,
@@ -43,7 +43,7 @@ const reconnectingSocket = (
                         }
                     });
                     socket.addEventListener('message', ({ data }: { data: any }) =>
-                        onMessage(data, (response) => socket.send(response)),
+                        onMessage(data, response => socket.send(response)),
                     );
                 }),
             500,
@@ -59,6 +59,8 @@ export type SyncStatus =
     | { status: 'connected' }
     | { status: 'disconnected' };
 
+const addParams = (url, params) => url + (url.includes('?') ? '&' : '?') + params;
+
 const createWebSocketNetwork = <Delta, Data>(
     url: string,
 ): NetworkCreator<Delta, Data, SyncStatus> => (
@@ -71,14 +73,14 @@ const createWebSocketNetwork = <Delta, Data>(
         createSync: (sendCrossTabChange, updateStatus, softResync) => {
             console.log('Im the leader (websocket)');
             const state = reconnectingSocket(
-                url + (url.includes('?') ? '&' : '?') + `siteId=${sessionId}`,
+                addParams(url, `siteId=${sessionId}`),
                 () => sync(false),
                 async (msg, respond) => {
                     const messages = JSON.parse(msg);
                     const responseMessages = await handleMessages(
                         messages,
                         sendCrossTabChange,
-                    ).catch((err) => {
+                    ).catch(err => {
                         console.log('Failed to handle messages!');
                         console.error(err);
                     });
@@ -93,14 +95,14 @@ const createWebSocketNetwork = <Delta, Data>(
                 if (state.socket) {
                     const socket = state.socket;
                     getMessages(!softSync).then(
-                        (messages) => {
+                        messages => {
                             if (messages.length) {
                                 socket.send(JSON.stringify(messages));
                             } else {
                                 console.log('nothing to sync here');
                             }
                         },
-                        (err) => {
+                        err => {
                             console.error('Failed to sync messages folks');
                             console.error(err);
                         },

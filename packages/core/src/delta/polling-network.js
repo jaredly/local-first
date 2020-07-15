@@ -19,19 +19,19 @@ import poller from '../poller';
 import backOff from '../back-off';
 import { debounce } from '../debounce';
 
+const addParams = (url, params) => url + (url.includes('?') ? '&' : '?') + params;
+
 // Ok the part where we get very specific
 const syncFetch = async function<Delta, Data>(
     url: string,
     sessionId: string,
-    getMessages: (
-        reconnected: boolean,
-    ) => Promise<Array<ClientMessage<Delta, Data>>>,
+    getMessages: (reconnected: boolean) => Promise<Array<ClientMessage<Delta, Data>>>,
     onMessages: (Array<ServerMessage<Delta, Data>>) => Promise<mixed>,
 ) {
     const messages = await getMessages(true);
     console.log('sync:messages', messages);
     // console.log('messages', messages);
-    const res = await fetch(`${url}?sessionId=${sessionId}`, {
+    const res = await fetch(addParams(url, `sessionId=${sessionId}`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(messages),

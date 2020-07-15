@@ -159,6 +159,7 @@ export const runMulti = (
     const sqlite3 = require('better-sqlite3');
     const authDb = sqlite3(path.join(dataPath, 'users.db'));
     auth.createTables(authDb);
+    const middleware = [auth.middleware(authDb, secret)];
 
     const state = setupExpress();
 
@@ -183,7 +184,6 @@ export const runMulti = (
             }
             return userServers[req.auth.id];
         };
-        const middleware = [auth.middleware(authDb, secret)];
 
         setupBlob(
             state.app,

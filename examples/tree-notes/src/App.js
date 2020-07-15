@@ -10,6 +10,7 @@ import * as React from 'react';
 import {
     createPersistedBlobClient,
     createPersistedDeltaClient,
+    createPollingPersistedDeltaClient,
     createInMemoryDeltaClient,
 } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
@@ -27,21 +28,35 @@ const genId = () => Math.random().toString(36).slice(2);
 
 export type AuthData = { host: string, auth: Data, logout: () => mixed };
 
-const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
-    const client = React.useMemo(() => {
-        console.log('starting a client', authData);
-        // return authData
-        return createPersistedDeltaClient(
+const createClient = (dbName, authData) => {
+    if (false) {
+        return createPollingPersistedDeltaClient(
             dbName,
             schemas,
-            `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${
+            `${authData.host.startsWith('localhost:') ? 'http' : 'https'}://${
                 authData.host
             }/dbs/trees/sync?token=${authData.auth.token}`,
-            // }/sync?token=${authData.auth.token}`,
             3,
             {},
         );
-        // : createPersistedBlobClient(dbName, schemas, null, 3);
+    }
+    return createPersistedDeltaClient(
+        dbName,
+        schemas,
+        `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${
+            authData.host
+        }/dbs/trees/sync?token=${authData.auth.token}`,
+        3,
+        {},
+    );
+    // : createPersistedBlobClient(dbName, schemas, null, 3);
+};
+
+const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
+    console.log('run app', authData);
+    const client = React.useMemo(() => {
+        console.log('starting a client', authData);
+        return createClient(dbName, authData);
     }, [authData]);
 
     const [col, items] = useCollection(React, client, 'items');

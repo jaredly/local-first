@@ -6,7 +6,7 @@ import {
     loginUser,
     createUserSession,
     completeUserSession,
-    checkUserExists
+    checkUserExists,
 } from './db';
 
 export { createTables } from './db';
@@ -19,7 +19,7 @@ export const setupAuth = (
     app: express,
     secret: string,
     prefix: string = '/api',
-    paths: { [key: string]: string } = {}
+    paths: { [key: string]: string } = {},
 ) => {
     app.get(prefix + (paths.checkUsername || '/check-login'), (req, res) => {
         if (!req.query.email) {
@@ -45,7 +45,7 @@ export const setupAuth = (
             res.cookie('token', token, {
                 // secure: true,
                 // 30 days
-                maxAge: 30 * 24 * 3600 * 1000
+                maxAge: 30 * 24 * 3600 * 1000,
             });
             res.set('X-Session', token);
             res.status(200).json(user.info);
@@ -59,13 +59,13 @@ export const setupAuth = (
         const createdDate = Date.now();
         const userId = createUser(db, {
             password,
-            info: { email, name, createdDate }
+            info: { email, name, createdDate },
         });
         const token = createUserSession(db, secret, userId, req.ip);
         res.cookie('token', token, {
             // httpOnly: true,
             // 30 days
-            maxAge: 30 * 24 * 3600 * 1000
+            maxAge: 30 * 24 * 3600 * 1000,
         });
         res.set('X-Session', token);
         res.status(200).json({ id: userId, info: { email, name, createdDate } });
@@ -117,7 +117,8 @@ export const middleware = (db: DB, secret: string) => (req: *, res: *, next: *) 
         const auth = validateSessionToken(db, secret, req.query.token);
         if (auth == null) {
             res.status(401);
-            return res.send('Invalid or expired token');
+            console.log('invalid query token');
+            return res.send('Invalid or expired token (from query)');
         }
         req.auth = auth;
         return next();
@@ -128,7 +129,8 @@ export const middleware = (db: DB, secret: string) => (req: *, res: *, next: *) 
         const auth = validateSessionToken(db, secret, token);
         if (auth == null) {
             res.status(401);
-            return res.send('Invalid or expired token');
+            console.log('invalid header token');
+            return res.send('Invalid or expired token (from header)');
         }
         req.auth = auth;
         return next();
@@ -137,7 +139,8 @@ export const middleware = (db: DB, secret: string) => (req: *, res: *, next: *) 
         const auth = validateSessionToken(db, secret, req.cookies.token);
         if (auth == null) {
             res.status(401);
-            return res.send('Invalid or expired token');
+            console.log('invalid cookie token');
+            return res.send('Invalid or expired token (from cookie)');
         }
         req.auth = auth;
         return next();
