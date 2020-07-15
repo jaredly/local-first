@@ -48,9 +48,90 @@ export const serverForUser = (
     );
 };
 
+const makeSchemaCheckers = schemas => colid =>
+    schemas[colid] ? delta => validateDelta(schemas[colid], delta) : null;
+
+export const runMulti = (dataPath: string, configs, port: number = 9090) => {
+    if (!fs.existsSync(dataPath)) {
+        fs.mkdirSync(dataPath);
+    }
+
+    const sqlite3 = require('better-sqlite3');
+    const authDb = sqlite3(path.join(dataPath, 'users.db'));
+    auth.createTables(authDb);
+
+    const state = setupExpress();
+    const userServers = {};
+
+    const dbMiddleware = (req, res, next) => {
+        const dbName = req.params['db'];
+        const config = configs[dbName];
+        if (!config) {
+            res.status(404);
+            res.send(`Database ${dbName} not found`);
+            res.end();
+        } else {
+            req.dbName = dbName;
+            req.dbConfig = config;
+            req.dataPath = path.join(dataPath, dbName, req.auth.id);
+            next();
+        }
+    };
+    const getServer = req => {
+        if (!req.auth) {
+            throw new Error(`No auth`);
+        }
+        if (!userServers[req.auth.id]) {
+            userServers[req.auth.id] = make<Delta, Data>(
+                crdtImpl,
+                setupPersistence(req.dataPath),
+                makeSchemaCheckers(req.dbConfig),
+            );
+        }
+        return userServers[req.auth.id];
+    };
+
+    app.use('/dbs/:db', [auth.middleware(authDb, secret), dbMiddleware]);
+
+    // blobs!
+    app.get('/dbs/:db/blob/:name', (req, res) => {
+        // TODO validate blob data against schema
+        const filePath = path.join(req.dataPath, 'blobs', req.params['name']);
+        getBlob(filePath, req.get('if-none-match'), res);
+    });
+
+    app.put('/dbs/:db/blob/:name', (req, res) => {
+        const filePath = path.join(req.dataPath, 'blobs', req.params['name']);
+        putBlob(filePath, req.body, res);
+    });
+
+    // polling!
+    app.post('/dbs/:db/sync', middleware, (req, res) => {
+        if (!req.query.sessionId) {
+            throw new Error('No sessionId');
+        }
+        res.json(post(getServer(req), req.query.sessionId, req.body));
+    });
+
+    // websocket!
+    app.ws('/dbs/:db/realtime', function(ws, req) {
+        if (!req.query.siteId) {
+            ws.close();
+            throw new Error('No siteId');
+        }
+        try {
+            const server = getServer(req);
+            onWebsocket(server, clients, req.query.siteId, ws);
+        } catch (err) {
+            console.log('noooo');
+            console.error(err);
+        }
+    });
+};
+
 // is auth shared? yes it's shared.
 // but directories aren't shared I don't think.
-export const runMulti = (
+export const runMulti_ = (
     dataPath: string,
     configs: {
         [name: string]: { [collection: string]: Schema },
