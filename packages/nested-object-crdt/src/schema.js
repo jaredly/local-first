@@ -60,7 +60,7 @@ const expectObject = (v, path) => {
 
 const expectRichText = (v, path) => {
     expectType(v, 'object', path);
-    if (!('site' in v) || !('map' in v) || !('largestLocalId' in v) || !('roots' in v)) {
+    if (!('map' in v) || !('largestIDs' in v) || !('roots' in v)) {
         throw new Error(`Doesn't look like a rich text object`);
     }
 };

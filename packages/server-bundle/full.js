@@ -51,7 +51,17 @@ export const serverForUser = (
 const makeSchemaCheckers = schemas => colid =>
     schemas[colid] ? delta => validateDelta(schemas[colid], delta) : null;
 
-export const runMulti = (dataPath: string, configs, port: number = 9090) => {
+export const runMulti_ = (
+    dataPath: string,
+    configs: {
+        [name: string]: { [collection: string]: Schema },
+    },
+    port: number = 9090,
+) => {
+    const { SECRET: secret } = process.env;
+    if (secret == null) {
+        throw new Error('process.env.SECRET is required');
+    }
     if (!fs.existsSync(dataPath)) {
         fs.mkdirSync(dataPath);
     }
@@ -60,7 +70,7 @@ export const runMulti = (dataPath: string, configs, port: number = 9090) => {
     const authDb = sqlite3(path.join(dataPath, 'users.db'));
     auth.createTables(authDb);
 
-    const state = setupExpress();
+    const { app } = setupExpress();
     const userServers = {};
 
     const dbMiddleware = (req, res, next) => {
@@ -131,7 +141,7 @@ export const runMulti = (dataPath: string, configs, port: number = 9090) => {
 
 // is auth shared? yes it's shared.
 // but directories aren't shared I don't think.
-export const runMulti_ = (
+export const runMulti = (
     dataPath: string,
     configs: {
         [name: string]: { [collection: string]: Schema },
@@ -179,10 +189,10 @@ export const runMulti_ = (
             state.app,
             req => path.join(currentPath, req.auth.id, 'blobs'),
             middleware,
-            `dbs/${name}/blob`,
+            `/dbs/${name}/blob`,
         );
-        setupPolling(state.app, getServer, middleware, `dbs/${name}/sync`);
-        setupWebsocket(state.app, getServer, middleware, `dbs/${name}/sync`);
+        setupPolling(state.app, getServer, middleware, `/dbs/${name}/sync`);
+        setupWebsocket(state.app, getServer, middleware, `/dbs/${name}/sync`);
     });
 
     auth.setupAuth(authDb, state.app, secret);
