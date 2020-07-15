@@ -13,6 +13,10 @@ import * as auth from '../auth';
 
 import { runServer, setupWebsocket, setupPolling, setupExpress, setupBlob } from './';
 
+import { getBlob, putBlob } from './blob';
+import { post } from './poll';
+import { onWebsocket } from './websocket';
+
 type Delta = NewDelta<any, null, any>;
 type Data = CRDT<any, null>;
 
@@ -51,7 +55,7 @@ export const serverForUser = (
 const makeSchemaCheckers = schemas => colid =>
     schemas[colid] ? delta => validateDelta(schemas[colid], delta) : null;
 
-export const runMulti_ = (
+export const runMulti2 = (
     dataPath: string,
     configs: {
         [name: string]: { [collection: string]: Schema },
@@ -73,20 +77,6 @@ export const runMulti_ = (
     const { app } = setupExpress();
     const userServers = {};
 
-    const dbMiddleware = (req, res, next) => {
-        const dbName = req.params['db'];
-        const config = configs[dbName];
-        if (!config) {
-            res.status(404);
-            res.send(`Database ${dbName} not found`);
-            res.end();
-        } else {
-            req.dbName = dbName;
-            req.dbConfig = config;
-            req.dataPath = path.join(dataPath, dbName, req.auth.id);
-            next();
-        }
-    };
     const getServer = req => {
         if (!req.auth) {
             throw new Error(`No auth`);
@@ -101,42 +91,73 @@ export const runMulti_ = (
         return userServers[req.auth.id];
     };
 
-    app.use('/dbs/:db', [auth.middleware(authDb, secret), dbMiddleware]);
+    const dbMiddleware = (req, res, next) => {
+        const dbName = req.query.db;
+        const parts = dbName.split('/');
+        if (!parts.every(part => part.match(/^[a-zA-Z0-9_-]+$/))) {
+            res.status(400);
+            res.send(`Invalid database name ${dbName}`);
+            res.end();
+            return;
+        }
+        const config = configs[parts[0]];
+        if (!config) {
+            res.status(404);
+            res.send(`Database config ${parts[0]} not found`);
+            res.end();
+        } else {
+            req.dbName = dbName;
+            req.dbConfig = config;
+            req.dataPath = path.join(dataPath, dbName, '@' + req.auth.id);
+            req.server = getServer(req);
+            next();
+        }
+    };
+
+    app.use('/dbs/', [auth.middleware(authDb, secret)]);
 
     // blobs!
-    app.get('/dbs/:db/blob/:name', (req, res) => {
-        // TODO validate blob data against schema
-        const filePath = path.join(req.dataPath, 'blobs', req.params['name']);
+    app.get('/dbs/blob', (req, res) => {
+        // TODO validate blob data against some kind of schema?
+        const filePath = path.join(req.dataPath, '@blobs', req.query.name);
         getBlob(filePath, req.get('if-none-match'), res);
     });
 
-    app.put('/dbs/:db/blob/:name', (req, res) => {
-        const filePath = path.join(req.dataPath, 'blobs', req.params['name']);
+    app.put('/dbs/blob', (req, res) => {
+        const filePath = path.join(req.dataPath, '@blobs', req.query.name);
         putBlob(filePath, req.body, res);
     });
 
+    app.use('/dbs/sync', dbMiddleware);
+
     // polling!
-    app.post('/dbs/:db/sync', middleware, (req, res) => {
+    app.post('/dbs/sync', (req, res) => {
         if (!req.query.sessionId) {
             throw new Error('No sessionId');
         }
-        res.json(post(getServer(req), req.query.sessionId, req.body));
+        res.json(post(req.server, req.query.sessionId, req.body));
     });
 
+    const clients = {};
+
     // websocket!
-    app.ws('/dbs/:db/realtime', function(ws, req) {
+    app.ws('/dbs/sync', function(ws, req) {
         if (!req.query.siteId) {
             ws.close();
             throw new Error('No siteId');
         }
         try {
-            const server = getServer(req);
-            onWebsocket(server, clients, req.query.siteId, ws);
+            onWebsocket(req.server, clients, req.query.siteId, ws);
         } catch (err) {
             console.log('noooo');
             console.error(err);
         }
     });
+
+    auth.setupAuth(authDb, app, secret);
+    app.listen(port);
+
+    return { app };
 };
 
 // is auth shared? yes it's shared.

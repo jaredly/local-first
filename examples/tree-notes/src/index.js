@@ -46,8 +46,8 @@ const run = () => {
         return;
     }
     document.body.appendChild(node);
-    // render(<Main host="localhost:9090" dbName="tree-notes-glitch" />, node);
-    render(<Main host="local-first-server.glitch.me" dbName="tree-notes-glitch" />, node);
+    render(<Main host="localhost:9090" dbName="tree-notes-glitch" />, node);
+    // render(<Main host="local-first-server.glitch.me" dbName="tree-notes-glitch" />, node);
 };
 
 export default run;

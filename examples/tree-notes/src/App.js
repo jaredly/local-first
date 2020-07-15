@@ -35,7 +35,7 @@ const createClient = (dbName, authData) => {
             schemas,
             `${authData.host.startsWith('localhost:') ? 'http' : 'https'}://${
                 authData.host
-            }/dbs/trees/sync?token=${authData.auth.token}`,
+            }/dbs/sync?db=trees&token=${authData.auth.token}`,
             3,
             {},
         );
@@ -45,7 +45,7 @@ const createClient = (dbName, authData) => {
         schemas,
         `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${
             authData.host
-        }/dbs/trees/sync?token=${authData.auth.token}`,
+        }/dbs/sync?db=trees&token=${authData.auth.token}`,
         3,
         {},
     );
