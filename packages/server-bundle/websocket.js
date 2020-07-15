@@ -2,12 +2,7 @@
 import type { Delta, CRDT as Data } from '../nested-object-crdt';
 import type { Schema } from '../nested-object-crdt/src/schema.js';
 import make, { onMessage, getMessages } from '../core/src/server';
-import type {
-    ClientMessage,
-    ServerMessage,
-    CursorType,
-    ServerState,
-} from '../core/src/server';
+import type { ClientMessage, ServerMessage, CursorType, ServerState } from '../core/src/server';
 
 export const handleMessages = function<Delta, Data>(
     server: ServerState<Delta, Data>,
@@ -15,9 +10,7 @@ export const handleMessages = function<Delta, Data>(
     respond: (Array<ServerMessage<Delta, Data>>) => void,
     messages: Array<ClientMessage<Delta, Data>>,
 ) {
-    const acks = messages
-        .map(message => onMessage(server, sessionId, message))
-        .filter(Boolean);
+    const acks = messages.map(message => onMessage(server, sessionId, message)).filter(Boolean);
     const response = acks.concat(getMessages(server, sessionId));
 
     if (response.length) {
@@ -50,20 +43,16 @@ export const onWebsocket = <Delta, Data>(
     sessionId: string,
     ws: { send: string => void, on: (string, (string) => void) => void },
 ) => {
+    console.log('received connection', sessionId);
     clients[sessionId] = {
-        send: (messages: Array<ServerMessage<Delta, Data>>) =>
-            ws.send(JSON.stringify(messages)),
+        send: (messages: Array<ServerMessage<Delta, Data>>) => ws.send(JSON.stringify(messages)),
     };
     ws.on('message', data => {
-        handleMessages(
-            server,
-            sessionId,
-            data => ws.send(JSON.stringify(data)),
-            JSON.parse(data),
-        );
+        handleMessages(server, sessionId, data => ws.send(JSON.stringify(data)), JSON.parse(data));
         broadcast(server, clients, sessionId);
     });
     ws.on('close', () => {
+        console.log('Closed connection', sessionId);
         delete clients[sessionId];
     });
 };

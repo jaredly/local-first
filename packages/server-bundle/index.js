@@ -64,6 +64,7 @@ export const setupWebsocket = function<Delta, Data>(
     app.ws(path, function(ws, req) {
         if (!req.query.siteId) {
             ws.close();
+            console.log('Closing -- siteId missing');
             throw new Error('No siteId');
         }
         try {
