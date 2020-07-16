@@ -22,20 +22,14 @@ const darkTheme = createMuiTheme({
     },
 });
 
-const Main = ({ host, dbName }: { host: ?string, dbName: string }) => {
+const Main = ({ host, dbName }: { host: string, dbName: string }) => {
     return (
         <ThemeProvider theme={darkTheme}>
             <CssBaseline />
-            {host != null ? (
-                <Auth
-                    host={host}
-                    render={(auth, logout) => (
-                        <App dbName={dbName} authData={{ host, auth, logout }} />
-                    )}
-                />
-            ) : (
-                <App dbName={dbName} authData={null} />
-            )}
+            <Auth
+                host={host}
+                render={(auth, logout) => <App dbName={dbName} authData={{ host, auth, logout }} />}
+            />
         </ThemeProvider>
     );
 };

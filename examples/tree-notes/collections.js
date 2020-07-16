@@ -54,15 +54,16 @@ const ItemSchema = {
 };
 
 /*::
+import type {CRDT} from '../../packages/rich-text-crdt'
 export type ItemT = {
     id: string,
     author: string,
-    body: Delta,
+    body: CRDT,
     tags: {[key: string]: number},
     createdDate: number,
     completed?: number,
 
-    columnData: {[colId: string]: Delta},
+    columnData: {[colId: string]: CRDT},
     childColumnConfig: ?{
         columns: {[colId: string]: {
             title: string,

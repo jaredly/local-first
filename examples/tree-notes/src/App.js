@@ -31,15 +31,15 @@ export type AuthData = { host: string, auth: Data, logout: () => mixed };
 
 const createClient = (dbName, authData) => {
     const url = `${authData.host}/dbs/sync?db=trees&token=${authData.auth.token}`;
-    if (false) {
-        return createPollingPersistedDeltaClient(
-            dbName,
-            schemas,
-            `${authData.host.startsWith('localhost:') ? 'http' : 'https'}://${url}`,
-            3,
-            {},
-        );
-    }
+    // if (false) {
+    //     return createPollingPersistedDeltaClient(
+    //         dbName,
+    //         schemas,
+    //         `${authData.host.startsWith('localhost:') ? 'http' : 'https'}://${url}`,
+    //         3,
+    //         {},
+    //     );
+    // }
     return createPersistedDeltaClient(
         dbName,
         schemas,
