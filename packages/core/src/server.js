@@ -190,7 +190,7 @@ export const onMessage = function<Delta, Data>(
             });
             // console.log('max', maxStamp, message.deltas);
             if (maxStamp) {
-                console.log('acking');
+                // console.log('acking');
                 return {
                     type: 'ack',
                     deltaStamp: maxStamp,

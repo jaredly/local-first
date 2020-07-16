@@ -61,7 +61,6 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
     const [col, items] = useCollection(React, client, 'items');
 
     const [_, item] = useItem(React, client, 'items', 'root');
-    console.log('app item', item);
 
     const [showUpgrade, setShowUpgrade] = React.useState(
         window.upgradeAvailable && window.upgradeAvailable.installed,
@@ -69,15 +68,9 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
 
     return (
         <div>
-            Hello folks
             {item === false ? (
                 'Not loaded'
             ) : item === null ? (
-                'null item'
-            ) : (
-                <Item id="root" client={client} />
-            )}
-            {item === null ? (
                 <button
                     onClick={() => {
                         const id = 'root';
@@ -88,7 +81,43 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
                 >
                     Create a root folks
                 </button>
-            ) : null}
+            ) : (
+                <Item id="root" client={client} />
+            )}
+            <Snackbar
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                }}
+                open={showUpgrade}
+                autoHideDuration={6000}
+                onClose={() => setShowUpgrade(false)}
+                message="Update available"
+                action={
+                    <React.Fragment>
+                        <Button
+                            color="secondary"
+                            size="small"
+                            onClick={() => {
+                                window.upgradeAvailable.waiting.postMessage({
+                                    type: 'SKIP_WAITING',
+                                });
+                                setShowUpgrade(false);
+                            }}
+                        >
+                            Reload
+                        </Button>
+                        <IconButton
+                            size="small"
+                            aria-label="close"
+                            color="inherit"
+                            onClick={() => setShowUpgrade(false)}
+                        >
+                            <CloseIcon fontSize="small" />
+                        </IconButton>
+                    </React.Fragment>
+                }
+            />
         </div>
     );
 };

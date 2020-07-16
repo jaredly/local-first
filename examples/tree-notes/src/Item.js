@@ -73,7 +73,6 @@ const Item = ({ id, client }: { id: string, client: Client<*> }) => {
     }
     return (
         <div>
-            Yep its here
             <QuillEditor
                 value={item.body}
                 getStamp={client.getStamp}
