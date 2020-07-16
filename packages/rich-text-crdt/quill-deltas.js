@@ -1,12 +1,12 @@
 // @flow
 
 import deepEqual from 'fast-deep-equal';
-import type { CRDT, Node, Delta, Span } from './types';
+import type { CRDT, Node, Delta, Span, Loc } from './types';
 import { insert, del, format } from './deltas';
 import { walkWithFmt } from './debug';
 import { apply } from './apply';
 import { spansToSelections } from './span';
-import { locToPos, locToInsertionPos, formatAt, rootSite } from './loc';
+import { locToPos, posToLoc, locToInsertionPos, formatAt, rootSite } from './loc';
 import { toKey, keyEq } from './utils';
 
 type Format = { [key: string]: any };
@@ -21,6 +21,17 @@ export const initialQuillDelta = {
     id: [2, rootSite],
     after: [0, rootSite],
     text: '\n',
+};
+
+export const treeToQuillPos = (state: CRDT, range: { start: Loc, end: Loc }) => {
+    const start = locToPos(state, range.start);
+    const end = locToPos(state, range.end);
+    return { index: start, length: end - start };
+};
+export const quillToTreePos = (state: CRDT, range: { index: number, length: number }) => {
+    const start = posToLoc(state, range.index, false);
+    const end = posToLoc(state, range.index + range.length, true);
+    return { start, end };
 };
 
 export const stateToQuillContents = (state: CRDT) => {

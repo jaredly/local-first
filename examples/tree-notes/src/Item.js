@@ -7,6 +7,8 @@ import {
     type QuillDelta,
     stateToQuillContents,
     quillDeltasToDeltas,
+    treeToQuillPos,
+    quillToTreePos,
 } from '../../../packages/rich-text-crdt/quill-deltas';
 
 const QuillEditor = ({ value, onChange, getStamp, siteId }) => {
@@ -15,13 +17,13 @@ const QuillEditor = ({ value, onChange, getStamp, siteId }) => {
 
     const valueRef = React.useRef(value);
     if (ui.current && value !== valueRef.current) {
-        console.log('render with new value', value);
         const quill = ui.current;
         const newContents = stateToQuillContents(value);
         const currentContents = quill.getContents();
         if (JSON.stringify(newContents) !== JSON.stringify(currentContents)) {
-            console.log('setting', newContents, currentContents);
+            const pos = quillToTreePos(valueRef.current, quill.getSelection());
             quill.setContents(newContents, 'crdt');
+            quill.setSelection(treeToQuillPos(value, pos));
         }
     }
     valueRef.current = value;
