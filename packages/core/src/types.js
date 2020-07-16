@@ -49,6 +49,11 @@ export type Collection<T> = {
 
     clearAttribute: (id: string, path: Array<string | number>) => Promise<void>,
     setAttribute: (id: string, path: Array<string | number>, value: any) => Promise<void>,
+    applyRichTextDelta<OtherDelta>(
+        id: string,
+        path: Array<string | number>,
+        deltas: Array<OtherDelta>,
+    ): Promise<void>,
     getCached: (id: string) => ?T,
     genId: () => string,
     load: (id: string) => Promise<?T>,

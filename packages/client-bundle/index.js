@@ -68,8 +68,8 @@ const applyOtherDelta = (text: rich.CRDT, meta: null, delta: rich.Delta) => {
     };
 };
 
-const invertOtherDelta = otherDelta => {
-    console.log('cant invert rich text deltas yet');
+const invertOtherDelta = (base, otherDelta) => {
+    console.log('cant invert rich text deltas yet', base, otherDelta);
     return null;
 };
 

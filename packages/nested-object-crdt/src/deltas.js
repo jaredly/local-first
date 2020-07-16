@@ -41,7 +41,7 @@ export const invert = function<T, D, Other, OtherDelta>(
     crdt: CRDT<T, Other>,
     delta: Delta<D, Other, OtherDelta>,
     getStamp: () => string,
-    invertOtherDelta: OtherDelta => ?OtherDelta,
+    invertOtherDelta: (Other, OtherDelta) => ?OtherDelta,
 ): ?Delta<?D, Other, OtherDelta> {
     // umm not sure how to get the stamp right
     // oh maybe I'll use a special sigil stamp "<latest>" or something
@@ -89,7 +89,15 @@ export const invert = function<T, D, Other, OtherDelta>(
             throw new Error(`Can't reorder something that's not there ${id}`);
         }
     } else if (delta.type === 'other') {
-        const inverted = invertOtherDelta(delta.delta);
+        let current = get(
+            crdt,
+            delta.path.map(k => k.key),
+        );
+        if (!current || current.meta.type !== 'other') {
+            throw new Error(`Current isn't a rich-text delta, aborting`);
+        }
+        // $FlowFixMe
+        const inverted = invertOtherDelta(current.value, delta.delta);
         if (inverted == null) {
             return null;
         }
