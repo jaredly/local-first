@@ -51,15 +51,17 @@ const createClient = (dbName, authData) => {
 };
 
 const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
-    console.log('run app', authData);
     const client = React.useMemo(() => {
         console.log('starting a client', authData);
         return createClient(dbName, authData);
     }, [authData]);
 
+    window.client = client;
+
     const [col, items] = useCollection(React, client, 'items');
 
     const [_, item] = useItem(React, client, 'items', 'root');
+    console.log('app item', item);
 
     const [showUpgrade, setShowUpgrade] = React.useState(
         window.upgradeAvailable && window.upgradeAvailable.installed,
@@ -69,7 +71,7 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
         <div>
             Hello folks
             {item === false ? (
-                'No item'
+                'Not loaded'
             ) : item === null ? (
                 'null item'
             ) : (
@@ -81,6 +83,7 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
                         const id = 'root';
                         const item = { ...blankItem(), id };
                         col.save(id, item);
+                        console.log('saving');
                     }}
                 >
                     Create a root folks

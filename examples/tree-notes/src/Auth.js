@@ -8,6 +8,7 @@ import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
+import deepEqual from '@birchill/json-equalish';
 
 import type { Data, Status } from './auth-api';
 import { checkEmail, login, signup, logout, initialStatus, listen, getUser } from './auth-api';
@@ -263,7 +264,11 @@ export const useAuthStatus = (host: string) => {
     }, [host]);
 
     React.useEffect(() => {
-        return listen((auth) => setStatus(auth));
+        return listen((auth) => {
+            if (!deepEqual(status, auth)) {
+                setStatus(auth);
+            }
+        });
     }, []);
 
     return status;
@@ -277,6 +282,7 @@ const Auth = ({
     render: (data: Data, logout: () => Promise<void>) => React.Node,
 }) => {
     const status = useAuthStatus(host);
+    console.log('aith render?', status);
     // load auth
 
     if (status === false) {

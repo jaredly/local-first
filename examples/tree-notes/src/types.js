@@ -2,7 +2,7 @@
 import * as rich from '../../../packages/rich-text-crdt/';
 const blankBody = () => {
     const crdt = rich.init();
-    return rich.insert(crdt, ':root:', 0, '\n');
+    return rich.apply(crdt, rich.insert(crdt, ':root:', 0, '\n'));
 };
 export const blankItem = () => ({
     id: '',

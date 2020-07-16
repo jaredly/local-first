@@ -847,6 +847,11 @@
     lodash "^4.17.19"
     to-fast-properties "^2.0.0"
 
+"@birchill/json-equalish@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@birchill/json-equalish/-/json-equalish-1.1.0.tgz#cb01ac1ef032209ada516b6a4bf3d7a2306e972d"
+  integrity sha512-p6XZQQVTsqRh5wYg3Rf4EWuynWANMupIHykDS373RSVPzSJiZ2ID9gRvQs7/MZKdW7Ejaw587WLGV8C+wSitzw==
+
 "@emotion/hash@^0.8.0":
   version "0.8.0"
   resolved "https://registry.yarnpkg.com/@emotion/hash/-/hash-0.8.0.tgz#bbbff68978fefdbe68ccb533bc8cbe1d1afb5413"

@@ -62,9 +62,10 @@ const makePersistence = (
     version: number,
     indexes: { [colid: string]: { [indexId: string]: IndexConfig } },
 ): DeltaPersistence => {
-    // console.log('Persistence with name', name);
+    console.log('Persistence with name', name, version);
     const db: Promise<DB> = openDB(name, version, {
         upgrade(db, oldVersion, newVersion, transaction) {
+            console.log('okm ade the db');
             const currentStores = db.objectStoreNames;
             collections.forEach(name => {
                 if (!currentStores.contains(name + ':deltas')) {
@@ -96,7 +97,17 @@ const makePersistence = (
             });
             console.log('made object stores');
         },
-    });
+    }).then(
+        s => {
+            console.log('created', name);
+            return s;
+        },
+        err => {
+            console.log('failed to create', err);
+            throw err;
+        },
+    );
+    console.log('um');
 
     return {
         collections,

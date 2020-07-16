@@ -23,6 +23,7 @@ const darkTheme = createMuiTheme({
 });
 
 const Main = ({ host, dbName }: { host: string, dbName: string }) => {
+    console.log('main render?');
     return (
         <ThemeProvider theme={darkTheme}>
             <CssBaseline />
@@ -40,7 +41,7 @@ const run = () => {
         return;
     }
     document.body.appendChild(node);
-    render(<Main host="localhost:9090" dbName="tree-notes-glitch" />, node);
+    render(<Main host="localhost:9090" dbName="tree-notes-glitch-2" />, node);
     // render(<Main host="local-first-server.glitch.me" dbName="tree-notes-glitch" />, node);
 };
 
