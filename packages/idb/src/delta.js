@@ -101,6 +101,22 @@ const makePersistence = (
     return {
         collections,
         tabIsolated: false,
+        teardown() {
+            return new Promise((res, rej) => {
+                var DBDeleteRequest = window.indexedDB.deleteDatabase(name);
+
+                DBDeleteRequest.onerror = function(event) {
+                    console.log('Error deleting database.');
+                    rej(event);
+                };
+
+                DBDeleteRequest.onsuccess = function(event) {
+                    console.log('Database deleted successfully');
+
+                    res();
+                };
+            });
+        },
         async deltas<Delta>(
             collection: string,
         ): Promise<Array<{ node: string, delta: Delta, stamp: string }>> {

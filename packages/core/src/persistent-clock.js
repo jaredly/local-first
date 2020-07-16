@@ -5,6 +5,7 @@ import type { HLC } from '../../hybrid-logical-clock/src';
 export const inMemoryClockPersist = () => {
     let saved = null;
     return {
+        teardown() {},
         get(init: () => HLC): HLC {
             if (!saved) {
                 saved = init();
@@ -27,6 +28,9 @@ export const localStorageClockPersist = (key: string) => ({
         }
         return hlc.unpack(raw);
     },
+    teardown() {
+        localStorage.removeItem(key);
+    },
     set(clock: HLC) {
         localStorage.setItem(key, hlc.pack(clock));
     },
@@ -37,7 +41,11 @@ const genId = () =>
         .toString(36)
         .slice(2);
 
-type ClockPersist = { get: (() => HLC) => HLC, set: HLC => void };
+type ClockPersist = {
+    teardown: () => void,
+    get: (() => HLC) => HLC,
+    set: HLC => void,
+};
 
 export class PersistentClock {
     persist: ClockPersist;
@@ -51,6 +59,10 @@ export class PersistentClock {
         this.set = this.set.bind(this);
         // $FlowFixMe
         this.recv = this.recv.bind(this);
+    }
+
+    teardown() {
+        this.persist.teardown();
     }
 
     get() {

@@ -244,6 +244,10 @@ function createClient<Delta, Data, SyncStatus>(
         fullExport<Data>(): Promise<Export<Data>> {
             return persistence.fullExport();
         },
+        teardown: async () => {
+            clock.teardown();
+            await persistence.teardown();
+        },
         async importDump<Data>(dump: Export<Data>) {
             await Promise.all(
                 Object.keys(dump).map(async key => {

@@ -13,7 +13,7 @@ import * as hlc from '../../../hybrid-logical-clock';
 import deepEqual from 'fast-deep-equal';
 import { type ClientMessage, type ServerMessage } from '../server';
 
-type SyncStatus = { status: 'connected' } | { status: 'disconnected' };
+export type SyncStatus = { status: 'connected' } | { status: 'disconnected' };
 
 import poller from '../poller';
 import backOff from '../back-off';

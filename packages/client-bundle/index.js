@@ -11,7 +11,7 @@ export { hlc, crdt, rich };
 export type { Schema };
 
 import type { CRDTImpl } from '../core/src/shared';
-import type { Client } from '../core/src/types';
+import type { Client, NetworkCreator } from '../core/src/types';
 export type { Client, Collection } from '../core/src/types';
 
 import { default as createBlobClient } from '../core/src/blob/create-client';
@@ -97,7 +97,12 @@ export const clientCrdtImpl: CRDTImpl<Delta, Data> = {
     },
 };
 
-const nullNetwork = (_, __, ___) => ({
+const nullNetwork: NetworkCreator<any, any, any> = (_, __, ___) => ({
+    initial: { status: 'disconnected' },
+    createSync: (_, __, ___) => () => {},
+});
+
+const blobNullNetwork = (_, __, ___) => ({
     initial: { status: 'disconnected' },
     createSync: (_, __, ___) => () => {},
 });
@@ -114,7 +119,7 @@ export const createPersistedBlobClient = (
         schemas,
         new PersistentClock(localStorageClockPersist(name)),
         makeBlobPersistence(name, Object.keys(schemas), version),
-        url != null ? createBasicBlobNetwork<Delta, Data>(url) : nullNetwork,
+        url != null ? createBasicBlobNetwork<Delta, Data>(url) : blobNullNetwork,
     );
 };
 
@@ -125,7 +130,7 @@ export const createPersistedDeltaClient = (
     version: number,
     indexes: { [colid: string]: { [indexId: string]: IndexConfig } },
 ): Client<SyncStatus> => {
-    return createDeltaClient(
+    return createDeltaClient<*, *, SyncStatus>(
         name,
         clientCrdtImpl,
         schemas,
@@ -142,7 +147,7 @@ export const createPollingPersistedDeltaClient = (
     version: number,
     indexes: { [colid: string]: { [indexId: string]: IndexConfig } },
 ): Client<PollingSyncStatus> => {
-    return createDeltaClient(
+    return createDeltaClient<*, *, PollingSyncStatus>(
         name,
         clientCrdtImpl,
         schemas,

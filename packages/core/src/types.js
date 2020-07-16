@@ -25,6 +25,7 @@ export type Client<SyncStatus> = {
     onSyncStatus(fn: (SyncStatus) => void): void,
     getSyncStatus(): SyncStatus,
     setDirty(): void,
+    teardown(): Promise<void>,
 };
 
 export type Collection<T> = {
@@ -73,6 +74,7 @@ export type Persistence = {
     load<T>(colid: string, id: string): Promise<?T>,
     loadAll<T>(colid: string): Promise<{ [key: string]: T }>,
     tabIsolated: boolean,
+    teardown(): Promise<void>,
     // delete(colid: string, id: string): Promise<void>,
 };
 
@@ -157,6 +159,7 @@ export type PersistentClock = {
     get(): string,
     set(newClock: HLC): void,
     recv(newClock: HLC): void,
+    teardown(): void,
     now: HLC,
 };
 

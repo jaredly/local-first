@@ -131,6 +131,10 @@ function createClient<Delta, Data, SyncStatus>(
         setDirty: network.setDirty,
         getStamp: clock.get,
         undo: undoManager.undo,
+        teardown: async () => {
+            clock.teardown();
+            await persistence.teardown();
+        },
         fullExport<Data>(): Promise<Export<Data>> {
             return persistence.fullExport();
         },
