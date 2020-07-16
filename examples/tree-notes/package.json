@@ -12,6 +12,8 @@
         "pako": "^1.0.11",
         "parse-color": "^1.0.0",
         "querystring": "^0.2.0",
+        "quill": "^1.3.7",
+        "quill-cursors": "^3.0.1",
         "react": "^16.8.0",
         "react-dom": "^16.8.0",
         "react-router-dom": "^5.1.2",

@@ -7,45 +7,45 @@ type Map = { [key: string]: Node };
 
 class Inconsistent extends Error {}
 
-const mergeTrees = (one: Map, two: Map, key: string) => {
-    const oneNode = one[key];
-    const twoNode = two[key];
-    if (oneNode.content.type !== twoNode.content.type) {
-        throw new Inconsistent(`Content type for node ${key}`);
-    }
-    // one: hellofol[m;ks]
-    // two: hello[ ;folks]
-    // so take the shorter of the two
-    // then go to the .. children?
-    // buuuut ok so the deal is:
-    // go one by one ... by 'after'?
-    // Ok so go through all nodes, make an 'after' map
-    // then just start going through IDs
-    // so we get to 'o', and we see the space
-    // so we totally switch gears, right? except we need to
-    // end up going back to the 'f' in case the other node doesn't
-    // know about it yet.
-    // Ok so the 'expensive' way is to split literally everything
-    // up into characters {id, after, deleted, content}
-    // and then make an after-map
-    // and then go through building nodes up as we go through
-};
+// const mergeTrees = (one: Map, two: Map, key: string) => {
+//     const oneNode = one[key];
+//     const twoNode = two[key];
+//     if (oneNode.content.type !== twoNode.content.type) {
+//         throw new Inconsistent(`Content type for node ${key}`);
+//     }
+//     // one: hellofol[m;ks]
+//     // two: hello[ ;folks]
+//     // so take the shorter of the two
+//     // then go to the .. children?
+//     // buuuut ok so the deal is:
+//     // go one by one ... by 'after'?
+//     // Ok so go through all nodes, make an 'after' map
+//     // then just start going through IDs
+//     // so we get to 'o', and we see the space
+//     // so we totally switch gears, right? except we need to
+//     // end up going back to the 'f' in case the other node doesn't
+//     // know about it yet.
+//     // Ok so the 'expensive' way is to split literally everything
+//     // up into characters {id, after, deleted, content}
+//     // and then make an after-map
+//     // and then go through building nodes up as we go through
+// };
 
-const mergeNodes = (one: Node, two: Node) => {
-    // ummmmmmm ok seems like this might be
-    // dangerous right here. Like if nodes are split different,
-    // it's possible I'd end up in a weird state??
-    // id will be the same
-    // parent - could be different due to merges
-    // deleted - could be different
-    // size - could be different due to new nodes
-    // children - different due to new nodes, also maybe merges?
-    // content - could be different due to splits / merges
-    // formats - could also be different probably?
-    // ummmmmm should I just go with 'make this expensive, I'll fix it later'?
-    // ok how about a new plan, what if I do an O(1) walk ...
-    // through both ... merging as I go along?
-};
+// const mergeNodes = (one: Node, two: Node) => {
+//     // ummmmmmm ok seems like this might be
+//     // dangerous right here. Like if nodes are split different,
+//     // it's possible I'd end up in a weird state??
+//     // id will be the same
+//     // parent - could be different due to merges
+//     // deleted - could be different
+//     // size - could be different due to new nodes
+//     // children - different due to new nodes, also maybe merges?
+//     // content - could be different due to splits / merges
+//     // formats - could also be different probably?
+//     // ummmmmm should I just go with 'make this expensive, I'll fix it later'?
+//     // ok how about a new plan, what if I do an O(1) walk ...
+//     // through both ... merging as I go along?
+// };
 
 const addAtoms = (atoms, afters, node, after) => {
     const [id, site] = node.id;
@@ -133,12 +133,7 @@ const collectNode = (map, afters, atom, parent: string) => {
             break;
         }
     }
-    node.children = collectNodes(
-        map,
-        afters,
-        toKey(getAfter(node)),
-        toKey(node.id),
-    );
+    node.children = collectNodes(map, afters, toKey(getAfter(node)), toKey(node.id));
     node.children.forEach(child => {
         node.size += map[child].size;
     });
@@ -162,13 +157,9 @@ const addFormats = (state: CRDT) => {
     walk(state, node => {
         if (node.content.type === 'open') {
             const { content } = node;
-            const current = format[content.key]
-                ? format[content.key].slice()
-                : [];
+            const current = format[content.key] ? format[content.key].slice() : [];
             const idx = fmtIdx(
-                current.map(
-                    id => ((state.map[id].content: any): FormatContent),
-                ),
+                current.map(id => ((state.map[id].content: any): FormatContent)),
                 content,
             );
             current.splice(idx, 0, toKey(node.id));
@@ -199,20 +190,14 @@ export const merge = (one: CRDT, two: CRDT): CRDT => {
     const largestIDs = { ...one.largestIDs };
     // console.warn('Merge largestIDs', one.largestIDs, two.largestIDs);
     Object.keys(two.largestIDs).forEach(site => {
-        largestIDs[site] = Math.max(
-            largestIDs[site] || 0,
-            two.largestIDs[site],
-        );
+        largestIDs[site] = Math.max(largestIDs[site] || 0, two.largestIDs[site]);
     });
 
     const atoms = {};
     const afters = {};
     Object.keys(one.map).forEach(key => {
         const node = one.map[key];
-        const after =
-            node.parent === rootParent
-                ? [0, rootSite]
-                : getAfter(one.map[node.parent]);
+        const after = node.parent === rootParent ? [0, rootSite] : getAfter(one.map[node.parent]);
         addAtoms(atoms, afters, node, after);
         // if (node.id[1] === site) {
         //     largestLocalId = Math.max(largestLocalId, lastId(node)[0]);
@@ -220,10 +205,7 @@ export const merge = (one: CRDT, two: CRDT): CRDT => {
     });
     Object.keys(two.map).forEach(key => {
         const node = two.map[key];
-        const after =
-            node.parent === rootParent
-                ? [0, rootSite]
-                : getAfter(two.map[node.parent]);
+        const after = node.parent === rootParent ? [0, rootSite] : getAfter(two.map[node.parent]);
         addAtoms(atoms, afters, node, after);
         // if (node.id[1] === site) {
         //     largestLocalId = Math.max(largestLocalId, lastId(node)[0]);

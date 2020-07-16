@@ -94,6 +94,11 @@ export const runMulti2 = (
     const dbMiddleware = (req, res, next) => {
         const dbName = req.query.db;
         const parts = dbName.split('/');
+        if (parts.length > 10) {
+            res.status(400);
+            res.send(`Database path too long`);
+            res.end();
+        }
         if (!parts.every(part => part.match(/^[a-zA-Z0-9_-]+$/))) {
             res.status(400);
             res.send(`Invalid database name ${dbName}`);
@@ -108,7 +113,7 @@ export const runMulti2 = (
         } else {
             req.dbName = dbName;
             req.dbConfig = config;
-            req.dataPath = path.join(dataPath, dbName, '@' + req.auth.id);
+            req.dataPath = path.join(dataPath, '@' + req.auth.id, dbName);
             req.server = getServer(req);
             next();
         }

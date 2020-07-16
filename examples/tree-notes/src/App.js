@@ -18,6 +18,7 @@ import type { Data } from './auth-api';
 
 // import Home from './Home';
 import schemas from '../collections';
+import Item from './Item';
 
 // import Schedule from './Schedule/Schedule';
 // import Split from './Split';
@@ -29,13 +30,12 @@ const genId = () => Math.random().toString(36).slice(2);
 export type AuthData = { host: string, auth: Data, logout: () => mixed };
 
 const createClient = (dbName, authData) => {
+    const url = `${authData.host}/dbs/sync?db=trees&token=${authData.auth.token}`;
     if (false) {
         return createPollingPersistedDeltaClient(
             dbName,
             schemas,
-            `${authData.host.startsWith('localhost:') ? 'http' : 'https'}://${
-                authData.host
-            }/dbs/sync?db=trees&token=${authData.auth.token}`,
+            `${authData.host.startsWith('localhost:') ? 'http' : 'https'}://${url}`,
             3,
             {},
         );
@@ -43,9 +43,7 @@ const createClient = (dbName, authData) => {
     return createPersistedDeltaClient(
         dbName,
         schemas,
-        `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${
-            authData.host
-        }/dbs/sync?db=trees&token=${authData.auth.token}`,
+        `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
         3,
         {},
     );
@@ -70,7 +68,13 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
     return (
         <div>
             Hello folks
-            {item === false ? 'No item' : item === null ? 'null item' : 'Ok good'}
+            {item === false ? (
+                'No item'
+            ) : item === null ? (
+                'null item'
+            ) : (
+                <Item id="root" client={client} />
+            )}
             {item === null ? (
                 <button
                     onClick={() => {
