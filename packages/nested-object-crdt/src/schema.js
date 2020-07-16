@@ -161,9 +161,10 @@ export const validateDelta = function<T, Other, OtherDelta>(
                     t,
                     delta.path.map(p => p.key),
                     inner => {
-                        if (inner.type !== 'rich-text') {
+                        if (inner.type !== 'rich-text' && inner !== 'rich-text') {
                             throw new ValidationError(
-                                `Cannot apply a "rich text" delta to path`,
+                                `Cannot apply a "rich text" delta to path (type ${'' +
+                                    JSON.stringify(inner)})`,
                                 delta.delta,
                                 delta.path.map(p => p.key),
                             );
