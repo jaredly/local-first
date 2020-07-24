@@ -51,6 +51,33 @@ const createClient = (dbName, authData) => {
     // : createPersistedBlobClient(dbName, schemas, null, 3);
 };
 
+export type DragTarget = {
+    id: string,
+    before: boolean,
+};
+
+const useDragging = () => {
+    const targetMakers = React.useMemo(() => ({}), []);
+    const onDragStart = (evt, id) => {
+        evt.preventDefault();
+        evt.stopPropagation();
+        const targets = [].concat(
+            ...Object.keys(targetMakers).map((id) => {
+                targetMakers[id]();
+            }),
+        );
+        return [];
+    };
+    const registerDragTargets = (id, cb) => {
+        if (!cb) {
+            delete targetMakers[id];
+        } else {
+            targetMakers[id] = cb;
+        }
+    };
+    return { onDragStart, registerDragTargets };
+};
+
 const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
     const client = React.useMemo(() => {
         console.log('starting a client', authData);
@@ -69,6 +96,8 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
         window.upgradeAvailable && window.upgradeAvailable.installed,
     );
 
+    const { registerDragTargets, onDragStart } = useDragging();
+
     return (
         <div>
             {item === false ? (
@@ -85,7 +114,14 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
                     Create a root folks
                 </button>
             ) : (
-                <Item path={[]} id="root" client={client} local={local} />
+                <Item
+                    path={[]}
+                    id="root"
+                    client={client}
+                    local={local}
+                    registerDragTargets={registerDragTargets}
+                    onDragStart={onDragStart}
+                />
             )}
             <Snackbar
                 anchorOrigin={{

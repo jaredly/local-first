@@ -1,10 +1,4 @@
 // @flow
-// export type Dest = {
-//     id: string,
-//     path: Array<string>,
-//     position: 'top' | 'bottom' | 'first-child',
-//     idx: number,
-// };
 
 export type DropTarget<T> = {
     top: number,
@@ -58,12 +52,8 @@ const getPosition = function <Dest>(
 ): ?DragState<Dest> {
     const offsetParent = boxes[0].offsetParent;
     const offset = offsetParent ? offsetParent.getBoundingClientRect().top : 0;
-    // console.log(offsetParent, offset);
     const matchingBoxes = limitX ? boxes.filter((box) => inside(pos.x, box)) : boxes;
     for (let i = 0; i < matchingBoxes.length; i++) {
-        // if (limitX && !inside(pos.x, matchingBoxes[i])) {
-        //     continue;
-        // }
         // if we're closer to the current than the next one, go with it
         const d0 = Math.abs(pos.y - (matchingBoxes[i].top + matchingBoxes[i].height / 2));
         const dNext =
@@ -80,7 +70,6 @@ const getPosition = function <Dest>(
                 dims: {
                     top: matchingBoxes[i].top - offset,
                     height: matchingBoxes[i].height,
-                    // y: matchingBoxes[i].y - offset,
                     left: matchingBoxes[i].left,
                     width: matchingBoxes[i].width,
                 },
@@ -88,40 +77,6 @@ const getPosition = function <Dest>(
         }
     }
     return null;
-    // for (let i = 0; i < boxes.length; i++) {
-    //     const current = boxes[i];
-    //     const mid = (current.box.top + current.box.bottom) / 2;
-    //     if (y < mid) {
-    //         return {
-    //             started: true,
-    //             dragging,
-    //             dest: {
-    //                 id: current.item.id,
-    //                 path: current.item.path,
-    //                 position: 'top',
-    //                 idx: current.item.idx,
-    //             },
-    //             y: current.box.top - offset,
-    //             left: current.box.left,
-    //             width: current.box.width,
-    //         };
-    //     } else if (i >= boxes.length - 1 || y < boxes[i + 1].box.top) {
-    //         const leftOffset = current.item.parent ? 32 : 0;
-    //         return {
-    //             started: true,
-    //             dragging,
-    //             dest: {
-    //                 id: current.item.id,
-    //                 path: current.item.path,
-    //                 position: current.item.parent ? 'first-child' : 'bottom',
-    //                 idx: current.item.idx + 1,
-    //             },
-    //             y: current.box.bottom - offset,
-    //             left: current.box.left + leftOffset,
-    //             width: current.box.width - leftOffset,
-    //         };
-    //     }
-    // }
 };
 
 const getMainEvtPos = (evt) =>
@@ -131,16 +86,8 @@ const getMainEvtPos = (evt) =>
             : null
         : { x: evt.clientX, y: evt.clientY };
 
-// So we want a function that turns
-// the dragRefs
-// into a series of y positions.
-// and then we can just do "what are we closest to"
-// probably with an optional "targetOffset" to show the line
-// in a slightly different place
-
 export const setupDragListeners = function <Dest: {}>(
     dropTargets: Array<DropTarget<Dest>>,
-    // dragRefs: DragRefs,
     currentDragger: { current: ?DragState<Dest> },
     limitX: boolean,
     setDragger: (?DragState<Dest>) => void,
@@ -171,14 +118,6 @@ export const setupDragListeners = function <Dest: {}>(
         }
         const position = getPosition(dropTargets, pos, limitX, current.dragging);
         if (position) {
-            // exclude these already? yeah
-            // if (
-            //     position.dest &&
-            //     (position.dest.id === position.dragging.id ||
-            //         position.dest.path.includes(position.dragging.id))
-            // ) {
-            //     position.dest = null;
-            // }
             setDragger(position);
         }
     };
@@ -187,10 +126,6 @@ export const setupDragListeners = function <Dest: {}>(
         if (!dragger) {
             return;
         }
-        // console.log('move to', dragger);
-        // ok instead of PID, need to use the whole
-        // path, so we don't make loops.
-        // STOPSHIP do the move actually
         const { dragging, dest } = dragger;
         if (dest) {
             onDrop(dragging, dest);

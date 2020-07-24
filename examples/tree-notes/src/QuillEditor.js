@@ -63,6 +63,7 @@ const QuillEditor = ({
     siteId,
     innerRef,
     actions,
+    className,
 }: {
     value: CRDT,
     innerRef: (node: ?{ focus: () => void }) => void,
@@ -70,6 +71,7 @@ const QuillEditor = ({
     getStamp: () => string,
     siteId: string,
     actions: *,
+    className?: string,
 }) => {
     const ref = React.useRef(null);
     const ui = React.useRef(null);
@@ -96,12 +98,13 @@ const QuillEditor = ({
         const quill = (ui.current = new Quill(ref.current, keymap(actions)));
         innerRef(quill);
         quill.setContents(stateToQuillContents(value));
+        quill.setSelection(quill.getLength(), 0);
 
         quill.on('text-change', (delta: { ops: Array<QuillDelta> }, _oldDelta, source: string) => {
             if (source === 'crdt') {
                 return;
             }
-            console.log(delta);
+            // console.log(delta);
 
             const { state: newState, deltas } = quillDeltasToDeltas(
                 valueRef.current,
@@ -124,7 +127,7 @@ const QuillEditor = ({
         return () => innerRef(null);
     }, []);
 
-    return <div ref={ref} />;
+    return <div className={className} ref={ref} />;
 };
 
 export default QuillEditor;
