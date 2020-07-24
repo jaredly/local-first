@@ -1,6 +1,5 @@
 // @flow
 
-
 const ItemSchema = {
     type: 'object',
     attributes: {
@@ -10,6 +9,8 @@ const ItemSchema = {
         tags: { type: 'map', value: 'number' },
         createdDate: 'number',
         completed: { type: 'optional', value: 'number' },
+
+        children: 'id-array',
 
         columnData: { type: 'map', value: 'rich-text' },
         childColumnConfig: {
@@ -54,9 +55,8 @@ const ItemSchema = {
     },
 };
 
-
 const schemas = {
     items: ItemSchema,
 };
 
-module.exports = schemas
+module.exports = schemas;

@@ -94,7 +94,7 @@ const map = (props: *, registry: *): * => ({
                     key: `∆`,
                     collapsed: true,
                     altKey: true,
-                    handler: () => {
+                    handler: (evt) => {
                         props.onDown();
                         return false;
                     },
@@ -147,7 +147,7 @@ const map = (props: *, registry: *): * => ({
                     collapsed: true,
                     handler: () => {
                         props.onCreateChild();
-                        false;
+                        return false;
                     },
                 },
                 'create-aunt': {
@@ -157,7 +157,7 @@ const map = (props: *, registry: *): * => ({
                     collapsed: true,
                     handler: () => {
                         props.onCreateAunt();
-                        false;
+                        return false;
                     },
                 },
                 'shift-enter': {
@@ -166,7 +166,7 @@ const map = (props: *, registry: *): * => ({
                     collapsed: true,
                     handler: () => {
                         props.onShortEnter();
-                        false;
+                        return false;
                     },
                 },
                 enter: {
@@ -174,7 +174,7 @@ const map = (props: *, registry: *): * => ({
                     collapsed: true,
                     handler: () => {
                         props.onEnter();
-                        false;
+                        return false;
                     },
                 },
             },

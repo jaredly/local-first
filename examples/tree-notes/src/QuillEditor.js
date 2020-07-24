@@ -61,11 +61,15 @@ const QuillEditor = ({
     onChange,
     getStamp,
     siteId,
+    innerRef,
+    actions,
 }: {
     value: CRDT,
+    innerRef: (node: ?{ focus: () => void }) => void,
     onChange: (Array<Delta>) => mixed,
     getStamp: () => string,
     siteId: string,
+    actions: *,
 }) => {
     const ref = React.useRef(null);
     const ui = React.useRef(null);
@@ -89,15 +93,8 @@ const QuillEditor = ({
 
     React.useEffect(() => {
         console.log(ref);
-        const quill = (ui.current = new Quill(
-            ref.current,
-            keymap({
-                onUp() {},
-                onDown() {
-                    console.log('down');
-                },
-            }),
-        ));
+        const quill = (ui.current = new Quill(ref.current, keymap(actions)));
+        innerRef(quill);
         quill.setContents(stateToQuillContents(value));
 
         quill.on('text-change', (delta: { ops: Array<QuillDelta> }, _oldDelta, source: string) => {
@@ -124,6 +121,7 @@ const QuillEditor = ({
             //     altUi.updateContents(delta, 'crdt');
             // });
         });
+        return () => innerRef(null);
     }, []);
 
     return <div ref={ref} />;

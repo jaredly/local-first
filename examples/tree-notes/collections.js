@@ -10,6 +10,8 @@ const ItemSchema = {
         createdDate: 'number',
         completed: { type: 'optional', value: 'number' },
 
+        children: 'id-array',
+
         columnData: { type: 'map', value: 'rich-text' },
         childColumnConfig: {
             type: 'optional',
@@ -72,6 +74,7 @@ export type ItemT = {
         }},
         recursive: boolean,
     },
+    children: Array<string>,
 
     style: string,
     theme: string,

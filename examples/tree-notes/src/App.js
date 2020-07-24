@@ -19,6 +19,7 @@ import type { Data } from './auth-api';
 // import Home from './Home';
 import schemas from '../collections';
 import Item from './Item';
+import LocalClient from './LocalClient';
 
 // import Schedule from './Schedule/Schedule';
 // import Split from './Split';
@@ -56,6 +57,8 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
         return createClient(dbName, authData);
     }, [authData]);
 
+    const local = React.useMemo(() => new LocalClient('tree-notes'), []);
+
     window.client = client;
 
     const [col, items] = useCollection(React, client, 'items');
@@ -82,7 +85,7 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
                     Create a root folks
                 </button>
             ) : (
-                <Item id="root" client={client} />
+                <Item path={[]} id="root" client={client} local={local} />
             )}
             <Snackbar
                 anchorOrigin={{
