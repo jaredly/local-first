@@ -1,13 +1,20 @@
 // @flow
 
 export type DropTarget<T> = {
+    parent: Node,
     top: number,
     height: number,
-    // y: number,
     left: number,
     width: number,
-    offsetParent: ?Element,
-    contents: T,
+    dest: T,
+
+    // top: number,
+    // height: number,
+    // // y: number,
+    // left: number,
+    // width: number,
+    // offsetParent: ?Element,
+    // contents: T,
 };
 
 export type DragInit = {

@@ -42,6 +42,10 @@ export default class LocalClient {
         }
     }
 
+    isExpanded(id: string) {
+        return !!this.expanded[id];
+    }
+
     setExpanded(id: string, expanded: boolean) {
         this.expanded[id] = expanded;
         this.save();

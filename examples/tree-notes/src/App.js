@@ -20,6 +20,7 @@ import type { Data } from './auth-api';
 import schemas from '../collections';
 import Item from './Item';
 import LocalClient from './LocalClient';
+import { type DropTarget } from './dragging';
 
 // import Schedule from './Schedule/Schedule';
 // import Split from './Split';
@@ -51,22 +52,28 @@ const createClient = (dbName, authData) => {
     // : createPersistedBlobClient(dbName, schemas, null, 3);
 };
 
-export type DragTarget = {
-    id: string,
-    before: boolean,
-};
+type Dest =
+    | {
+          type: 'before',
+          path: Array<string>,
+      }
+    | {
+          type: 'child',
+          path: Array<string>,
+      }
+    | {
+          type: 'after',
+          path: Array<string>,
+      };
+export type DragTarget = DropTarget<Dest>;
 
 const useDragging = () => {
     const targetMakers = React.useMemo(() => ({}), []);
-    const onDragStart = (evt, id) => {
+    const onDragStart = (evt, path) => {
         evt.preventDefault();
         evt.stopPropagation();
-        const targets = [].concat(
-            ...Object.keys(targetMakers).map((id) => {
-                targetMakers[id]();
-            }),
-        );
-        return [];
+        const targets = [].concat(...Object.keys(targetMakers).map((id) => targetMakers[id](path)));
+        // return [];
     };
     const registerDragTargets = (id, cb) => {
         if (!cb) {
