@@ -2,6 +2,9 @@
 import AppBar from '@material-ui/core/AppBar';
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
+import Wifi from '@material-ui/icons/Wifi';
+import SearchIcon from '@material-ui/icons/Search';
+import WifiOff from '@material-ui/icons/WifiOff';
 import Menu from '@material-ui/core/Menu';
 import Hidden from '@material-ui/core/Hidden';
 import MenuItem from '@material-ui/core/MenuItem';
@@ -12,18 +15,26 @@ import MenuIcon from '@material-ui/icons/Menu';
 import * as React from 'react';
 import type { Data } from './auth-api';
 
+import type { Client, SyncStatus } from '../../../../packages/client-bundle';
+import { useSyncStatus } from '../../../../packages/client-react';
+
 const TopBar = ({
     auth,
     setDialog,
     openMenu,
     logout,
+    onSearch,
+    client,
 }: {
     auth: ?Data,
     openMenu: () => void,
     setDialog: ('export' | 'import') => void,
     logout: () => mixed,
+    onSearch: () => mixed,
+    client: Client<SyncStatus>,
 }) => {
     const styles = useStyles();
+    const syncStatus = useSyncStatus(React, client);
 
     return (
         <AppBar position="sticky">
@@ -40,6 +51,20 @@ const TopBar = ({
                 <Typography variant="h6" className={styles.title}>
                     Things to Share
                 </Typography>
+                <IconButton
+                    edge="start"
+                    className={styles.menuButton}
+                    color="inherit"
+                    aria-label="menu"
+                    onClick={onSearch}
+                >
+                    <SearchIcon />
+                </IconButton>
+                {syncStatus.status === 'connected' ? (
+                    <Wifi className={styles.connected} />
+                ) : syncStatus.status === 'disconnected' ? (
+                    <WifiOff className={styles.disconnected} />
+                ) : null}
             </Toolbar>
         </AppBar>
     );

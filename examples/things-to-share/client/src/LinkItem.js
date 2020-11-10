@@ -12,7 +12,7 @@ import Label from '@material-ui/icons/Label';
 import * as React from 'react';
 import { animated, useSpring } from 'react-spring';
 import useMeasure from 'react-use-measure';
-import OpenGraph from './OpenGraph';
+import OpenGraph, { parseData } from './OpenGraph';
 import type { LinkT, TagT } from './types';
 import Chip from '@material-ui/core/Chip';
 import { type Collection } from '../../../../packages/client-bundle';
@@ -20,6 +20,7 @@ import { getData } from './Adder';
 
 const hasContent = (content) =>
     content != null &&
+    typeof content === 'object' &&
     Object.keys(content).join(';') !== 'og:site_name' &&
     Object.keys(content).length > 1;
 
@@ -116,6 +117,10 @@ const LinkItem = ({
     //     );
     // }
 
+    const previewData = hasContent(link.fetchedContent)
+        ? parseData(link.fetchedContent)
+        : null;
+
     const currentTags = Object.keys(link.tags)
         .filter((k) => link.tags[k])
         .map((k) => tags[k])
@@ -159,6 +164,7 @@ const LinkItem = ({
                             whiteSpace: 'nowrap',
                         }}
                     >
+                        {/* {previewData ? previewData.title.slice(0, 20) + '... ' : null} */}
                         {linkText}
                     </div>
                 </div>

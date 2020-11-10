@@ -85,6 +85,28 @@ const VideoPreview = ({ styles, video, video_type, image }) => {
     );
 };
 
+export const parseData = (data: mixed) => {
+    const type = getOg(data, 'og:type');
+    // url = getOg(data, 'og:url') || url;
+    const images = getOgs(data, 'og:image');
+    // const video = getOg(data, 'og:video:url');
+    // const video_type = getOg(data, 'og:video:type');
+    const site_name = getOg(data, 'og:site_name');
+
+    const [title, description] =
+        site_name === 'Twitter'
+            ? [getOg(data, 'og:description'), getOg(data, 'og:title')]
+            : [getOg(data, 'og:title'), getOg(data, 'og:description')];
+
+    const hasImage =
+        type === 'image' ||
+        (type === 'article' &&
+            (site_name !== 'Twitter' ||
+                getOg(data, 'og:image:user_generated') === 'true'));
+
+    return { site_name, title, description, hasImage };
+};
+
 const OpenGraph = ({
     data,
     url,
@@ -115,7 +137,7 @@ const OpenGraph = ({
                 <Typography
                     style={{ whiteSpace: 'pre-wrap', fontWeight: 300 }}
                     variant="h5"
-                    color="textSecondary"
+                    color="textPrimary"
                     component="p"
                 >
                     {title}

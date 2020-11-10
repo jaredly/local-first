@@ -29,6 +29,90 @@ import EditTagDialog from './EditTagDialog';
 
 import Drawer from './Drawer';
 
+const UncompletedList = ({ client, host, showAll }) => {
+    const [tagsCol, tags] = useCollection(React, client, 'tags');
+    const [linksCol, links] = useCollection(React, client, 'links');
+    const [numToShow, setNumToShow] = React.useState(20);
+
+    // We want to show any links that, at first load of this screen,
+    // were not collapsed.
+    const [initiallyCompleted, setInitiallyCompleted] = React.useState(() => {
+        const completed = {};
+        Object.keys(links).forEach((k) => {
+            if (links[k].completed) {
+                completed[k] = true;
+            }
+        });
+        return completed;
+    });
+    const lastLinks = React.useRef(links);
+
+    React.useEffect(() => {
+        console.log('links changed');
+        const newCompleted = {};
+        let hasNew = false;
+        Object.keys(links).forEach((k) => {
+            if (!lastLinks.current[k] && links[k].completed) {
+                newCompleted[k] = true;
+                hasNew = true;
+            }
+        });
+        lastLinks.current = links;
+        if (hasNew) {
+            setInitiallyCompleted((state) => ({ ...state, ...newCompleted }));
+        }
+    }, [links]);
+
+    const styles = useStyles();
+
+    const linksToShow = Object.keys(links)
+        .filter((k) => (showAll ? true : !initiallyCompleted[k]))
+        .sort((a, b) => links[b].added - links[a].added);
+
+    return (
+        <Container maxWidth="sm" className={styles.container}>
+            <Adder
+                host={host}
+                tags={tags}
+                onAdd={(url, fetchedContent, currentTags) => {
+                    const id = client.getStamp();
+                    const tags = {};
+                    currentTags.forEach((k) => (tags[k] = true));
+                    linksCol.save(id, {
+                        id,
+                        url,
+                        fetchedContent,
+                        added: Date.now(),
+                        tags,
+                        description: null,
+                        completed: null,
+                    });
+                }}
+            />
+            <div style={{ height: 12 }} />
+            {linksToShow.slice(0, numToShow).map((key, i) => (
+                <React.Fragment key={key}>
+                    {i !== 0 ? <div style={{ height: 12 }} /> : null}
+                    <LinkItem
+                        tags={tags}
+                        host={host}
+                        linksCol={linksCol}
+                        link={links[key]}
+                        key={key}
+                    />
+                </React.Fragment>
+            ))}
+            <div style={{ height: 12 }} />
+            {linksToShow.length > numToShow ? (
+                <Button onClick={() => setNumToShow(numToShow + 20)}>
+                    Show more
+                </Button>
+            ) : null}
+            {`${Object.keys(links).length} total things saved`}
+        </Container>
+    );
+};
+
 const Home = ({
     client,
     logout,
@@ -46,6 +130,7 @@ const Home = ({
     const [numToShow, setNumToShow] = React.useState(20);
     const [dialog, setDialog] = React.useState(null);
     const [menu, setMenu] = React.useState(false);
+    const [searching, setSearching] = React.useState(false);
 
     // We want to show any links that, at first load of this screen,
     // were not collapsed.
@@ -91,6 +176,10 @@ const Home = ({
                 setDialog={setDialog}
                 logout={logout}
                 openMenu={() => setMenu(true)}
+                client={client}
+                onSearch={() => {
+                    setSearching(!searching);
+                }}
             />
             <Drawer
                 onClose={() => setMenu(false)}
@@ -142,7 +231,7 @@ const Home = ({
                         Show more
                     </Button>
                 ) : null}
-                {window.location.href}
+                {`${Object.keys(links).length} total things saved`}
             </Container>
             {/* {dialogNode} */}
             <ExportDialog

@@ -198,6 +198,18 @@ const AdderBody = ({
     //     }
     // }, [data]);
 
+    const mainAction = () => {
+        if (data != null) {
+            onAdd(link, data, editTags);
+        } else {
+            setLoading(true);
+            getData(host, link).then((ogData) => {
+                setLoading(false);
+                onAdd(link, ogData, editTags);
+            });
+        }
+    };
+
     return (
         <React.Fragment>
             {data && !data.failed && Object.keys(data).length > 0 ? (
@@ -222,6 +234,13 @@ const AdderBody = ({
                             label="Link"
                             disabled={loading}
                             onChange={(evt) => setLink(evt.target.value)}
+                            inputProps={{
+                                onKeyDown: (evt) => {
+                                    if (evt.key === 'Enter') {
+                                        mainAction();
+                                    }
+                                },
+                            }}
                         />
                     </Grid>
                 </Grid>
@@ -232,6 +251,7 @@ const AdderBody = ({
                         options={Object.keys(tags).map((k) => tags[k])}
                         getOptionLabel={(option) => option.title}
                         value={editTags.map((k) => tags[k])}
+                        disabled={loading}
                         onChange={(_, tags) =>
                             setEditTags(tags.map((tag) => tag.id))
                         }
@@ -250,18 +270,8 @@ const AdderBody = ({
                     <Button
                         color="primary"
                         variant="contained"
-                        disabled={!link.trim()}
-                        onClick={() => {
-                            if (data != null) {
-                                onAdd(link, data, editTags);
-                            } else {
-                                setLoading(true);
-                                getData(host, link).then((ogData) => {
-                                    setLoading(false);
-                                    onAdd(link, ogData, editTags);
-                                });
-                            }
-                        }}
+                        disabled={!link.trim() || loading}
+                        onClick={mainAction}
                     >
                         {data ? 'Add' : 'Fetch & Add'}
                     </Button>
