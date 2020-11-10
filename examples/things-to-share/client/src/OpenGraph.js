@@ -50,7 +50,7 @@ const getOgs = (data: mixed, key: string) => {
     return data[key] || [];
 };
 
-const getOg = (data, key: string) => {
+export const getOg = (data: mixed, key: string) => {
     // $FlowFixMe
     if (!data[key]) return null;
     return data[key][0];
@@ -83,6 +83,16 @@ const VideoPreview = ({ styles, video, video_type, image }) => {
             </div>
         </a>
     );
+};
+
+export const searchableFields = (data: mixed) => {
+    return {
+        type: getOg(data, 'og:type'),
+        title: getOg(data, 'og:title'),
+        description: getOg(data, 'og:description'),
+        site_name: getOg(data, 'og:site_name'),
+        url: getOg(data, 'og:url'),
+    };
 };
 
 export const parseData = (data: mixed) => {
