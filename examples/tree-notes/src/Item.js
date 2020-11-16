@@ -122,7 +122,7 @@ const Item = ({
                                 },
                             ];
                         }
-                        return [];
+                        // return [];
                     });
                 } else {
                     registerDragTargets(id, null);

@@ -1,11 +1,14 @@
 // @flow
-import { Switch, Route, Link, useRouteMatch, useParams } from 'react-router-dom';
+import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import Snackbar from '@material-ui/core/Snackbar';
 import CloseIcon from '@material-ui/icons/Close';
 import querystring from 'querystring';
+import ListItem from '@material-ui/core/ListItem';
+import Switch from '@material-ui/core/Switch';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
 import * as React from 'react';
 import {
     createPersistedBlobClient,
@@ -21,6 +24,9 @@ import schemas from '../collections';
 import Item from './Item';
 import LocalClient from './LocalClient';
 import { type DropTarget } from './dragging';
+import AppShell from './AppShell';
+
+import { Switch as RouteSwitch } from 'react-router-dom';
 
 // import Schedule from './Schedule/Schedule';
 // import Split from './Split';
@@ -85,11 +91,28 @@ const useDragging = () => {
     return { onDragStart, registerDragTargets };
 };
 
+const Items = ({ client, local }) => {
+    const { registerDragTargets, onDragStart } = useDragging();
+    const { id } = useParams();
+
+    return (
+        <Item
+            path={[]}
+            id={id || 'root'}
+            client={client}
+            local={local}
+            registerDragTargets={registerDragTargets}
+            onDragStart={onDragStart}
+        />
+    );
+};
+
 const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
     const client = React.useMemo(() => {
         console.log('starting a client', authData);
         return createClient(dbName, authData);
     }, [authData]);
+    const match = useRouteMatch();
 
     const local = React.useMemo(() => new LocalClient('tree-notes'), []);
 
@@ -102,8 +125,6 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
     const [showUpgrade, setShowUpgrade] = React.useState(
         window.upgradeAvailable && window.upgradeAvailable.installed,
     );
-
-    const { registerDragTargets, onDragStart } = useDragging();
 
     return (
         <div>
@@ -121,14 +142,37 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
                     Create a root folks
                 </button>
             ) : (
-                <Item
-                    path={[]}
-                    id="root"
+                <AppShell
+                    drawerItems={
+                        // <ListItem>
+                        //     <FormControlLabel
+                        //         control={
+                        //             <Switch
+                        //                 checked={showAll}
+                        //                 onChange={() => setShowAll(!showAll)}
+                        //                 color="primary"
+                        //             />
+                        //         }
+                        //         label="Show completed"
+                        //     />
+                        // </ListItem>
+                        null
+                    }
+                    authData={authData}
+                    // auth={auth}
+                    // host={host}
+                    // logout={logout}
                     client={client}
-                    local={local}
-                    registerDragTargets={registerDragTargets}
-                    onDragStart={onDragStart}
-                />
+                >
+                    <RouteSwitch>
+                        <Route path={`${match.path == '/' ? '' : match.path}/item/:id`}>
+                            <Items client={client} local={local} />
+                        </Route>
+                        <Route path={`${match.path == '/' ? '' : match.path}`}>
+                            <Items client={client} local={local} />
+                        </Route>
+                    </RouteSwitch>
+                </AppShell>
             )}
             <Snackbar
                 anchorOrigin={{

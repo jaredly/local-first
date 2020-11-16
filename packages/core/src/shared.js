@@ -121,7 +121,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                     applyDelta(id, crdt.deltas.restamp(inverted, getStamp()), false, true);
                 });
             } else {
-                console.log(`Unable to invert delta: undo will be skipped`);
+                // console.log(`Unable to invert delta: undo will be skipped`);
             }
         }
 
@@ -324,7 +324,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                         applyDelta(id, crdt.deltas.restamp(inverted, getStamp()), false, true);
                     });
                 } else {
-                    console.log(`Unable to invert delta: undo will be skipped`);
+                    // console.log(`Unable to invert delta: undo will be skipped`);
                 }
             }
 
