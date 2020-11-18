@@ -104,6 +104,7 @@ const makePersistence = (collections: Array<string>): DeltaPersistence => {
     });
 
     return {
+        _db: db,
         collections,
         tabIsolated: true,
         teardown() {

@@ -133,6 +133,7 @@ const createClient = (sessionId, collections, messages) => {
     return {
         sessionId,
         collections,
+        persistence,
         getMessages(): Promise<Array<ClientMessage<Delta, Data>>> {
             return client.getMessages(persistence, false);
         },
@@ -307,5 +308,72 @@ describe('client-server interaction', () => {
         expect(
             await client.receive(serverAcks.concat(server.getMessages(client.sessionId))),
         ).toEqual([]);
+    });
+
+    const settle = async (server, client) => {
+        let clientMessages = await client.getMessages();
+        let serverAcks = clientMessages.length
+            ? server.receive(client.sessionId, clientMessages)
+            : [];
+        let serverMessages = serverAcks.concat(server.getMessages(client.sessionId));
+        if (!serverMessages.length) {
+            return false;
+        }
+        let clientAcks = await client.receive(serverMessages);
+        let serverAcks2 = server.receive(client.sessionId, clientAcks);
+        if (serverAcks2.length) {
+            throw new Error('after back & forth, server still wanted to ack');
+        }
+        return true;
+    };
+
+    const settleMulti = async (server, clients) => {
+        for (let rounds = 0; rounds < 10; rounds++) {
+            let settled = true;
+            for (let client of clients) {
+                const hadUpdates = await settle(server, client);
+                if (hadUpdates) {
+                    settled = false;
+                }
+            }
+            if (settled) {
+                return rounds;
+            }
+        }
+    };
+
+    it.only('Two clients, should sync', async () => {
+        const client = createClient('a', ['people']);
+        const clientB = createClient('b', ['people']);
+        const server = createServer();
+
+        expect(await settleMulti(server, [client, clientB])).toBe(1);
+
+        // Client and server now have equal state
+        expect(await client.getState()).toEqual(server.getState(client.collections));
+        expect(await clientB.getState()).toEqual(server.getState(clientB.collections));
+
+        const col = client.getCollection('people');
+        await col.save('two', { name: 'yoo', age: 4 });
+        await col.setAttribute('two', ['age'], 100);
+
+        expect(await settleMulti(server, [client, clientB])).toBe(1);
+
+        // Client and server now have equal state
+        expect(await client.getState()).toEqual(server.getState(client.collections));
+        expect(await clientB.getState()).toEqual(server.getState(clientB.collections));
+
+        expect(await clientB.getCollection('people').load('two')).toEqual({
+            name: 'yoo',
+            age: 100,
+        });
+    });
+
+    it('Client that gets an unexpected update should request a full dump', async () => {
+        fail;
+    });
+
+    it('If client accidentally loses all data, it should request a full dump on startup', async () => {
+        fail;
     });
 });

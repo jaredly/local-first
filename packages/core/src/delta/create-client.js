@@ -207,6 +207,7 @@ function createClient<Delta, Data, SyncStatus>(
         clock.now.node,
         fresh => getMessages(persistence, fresh),
         (messages, sendCrossTabChanges) =>
+            // TRAIL - I think this is where things break?
             handleMessages(crdt, persistence, messages, state, clock.recv, sendCrossTabChanges),
     );
 
