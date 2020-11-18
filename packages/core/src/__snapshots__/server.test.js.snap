@@ -1,0 +1,288 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`client-server interaction Two clients, incremental sync 1`] = `
+Array [
+  Object {
+    "a": Object {
+      "clientMessages": Array [
+        Object {
+          "collection": "people",
+          "deltas": Array [],
+          "serverCursor": undefined,
+          "type": "sync",
+        },
+      ],
+      "clientResponses": Array [
+        Object {
+          "collection": "people",
+          "serverCursor": -1,
+          "type": "ack",
+        },
+      ],
+      "serverMessages": Array [
+        Object {
+          "collection": "people",
+          "deltas": Array [],
+          "serverCursor": -1,
+          "type": "sync",
+        },
+      ],
+      "serverResponses": Array [],
+    },
+    "b": Object {
+      "clientMessages": Array [
+        Object {
+          "collection": "people",
+          "deltas": Array [],
+          "serverCursor": undefined,
+          "type": "sync",
+        },
+      ],
+      "clientResponses": Array [
+        Object {
+          "collection": "people",
+          "serverCursor": -1,
+          "type": "ack",
+        },
+      ],
+      "serverMessages": Array [
+        Object {
+          "collection": "people",
+          "deltas": Array [],
+          "serverCursor": -1,
+          "type": "sync",
+        },
+      ],
+      "serverResponses": Array [],
+    },
+  },
+  Object {
+    "a": Object {
+      "clientMessages": Array [],
+      "clientResponses": Array [],
+      "serverMessages": Array [],
+      "serverResponses": Array [],
+    },
+    "b": Object {
+      "clientMessages": Array [],
+      "clientResponses": Array [],
+      "serverMessages": Array [],
+      "serverResponses": Array [],
+    },
+  },
+]
+`;
+
+exports[`client-server interaction Two clients, incremental sync 2`] = `
+Array [
+  Object {
+    "a": Object {
+      "clientMessages": Array [
+        Object {
+          "collection": "people",
+          "deltas": Array [
+            Object {
+              "delta": Object {
+                "path": Array [],
+                "type": "set",
+                "value": Object {
+                  "meta": Object {
+                    "hlcStamp": "001605714119248:00000:50h85bzdofo",
+                    "map": Object {
+                      "age": Object {
+                        "hlcStamp": "001605714119248:00000:50h85bzdofo",
+                        "type": "plain",
+                      },
+                      "name": Object {
+                        "hlcStamp": "001605714119248:00000:50h85bzdofo",
+                        "type": "plain",
+                      },
+                    },
+                    "type": "map",
+                  },
+                  "value": Object {
+                    "age": 4,
+                    "name": "yoo",
+                  },
+                },
+              },
+              "node": "two",
+            },
+          ],
+          "serverCursor": -1,
+          "type": "sync",
+        },
+      ],
+      "clientResponses": Array [],
+      "serverMessages": Array [
+        Object {
+          "collection": "people",
+          "deltaStamp": "001605714119248:00000:50h85bzdofo",
+          "type": "ack",
+        },
+      ],
+      "serverResponses": Array [],
+    },
+    "b": Object {
+      "clientMessages": Array [],
+      "clientResponses": Array [
+        Object {
+          "collection": "people",
+          "serverCursor": 0,
+          "type": "ack",
+        },
+      ],
+      "serverMessages": Array [
+        Object {
+          "collection": "people",
+          "deltas": Array [
+            Object {
+              "delta": Object {
+                "path": Array [],
+                "type": "set",
+                "value": Object {
+                  "meta": Object {
+                    "hlcStamp": "001605714119248:00000:50h85bzdofo",
+                    "map": Object {
+                      "age": Object {
+                        "hlcStamp": "001605714119248:00000:50h85bzdofo",
+                        "type": "plain",
+                      },
+                      "name": Object {
+                        "hlcStamp": "001605714119248:00000:50h85bzdofo",
+                        "type": "plain",
+                      },
+                    },
+                    "type": "map",
+                  },
+                  "value": Object {
+                    "age": 4,
+                    "name": "yoo",
+                  },
+                },
+              },
+              "node": "two",
+            },
+          ],
+          "serverCursor": 0,
+          "type": "sync",
+        },
+      ],
+      "serverResponses": Array [],
+    },
+  },
+  Object {
+    "a": Object {
+      "clientMessages": Array [],
+      "clientResponses": Array [],
+      "serverMessages": Array [],
+      "serverResponses": Array [],
+    },
+    "b": Object {
+      "clientMessages": Array [],
+      "clientResponses": Array [],
+      "serverMessages": Array [],
+      "serverResponses": Array [],
+    },
+  },
+]
+`;
+
+exports[`client-server interaction Two clients, incremental sync 3`] = `
+Array [
+  Object {
+    "a": Object {
+      "clientMessages": Array [
+        Object {
+          "collection": "people",
+          "deltas": Array [
+            Object {
+              "delta": Object {
+                "path": Array [
+                  Object {
+                    "key": "age",
+                    "stamp": "001605714119248:00000:50h85bzdofo",
+                  },
+                ],
+                "type": "set",
+                "value": Object {
+                  "meta": Object {
+                    "hlcStamp": "001605714119260:00000:50h85bzdofo",
+                    "type": "plain",
+                  },
+                  "value": 100,
+                },
+              },
+              "node": "two",
+            },
+          ],
+          "serverCursor": -1,
+          "type": "sync",
+        },
+      ],
+      "clientResponses": Array [],
+      "serverMessages": Array [
+        Object {
+          "collection": "people",
+          "deltaStamp": "001605714119260:00000:50h85bzdofo",
+          "type": "ack",
+        },
+      ],
+      "serverResponses": Array [],
+    },
+    "b": Object {
+      "clientMessages": Array [],
+      "clientResponses": Array [
+        Object {
+          "collection": "people",
+          "serverCursor": 1,
+          "type": "ack",
+        },
+      ],
+      "serverMessages": Array [
+        Object {
+          "collection": "people",
+          "deltas": Array [
+            Object {
+              "delta": Object {
+                "path": Array [
+                  Object {
+                    "key": "age",
+                    "stamp": "001605714119248:00000:50h85bzdofo",
+                  },
+                ],
+                "type": "set",
+                "value": Object {
+                  "meta": Object {
+                    "hlcStamp": "001605714119260:00000:50h85bzdofo",
+                    "type": "plain",
+                  },
+                  "value": 100,
+                },
+              },
+              "node": "two",
+            },
+          ],
+          "serverCursor": 1,
+          "type": "sync",
+        },
+      ],
+      "serverResponses": Array [],
+    },
+  },
+  Object {
+    "a": Object {
+      "clientMessages": Array [],
+      "clientResponses": Array [],
+      "serverMessages": Array [],
+      "serverResponses": Array [],
+    },
+    "b": Object {
+      "clientMessages": Array [],
+      "clientResponses": Array [],
+      "serverMessages": Array [],
+      "serverResponses": Array [],
+    },
+  },
+]
+`;

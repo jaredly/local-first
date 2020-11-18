@@ -317,27 +317,31 @@ describe('client-server interaction', () => {
             : [];
         let serverMessages = serverAcks.concat(server.getMessages(client.sessionId));
         if (!serverMessages.length) {
-            return false;
+            return { clientMessages, serverMessages, clientResponses: [], serverResponses: [] };
         }
-        let clientAcks = await client.receive(serverMessages);
-        let serverAcks2 = server.receive(client.sessionId, clientAcks);
-        if (serverAcks2.length) {
+        let clientResponses = await client.receive(serverMessages);
+        let serverResponses = server.receive(client.sessionId, clientResponses);
+        if (serverResponses.length) {
             throw new Error('after back & forth, server still wanted to ack');
         }
-        return true;
+        return { clientMessages, serverMessages, clientResponses, serverResponses };
     };
 
     const settleMulti = async (server, clients) => {
+        const allMessages = [];
         for (let rounds = 0; rounds < 10; rounds++) {
             let settled = true;
+            const roundMessages = {};
             for (let client of clients) {
-                const hadUpdates = await settle(server, client);
-                if (hadUpdates) {
+                const messages = await settle(server, client);
+                roundMessages[client.sessionId] = messages;
+                if (messages.serverMessages.length) {
                     settled = false;
                 }
             }
+            allMessages.push(roundMessages);
             if (settled) {
-                return rounds;
+                return allMessages;
             }
         }
     };
@@ -347,7 +351,7 @@ describe('client-server interaction', () => {
         const clientB = createClient('b', ['people']);
         const server = createServer();
 
-        expect(await settleMulti(server, [client, clientB])).toBe(1);
+        expect(await settleMulti(server, [client, clientB])).toHaveLength(2);
 
         // Client and server now have equal state
         expect(await client.getState()).toEqual(server.getState(client.collections));
@@ -357,7 +361,7 @@ describe('client-server interaction', () => {
         await col.save('two', { name: 'yoo', age: 4 });
         await col.setAttribute('two', ['age'], 100);
 
-        expect(await settleMulti(server, [client, clientB])).toBe(1);
+        expect(await settleMulti(server, [client, clientB])).toHaveLength(2);
 
         // Client and server now have equal state
         expect(await client.getState()).toEqual(server.getState(client.collections));
@@ -370,12 +374,15 @@ describe('client-server interaction', () => {
     });
 
     const settleAndAssert = async (server, clients) => {
-        await settleMulti(server, clients);
+        const allMessages = await settleMulti(server, clients);
         for (let client of clients) {
             expect(await client.getState()).toEqual(server.getState(client.collections));
         }
+        expect(allMessages).toMatchSnapshot();
     };
 
+    // OOOH IDEA: What if I did snapshot testing of the chatter? like the messages passed back and forth?
+    // I like it a lot. would have to nail down the RNG and Date to make it deterministic.
     it('Two clients, incremental sync', async () => {
         const client = createClient('a', ['people']);
         const clientB = createClient('b', ['people']);
@@ -385,6 +392,9 @@ describe('client-server interaction', () => {
 
         const col = client.getCollection('people');
         await col.save('two', { name: 'yoo', age: 4 });
+
+        await settleAndAssert(server, [client, clientB]);
+
         await col.setAttribute('two', ['age'], 100);
 
         await settleAndAssert(server, [client, clientB]);
