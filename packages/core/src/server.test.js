@@ -133,17 +133,12 @@ const expectedValue = { yes: { one: 2, three: '4', five: { six: 8 } } };
 const MockClock = (sessionId, initialTime) => {
     let currentTime = initialTime;
     let now = hlc.init(sessionId, currentTime);
-    const recv = (newClock: HLC) => {
-        now = hlc.recv(now, newClock, currentTime);
-    };
+    const recv = (newClock: HLC) => (now = hlc.recv(now, newClock, currentTime));
     const get = () => {
         now = hlc.inc(now, currentTime);
         return hlc.pack(now);
     };
-    const setCurrentTime = newCurrentTime => {
-        console.log('setting time from', currentTime, newCurrentTime);
-        currentTime = newCurrentTime;
-    };
+    const setCurrentTime = newCurrentTime => (currentTime = newCurrentTime);
     const getCurrentTime = () => currentTime;
     return { recv, get, setCurrentTime, getCurrentTime };
 };
@@ -400,17 +395,21 @@ describe('client-server interaction', () => {
 
     const settleAndAssert = async (server, clients) => {
         const allMessages = await settleMulti(server, clients);
-        let maxTime = 0;
         for (let client of clients) {
             expect(await client.getState()).toEqual(server.getState(client.collections));
-            maxTime = Math.max(maxTime, client._getCurrentTime());
         }
-        clients.forEach(client => client._setCurrentTime(maxTime + 100));
+        incrementClocks(clients);
         expect(allMessages).toMatchSnapshot();
     };
 
-    // OOOH IDEA: What if I did snapshot testing of the chatter? like the messages passed back and forth?
-    // I like it a lot. would have to nail down the RNG and Date to make it deterministic.
+    const incrementClocks = clients => {
+        let maxTime = 0;
+        for (let client of clients) {
+            maxTime = Math.max(maxTime, client._getCurrentTime());
+        }
+        clients.forEach(client => client._setCurrentTime(maxTime + 100));
+    };
+
     it('Two clients, incremental sync', async () => {
         const client = createClient('a', ['people']);
         const clientB = createClient('b', ['people']);
@@ -430,6 +429,27 @@ describe('client-server interaction', () => {
         expect(await clientB.getCollection('people').load('two')).toEqual({
             name: 'yoo',
             age: 100,
+        });
+    });
+
+    it('Two clients make conflicting changes, later change wins', async () => {
+        const client = createClient('a', ['people']);
+        const clientB = createClient('b', ['people']);
+        const server = createServer();
+
+        await client.getCollection('people').save('two', { name: 'yoo', age: 4 });
+
+        await settleAndAssert(server, [client, clientB]);
+
+        await client.getCollection('people').setAttribute('two', ['age'], 100);
+        incrementClocks([client, clientB]);
+        await clientB.getCollection('people').setAttribute('two', ['age'], 200);
+
+        await settleAndAssert(server, [client, clientB]);
+
+        expect(await client.getCollection('people').load('two')).toEqual({
+            name: 'yoo',
+            age: 200,
         });
     });
 
