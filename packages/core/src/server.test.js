@@ -10,7 +10,6 @@ import * as server from './server';
 import setupSqliteServerPersistence from '../../server-bundle/sqlite-persistence';
 import { validateDelta } from '../../nested-object-crdt/src/schema.js';
 import setupServerPersistence from './memory-persistence';
-import { PersistentClock, inMemoryClockPersist } from './persistent-clock';
 import { type CRDTImpl, getCollection } from './shared';
 import type { ServerState, CRDTImpl as ServerCRDTImpl } from './server';
 import * as hlc from '../../hybrid-logical-clock/src';
@@ -127,30 +126,36 @@ const someMessages = [
 ];
 const expectedValue = { yes: { one: 2, three: '4', five: { six: 8 } } };
 
-const MockClock = (sessionId, currentTime) => {
+/**
+ * This is a "mock clock", just for testing.
+ * The "current time" only updates when you tell it to.
+ */
+const MockClock = (sessionId, initialTime) => {
+    let currentTime = initialTime;
     let now = hlc.init(sessionId, currentTime);
     const recv = (newClock: HLC) => {
-        currentTime += 100;
         now = hlc.recv(now, newClock, currentTime);
     };
     const get = () => {
-        currentTime += 100;
         now = hlc.inc(now, currentTime);
         return hlc.pack(now);
     };
     const setCurrentTime = newCurrentTime => {
+        console.log('setting time from', currentTime, newCurrentTime);
         currentTime = newCurrentTime;
     };
-    return { recv, get, setCurrentTime };
+    const getCurrentTime = () => currentTime;
+    return { recv, get, setCurrentTime, getCurrentTime };
 };
 
 const createClient = (sessionId, collections, messages) => {
     const persistence = makePersistence(collections);
     const state = client.initialState(persistence.collections);
-    // const clock = new PersistentClock(inMemoryClockPersist());
     const clock = MockClock(sessionId + 'clock', 0);
-    // client
+
     return {
+        _setCurrentTime: time => clock.setCurrentTime(time),
+        _getCurrentTime: () => clock.getCurrentTime(),
         sessionId,
         collections,
         persistence,
@@ -395,9 +400,12 @@ describe('client-server interaction', () => {
 
     const settleAndAssert = async (server, clients) => {
         const allMessages = await settleMulti(server, clients);
+        let maxTime = 0;
         for (let client of clients) {
             expect(await client.getState()).toEqual(server.getState(client.collections));
+            maxTime = Math.max(maxTime, client._getCurrentTime());
         }
+        clients.forEach(client => client._setCurrentTime(maxTime + 100));
         expect(allMessages).toMatchSnapshot();
     };
 

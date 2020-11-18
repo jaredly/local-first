@@ -19,12 +19,12 @@ class FakeDb {
         };
     }
     getAllSince(colid, sessionId, minId: ?CursorType) {
-        console.log(
-            `[db] Getting all ${colid} for ${sessionId} since ${
-                minId != null ? minId : 'no-min'
-            }`,
-        );
-        console.log(`Total: ${this.collections[colid].length}`);
+        // console.log(
+        //     `[db] Getting all ${colid} for ${sessionId} since ${
+        //         minId != null ? minId : 'no-min'
+        //     }`,
+        // );
+        // console.log(`Total: ${this.collections[colid].length}`);
         const res = this.collections[colid].filter((item, i) => {
             if (minId != null && minId >= i) {
                 return;
@@ -34,13 +34,11 @@ class FakeDb {
             }
             return true;
         });
-        console.log(`Matched: ${res.length}`);
+        // console.log(`Matched: ${res.length}`);
         return res;
     }
     maxId(colid): CursorType {
-        return !this.collections[colid].length
-            ? -1
-            : this.collections[colid].length - 1;
+        return !this.collections[colid].length ? -1 : this.collections[colid].length - 1;
     }
     insert(colid, data) {
         this.collections[colid].push(data);
@@ -93,9 +91,7 @@ const setupPersistence = function<Delta, Data>(): Persistence<Delta, Data> {
                 const cursor = db.maxId(collection);
                 if (cursor == -1) {
                     if (rows.length) {
-                        throw new Error(
-                            `No maxId, but deltas returned! ${rows.length}`,
-                        );
+                        throw new Error(`No maxId, but deltas returned! ${rows.length}`);
                     }
                     return null;
                 }
