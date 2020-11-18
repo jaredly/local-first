@@ -13,6 +13,8 @@ import setupServerPersistence from './memory-persistence';
 import { PersistentClock, inMemoryClockPersist } from './persistent-clock';
 import { type CRDTImpl, getCollection } from './shared';
 import type { ServerState, CRDTImpl as ServerCRDTImpl } from './server';
+import * as hlc from '../../hybrid-logical-clock/src';
+import type { HLC } from '../../hybrid-logical-clock/src';
 
 const otherMerge = (v1, m1, v2, m2) => {
     return { value: rich.merge(v1, v2), meta: null };
@@ -125,10 +127,28 @@ const someMessages = [
 ];
 const expectedValue = { yes: { one: 2, three: '4', five: { six: 8 } } };
 
+const MockClock = (sessionId, currentTime) => {
+    let now = hlc.init(sessionId, currentTime);
+    const recv = (newClock: HLC) => {
+        currentTime += 100;
+        now = hlc.recv(now, newClock, currentTime);
+    };
+    const get = () => {
+        currentTime += 100;
+        now = hlc.inc(now, currentTime);
+        return hlc.pack(now);
+    };
+    const setCurrentTime = newCurrentTime => {
+        currentTime = newCurrentTime;
+    };
+    return { recv, get, setCurrentTime };
+};
+
 const createClient = (sessionId, collections, messages) => {
     const persistence = makePersistence(collections);
     const state = client.initialState(persistence.collections);
-    const clock = new PersistentClock(inMemoryClockPersist());
+    // const clock = new PersistentClock(inMemoryClockPersist());
+    const clock = MockClock(sessionId + 'clock', 0);
     // client
     return {
         sessionId,

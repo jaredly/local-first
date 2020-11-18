@@ -87,14 +87,14 @@ Array [
                 "type": "set",
                 "value": Object {
                   "meta": Object {
-                    "hlcStamp": "001605714119248:00000:50h85bzdofo",
+                    "hlcStamp": "000000000000100:00000:aclock",
                     "map": Object {
                       "age": Object {
-                        "hlcStamp": "001605714119248:00000:50h85bzdofo",
+                        "hlcStamp": "000000000000100:00000:aclock",
                         "type": "plain",
                       },
                       "name": Object {
-                        "hlcStamp": "001605714119248:00000:50h85bzdofo",
+                        "hlcStamp": "000000000000100:00000:aclock",
                         "type": "plain",
                       },
                     },
@@ -117,7 +117,7 @@ Array [
       "serverMessages": Array [
         Object {
           "collection": "people",
-          "deltaStamp": "001605714119248:00000:50h85bzdofo",
+          "deltaStamp": "000000000000100:00000:aclock",
           "type": "ack",
         },
       ],
@@ -142,14 +142,14 @@ Array [
                 "type": "set",
                 "value": Object {
                   "meta": Object {
-                    "hlcStamp": "001605714119248:00000:50h85bzdofo",
+                    "hlcStamp": "000000000000100:00000:aclock",
                     "map": Object {
                       "age": Object {
-                        "hlcStamp": "001605714119248:00000:50h85bzdofo",
+                        "hlcStamp": "000000000000100:00000:aclock",
                         "type": "plain",
                       },
                       "name": Object {
-                        "hlcStamp": "001605714119248:00000:50h85bzdofo",
+                        "hlcStamp": "000000000000100:00000:aclock",
                         "type": "plain",
                       },
                     },
@@ -201,13 +201,13 @@ Array [
                 "path": Array [
                   Object {
                     "key": "age",
-                    "stamp": "001605714119248:00000:50h85bzdofo",
+                    "stamp": "000000000000100:00000:aclock",
                   },
                 ],
                 "type": "set",
                 "value": Object {
                   "meta": Object {
-                    "hlcStamp": "001605714119260:00000:50h85bzdofo",
+                    "hlcStamp": "000000000000200:00000:aclock",
                     "type": "plain",
                   },
                   "value": 100,
@@ -224,7 +224,7 @@ Array [
       "serverMessages": Array [
         Object {
           "collection": "people",
-          "deltaStamp": "001605714119260:00000:50h85bzdofo",
+          "deltaStamp": "000000000000200:00000:aclock",
           "type": "ack",
         },
       ],
@@ -248,13 +248,13 @@ Array [
                 "path": Array [
                   Object {
                     "key": "age",
-                    "stamp": "001605714119248:00000:50h85bzdofo",
+                    "stamp": "000000000000100:00000:aclock",
                   },
                 ],
                 "type": "set",
                 "value": Object {
                   "meta": Object {
-                    "hlcStamp": "001605714119260:00000:50h85bzdofo",
+                    "hlcStamp": "000000000000200:00000:aclock",
                     "type": "plain",
                   },
                   "value": 100,
