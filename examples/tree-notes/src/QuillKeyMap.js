@@ -63,7 +63,7 @@ const map = (props: *, registry: *): * => ({
                     handler: () => props.onToggleCollapse(),
                 },
                 'left-at-start': {
-                    key: 'ArrowLeft',
+                    key: 'Left',
                     handler() {
                         return !(atLeft(this.quill) && props.onLeft() != null);
                     },
@@ -84,7 +84,7 @@ const map = (props: *, registry: *): * => ({
                     },
                 },
                 'move-right': {
-                    key: 'ArrowRight',
+                    key: 'Right',
                     collapsed: true,
                     handler() {
                         return !(atRight(this.quill) && props.onRight() != null);

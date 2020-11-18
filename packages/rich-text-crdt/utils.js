@@ -3,12 +3,8 @@ import type { Node, CRDT, Content } from './types';
 
 export const nodeToString = function(state: CRDT, node: Node) {
     return (
-        (node.deleted || node.content.type !== 'text'
-            ? ''
-            : node.content.text) +
-        node.children
-            .map(child => nodeToString(state, state.map[child]))
-            .join('')
+        (node.deleted || node.content.type !== 'text' ? '' : node.content.text) +
+        node.children.map(child => nodeToString(state, state.map[child])).join('')
     );
 };
 export const toString = function(crdt: CRDT) {
@@ -19,6 +15,15 @@ export const toKey = ([id, site]: [number, string]) => `${id}:${site}`;
 export const fromKey = (id: string): [number, string] => {
     const [a0, a1] = id.split(':');
     return [+a0, a1];
+};
+
+export const isEmpty = function(state: CRDT) {
+    for (let i = 0; i < state.roots.length; i++) {
+        if (state.map[state.roots[i]].size > 0) {
+            return false;
+        }
+    }
+    return true;
 };
 
 export const length = function(state: CRDT) {
@@ -59,20 +64,13 @@ export const keyEq = ([a, b]: [number, string], [c, d]: [number, string]) => {
     return a === c && b === d;
 };
 
-export const getFormatValues = (
-    state: CRDT,
-    formats: { [key: string]: Array<string> },
-) => {
+export const getFormatValues = (state: CRDT, formats: { [key: string]: Array<string> }) => {
     const res = {};
     Object.keys(formats).forEach(key => {
         if (formats[key].length) {
             const node = state.map[formats[key][0]];
             if (node.content.type !== 'open') {
-                throw new Error(
-                    `A formats list had a non-open node in it ${toKey(
-                        node.id,
-                    )}`,
-                );
+                throw new Error(`A formats list had a non-open node in it ${toKey(node.id)}`);
             }
             res[key] = node.content.value;
         }

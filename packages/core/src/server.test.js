@@ -8,6 +8,7 @@ import makePersistence from '../../idb/src/delta-mem';
 import * as client from './delta/create-client';
 import * as server from './server';
 import setupSqliteServerPersistence from '../../server-bundle/sqlite-persistence';
+import { validateDelta } from '../../nested-object-crdt/src/schema.js';
 import setupServerPersistence from './memory-persistence';
 import { PersistentClock, inMemoryClockPersist } from './persistent-clock';
 import { type CRDTImpl, getCollection } from './shared';
@@ -69,13 +70,7 @@ const newCrdt: CRDTImpl<Delta, Data> = {
             ),
     },
     createValue: (value, stamp, getStamp, schema) => {
-        return ncrdt.createWithSchema(
-            value,
-            stamp,
-            getStamp,
-            schema,
-            value => null,
-        );
+        return ncrdt.createWithSchema(value, stamp, getStamp, schema, value => null);
     },
 };
 
@@ -113,11 +108,11 @@ const schemas = {
     people: { type: 'object', attributes: { name: 'string', age: 'int' } },
 };
 
+const getSchemaChecker = colid =>
+    schemas[colid] ? delta => validateDelta(schemas[colid], delta) : null;
+
 const collections = ['items'];
-const initialValue = ncrdt.createDeep(
-    { one: 2, three: '4', five: { six: 7 } },
-    '1',
-);
+const initialValue = ncrdt.createDeep({ one: 2, three: '4', five: { six: 7 } }, '1');
 const someMessages = [
     {
         node: 'yes',
@@ -125,11 +120,7 @@ const someMessages = [
     },
     {
         node: 'yes',
-        delta: ncrdt.deltas.set(
-            initialValue,
-            ['five', 'six'],
-            ncrdt.createDeep(8, '2'),
-        ),
+        delta: ncrdt.deltas.set(initialValue, ['five', 'six'], ncrdt.createDeep(8, '2')),
     },
 ];
 const expectedValue = { yes: { one: 2, three: '4', five: { six: 8 } } };
@@ -184,6 +175,7 @@ const createServer = deltas => {
         serverCrdt,
         // setupServerPersistence<Delta, Data>(),
         setupSqliteServerPersistence('.test-data'),
+        getSchemaChecker,
     );
     if (deltas) {
         Object.keys(deltas).forEach(collection => {
@@ -272,19 +264,14 @@ describe('client-server interaction', () => {
         expect(await client.getMessages()).toEqual([]);
         expect(server.receive(client.sessionId, acks)).toEqual([]);
         expect(server.getMessages(client.sessionId)).toEqual([]);
-        expect(await client.getState()).toEqual(
-            server.getState(client.collections),
-        );
+        expect(await client.getState()).toEqual(server.getState(client.collections));
     });
 
     it('Clean client, server with data should back and forth', async () => {
         const client = createClient('a', ['items']);
         const server = createServer({ items: someMessages });
         // hello world, back and forth
-        const acks = server.receive(
-            client.sessionId,
-            await client.getMessages(),
-        );
+        const acks = server.receive(client.sessionId, await client.getMessages());
         const allServer = acks.concat(server.getMessages(client.sessionId));
         console.log(allServer);
         const clientAcks = await client.receive(allServer);
@@ -294,30 +281,21 @@ describe('client-server interaction', () => {
         expect(await client.getMessages()).toEqual([]);
         // Server now has nothing more to send
         expect(server.getMessages(client.sessionId)).toEqual([]);
-        expect(await client.getState()).toEqual(
-            server.getState(client.collections),
-        );
+        expect(await client.getState()).toEqual(server.getState(client.collections));
         expect(await client.getState()).toEqual({ items: expectedValue });
     });
 
     it('Clean client, clean server, then client does a thing', async () => {
         const client = createClient('a', ['people']);
         const server = createServer();
-        const acks = server.receive(
-            client.sessionId,
-            await client.getMessages(),
-        ); // hello world
-        const clientAcks = await client.receive(
-            acks.concat(server.getMessages(client.sessionId)),
-        );
+        const acks = server.receive(client.sessionId, await client.getMessages()); // hello world
+        const clientAcks = await client.receive(acks.concat(server.getMessages(client.sessionId)));
         // client is ack'ing the server's data, but doesn't have its own messages.
         server.receive(client.sessionId, clientAcks);
         expect(await client.getMessages()).toEqual([]);
         // Server now has nothing more to send
         expect(server.getMessages(client.sessionId)).toEqual([]);
-        expect(await client.getState()).toEqual(
-            server.getState(client.collections),
-        );
+        expect(await client.getState()).toEqual(server.getState(client.collections));
         //
         const col = client.getCollection('people');
         await col.save('two', { name: 'yoo', age: 4 });
@@ -327,9 +305,7 @@ describe('client-server interaction', () => {
         const serverAcks = server.receive(client.sessionId, clientMessages);
         expect(serverAcks[0].type).toEqual('ack');
         expect(
-            await client.receive(
-                serverAcks.concat(server.getMessages(client.sessionId)),
-            ),
+            await client.receive(serverAcks.concat(server.getMessages(client.sessionId))),
         ).toEqual([]);
     });
 });

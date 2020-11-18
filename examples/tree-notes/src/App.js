@@ -19,7 +19,6 @@ import {
 import { useCollection, useItem } from '../../../packages/client-react';
 import type { Data } from './auth-api';
 
-// import Home from './Home';
 import schemas from '../collections';
 import Item from './Item';
 import LocalClient from './LocalClient';
@@ -28,9 +27,6 @@ import AppShell from './AppShell';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
-// import Schedule from './Schedule/Schedule';
-// import Split from './Split';
-// import Habits from './Habits/Habits';
 import { blankItem } from './types';
 
 const genId = () => Math.random().toString(36).slice(2);
@@ -79,6 +75,7 @@ const useDragging = () => {
         evt.preventDefault();
         evt.stopPropagation();
         const targets = [].concat(...Object.keys(targetMakers).map((id) => targetMakers[id](path)));
+        console.log('oh starting to drag, here we are', targets);
         // return [];
     };
     const registerDragTargets = (id, cb) => {

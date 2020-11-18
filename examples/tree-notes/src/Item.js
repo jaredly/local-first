@@ -9,6 +9,7 @@ import type { ItemT } from '../collections';
 import * as navigation from './navigation';
 import LocalClient from './LocalClient';
 import { type DragTarget } from './App';
+import { length } from '../../../packages/rich-text-crdt/utils';
 
 const arrayStartsWith = (needle, haystack) => {
     if (haystack.length < needle.length) {
@@ -150,6 +151,8 @@ const Item = ({
                 <QuillEditor
                     css={{
                         flex: 1,
+                        border: '1px dashed transparent',
+                        ...(length(item.body) <= 1 ? { borderBottomColor: 'currentColor' } : null),
                     }}
                     innerRef={(node) => local.register(id, node)}
                     value={item.body}
@@ -161,6 +164,10 @@ const Item = ({
                                 return true;
                             }
                         },
+                        onBackspace(contents: string) {
+                            if (contents == null) {
+                            }
+                        },
                         onDown() {
                             const down = navigation.goDown(col, path, id);
                             if (down) {
@@ -168,11 +175,17 @@ const Item = ({
                                 return true;
                             }
                         },
+                        onLeft() {
+                            console.log('WIP');
+                        },
+                        onRight() {
+                            console.log('RIGHT');
+                        },
                         onEnter() {
                             console.log('enter');
                             const current = col.getCached(id);
                             if (!current) return;
-                            if (current.children.length) {
+                            if (current.children.length || !path.length) {
                                 const nid = navigation.createChild(client, col, path, id);
                                 local.setFocus(nid);
                             } else {

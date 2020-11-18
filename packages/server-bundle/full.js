@@ -55,6 +55,17 @@ export const serverForUser = (
 const makeSchemaCheckers = schemas => colid =>
     schemas[colid] ? delta => validateDelta(schemas[colid], delta) : null;
 
+/**
+ * Directory layout of this server:
+ * - [dataPath]/
+ *      [databaseType]/ -- this is how we look up the schema for the given db
+ *          [other-path-substrings]/
+ *              @[userid]/ -- I wonder if we want to instead do `databaseType/@userId/sub-paths/data.db`?
+ *                         -- like, the sub-paths are all going to be the same kind of thing
+ *                         -- for the tree-notes case, that definitely makes sense.
+ *                         -- are there other cases that are different?
+ *                  data.db
+ */
 export const runMulti2 = (
     dataPath: string,
     configs: {
@@ -111,9 +122,11 @@ export const runMulti2 = (
             res.send(`Database config ${parts[0]} not found`);
             res.end();
         } else {
+            const subPath = parts.slice(1);
+            const dbPath = path.join(dataPath, parts[0], '@' + req.auth.id, subPath.join('/'));
             req.dbName = dbName;
             req.dbConfig = config;
-            req.dataPath = path.join(dataPath, '@' + req.auth.id, dbName);
+            req.dataPath = dbPath;
             req.server = getServer(req);
             next();
         }
