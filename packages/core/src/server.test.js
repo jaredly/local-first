@@ -151,6 +151,7 @@ const createClient = (sessionId, collections, messages) => {
     return {
         _setCurrentTime: time => clock.setCurrentTime(time),
         _getCurrentTime: () => clock.getCurrentTime(),
+        _state: state,
         sessionId,
         collections,
         persistence,
@@ -450,6 +451,30 @@ describe('client-server interaction', () => {
         expect(await client.getCollection('people').load('two')).toEqual({
             name: 'yoo',
             age: 200,
+        });
+    });
+
+    // HMMM I should do some tests where I "reinflate" the client from persistence.
+
+    it.only('Client loses a record for some reason (??). Panic ensues.', async () => {
+        const client = createClient('a', ['people']);
+        const clientB = createClient('b', ['people']);
+        const server = createServer();
+
+        await client.getCollection('people').save('two', { name: 'yoo', age: 4 });
+
+        await settleAndAssert(server, [client, clientB]);
+
+        await client.getCollection('people').setAttribute('two', ['age'], 100);
+        // oh noes!
+        clientB.persistence._db.collections['people:nodes'] = {};
+        clientB._state.people = {};
+
+        await settleAndAssert(server, [client, clientB]);
+
+        expect(await clientB.getCollection('people').load('two')).toEqual({
+            name: 'yoo',
+            age: 100,
         });
     });
 

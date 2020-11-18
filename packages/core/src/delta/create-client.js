@@ -70,7 +70,7 @@ export const handleMessages = async function<Delta, Data>(
     recvClock: HLC => void,
     sendCrossTabChanges: PeerChange => mixed,
 ): Promise<Array<ClientMessage<Delta, Data>>> {
-    console.log('RECV', messages);
+    // console.log('RECV', messages);
     const res: Array<?ClientMessage<Delta, Data>> = await Promise.all(
         messages.map(async (msg): Promise<?ClientMessage<Delta, Data>> => {
             if (msg.type === 'sync') {

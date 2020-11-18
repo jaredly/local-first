@@ -139,6 +139,7 @@ const makePersistence = (collections: Array<string>): DeltaPersistence => {
         },
 
         async load<T>(collection: string, id: string): Promise<?T> {
+            console.log('load', id, db);
             const data = db.get(collection + ':nodes', id);
             return data ? data.value : null;
         },
