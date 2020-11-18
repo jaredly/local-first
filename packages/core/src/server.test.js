@@ -174,8 +174,8 @@ const createClient = (sessionId, collections, messages) => {
 const createServer = deltas => {
     const state: ServerState<Delta, Data> = server.default(
         serverCrdt,
-        // setupServerPersistence<Delta, Data>(),
-        setupSqliteServerPersistence('.test-data'),
+        setupServerPersistence(),
+        // setupSqliteServerPersistence('.test-data'),
         getSchemaChecker,
     );
     if (deltas) {
@@ -222,14 +222,14 @@ const createServer = deltas => {
     };
 };
 
-const fs = require('fs');
-beforeAll(() => {
-    fs.mkdirSync('./.test-data');
-});
-afterAll(() => {
-    fs.unlinkSync('./.test-data/data.db');
-    fs.rmdirSync('./.test-data');
-});
+// const fs = require('fs');
+// beforeAll(() => {
+//     fs.mkdirSync('./.test-data');
+// });
+// afterAll(() => {
+//     fs.unlinkSync('./.test-data/data.db');
+//     fs.rmdirSync('./.test-data');
+// });
 
 describe('client-server interaction', () => {
     it('Clean both - initial handshake', async () => {
@@ -342,7 +342,7 @@ describe('client-server interaction', () => {
         }
     };
 
-    it.only('Two clients, should sync', async () => {
+    it('Two clients, should sync', async () => {
         const client = createClient('a', ['people']);
         const clientB = createClient('b', ['people']);
         const server = createServer();
@@ -362,6 +362,32 @@ describe('client-server interaction', () => {
         // Client and server now have equal state
         expect(await client.getState()).toEqual(server.getState(client.collections));
         expect(await clientB.getState()).toEqual(server.getState(clientB.collections));
+
+        expect(await clientB.getCollection('people').load('two')).toEqual({
+            name: 'yoo',
+            age: 100,
+        });
+    });
+
+    const settleAndAssert = async (server, clients) => {
+        await settleMulti(server, clients);
+        for (let client of clients) {
+            expect(await client.getState()).toEqual(server.getState(client.collections));
+        }
+    };
+
+    it('Two clients, incremental sync', async () => {
+        const client = createClient('a', ['people']);
+        const clientB = createClient('b', ['people']);
+        const server = createServer();
+
+        await settleAndAssert(server, [client, clientB]);
+
+        const col = client.getCollection('people');
+        await col.save('two', { name: 'yoo', age: 4 });
+        await col.setAttribute('two', ['age'], 100);
+
+        await settleAndAssert(server, [client, clientB]);
 
         expect(await clientB.getCollection('people').load('two')).toEqual({
             name: 'yoo',
