@@ -295,7 +295,6 @@ describe('client-server interaction', () => {
         // hello world, back and forth
         const acks = server.receive(client.sessionId, await client.getMessages());
         const allServer = acks.concat(server.getMessages(client.sessionId));
-        console.log(allServer);
         const clientAcks = await client.receive(allServer);
         // expect(clientAcks).toEqual([]);
         // client is ack'ing the server's data, but doesn't have its own messages.
@@ -340,6 +339,7 @@ describe('client-server interaction', () => {
         if (!serverMessages.length) {
             return { clientMessages, serverMessages, clientResponses: [], serverResponses: [] };
         }
+        // Ok this is the part where the client is like "wait nope, can't do it sorry."
         let clientResponses = await client.receive(serverMessages);
         let serverResponses = server.receive(client.sessionId, clientResponses);
         if (serverResponses.length) {
@@ -365,6 +365,7 @@ describe('client-server interaction', () => {
                 return allMessages;
             }
         }
+        throw new Error('Not settled after 10 rounds?');
     };
 
     it('Two clients, should sync', async () => {
@@ -456,7 +457,7 @@ describe('client-server interaction', () => {
 
     // HMMM I should do some tests where I "reinflate" the client from persistence.
 
-    it.only('Client loses a record for some reason (??). Panic ensues.', async () => {
+    it('Client loses a record for some reason (??). Panic ensues.', async () => {
         const client = createClient('a', ['people']);
         const clientB = createClient('b', ['people']);
         const server = createServer();
@@ -466,9 +467,9 @@ describe('client-server interaction', () => {
         await settleAndAssert(server, [client, clientB]);
 
         await client.getCollection('people').setAttribute('two', ['age'], 100);
-        // oh noes!
+        // oh noes! we lost our datas.
         clientB.persistence._db.collections['people:nodes'] = {};
-        clientB._state.people = {};
+        clientB._state.people.cache = {};
 
         await settleAndAssert(server, [client, clientB]);
 

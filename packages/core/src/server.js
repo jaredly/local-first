@@ -204,6 +204,8 @@ export const onMessage = function<Delta, Data>(
     } else if (message.type === 'ack') {
         // console.log('acked');
         state.clients[sessionId].collections[message.collection] = message.serverCursor;
+    } else {
+        console.error('Unexpected client message', message);
     }
 };
 

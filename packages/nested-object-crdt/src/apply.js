@@ -15,6 +15,8 @@ import type {
 } from './types';
 import { get } from './deltas';
 
+export class MissingNodeError extends Error {}
+
 export const applyDelta = function<T, O, Other, OtherDelta>(
     crdt: ?CRDT<T, Other>,
     delta: Delta<O, Other, OtherDelta>,
@@ -23,7 +25,7 @@ export const applyDelta = function<T, O, Other, OtherDelta>(
 ): CRDT<T, Other> {
     if (!crdt) {
         if (delta.type !== 'set' || delta.path.length) {
-            throw new Error(`Only a 'replace' delta can be applied to an empty base`);
+            throw new MissingNodeError(`Only a 'replace' delta can be applied to an empty base`);
         }
         // $FlowFixMe
         return delta.value;

@@ -15,6 +15,7 @@ import { peerTabAwareNetwork } from '../peer-tabs';
 import type { HLC } from '../../../hybrid-logical-clock';
 import * as hlc from '../../../hybrid-logical-clock';
 import { type Schema } from '../../../nested-object-crdt/src/schema.js';
+import { MissingNodeError } from '../../../nested-object-crdt/src/apply.js';
 import deepEqual from 'fast-deep-equal';
 import { type PeerChange } from '../types';
 
@@ -62,6 +63,111 @@ export const getMessages = async function<Delta, Data>(
     return items.filter(Boolean);
 };
 
+const handleMessage = async function<Delta, Data>(
+    crdt: CRDTImpl<Delta, Data>,
+    persistence: DeltaPersistence,
+    state: { [colid: string]: CollectionState<Data, any> },
+    recvClock: HLC => void,
+    sendCrossTabChanges: PeerChange => mixed,
+    msg: ServerMessage<Delta, Data>,
+): Promise<?ClientMessage<Delta, Data>> {
+    if (msg.type === 'sync') {
+        const col = state[msg.collection];
+
+        const changed = {};
+        msg.deltas.forEach(delta => {
+            changed[delta.node] = true;
+        });
+
+        const deltasWithStamps = msg.deltas.map(delta => ({
+            ...delta,
+            stamp: crdt.deltas.stamp(delta.delta),
+        }));
+
+        const changedIds = Object.keys(changed);
+        // console.log('applying deltas', msg.serverCursor);
+        let data;
+        try {
+            data = await persistence.applyDeltas(
+                msg.collection,
+                deltasWithStamps,
+                msg.serverCursor,
+                (data, delta) => crdt.deltas.apply(data, delta),
+            );
+        } catch (err) {
+            // assume that the problem is that we don't have some infos.
+            // It'll be a little annoying to plumb the node's ID around, so
+            // here we are.
+
+            // So, for the moment, we just go ahead and require all changes since the dawn
+            // of time.
+            // This is rather inefficient, and once our server keeps a realized
+            // cache of all nodes, it can just send a dump.
+            // That will also allow us to do nice thing like "hash the db state & compare"
+            if (err instanceof MissingNodeError) {
+                return {
+                    type: 'sync',
+                    collection: msg.collection,
+                    // since the dawn of time, thanks
+                    serverCursor: -1,
+                    deltas: [],
+                };
+            } else {
+                // dunno
+                throw err;
+            }
+        }
+
+        if (col.listeners.length) {
+            const changes = changedIds.map(id => ({
+                id,
+                value: crdt.value(data[id]),
+            }));
+            col.listeners.forEach(listener => {
+                listener(changes);
+            });
+        }
+        changedIds.forEach(id => {
+            // Only update the cache if the node has already been cached
+            if (state[msg.collection].cache[id] != null) {
+                state[msg.collection].cache[id] = data[id];
+            }
+            if (col.itemListeners[id]) {
+                col.itemListeners[id].forEach(fn => fn(crdt.value(data[id])));
+            }
+        });
+
+        if (changedIds.length) {
+            // console.log(
+            //     'Broadcasting to client-level listeners',
+            //     changedIds,
+            // );
+            sendCrossTabChanges({
+                col: msg.collection,
+                nodes: changedIds,
+            });
+        }
+
+        let maxStamp = null;
+        msg.deltas.forEach(delta => {
+            const stamp = crdt.deltas.stamp(delta.delta);
+            if (maxStamp == null || stamp > maxStamp) {
+                maxStamp = stamp;
+            }
+        });
+        if (maxStamp) {
+            recvClock(hlc.unpack(maxStamp));
+        }
+        return {
+            type: 'ack',
+            collection: msg.collection,
+            serverCursor: msg.serverCursor,
+        };
+    } else if (msg.type === 'ack') {
+        await persistence.deleteDeltas(msg.collection, msg.deltaStamp);
+    }
+};
+
 export const handleMessages = async function<Delta, Data>(
     crdt: CRDTImpl<Delta, Data>,
     persistence: DeltaPersistence,
@@ -71,81 +177,27 @@ export const handleMessages = async function<Delta, Data>(
     sendCrossTabChanges: PeerChange => mixed,
 ): Promise<Array<ClientMessage<Delta, Data>>> {
     // console.log('RECV', messages);
-    const res: Array<?ClientMessage<Delta, Data>> = await Promise.all(
-        messages.map(async (msg): Promise<?ClientMessage<Delta, Data>> => {
-            if (msg.type === 'sync') {
-                const col = state[msg.collection];
-
-                const changed = {};
-                msg.deltas.forEach(delta => {
-                    changed[delta.node] = true;
-                });
-
-                const deltasWithStamps = msg.deltas.map(delta => ({
-                    ...delta,
-                    stamp: crdt.deltas.stamp(delta.delta),
-                }));
-
-                const changedIds = Object.keys(changed);
-                // console.log('applying deltas', msg.serverCursor);
-                const data = await persistence.applyDeltas(
-                    msg.collection,
-                    deltasWithStamps,
-                    msg.serverCursor,
-                    (data, delta) => crdt.deltas.apply(data, delta),
-                );
-
-                if (col.listeners.length) {
-                    const changes = changedIds.map(id => ({
-                        id,
-                        value: crdt.value(data[id]),
-                    }));
-                    col.listeners.forEach(listener => {
-                        listener(changes);
-                    });
-                }
-                changedIds.forEach(id => {
-                    // Only update the cache if the node has already been cached
-                    if (state[msg.collection].cache[id] != null) {
-                        state[msg.collection].cache[id] = data[id];
-                    }
-                    if (col.itemListeners[id]) {
-                        col.itemListeners[id].forEach(fn => fn(crdt.value(data[id])));
-                    }
-                });
-
-                if (changedIds.length) {
-                    // console.log(
-                    //     'Broadcasting to client-level listeners',
-                    //     changedIds,
-                    // );
-                    sendCrossTabChanges({
-                        col: msg.collection,
-                        nodes: changedIds,
-                    });
-                }
-
-                let maxStamp = null;
-                msg.deltas.forEach(delta => {
-                    const stamp = crdt.deltas.stamp(delta.delta);
-                    if (maxStamp == null || stamp > maxStamp) {
-                        maxStamp = stamp;
-                    }
-                });
-                if (maxStamp) {
-                    recvClock(hlc.unpack(maxStamp));
-                }
-                return {
-                    type: 'ack',
-                    collection: msg.collection,
-                    serverCursor: msg.serverCursor,
-                };
-            } else if (msg.type === 'ack') {
-                await persistence.deleteDeltas(msg.collection, msg.deltaStamp);
-            }
-        }),
-    );
-    return res.filter(Boolean);
+    const res = [];
+    for (let msg of messages) {
+        const clientMessage = await handleMessage(
+            crdt,
+            persistence,
+            state,
+            recvClock,
+            sendCrossTabChanges,
+            msg,
+        );
+        if (clientMessage) {
+            res.push(clientMessage);
+        }
+    }
+    // const res: Array<?ClientMessage<Delta, Data>> = await Promise.all(
+    //     messages.map(async (msg): Promise<?ClientMessage<Delta, Data>> => {
+    //         return
+    //     }),
+    // );
+    // return res.filter(Boolean);
+    return res;
 };
 
 export const initialState = function<Data>(

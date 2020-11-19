@@ -181,6 +181,54 @@ Array [
       "clientResponses": Array [
         Object {
           "collection": "people",
+          "deltas": Array [],
+          "serverCursor": -1,
+          "type": "sync",
+        },
+      ],
+      "serverMessages": Array [
+        Object {
+          "collection": "people",
+          "deltas": Array [
+            Object {
+              "delta": Object {
+                "path": Array [
+                  Object {
+                    "key": "age",
+                    "stamp": "000000000000000:00001:aclock",
+                  },
+                ],
+                "type": "set",
+                "value": Object {
+                  "meta": Object {
+                    "hlcStamp": "000000000000100:00000:aclock",
+                    "type": "plain",
+                  },
+                  "value": 100,
+                },
+              },
+              "node": "two",
+            },
+          ],
+          "serverCursor": 1,
+          "type": "sync",
+        },
+      ],
+      "serverResponses": Array [],
+    },
+  },
+  Object {
+    "a": Object {
+      "clientMessages": Array [],
+      "clientResponses": Array [],
+      "serverMessages": Array [],
+      "serverResponses": Array [],
+    },
+    "b": Object {
+      "clientMessages": Array [],
+      "clientResponses": Array [
+        Object {
+          "collection": "people",
           "serverCursor": 1,
           "type": "ack",
         },
@@ -189,6 +237,33 @@ Array [
         Object {
           "collection": "people",
           "deltas": Array [
+            Object {
+              "delta": Object {
+                "path": Array [],
+                "type": "set",
+                "value": Object {
+                  "meta": Object {
+                    "hlcStamp": "000000000000000:00001:aclock",
+                    "map": Object {
+                      "age": Object {
+                        "hlcStamp": "000000000000000:00001:aclock",
+                        "type": "plain",
+                      },
+                      "name": Object {
+                        "hlcStamp": "000000000000000:00001:aclock",
+                        "type": "plain",
+                      },
+                    },
+                    "type": "map",
+                  },
+                  "value": Object {
+                    "age": 4,
+                    "name": "yoo",
+                  },
+                },
+              },
+              "node": "two",
+            },
             Object {
               "delta": Object {
                 "path": Array [
