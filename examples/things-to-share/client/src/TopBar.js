@@ -8,6 +8,8 @@ import WifiOff from '@material-ui/icons/WifiOff';
 import Menu from '@material-ui/core/Menu';
 import Hidden from '@material-ui/core/Hidden';
 import MenuItem from '@material-ui/core/MenuItem';
+import CachedIcon from '@material-ui/icons/Cached';
+import CircularProgress from '@material-ui/core/CircularProgress';
 import { makeStyles } from '@material-ui/core/styles';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
@@ -60,11 +62,18 @@ const TopBar = ({
                 >
                     <SearchIcon />
                 </IconButton>
-                {syncStatus.status === 'connected' ? (
-                    <Wifi className={styles.connected} />
-                ) : syncStatus.status === 'disconnected' ? (
-                    <WifiOff className={styles.disconnected} />
-                ) : null}
+                <div style={{ width: 24, height: 24 }}>
+                    {syncStatus.status === 'connected' ? (
+                        <Wifi className={styles.connected} />
+                    ) : syncStatus.status === 'disconnected' ? (
+                        <WifiOff className={styles.disconnected} />
+                    ) : (
+                        <CircularProgress
+                            className={styles.loading}
+                            size={24}
+                        />
+                    )}
+                </div>
             </Toolbar>
         </AppBar>
     );
@@ -102,6 +111,9 @@ const useStyles = makeStyles((theme) => ({
         },
         textTransform: 'none',
         minWidth: 0,
+    },
+    loading: {
+        color: 'white',
     },
 }));
 
