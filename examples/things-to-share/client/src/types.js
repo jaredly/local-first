@@ -17,6 +17,19 @@ export const TagSchema: Schema = {
     },
 };
 
+export type CategoryT = {
+    id: string,
+    title: string,
+};
+
+export const CategorySchema: Schema = {
+    type: 'object',
+    attributes: {
+        id: 'string',
+        title: 'string',
+    },
+};
+
 export type LinkT = {
     id: string,
     url: string,
