@@ -9,6 +9,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import Typography from '@material-ui/core/Typography';
 import PlayIcon from '@material-ui/icons/PlayCircleFilled';
 import * as React from 'react';
+import * as he from 'he';
 
 const useStyles = makeStyles((theme) => ({
     //
@@ -136,10 +137,12 @@ const OpenGraph = ({
     const site_name = getOg(data, 'og:site_name');
     // for images, need to filter out twitter avatar ones probably
 
-    const [title, description] =
+    let [title, description] =
         site_name === 'Twitter'
             ? [getOg(data, 'og:description'), getOg(data, 'og:title')]
             : [getOg(data, 'og:title'), getOg(data, 'og:description')];
+    title = he.decode(title);
+    description = he.decode(description);
 
     return (
         <Card className={nested ? styles.nestedRoot : styles.root}>
