@@ -48,6 +48,7 @@ const map = (props: *, registry: *): * => ({
               searchTerm,
             ),
       }, */
+        // return TRUE if the handler *fell through*. return FALSE if the handler succeeded, and bubbling should stop.
         keyboard: {
             bindings: {
                 collapse: {
@@ -139,6 +140,22 @@ const map = (props: *, registry: *): * => ({
                     collapsed: true,
                     handler() {
                         return !(atBottom(this.quill) && props.onDown() != null);
+                    },
+                },
+                indent: {
+                    key: 'tab',
+                    collapsed: true,
+                    shiftKey: false,
+                    handler() {
+                        return !(atLeft(this.quill) && props.onIndent());
+                    },
+                },
+                dedent: {
+                    key: 'tab',
+                    collapsed: true,
+                    shiftKey: true,
+                    handler() {
+                        return !(atLeft(this.quill) && props.onDedent());
                     },
                 },
                 'create-child': {

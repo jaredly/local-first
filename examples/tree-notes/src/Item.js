@@ -164,6 +164,13 @@ const Item = ({
                                 return true;
                             }
                         },
+                        onIndent() {
+                            console.log('indent');
+                            return true;
+                        },
+                        onDedent() {
+                            return true;
+                        },
                         onBackspace(contents: string) {
                             if (contents == null) {
                             }
@@ -176,10 +183,18 @@ const Item = ({
                             }
                         },
                         onLeft() {
-                            console.log('WIP');
+                            const up = navigation.goUp(col, path, id);
+                            if (up != null) {
+                                local.setFocus(up);
+                                return true;
+                            }
                         },
                         onRight() {
-                            console.log('RIGHT');
+                            const down = navigation.goDown(col, path, id);
+                            if (down) {
+                                local.setFocus(down);
+                                return true;
+                            }
                         },
                         onEnter() {
                             console.log('enter');
@@ -197,6 +212,9 @@ const Item = ({
                         },
                         onCreateChild() {
                             navigation.createChild(client, col, path, id);
+                        },
+                        onCreateAunt() {
+                            navigation.createAunt(client, col, path, id);
                         },
                     }}
                     getStamp={client.getStamp}

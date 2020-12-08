@@ -22,6 +22,17 @@ export const nextSibling = (col: Collection<*>, path: Array<string>, id: string)
     }
 };
 
+export const lastChild = (col: Collection<*>, id: string) => {
+    const node = col.getCached(id);
+    if (!node) {
+        return;
+    }
+    if (!node.children.length) {
+        return id;
+    }
+    return lastChild(col, node.children[node.children.length - 1]);
+};
+
 export const goUp = (col: Collection<*>, path: Array<string>, id: string) => {
     if (!path.length) {
         return;
@@ -38,7 +49,7 @@ export const goUp = (col: Collection<*>, path: Array<string>, id: string) => {
     if (idx === 0) {
         return pid;
     }
-    return parent.children[idx - 1];
+    return lastChild(col, parent.children[idx - 1]);
 };
 
 export const goDown = (col: Collection<*>, path: Array<string>, id: string) => {
@@ -51,6 +62,28 @@ export const goDown = (col: Collection<*>, path: Array<string>, id: string) => {
         return current.children[0];
     }
     return nextSibling(col, path, id);
+};
+
+export const createAunt = (
+    client: Client<*>,
+    col: Collection<*>,
+    path: Array<string>,
+    id: string,
+) => {
+    if (path.length < 2) {
+        return;
+    }
+    const pid = path[path.length - 1];
+    const gpid = path[path.length - 2];
+
+    const cid = client.getStamp();
+    const item = {
+        ...blankItem(),
+        id: cid,
+    };
+    col.save(item.id, item);
+    col.insertIdRelative(gpid, ['children'], cid, pid, false);
+    return item.id;
 };
 
 export const createChild = (

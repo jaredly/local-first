@@ -12,50 +12,6 @@ import { type CRDT, type Delta } from '../../../packages/rich-text-crdt';
 import deepEqual from '@birchill/json-equalish';
 import keymap from './QuillKeyMap';
 
-// let atLeft = quill => {
-//   let sel = getSelection(quill);
-//   switch (Js.toOption(sel)) {
-//   | None => false
-//   | Some(sel) =>
-//     View.Range.indexGet(sel) == 0. && View.Range.lengthGet(sel) == 0.
-//   };
-// };
-
-// let atRight = quill => {
-//   let sel = getSelection(quill);
-//   switch (Js.toOption(sel)) {
-//   | None => false
-//   | Some(sel) =>
-//     View.Range.lengthGet(sel) == 0.
-//     && View.Range.indexGet(sel) == getLength(quill)
-//     -. 1.
-//   };
-// };
-
-// let atTop = quill => {
-//   let sel = getSelection(quill);
-//   switch (Js.toOption(sel)) {
-//   | None => false
-//   | Some(sel) =>
-//     View.Range.lengthGet(sel) == 0.
-//     &&
-//     getBounds(quill, View.Range.indexGet(sel))##top ==
-//     getBounds(quill, 0.)##top
-//   };
-// };
-
-// let atBottom = quill => {
-//   let sel = getSelection(quill);
-//   switch (Js.toOption(sel)) {
-//   | None => false
-//   | Some(sel) =>
-//     View.Range.lengthGet(sel) == 0.
-//     &&
-//     getBounds(quill, View.Range.indexGet(sel))##top ==
-//     getBounds(quill, getLength(quill))##top
-//   };
-// };
-
 const QuillEditor = ({
     value,
     onChange,
