@@ -185,23 +185,18 @@ const blankBody = () => {
 };
 const defaultEmptyBody = blankBody();
 
-const Item = ({
-    path,
-    id,
-    client,
-    local,
-    registerDragTargets,
-    onDragStart,
-}: {
+type Props = {
     path: Array<string>,
     id: string,
     client: Client<*>,
     local: LocalClient,
     onDragStart: (MouseEvent, Array<string>) => void,
     registerDragTargets: (string, ?(Array<string>) => Array<DragTarget>) => void,
-}) => {
+};
+
+const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Props) => {
     const [col, item] = useItem<ItemT, *>(React, client, 'items', id);
-    const childPath = path.concat([id]);
+    const childPath = React.useMemo(() => path.concat([id]), [path, id]);
     const bodyRef = React.useRef(null);
 
     const blingColor =
@@ -301,7 +296,7 @@ const Item = ({
                 }}
             >
                 {item.children.map((id) => (
-                    <Item
+                    <MemoItem
                         path={childPath}
                         id={id}
                         key={id}
@@ -316,4 +311,6 @@ const Item = ({
     );
 };
 
-export default Item;
+const MemoItem = React.memo<Props>(Item);
+
+export default MemoItem;

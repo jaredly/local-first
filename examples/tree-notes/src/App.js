@@ -77,22 +77,24 @@ export type DragTarget = DropTarget<Dest>;
 
 const useDragging = () => {
     const targetMakers = React.useMemo(() => ({}), []);
-    const onDragStart = (evt, path) => {
+    const onDragStart = React.useCallback((evt, path) => {
         evt.preventDefault();
         evt.stopPropagation();
         const targets = [].concat(...Object.keys(targetMakers).map((id) => targetMakers[id](path)));
         console.log('oh starting to drag, here we are', targets);
         // return [];
-    };
-    const registerDragTargets = (id, cb) => {
+    }, []);
+    const registerDragTargets = React.useCallback((id, cb) => {
         if (!cb) {
             delete targetMakers[id];
         } else {
             targetMakers[id] = cb;
         }
-    };
+    }, []);
     return { onDragStart, registerDragTargets };
 };
+
+const emptyPath = [];
 
 const Items = ({ client, local }) => {
     const { registerDragTargets, onDragStart } = useDragging();
@@ -100,7 +102,7 @@ const Items = ({ client, local }) => {
 
     return (
         <Item
-            path={[]}
+            path={emptyPath}
             id={id || 'root'}
             client={client}
             local={local}

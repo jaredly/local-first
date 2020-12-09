@@ -13,7 +13,8 @@ import { Link } from 'react-router-dom';
 import type { Client, SyncStatus } from '../../../packages/client-bundle';
 import { useSyncStatus } from '../../../packages/client-react';
 
-const TopBar = ({ openMenu, client }: { client: Client<SyncStatus>, openMenu: () => void }) => {
+type Props = { client: Client<SyncStatus>, openMenu: () => void };
+const TopBar = ({ openMenu, client }: Props) => {
     const styles = useStyles();
     const syncStatus = useSyncStatus(React, client);
 
@@ -62,4 +63,4 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
-export default TopBar;
+export default React.memo<Props>(TopBar);

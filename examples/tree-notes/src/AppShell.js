@@ -37,9 +37,11 @@ const AppShell = ({
     const styles = useStyles();
     const match = useRouteMatch();
 
+    const openMenu = React.useCallback(() => setMenu(true), []);
+
     return (
         <React.Fragment>
-            <TopBar openMenu={() => setMenu(true)} client={client} />
+            <TopBar openMenu={openMenu} client={client} />
             {/* <Drawer
                 pageItems={drawerItems}
                 onClose={() => setMenu(false)}
