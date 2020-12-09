@@ -121,13 +121,6 @@ const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
 
     window.client = client;
 
-    window.startUp = () => {
-        const id = 'root';
-        const item = { ...blankItem(), id };
-        col.save(id, item);
-        console.log('saving');
-    };
-
     const [col, items] = useCollection(React, client, 'items');
 
     const [_, item] = useItem(React, client, 'items', 'root');
@@ -140,18 +133,18 @@ const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
         <div>
             {item === false ? (
                 'Not loaded'
-            ) : item === null ? (
-                <button
-                    onClick={() => {
-                        const id = 'root';
-                        const item = { ...blankItem(), id };
-                        col.save(id, item);
-                        console.log('saving');
-                    }}
-                >
-                    Create a root folks
-                </button>
             ) : (
+                // ) : item === null ? (
+                //     <button
+                //         onClick={() => {
+                //             const id = 'root';
+                //             const item = { ...blankItem(), id };
+                //             col.save(id, item);
+                //             console.log('saving');
+                //         }}
+                //     >
+                //         Create a root folks
+                //     </button>
                 <AppShell
                     drawerItems={
                         // <ListItem>

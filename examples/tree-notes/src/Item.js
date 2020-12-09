@@ -66,7 +66,7 @@ const itemActions = ({ client, col, path, id, local }) => ({
         }
     },
     onEnter() {
-        console.log('enter');
+        // console.log('enter');
         const current = col.getCached(id);
         if (!current) return;
         if (current.children.length || !path.length) {
@@ -210,7 +210,20 @@ const Item = ({
     if (item === false) {
         return null; // loading
     }
-    if (item == null && id !== 'root') {
+    if (item == null) {
+        if (id === 'root') {
+            return (
+                <button
+                    onClick={() => {
+                        const item = { ...blankItem(), id };
+                        col.save(id, item);
+                        console.log('saving');
+                    }}
+                >
+                    Create root
+                </button>
+            );
+        }
         return 'Item does not exist';
     }
     return (
@@ -267,33 +280,15 @@ const Item = ({
                     css={{
                         flex: 1,
                         border: '1px dashed transparent',
-                        ...(!item || length(item.body) <= 1
-                            ? { borderBottomColor: 'currentColor' }
-                            : null),
+                        ...(length(item.body) <= 1 ? { borderBottomColor: 'currentColor' } : null),
                     }}
                     innerRef={(node) => local.register(id, node)}
-                    value={item ? item.body : defaultEmptyBody}
+                    value={item.body}
                     actions={itemActions({ client, col, path, id, local })}
                     getStamp={client.getStamp}
                     onChange={(delta) => {
-                        if (!item) {
-                            if (id !== 'root') {
-                                throw new Error('Not sure how we got here');
-                            }
-                            const body = rich.apply(defaultEmptyBody, delta);
-                            const item = {
-                                ...blankItem(),
-                                body,
-                                id,
-                            };
-                            col.save(item.id, item);
-                            // col.insertId(id, ['children'], 0, cid);
-                            // return item.id;
-                            // console.log(newBody);
-                        } else {
-                            console.log('Ok', delta);
-                            col.applyRichTextDelta(id, ['body'], delta);
-                        }
+                        // console.log('Ok', delta);
+                        col.applyRichTextDelta(id, ['body'], delta);
                     }}
                     siteId={client.sessionId}
                 />
@@ -305,19 +300,17 @@ const Item = ({
                     borderLeft: '1px solid ' + blingColor,
                 }}
             >
-                {item
-                    ? item.children.map((id) => (
-                          <Item
-                              path={childPath}
-                              id={id}
-                              key={id}
-                              client={client}
-                              local={local}
-                              onDragStart={onDragStart}
-                              registerDragTargets={registerDragTargets}
-                          />
-                      ))
-                    : null}
+                {item.children.map((id) => (
+                    <Item
+                        path={childPath}
+                        id={id}
+                        key={id}
+                        client={client}
+                        local={local}
+                        onDragStart={onDragStart}
+                        registerDragTargets={registerDragTargets}
+                    />
+                ))}
             </div>
         </div>
     );

@@ -35,12 +35,10 @@ const QuillEditor = ({
     const valueRef = React.useRef(value);
     if (ui.current && value !== valueRef.current) {
         const quill = ui.current;
-        console.log('render', value);
         const newContents = stateToQuillContents(value);
         const currentContents = quill.getContents();
-        console.log(newContents, currentContents);
         if (!deepEqual(newContents.ops, currentContents.ops)) {
-            console.log('new contents', newContents, currentContents, value, valueRef.current);
+            // console.log('new contents', newContents, currentContents, value, valueRef.current);
             const sel = quill.getSelection();
             const pos = sel ? quillToTreePos(valueRef.current, quill.getSelection()) : null;
             quill.setContents(newContents, 'crdt');
@@ -52,7 +50,7 @@ const QuillEditor = ({
     valueRef.current = value;
 
     React.useEffect(() => {
-        console.log(ref);
+        // console.log(ref);
         const quill = (ui.current = new Quill(ref.current, keymap(actions)));
         innerRef(quill);
         quill.setContents(stateToQuillContents(value));
