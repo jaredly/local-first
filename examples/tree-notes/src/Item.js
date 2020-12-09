@@ -42,6 +42,8 @@ const Item = ({
     const childPath = path.concat([id]);
     const bodyRef = React.useRef(null);
 
+    const blingColor = `rgba(255,255,255,${1 - (path.length % 5) / 5})`;
+
     if (item === false) {
         return null; // loading
     }
@@ -143,11 +145,23 @@ const Item = ({
                         width: '2em',
                         alignSelf: 'stretch',
                         cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         ':hover': {
                             backgroundColor: 'rgba(255,255,255,0.1)',
                         },
                     }}
-                />
+                >
+                    <div
+                        css={{
+                            width: '.5em',
+                            height: '.5em',
+                            backgroundColor: blingColor,
+                            borderRadius: '.25em',
+                        }}
+                    />
+                </div>
                 <QuillEditor
                     css={{
                         flex: 1,
@@ -224,7 +238,9 @@ const Item = ({
             </div>
             <div
                 style={{
-                    paddingLeft: '2em',
+                    marginLeft: '1em',
+                    paddingLeft: '1em',
+                    borderLeft: '1px solid ' + blingColor,
                 }}
             >
                 {item.children.map((id) => (
