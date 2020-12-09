@@ -42,7 +42,8 @@ const Item = ({
     const childPath = path.concat([id]);
     const bodyRef = React.useRef(null);
 
-    const blingColor = `rgba(255,255,255,${1 - (path.length % 5) / 5})`;
+    const blingColor =
+        path.length === 0 ? 'transparent' : `rgba(255,255,255,${1 - (path.length % 5) / 5})`;
 
     if (item === false) {
         return null; // loading
