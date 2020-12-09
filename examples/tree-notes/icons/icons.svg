@@ -7,105 +7,1280 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   sodipodi:docname="icons.svg"
+   inkscape:version="1.0 (4035a4f, 2020-05-01)"
    version="1.1"
-   id="svg8"
-   inkscape:version="1.0beta1 (32d4812, 2019-09-19)"
-   sodipodi:docname="icons.svg">
+   id="svg2996"
+   height="1052.3622047"
+   width="744.09448819">
   <defs
-     id="defs2" />
+     id="defs2998" />
   <sodipodi:namedview
-     id="base"
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:pageopacity="0.0"
-     inkscape:pageshadow="2"
-     inkscape:zoom="0.48082291"
-     inkscape:cx="-369.49476"
-     inkscape:cy="317.1426"
-     inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
      inkscape:document-rotation="0"
-     showgrid="false"
-     inkscape:window-width="1600"
-     inkscape:window-height="907"
-     inkscape:window-x="0"
+     inkscape:snap-grids="true"
+     inkscape:snap-others="true"
+     inkscape:object-nodes="true"
+     inkscape:snap-nodes="true"
+     inkscape:guide-bbox="true"
+     showguides="true"
+     inkscape:bbox-nodes="true"
+     inkscape:snap-bbox="false"
+     inkscape:window-maximized="1"
      inkscape:window-y="23"
-     inkscape:window-maximized="0">
+     inkscape:window-x="0"
+     inkscape:window-height="1155"
+     inkscape:window-width="1920"
+     inkscape:snap-global="true"
+     showgrid="true"
+     inkscape:current-layer="g3166"
+     inkscape:document-units="px"
+     inkscape:cy="544.97558"
+     inkscape:cx="487.34704"
+     inkscape:zoom="18.026544"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     borderopacity="1.0"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     id="base">
     <inkscape:grid
-       type="xygrid"
-       id="grid833" />
+       id="grid3004"
+       type="xygrid" />
   </sodipodi:namedview>
   <metadata
-     id="metadata5">
+     id="metadata3001">
     <rdf:RDF>
       <cc:Work
          rdf:about="">
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <g
-     inkscape:label="Layer 1"
+     id="layer1"
      inkscape:groupmode="layer"
-     id="layer1">
+     inkscape:label="Layer 1">
     <rect
-       style="fill:#007dcf;fill-opacity:1;stroke-width:6.00001"
-       id="rect835"
-       width="37.041668"
-       height="37.041664"
-       x="27.507454"
-       y="119.13113"
+       inkscape:export-ydpi="445.33334"
+       inkscape:export-xdpi="445.33334"
+       inkscape:export-filename="/Users/jared/clone/exploration/local-first/examples/tree-notes/icons/icon192.png"
+       ry="5"
+       y="529"
+       x="409"
+       height="36"
+       width="36"
+       id="rect2082"
+       style="fill:#2196f3;fill-opacity:1;stroke-width:1.88976" />
+    <rect
+       inkscape:export-ydpi="247.48613"
+       inkscape:export-xdpi="247.48613"
+       inkscape:export-filename="/home/jared/clone/nm/notablemind/site/logo-full.png"
        ry="0"
-       inkscape:export-xdpi="131.65715"
-       inkscape:export-ydpi="131.65715" />
+       y="595.65411"
+       x="153.49338"
+       height="167.63852"
+       width="545.48517"
+       id="rect3950"
+       style="fill:#2196f3;fill-opacity:1;stroke:none" />
+    <rect
+       inkscape:export-ydpi="723.03998"
+       inkscape:export-xdpi="723.03998"
+       inkscape:export-filename="/home/jared/clone/nm/notablemind/icon256.png"
+       y="440.35132"
+       x="44.828705"
+       height="31.865473"
+       width="31.865473"
+       id="rect3157"
+       style="fill:#cccccc;fill-opacity:1;stroke:none" />
+    <rect
+       ry="3.1885846"
+       y="327.36218"
+       x="95"
+       height="35"
+       width="35"
+       id="rect3006"
+       style="fill:#333333;fill-opacity:0.94117647000000004;stroke:none" />
+    <text
+       id="text3008"
+       y="359.36218"
+       x="98"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+       xml:space="preserve"><tspan
+         style="font-size:40px;line-height:1.25"
+         y="359.36218"
+         x="98"
+         id="tspan3010"
+         sodipodi:role="line">N</tspan></text>
+    <rect
+       style="fill:#333333;fill-opacity:0.94117647;stroke:none"
+       id="rect3012"
+       width="35"
+       height="35"
+       x="160"
+       y="327.36218"
+       ry="3.1885846" />
+    <path
+       sodipodi:nodetypes="ccccccccccc"
+       inkscape:connector-curvature="0"
+       id="path3014"
+       d="m 165.08929,357.43366 0,-25 5,0 15,15 0,-15 5,0 0,25 -3,0 -17,-17 0,17 z"
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <rect
+       style="fill:#333333;fill-opacity:0.94117647;stroke:none"
+       id="rect3016"
+       width="35"
+       height="35"
+       x="-26"
+       y="344.36218"
+       ry="3.1885846" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+       x="-23"
+       y="376.36218"
+       id="text3018"><tspan
+         style="font-size:40px;line-height:1.25"
+         sodipodi:role="line"
+         id="tspan3020"
+         x="-23"
+         y="376.36218">N</tspan></text>
+    <text
+       transform="matrix(0.95992163,-0.09887803,0,1.0417517,0,0)"
+       inkscape:transform-center-y="-15.694642"
+       inkscape:transform-center-x="-12.568575"
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none"
+       x="102.15386"
+       y="354.72473"
+       id="text3022"><tspan
+         style="font-size:38.3969px;line-height:1.25"
+         sodipodi:role="line"
+         id="tspan3024"
+         x="102.15386"
+         y="354.72473">N</tspan></text>
     <g
-       inkscape:export-ydpi="491.51999"
-       inkscape:export-xdpi="491.51999"
-       id="g849">
+       id="g3871">
       <rect
-         inkscape:export-ydpi="491.52014"
-         inkscape:export-xdpi="491.52014"
-         ry="2.6458333"
-         y="103.1875"
-         x="76.729164"
-         height="26.458332"
-         width="26.458332"
-         id="rect837"
-         style="fill:#4caf50;fill-opacity:1;stroke-width:6.00001" />
+         style="fill:#333333;fill-opacity:0.94117647;stroke:none"
+         id="rect3026"
+         width="35"
+         height="35"
+         x="38.939339"
+         y="331.74347"
+         ry="3.1885846" />
+      <path
+         sodipodi:nodetypes="ccccc"
+         inkscape:connector-curvature="0"
+         id="path3859"
+         d="m 43.775586,364.36502 c -0.949219,-0.0937 -1.621093,-1.10157 -1.753906,-2.07031 l 1.246094,-0.64063 1.800781,1.42188 z"
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+         x="43"
+         y="364.36218"
+         id="text3028"><tspan
+           style="font-size:40px;line-height:1.25"
+           sodipodi:role="line"
+           id="tspan3030"
+           x="43"
+           y="364.36218">N</tspan></text>
+      <text
+         id="text3032"
+         y="363.98334"
+         x="42.747467"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         xml:space="preserve"><tspan
+           style="font-size:40px;line-height:1.25"
+           y="363.98334"
+           x="42.747467"
+           id="tspan3034"
+           sodipodi:role="line">N</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         x="42.431801"
+         y="363.73077"
+         id="text3804"><tspan
+           style="font-size:40px;line-height:1.25"
+           sodipodi:role="line"
+           id="tspan3806"
+           x="42.431801"
+           y="363.73077">N</tspan></text>
+      <text
+         id="text3808"
+         y="363.41824"
+         x="42.16394"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         xml:space="preserve"><tspan
+           style="font-size:40px;line-height:1.25"
+           y="363.41824"
+           x="42.16394"
+           id="tspan3810"
+           sodipodi:role="line">N</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         x="41.851437"
+         y="363.06107"
+         id="text3812"><tspan
+           style="font-size:40px;line-height:1.25"
+           sodipodi:role="line"
+           id="tspan3814"
+           x="41.851437"
+           y="363.06107">N</tspan></text>
+      <text
+         id="text3816"
+         y="362.65924"
+         x="41.538933"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         xml:space="preserve"><tspan
+           style="font-size:40px;line-height:1.25"
+           y="362.65924"
+           x="41.538933"
+           id="tspan3818"
+           sodipodi:role="line">N</tspan></text>
+      <text
+         id="text3820"
+         y="362.30841"
+         x="41.214264"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+         xml:space="preserve"><tspan
+           style="font-size:40px;line-height:1.25"
+           y="362.30841"
+           x="41.214264"
+           id="tspan3822"
+           sodipodi:role="line">N</tspan></text>
+    </g>
+    <g
+       transform="translate(-3.1819805,-1.4142136)"
+       id="g3861">
       <rect
-         inkscape:export-ydpi="491.52014"
-         inkscape:export-xdpi="491.52014"
-         ry="2.6458333"
-         y="103.1875"
-         x="76.729164"
-         height="9.260417"
-         width="26.458332"
-         id="rect839"
-         style="fill:#91ff35;fill-opacity:1;stroke-width:6.00001" />
+         style="fill:#b3b3b3;fill-opacity:0.94117647000000004;stroke:none"
+         id="rect3824"
+         width="35"
+         height="35"
+         x="49.604973"
+         y="376.56845"
+         ry="0" />
+      <path
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         d="m 54.647353,409.50021 c -1.027344,-0.32812 -1.964843,-1.86719 -1.863281,-2.19531 l 1.355469,-0.51563 1.800781,1.42188 z"
+         id="path3857"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+      <g
+         id="text3826"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One">
+        <path
+           sodipodi:nodetypes="ccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3894"
+           d="m 81.937865,380.70781 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 5.08,-28.8 7.8775,0 4.96,14.72 2.1625,-14.72 7.2,0" />
+      </g>
+      <g
+         style="font-size:38.28133774px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         id="text3830"
+         transform="translate(8.131728,-6.0104076)">
+        <path
+           d="m 50,384.96875 -4.84375,27.5625 1.875,2.1875 6.28125,0 L 55.78125,400.5 59.5,412.53125 l 1.875,2.1875 6.9375,0 4.8125,-27.5625 -1.875,-2.1875 -6.101602,0.0884 -2.62408,12.58211 L 59,387.15625 l -1.875,-2.1875 z"
+           id="path3851"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccccccc" />
+      </g>
+      <g
+         id="text3842"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One">
+        <path
+           sodipodi:nodetypes="ccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3897"
+           d="m 80.057502,378.51274 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 5.08,-28.8 7.78375,0 4.55375,13.9075 2.6625,-13.9075 7.2,0" />
+      </g>
+    </g>
+    <g
+       id="text3846"
+       style="font-size:38.28133774px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+    <rect
+       ry="3.1885846"
+       y="434.82297"
+       x="119.60723"
+       height="35"
+       width="35"
+       id="rect3899"
+       style="fill:#333333;fill-opacity:0.94117647;stroke:none" />
+    <path
+       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 125.14039,468.2545 c -1.08071,-1.22727 -2.16337,-2.09641 -2.83595,-2.85339 l 1.8163,-1.07035 2.69484,1.84765 z"
+       id="path3857-7"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccc" />
+    <text
+       id="text3901"
+       y="468.23718"
+       x="124.375"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+       xml:space="preserve"><tspan
+         style="font-size:40px;line-height:1.25"
+         y="468.23718"
+         x="124.375"
+         id="tspan3903"
+         sodipodi:role="line">N</tspan></text>
+    <g
+       id="text3905"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+    <path
+       sodipodi:nodetypes="ccccccccccccc"
+       inkscape:connector-curvature="0"
+       id="path3920"
+       d="m 130.90625,440.28125 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;font-family:Fugaz One;-inkscape-font-specification:Fugaz One;stroke-width:0.1" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#800000"
+       x="118.56029"
+       y="419.05493"
+       id="text3914"><tspan
+         style="font-size:40px;line-height:1.25"
+         sodipodi:role="line"
+         id="tspan3916"
+         x="118.56029"
+         y="419.05493">N</tspan></text>
+    <rect
+       style="fill:#333333;fill-opacity:0.94117647;stroke:none"
+       id="rect3923"
+       width="35"
+       height="35"
+       x="163.375"
+       y="379.11218"
+       ry="3.1885846" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+       x="166.375"
+       y="411.11218"
+       id="text3925"><tspan
+         style="font-size:40px;line-height:1.25"
+         sodipodi:role="line"
+         id="tspan3927"
+         x="166.375"
+         y="411.11218">N</tspan></text>
+    <path
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+       d="m 172.90625,383.15625 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+       id="path3929"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccccccccccc" />
+    <path
+       sodipodi:nodetypes="ccccccccccccc"
+       inkscape:connector-curvature="0"
+       id="path3933"
+       d="m 130.53125,439.90625 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+    <path
+       sodipodi:nodetypes="ccccccccccccc"
+       inkscape:connector-curvature="0"
+       id="path3937"
+       d="m 130.15625,439.53125 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+    <path
+       sodipodi:nodetypes="ccccccccccccc"
+       inkscape:connector-curvature="0"
+       id="path3941"
+       d="m 129.78125,439.15625 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+    <path
+       sodipodi:nodetypes="ccccccccccccc"
+       inkscape:connector-curvature="0"
+       id="path3945"
+       d="m 129.40625,438.78125 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+    <path
+       sodipodi:nodetypes="ccccccccccccc"
+       inkscape:connector-curvature="0"
+       id="path3949"
+       d="m 129.03125,438.40625 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+    <g
+       transform="translate(41.18897,-65.76093)"
+       id="g4035">
       <rect
-         inkscape:export-ydpi="491.52014"
-         inkscape:export-xdpi="491.52014"
-         ry="1.0172526e-05"
-         y="108.47916"
-         x="76.729164"
-         height="3.96875"
-         width="26.458332"
-         id="rect841"
-         style="fill:#91ff35;fill-opacity:1;stroke-width:6.00001" />
+         ry="3.1885846"
+         y="439.2424"
+         x="196.85864"
+         height="35"
+         width="35"
+         id="rect3963"
+         style="fill:#333333;fill-opacity:0.94117647;stroke:none" />
+      <text
+         id="text3965"
+         y="471.2424"
+         x="199.85864"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+         xml:space="preserve"><tspan
+           style="font-size:40px;line-height:1.25"
+           y="471.2424"
+           x="199.85864"
+           id="tspan3967"
+           sodipodi:role="line">N</tspan></text>
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path3969"
+         d="m 206.3899,443.28645 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         d="m 206.2024,443.09895 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         id="path3971"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccccccccccc" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path3973"
+         d="m 206.0149,442.91145 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         d="m 205.8274,442.72395 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         id="path3975"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccccccccccc" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path3977"
+         d="m 205.6399,442.53645 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         d="m 205.4524,442.34895 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         id="path3979"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccccccccccc" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path3981"
+         d="m 205.2649,442.16145 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         d="m 205.0774,441.97395 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         id="path3983"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccccccccccc" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path3985"
+         d="m 204.8899,441.78645 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         d="m 204.7024,441.59895 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         id="path3987"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccccccccccc" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path3989"
+         d="m 204.5149,441.41145 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         d="m 204.3274,441.22395 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         id="path3991"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccccccccccc" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path3993"
+         d="m 204.1399,441.03645 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         d="m 203.9524,440.84895 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         id="path3995"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccccccccccc" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path3997"
+         d="m 203.7649,440.66145 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         d="m 203.5774,440.47395 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         id="path3999"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccccccccccc" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4001"
+         d="m 203.3899,440.28645 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+    </g>
+    <g
+       transform="translate(61.164736,-37.830213)"
+       id="g4085">
+      <rect
+         ry="3.1885846"
+         y="475.83517"
+         x="157.08389"
+         height="35"
+         width="35"
+         id="rect4007"
+         style="fill:#333333;fill-opacity:0.94117647;stroke:none" />
+      <text
+         id="text4009"
+         y="509.24939"
+         x="161.85165"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+         xml:space="preserve"><tspan
+           style="font-size:40px;line-height:1.25"
+           y="509.24939"
+           x="161.85165"
+           id="tspan4011"
+           sodipodi:role="line">N</tspan></text>
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4013"
+         d="m 168.38291,481.29344 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4015"
+         d="m 168.00791,480.91844 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4017"
+         d="m 167.63291,480.54344 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4019"
+         d="m 167.25791,480.16844 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4021"
+         d="m 166.88291,479.79344 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4023"
+         d="m 166.50791,479.41844 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4025"
+         d="m 166.13291,479.04344 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4027"
+         d="m 165.75791,478.66844 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <path
+         sodipodi:nodetypes="ccccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4029"
+         d="m 165.38291,478.29344 -4.78125,27.125 5.5625,0 2.78906,-16.15625 1.04688,-0.0546 5.19531,16.21094 5.96875,0 4.71875,-27.125 -5.5,0 -2.67187,14.79687 -1.15626,0.0156 -5.01562,-14.8125 z"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.1;font-family:Fugaz One;-inkscape-font-specification:Fugaz One" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+         x="157.85165"
+         y="505.24939"
+         id="text4031"><tspan
+           style="font-size:40px;line-height:1.25"
+           sodipodi:role="line"
+           id="tspan4033"
+           x="157.85165"
+           y="505.24939">N</tspan></text>
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+       x="121.53125"
+       y="465.39343"
+       id="text4101"><tspan
+         style="font-size:40px;line-height:1.25"
+         sodipodi:role="line"
+         id="tspan4103"
+         x="121.53125"
+         y="465.39343">N</tspan></text>
+    <rect
+       ry="3.1885846"
+       y="285.61218"
+       x="89.75"
+       height="35"
+       width="35"
+       id="rect4105"
+       style="fill:#333333;fill-opacity:0.94117647;stroke:none" />
+    <text
+       id="text4107"
+       y="318.86218"
+       x="94.25"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+       xml:space="preserve"><tspan
+         style="font-size:40px;line-height:1.25"
+         y="318.86218"
+         x="94.25"
+         id="tspan4109"
+         sodipodi:role="line">N</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none"
+       x="92.25"
+       y="316.86218"
+       id="text4111"><tspan
+         style="font-size:40px;line-height:1.25"
+         sodipodi:role="line"
+         id="tspan4113"
+         x="92.25"
+         y="316.86218">N</tspan></text>
+    <g
+       inkscape:export-ydpi="405.79999"
+       inkscape:export-xdpi="405.79999"
+       inkscape:export-filename="/home/jared/clone/nm/notablemind/org-icon.png"
+       id="g3137"
+       transform="translate(-6.5957454,62.27379)">
+      <path
+         sodipodi:nodetypes="ccccc"
+         inkscape:connector-curvature="0"
+         id="path3141"
+         d="m 54.647353,409.50021 c -1.027344,-0.32812 -1.964843,-1.86719 -1.863281,-2.19531 l 1.355469,-0.51563 1.800781,1.42188 z"
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+      <g
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         id="g3143">
+        <path
+           d="m 81.937865,380.70781 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 5.08,-28.8 7.8775,0 4.96,14.72 2.1625,-14.72 7.2,0"
+           id="path3145"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccc" />
+      </g>
+      <g
+         transform="translate(8.131728,-6.0104076)"
+         id="g3147"
+         style="font-size:38.28133774px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One">
+        <path
+           sodipodi:nodetypes="ccccccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3149"
+           d="m 50,384.96875 -4.84375,27.5625 1.875,2.1875 6.28125,0 L 55.78125,400.5 59.5,412.53125 l 1.875,2.1875 6.9375,0 4.8125,-27.5625 -1.875,-2.1875 -6.101602,0.0884 -2.62408,12.58211 L 59,387.15625 l -1.875,-2.1875 z" />
+      </g>
+      <g
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         id="g3151">
+        <path
+           d="m 80.057502,378.51274 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 4.973488,-28.23233 c 0.0688,-0.37047 0.513337,-0.54855 0.841906,-0.56314 l 7.048356,-0.005 4.55375,13.9075 2.6625,-13.9075 7.2,0"
+           id="path3153"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cccccccccccc" />
+      </g>
+    </g>
+    <g
+       transform="translate(47.980117,126.69793)"
+       id="g3161"
+       inkscape:export-filename="/home/jared/clone/nm/notablemind/org-icon.png"
+       inkscape:export-xdpi="405.79999"
+       inkscape:export-ydpi="405.79999">
+      <path
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         d="m 54.647353,409.50021 c -1.027344,-0.32812 -1.964843,-1.86719 -1.863281,-2.19531 l 1.355469,-0.51563 1.800781,1.42188 z"
+         id="path3163"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+      <g
+         id="g3165"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One">
+        <path
+           sodipodi:nodetypes="ccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3167"
+           d="m 81.937865,380.70781 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 5.08,-28.8 7.8775,0 4.96,14.72 2.1625,-14.72 7.2,0" />
+      </g>
+      <g
+         style="font-size:38.28133774px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         id="g3169"
+         transform="translate(8.131728,-6.0104076)">
+        <path
+           d="m 50,384.96875 -4.84375,27.5625 1.875,2.1875 6.28125,0 L 55.78125,400.5 59.5,412.53125 l 1.875,2.1875 6.9375,0 4.8125,-27.5625 -1.875,-2.1875 -6.101602,0.0884 -2.62408,12.58211 L 59,387.15625 l -1.875,-2.1875 z"
+           id="path3171"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccccccc" />
+      </g>
+      <g
+         id="g3173"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One">
+        <path
+           sodipodi:nodetypes="cccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3175"
+           d="m 80.057502,378.51274 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 4.973488,-28.23233 c 0.0688,-0.37047 0.513337,-0.54855 0.841906,-0.56314 l 7.048356,-0.005 4.55375,13.9075 2.6625,-13.9075 7.2,0" />
+      </g>
     </g>
     <path
-       style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:6;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 80.409287,115.99133 6.366029,6.36602 12.732058,-12.73204"
-       id="path867"
+       style="fill:#ff0000;stroke:none"
+       d="m 102.73585,534.24626 c 0,0 -0.70528,0.69246 0,1.5388 0.70528,0.84633 0.57705,0.84633 0.57705,0.84633 0.75001,-0.149 1.10108,-0.37335 2.0598,-0.0978 0,0 -0.4532,-0.55161 -0.59025,-0.74219 -0.13705,-0.19058 -0.65763,-0.81994 -0.006,-1.53235 l -2.04076,-0.0128 z"
+       id="path3179"
        inkscape:connector-curvature="0"
-       inkscape:export-xdpi="491.52014"
-       inkscape:export-ydpi="491.52014" />
+       sodipodi:nodetypes="cscczccc" />
+    <g
+       inkscape:export-ydpi="405.79999"
+       inkscape:export-xdpi="405.79999"
+       inkscape:export-filename="/home/jared/clone/nm/notablemind/org-icon.png"
+       id="g3181"
+       transform="translate(82.449083,125.87724)">
+      <path
+         sodipodi:nodetypes="ccccc"
+         inkscape:connector-curvature="0"
+         id="path3183"
+         d="m 54.647353,409.50021 c -1.027344,-0.32812 -1.964843,-1.86719 -1.863281,-2.19531 l 1.355469,-0.51563 1.800781,1.42188 z"
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+      <g
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         id="g3185">
+        <path
+           d="m 81.937865,380.70781 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 5.08,-28.8 7.8775,0 4.96,14.72 2.1625,-14.72 7.2,0"
+           id="path3187"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccc" />
+      </g>
+      <g
+         transform="translate(8.131728,-6.0104076)"
+         id="g3189"
+         style="font-size:38.28133774px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One">
+        <path
+           sodipodi:nodetypes="ccccccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3191"
+           d="m 50,384.96875 -4.84375,27.5625 1.875,2.1875 6.28125,0 L 55.78125,400.5 59.5,412.53125 l 1.875,2.1875 6.9375,0 4.8125,-27.5625 -1.875,-2.1875 -6.101602,0.0884 -2.62408,12.58211 L 59,387.15625 l -1.875,-2.1875 z" />
+      </g>
+      <g
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         id="g3193">
+        <path
+           d="m 80.057502,378.51274 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 4.973488,-28.23233 c 0.0688,-0.37047 0.513337,-0.54855 0.841906,-0.56314 l 7.048356,-0.005 4.55375,13.9075 2.6625,-13.9075 7.2,0"
+           id="path3195"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cccccccccccc" />
+      </g>
+    </g>
+    <path
+       style="fill:#ff0000;stroke:none"
+       d="m 137.09365,533.54526 c 0,0 -0.70528,0.69246 0,1.5388 0.70528,0.84633 0.57705,0.84633 0.57705,0.84633 1.07623,-0.36139 2.177,-0.26493 3.62762,-0.12341 l -0.59025,-0.99608 c 0,0 -0.304,-0.62046 0.29323,-1.26033 l -3.90781,-0.005 z"
+       id="path3197"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cscccccc" />
+    <g
+       inkscape:export-ydpi="405.79999"
+       inkscape:export-xdpi="405.79999"
+       inkscape:export-filename="/home/jared/clone/nm/notablemind/org-icon.png"
+       id="g3199"
+       transform="translate(11.049082,126.49276)">
+      <path
+         sodipodi:nodetypes="ccccc"
+         inkscape:connector-curvature="0"
+         id="path3201"
+         d="m 54.647353,409.50021 c -1.027344,-0.32812 -1.964843,-1.86719 -1.863281,-2.19531 l 1.355469,-0.51563 1.800781,1.42188 z"
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+      <g
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         id="g3203">
+        <path
+           d="m 81.937865,380.70781 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 5.08,-28.8 7.8775,0 4.96,14.72 2.1625,-14.72 7.2,0"
+           id="path3205"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccc" />
+      </g>
+      <g
+         transform="translate(8.131728,-6.0104076)"
+         id="g3207"
+         style="font-size:38.28133774px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One">
+        <path
+           sodipodi:nodetypes="ccccccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3209"
+           d="m 50,384.96875 -4.84375,27.5625 1.875,2.1875 6.28125,0 L 55.78125,400.5 59.5,412.53125 l 1.875,2.1875 6.9375,0 4.8125,-27.5625 -1.875,-2.1875 -6.101602,0.0884 -2.62408,12.58211 L 59,387.15625 l -1.875,-2.1875 z" />
+      </g>
+      <g
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         id="g3211">
+        <path
+           d="m 80.057502,378.51274 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 4.973488,-28.23233 c 0.0688,-0.37047 0.513337,-0.54855 0.841906,-0.56314 l 7.048356,-0.005 4.55375,13.9075 2.6625,-13.9075 7.2,0"
+           id="path3213"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cccccccccccc" />
+      </g>
+    </g>
+    <path
+       sodipodi:nodetypes="csccccccc"
+       inkscape:connector-curvature="0"
+       id="path3215"
+       d="m 66.061955,534.15585 c 0,0 -0.70528,0.69246 0,1.5388 0.70528,0.84633 0.57705,0.84633 0.57705,0.84633 l 0.65348,-0.57275 1.61487,0.47499 -0.7988,-0.74219 c 0,0 -0.60323,-0.89248 -0.006,-1.53235 l -2.04076,-0.0128 z"
+       style="fill:#ff0000;stroke:none" />
+    <g
+       transform="translate(116.5077,125.26172)"
+       id="g3217"
+       inkscape:export-filename="/home/jared/clone/nm/notablemind/org-icon.png"
+       inkscape:export-xdpi="405.79999"
+       inkscape:export-ydpi="405.79999">
+      <path
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         d="m 54.647353,409.50021 c -1.027344,-0.32812 -1.964843,-1.86719 -1.863281,-2.19531 l 1.355469,-0.51563 1.800781,1.42188 z"
+         id="path3219"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+      <g
+         id="g3221"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One">
+        <path
+           sodipodi:nodetypes="ccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3223"
+           d="m 81.937865,380.70781 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 5.08,-28.8 7.8775,0 4.96,14.72 2.1625,-14.72 7.2,0" />
+      </g>
+      <g
+         style="font-size:38.28133774px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         id="g3225"
+         transform="translate(8.131728,-6.0104076)">
+        <path
+           d="m 50,384.96875 -4.84375,27.5625 1.875,2.1875 6.28125,0 L 55.78125,400.5 59.5,412.53125 l 1.875,2.1875 6.9375,0 4.8125,-27.5625 -1.875,-2.1875 -6.101602,0.0884 -2.62408,12.58211 L 59,387.15625 l -1.875,-2.1875 z"
+           id="path3227"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccccccc" />
+      </g>
+      <g
+         id="g3229"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One">
+        <path
+           sodipodi:nodetypes="cccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3231"
+           d="m 80.057502,378.51274 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 4.973488,-28.23233 c 0.0688,-0.37047 0.513337,-0.54855 0.841906,-0.56314 l 7.048356,-0.005 4.55375,13.9075 2.6625,-13.9075 7.2,0" />
+      </g>
+    </g>
+    <path
+       sodipodi:nodetypes="csccccccc"
+       inkscape:connector-curvature="0"
+       id="path3233"
+       d="m 171.15227,532.92974 c 0,0 -0.70528,0.69246 0,1.5388 0.70528,0.84633 0.57705,0.84633 0.57705,0.84633 l 1.05164,-0.88104 2.57598,0.75763 -0.59025,-0.99608 c 0,0 -0.304,-0.62046 0.29323,-1.26033 l -3.90781,-0.005 z"
+       style="fill:#ff0000;stroke:none" />
+    <rect
+       inkscape:export-ydpi="900"
+       inkscape:export-xdpi="900"
+       inkscape:export-filename="/Users/jared/clone/apps/nm/native/ios/native/Images.xcassets/AppIcon.appiconset/icon-60@3x.png"
+       y="545.36218"
+       x="357"
+       height="18"
+       width="18"
+       id="rect3157-4"
+       style="fill:#ffffff;fill-opacity:1;stroke:none" />
+    <g
+       inkscape:export-ydpi="89.841492"
+       inkscape:export-xdpi="89.841492"
+       inkscape:export-filename="/home/jared/clone/nm/notablemind/www/favicon.png"
+       id="g3137-9"
+       transform="matrix(0.51437969,0,0,0.48394052,331.67352,363.56946)">
+      <path
+         sodipodi:nodetypes="ccccc"
+         inkscape:connector-curvature="0"
+         id="path3141-0"
+         d="m 54.647353,409.50021 c -1.027344,-0.44161 -1.964843,-2.51304 -1.863281,-2.95465 l 1.355469,-0.69398 1.800781,1.9137 z"
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+      <g
+         transform="matrix(1,0,0,1.0089695,0,-3.6730827)"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         id="g3143-8">
+        <path
+           d="m 81.937865,382.02091 -5.04,27.4869 -7.24,0 -5.04,-15.04144 -2.72,15.04144 -7.24,0 5.08,-27.4869 7.8775,0 4.96,14.04886 2.1625,-14.04886 7.2,0"
+           id="path3145-9"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccc" />
+      </g>
+      <g
+         transform="translate(8.131728,-6.0104076)"
+         id="g3147-6"
+         style="font-size:38.28133774px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One">
+        <path
+           sodipodi:nodetypes="ccccccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3149-7"
+           d="m 50,384.96875 -4.24544,27.6155 1.27669,2.1345 6.28125,0 2.46875,-14.21875 4.466638,12.03125 0.977534,2.1875 7.087078,0 4.662922,-26.23762 -1.725422,-3.51238 -6.101602,0.0884 -2.62408,12.58211 -3.324881,-9.26412 -2.074437,-3.40639 z" />
+        <path
+           style="fill:#cccccc"
+           d="m 52.577522,392.04617 -3.300348,17.52447 2.274459,2.05309 1.760867,3.09502 2.46875,-14.21875 10.831136,11.15601 1.700114,3.06274 4.662922,-26.23762 -1.725422,-3.51238 -4.941717,6.20694 -3.741006,10.71002 -4.312932,-6.06787 -2.28923,-2.40185 z"
+           id="path3516"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cccccccccccccc" />
+      </g>
+      <g
+         transform="matrix(1,0,0,1.0089528,0,-3.3887555)"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         id="g3151-9">
+        <path
+           d="m 80.057502,378.51273 -5.04,27.88414 -7.24,0 -5.04,-15.25882 -2.72,15.25882 -7.24,0 4.973488,-27.33453 c 0.0688,-0.35869 0.513337,-0.5311 0.841906,-0.54523 l 7.048356,-0.005 4.55375,13.46524 2.6625,-13.46524 7.2,0"
+           id="path3153-9"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cccccccccccc" />
+      </g>
+    </g>
+    <g
+       transform="matrix(1.0973428,0,0,1.0324066,353.08607,139.58363)"
+       id="g3277"
+       inkscape:export-filename="/home/jared/clone/nm/notablemind/www/favicon.png"
+       inkscape:export-xdpi="89.841492"
+       inkscape:export-ydpi="89.841492">
+      <path
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         d="m 54.647353,409.50021 c -1.027344,-0.32812 -1.964843,-1.86719 -1.863281,-2.19531 l 1.355469,-0.51563 1.800781,1.42188 z"
+         id="path3279"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+      <g
+         id="g3281"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         transform="matrix(1,0,0,1.0089695,0,-3.6730827)">
+        <path
+           sodipodi:nodetypes="ccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3283"
+           d="m 81.937865,380.70781 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 5.08,-28.8 7.8775,0 4.96,14.72 2.1625,-14.72 7.2,0" />
+      </g>
+      <g
+         style="font-size:38.28133774px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         id="g3285"
+         transform="translate(8.131728,-6.0104076)">
+        <path
+           d="m 50,384.96875 -4.84375,27.5625 1.875,2.1875 6.28125,0 L 55.78125,400.5 59.5,412.53125 l 1.875,2.1875 6.9375,0 4.8125,-27.5625 -1.875,-2.1875 -6.101602,0.0884 -2.62408,12.58211 L 59,387.15625 l -1.875,-2.1875 z"
+           id="path3287"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccccccc" />
+      </g>
+      <g
+         id="g3289"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         transform="matrix(1,0,0,1.0089528,0,-3.3887555)">
+        <path
+           sodipodi:nodetypes="cccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3291"
+           d="m 80.057502,378.51274 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 4.973488,-28.23233 c 0.0688,-0.37047 0.513337,-0.54855 0.841906,-0.56314 l 7.048356,-0.005 4.55375,13.9075 2.6625,-13.9075 7.2,0" />
+      </g>
+    </g>
+    <g
+       transform="matrix(1.0973428,0,0,1.0324066,426.49595,132.32969)"
+       id="g3166"
+       inkscape:export-filename="/Users/jared/clone/apps/nm/native/ios/icon-20@2x.png"
+       inkscape:export-xdpi="112.49989"
+       inkscape:export-ydpi="112.49989">
+      <path
+         style="fill:#2196f3;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+         d="m 54.647353,409.50021 c -1.027344,-0.32812 -1.964843,-1.86719 -1.863281,-2.19531 l 1.355469,-0.51563 1.800781,1.42188 z"
+         id="path3168"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+      <g
+         id="g3170"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#2196f3;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         transform="matrix(1,0,0,1.0089695,0,-3.6730827)">
+        <path
+           style="fill:#2196f3;fill-opacity:1"
+           sodipodi:nodetypes="ccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3172"
+           d="m 81.937865,380.70781 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 5.08,-28.8 7.8775,0 4.96,14.72 2.1625,-14.72 7.2,0" />
+      </g>
+      <g
+         style="font-size:38.28133774px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+         id="g3174"
+         transform="translate(8.131728,-6.0104076)">
+        <path
+           d="m 50,384.96875 -4.84375,27.5625 1.875,2.1875 6.28125,0 L 55.78125,400.5 59.5,412.53125 l 1.875,2.1875 6.9375,0 4.8125,-27.5625 -1.875,-2.1875 -6.101602,0.0884 -2.62408,12.58211 L 59,387.15625 l -1.875,-2.1875 z"
+           id="path3176"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccccccc" />
+      </g>
+      <g
+         id="g3178"
+         style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#2196f3;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One;opacity:1"
+         transform="matrix(1,0,0,1.0089528,0,-3.3887555)">
+        <path
+           style="fill:#2196f3;fill-opacity:1"
+           sodipodi:nodetypes="cccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3180"
+           d="m 80.057502,378.51274 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 4.973488,-28.23233 c 0.0688,-0.37047 0.513337,-0.54855 0.841906,-0.56314 l 7.048356,-0.005 4.55375,13.9075 2.6625,-13.9075 7.2,0" />
+      </g>
+      <rect
+         inkscape:export-ydpi="463.05884"
+         inkscape:export-xdpi="463.05884"
+         y="377.43881"
+         x="52.402992"
+         height="32.932762"
+         width="30.983936"
+         id="rect2182"
+         style="opacity:1;fill:#000000;fill-opacity:0.15542525;stroke-width:1.77546" />
+    </g>
+    <g
+       inkscape:export-ydpi="247.48613"
+       inkscape:export-xdpi="247.48613"
+       inkscape:export-filename="/home/jared/clone/nm/notablemind/site/logo-full.png"
+       transform="translate(-1.7409668,29.304087)"
+       id="g3187">
+      <g
+         id="g3175"
+         transform="translate(-0.58714401,0)">
+        <g
+           inkscape:export-ydpi="89.841492"
+           inkscape:export-xdpi="89.841492"
+           inkscape:export-filename="/home/jared/clone/nm/notablemind/www/favicon.png"
+           id="g3150"
+           transform="matrix(1.0973428,0,0,1.0324066,271.91448,222.78632)">
+          <path
+             sodipodi:nodetypes="ccccc"
+             inkscape:connector-curvature="0"
+             id="path3152"
+             d="m 54.647353,409.50021 c -1.027344,-0.32812 -1.964843,-1.86719 -1.863281,-2.19531 l 1.355469,-0.51563 1.800781,1.42188 z"
+             style="fill:#00172c;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+          <g
+             transform="matrix(1,0,0,1.0089695,0,-3.6730827)"
+             style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#00172c;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+             id="g3154">
+            <path
+               style="fill:#00172c;fill-opacity:1"
+               d="m 81.937865,380.70781 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 5.08,-28.8 7.8775,0 4.96,14.72 2.1625,-14.72 7.2,0"
+               id="path3156"
+               inkscape:connector-curvature="0"
+               sodipodi:nodetypes="ccccccccccc" />
+          </g>
+          <g
+             transform="translate(8.131728,-6.0104076)"
+             id="g3158"
+             style="font-size:38.28133774px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One">
+            <path
+               sodipodi:nodetypes="ccccccccccccccc"
+               inkscape:connector-curvature="0"
+               id="path3160"
+               d="m 50,384.96875 -4.84375,27.5625 1.875,2.1875 6.28125,0 L 55.78125,400.5 59.5,412.53125 l 1.875,2.1875 6.9375,0 4.8125,-27.5625 -1.875,-2.1875 -6.101602,0.0884 -2.62408,12.58211 L 59,387.15625 l -1.875,-2.1875 z" />
+          </g>
+          <g
+             transform="matrix(1,0,0,1.0089528,0,-3.3887555)"
+             style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#00172c;fill-opacity:1;stroke:none;font-family:Fugaz One;-inkscape-font-specification:Fugaz One"
+             id="g3162">
+            <path
+               style="fill:#00172c;fill-opacity:1"
+               d="m 80.057502,378.51274 -5.04,28.8 -7.24,0 -5.04,-15.76 -2.72,15.76 -7.24,0 4.973488,-28.23233 c 0.0688,-0.37047 0.513337,-0.54855 0.841906,-0.56314 l 7.048356,-0.005 4.55375,13.9075 2.6625,-13.9075 7.2,0"
+               id="path3164"
+               inkscape:connector-curvature="0"
+               sodipodi:nodetypes="cccccccccccc" />
+          </g>
+        </g>
+        <text
+           id="text3952"
+           y="643.65826"
+           x="359.56552"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none"
+           xml:space="preserve"><tspan
+             style="font-size:30px;line-height:1.25;fill:#ffffff;fill-opacity:1"
+             y="643.65826"
+             x="359.56552"
+             id="tspan3954"
+             sodipodi:role="line">otablemind</tspan></text>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none"
+         x="343.8696"
+         y="665.87225"
+         id="text3169"><tspan
+           sodipodi:role="line"
+           id="tspan3171"
+           x="343.8696"
+           y="665.87225"
+           style="font-size:12px;line-height:1.25;fill:#ffffff">All your mind. All your notes.</tspan></text>
+    </g>
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:none"
+       id="rect3520"
+       width="18"
+       height="18"
+       x="322"
+       y="545.11218"
+       inkscape:export-filename="/Users/jared/clone/apps/nm/native/ios/native/Images.xcassets/AppIcon.appiconset/icon-60@3x.png"
+       inkscape:export-xdpi="900"
+       inkscape:export-ydpi="900" />
+    <g
+       transform="matrix(0.51437969,0,0,0.48394052,296.67352,363.31946)"
+       id="g3522"
+       inkscape:export-filename="/home/jared/clone/nm/notablemind/www/favicon.png"
+       inkscape:export-xdpi="89.841492"
+       inkscape:export-ydpi="89.841492">
+      <path
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 54.647353,409.50021 c -1.027344,-0.44161 -1.964843,-2.51304 -1.863281,-2.95465 l 1.355469,-0.69398 1.800781,1.9137 z"
+         id="path3524"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+      <g
+         id="g3526"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:40px;line-height:125%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+         transform="matrix(1,0,0,1.0089695,0,-3.6730827)">
+        <path
+           sodipodi:nodetypes="ccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3528"
+           d="m 81.937865,382.02091 -5.04,27.4869 -7.24,0 -5.04,-15.04144 -2.72,15.04144 -7.24,0 5.08,-27.4869 7.8775,0 4.96,14.04886 2.1625,-14.04886 7.2,0" />
+      </g>
+      <g
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.28133774px;line-height:125%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none"
+         id="g3530"
+         transform="translate(8.131728,-6.0104076)">
+        <path
+           d="m 50,384.96875 -4.24544,27.6155 1.27669,2.1345 6.28125,0 2.46875,-14.21875 4.466638,12.03125 0.977534,2.1875 7.087078,0 4.662922,-26.23762 -1.725422,-3.51238 -6.101602,0.0884 -2.62408,12.58211 -3.324881,-9.26412 -2.074437,-3.40639 z"
+           id="path3532"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccccccc" />
+      </g>
+      <g
+         id="g3536"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:40px;line-height:125%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+         transform="matrix(1,0,0,1.0089528,0,-3.3887555)">
+        <path
+           sodipodi:nodetypes="cccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3538"
+           d="m 80.057502,378.51273 -5.04,27.88414 -7.24,0 -5.04,-15.25882 -2.72,15.25882 -7.24,0 4.973488,-27.33453 c 0.0688,-0.35869 0.513337,-0.5311 0.841906,-0.54523 l 7.048356,-0.005 4.55375,13.46524 2.6625,-13.46524 7.2,0" />
+      </g>
+    </g>
+    <rect
+       style="fill:#2196f3;fill-opacity:1;stroke-width:1.88976"
+       id="rect2084"
+       width="36"
+       height="36"
+       x="409"
+       y="478"
+       ry="0"
+       inkscape:export-filename="/Users/jared/clone/exploration/local-first/examples/tree-notes/icons/icon512.png"
+       inkscape:export-xdpi="512"
+       inkscape:export-ydpi="512" />
+    <g
+       inkscape:export-ydpi="89.841492"
+       inkscape:export-xdpi="89.841492"
+       inkscape:export-filename="/home/jared/clone/nm/notablemind/www/favicon.png"
+       id="g2100"
+       transform="matrix(1.0973428,0,0,1.0324066,353.08608,89.583628)">
+      <path
+         sodipodi:nodetypes="ccccc"
+         inkscape:connector-curvature="0"
+         id="path2086"
+         d="m 54.647353,409.50021 c -1.027344,-0.32812 -1.964843,-1.86719 -1.863281,-2.19531 l 1.355469,-0.51563 1.800781,1.42188 z"
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+      <g
+         transform="matrix(1,0,0,1.0089695,0,-3.6730827)"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:40px;line-height:125%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+         id="g2090">
+        <path
+           d="m 81.937865,380.70781 -5.04,28.8 h -7.24 l -5.04,-15.76 -2.72,15.76 h -7.24 l 5.08,-28.8 h 7.8775 l 4.96,14.72 2.1625,-14.72 h 7.2"
+           id="path2088"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccc" />
+      </g>
+      <g
+         transform="translate(8.131728,-6.0104076)"
+         id="g2094"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.2813px;line-height:125%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none">
+        <path
+           sodipodi:nodetypes="ccccccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path2092"
+           d="m 50,384.96875 -4.84375,27.5625 1.875,2.1875 H 53.3125 L 55.78125,400.5 59.5,412.53125 l 1.875,2.1875 h 6.9375 l 4.8125,-27.5625 -1.875,-2.1875 -6.101602,0.0884 -2.62408,12.58211 L 59,387.15625 l -1.875,-2.1875 z" />
+      </g>
+      <g
+         transform="matrix(1,0,0,1.0089528,0,-3.3887555)"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:40px;line-height:125%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+         id="g2098">
+        <path
+           d="m 80.057502,378.51274 -5.04,28.8 h -7.24 l -5.04,-15.76 -2.72,15.76 h -7.24 l 4.973488,-28.23233 c 0.0688,-0.37047 0.513337,-0.54855 0.841906,-0.56314 l 7.048356,-0.005 4.55375,13.9075 2.6625,-13.9075 h 7.2"
+           id="path2096"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cccccccccccc" />
+      </g>
+    </g>
+    <rect
+       inkscape:export-ydpi="1007.2615"
+       inkscape:export-xdpi="1007.2615"
+       inkscape:export-filename="/Users/jared/clone/exploration/local-first/examples/tree-notes/icons/maskable_icon.png"
+       ry="0"
+       y="460"
+       x="325"
+       height="65"
+       width="65"
+       id="rect2104"
+       style="fill:#2196f3;fill-opacity:1;stroke-width:1.88976" />
+    <g
+       transform="matrix(1.0973428,0,0,1.0324066,283.08608,84.583628)"
+       id="g2120"
+       inkscape:export-filename="/home/jared/clone/nm/notablemind/www/favicon.png"
+       inkscape:export-xdpi="89.841492"
+       inkscape:export-ydpi="89.841492">
+      <path
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 54.647353,409.50021 c -1.027344,-0.32812 -1.964843,-1.86719 -1.863281,-2.19531 l 1.355469,-0.51563 1.800781,1.42188 z"
+         id="path2106"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+      <g
+         id="g2110"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:40px;line-height:125%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+         transform="matrix(1,0,0,1.0089695,0,-3.6730827)">
+        <path
+           sodipodi:nodetypes="ccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path2108"
+           d="m 81.937865,380.70781 -5.04,28.8 h -7.24 l -5.04,-15.76 -2.72,15.76 h -7.24 l 5.08,-28.8 h 7.8775 l 4.96,14.72 2.1625,-14.72 h 7.2" />
+      </g>
+      <g
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.2813px;line-height:125%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none"
+         id="g2114"
+         transform="translate(8.131728,-6.0104076)">
+        <path
+           d="m 50,384.96875 -4.84375,27.5625 1.875,2.1875 H 53.3125 L 55.78125,400.5 59.5,412.53125 l 1.875,2.1875 h 6.9375 l 4.8125,-27.5625 -1.875,-2.1875 -6.101602,0.0884 -2.62408,12.58211 L 59,387.15625 l -1.875,-2.1875 z"
+           id="path2112"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccccccc" />
+      </g>
+      <g
+         id="g2118"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:40px;line-height:125%;font-family:'Fugaz One';-inkscape-font-specification:'Fugaz One';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+         transform="matrix(1,0,0,1.0089528,0,-3.3887555)">
+        <path
+           sodipodi:nodetypes="cccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path2116"
+           d="m 80.057502,378.51274 -5.04,28.8 h -7.24 l -5.04,-15.76 -2.72,15.76 h -7.24 l 4.973488,-28.23233 c 0.0688,-0.37047 0.513337,-0.54855 0.841906,-0.56314 l 7.048356,-0.005 4.55375,13.9075 2.6625,-13.9075 h 7.2" />
+      </g>
+    </g>
   </g>
 </svg>
