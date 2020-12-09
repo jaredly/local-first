@@ -2,18 +2,7 @@
 import fixtures from './fixtures';
 import deepEqual from 'fast-deep-equal';
 
-import {
-    apply,
-    insert,
-    del,
-    format,
-    init,
-    walk,
-    fmtIdx,
-    toKey,
-    getFormatValues,
-    merge,
-} from './';
+import { apply, insert, del, format, init, walk, fmtIdx, toKey, getFormatValues, merge } from './';
 import { checkConsistency } from './check';
 import { quillDeltasToDeltas, stateToQuillContents } from './quill-deltas';
 
@@ -36,7 +25,12 @@ const walkWithFmt = (state, fn) => {
         } else if (content.type === 'close') {
             const f = format[content.key];
             if (!f) {
-                console.log('nope at the close', content);
+                console.log(
+                    'Found a "close" marker, but no open marker.',
+                    content.key,
+                    format,
+                    content,
+                );
             }
             const idx = f.findIndex(item => item.stamp === content.stamp);
             if (idx !== -1) {
@@ -123,15 +117,7 @@ const actionToDeltas = (
         return [del(state, action.at, action.count)];
     } else if (action.type === 'fmt') {
         return [
-            format(
-                state,
-                site,
-                action.at,
-                action.count,
-                action.key,
-                action.value,
-                action.stamp,
-            ),
+            format(state, site, action.at, action.count, action.key, action.value, action.stamp),
         ];
     }
 };
@@ -140,11 +126,8 @@ const runQuillTest = (deltas, result) => {
     let state = init();
     let i = 0;
     deltas.forEach(quillDelta => {
-        const { state: nw, deltas } = quillDeltasToDeltas(
-            state,
-            'a',
-            quillDelta.ops,
-            () => (i++).toString(36).padStart(5, '0'),
+        const { state: nw, deltas } = quillDeltasToDeltas(state, 'a', quillDelta.ops, () =>
+            (i++).toString(36).padStart(5, '0'),
         );
         state = nw;
         // state = apply(state, deltas);
@@ -186,11 +169,7 @@ const runActionsTest = actions => {
                     };
                 }
                 action.parallel[site].forEach(subAction => {
-                    const deltas = actionToDeltas(
-                        states[site].state,
-                        site,
-                        subAction,
-                    );
+                    const deltas = actionToDeltas(states[site].state, site, subAction);
                     deltas.forEach(delta => {
                         states[site].state = apply(states[site].state, delta);
                         states[site].deltas.push(delta);
@@ -211,10 +190,7 @@ const runActionsTest = actions => {
                 // const qd = deltaToQuillDeltas(state, delta)
                 state = apply(state, delta);
                 const again = apply(state, delta);
-                expect(again).toEqual(
-                    state,
-                    'idempotence test ' + JSON.stringify(delta),
-                );
+                expect(again).toEqual(state, 'idempotence test ' + JSON.stringify(delta));
                 // const back = quillDeltasToDeltas(state, qd, genStamp)
             });
         }

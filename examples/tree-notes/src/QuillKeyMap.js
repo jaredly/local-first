@@ -29,7 +29,8 @@ const atBottom = (quill) => {
 };
 
 const map = (props: *, registry: *): * => ({
-    theme: false,
+    // theme: false,
+    theme: 'bubble',
     // registry: registry,
     placeholder: ' ',
     modules: {

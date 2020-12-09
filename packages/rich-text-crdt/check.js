@@ -41,7 +41,12 @@ export const checkFormats = (state: CRDT) => {
             const content = node.content;
             const f = format[content.key];
             if (!f) {
-                console.log('nope at the close', content);
+                console.log(
+                    'Found a "close" marker, but no open marker.',
+                    content.key,
+                    format,
+                    content,
+                );
                 return;
             }
             const idx = f.findIndex(

@@ -3,17 +3,7 @@
 import deepEqual from 'fast-deep-equal';
 import type { CRDT, Delta, Node, Content } from './types';
 
-import {
-    apply,
-    insert,
-    del,
-    format,
-    init,
-    walk,
-    fmtIdx,
-    toKey,
-    getFormatValues,
-} from './';
+import { apply, insert, del, format, init, walk, fmtIdx, toKey, getFormatValues } from './';
 
 type Format = { [key: string]: any };
 
@@ -37,7 +27,12 @@ export const walkWithFmt = (state: CRDT, fn: (string, Format) => void) => {
             const content = node.content;
             const f = format[content.key];
             if (!f) {
-                console.log('nope at the close', content);
+                console.log(
+                    'Found a "close" marker, but no open marker.',
+                    content.key,
+                    format,
+                    content,
+                );
                 return;
             }
             const idx = f.findIndex(item => item.stamp === content.stamp);
@@ -56,11 +51,7 @@ export const walkWithFmt = (state: CRDT, fn: (string, Format) => void) => {
 export const testSerialize = (state: CRDT, compact: boolean = false) => {
     const res = [];
     walkWithFmt(state, (text, format) => {
-        if (
-            compact &&
-            res.length &&
-            deepEqual(res[res.length - 1].fmt, format)
-        ) {
+        if (compact && res.length && deepEqual(res[res.length - 1].fmt, format)) {
             res[res.length - 1].text += text;
         } else {
             res.push({ text, fmt: { ...format } });
