@@ -170,3 +170,16 @@ export const createInMemoryDeltaClient = (
         createWebSocketNetwork(url),
     );
 };
+
+export const createInMemoryEphemeralClient = (schemas: {
+    [key: string]: Schema,
+}): Client<SyncStatus> => {
+    return createDeltaClient(
+        'in-memory',
+        clientCrdtImpl,
+        schemas,
+        new PersistentClock(inMemoryClockPersist()),
+        makeDeltaInMemoryPersistence(Object.keys(schemas)),
+        nullNetwork,
+    );
+};

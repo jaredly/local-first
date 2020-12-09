@@ -10,6 +10,8 @@ import * as navigation from './navigation';
 import LocalClient from './LocalClient';
 import { type DragTarget } from './App';
 import { length } from '../../../packages/rich-text-crdt/utils';
+import * as rich from '../../../packages/rich-text-crdt/';
+import { blankItem } from './types';
 
 const arrayStartsWith = (needle, haystack) => {
     if (haystack.length < needle.length) {
@@ -22,6 +24,166 @@ const arrayStartsWith = (needle, haystack) => {
     }
     return true;
 };
+
+const itemActions = ({ client, col, path, id, local }) => ({
+    onUp() {
+        const up = navigation.goUp(col, path, id);
+        if (up != null) {
+            local.setFocus(up);
+            return true;
+        }
+    },
+    onIndent() {
+        console.log('indent');
+        return true;
+    },
+    onDedent() {
+        return true;
+    },
+    onBackspace(contents: string) {
+        if (contents == null) {
+        }
+    },
+    onDown() {
+        const down = navigation.goDown(col, path, id);
+        if (down) {
+            local.setFocus(down);
+            return true;
+        }
+    },
+    onLeft() {
+        const up = navigation.goUp(col, path, id);
+        if (up != null) {
+            local.setFocus(up);
+            return true;
+        }
+    },
+    onRight() {
+        const down = navigation.goDown(col, path, id);
+        if (down) {
+            local.setFocus(down);
+            return true;
+        }
+    },
+    onEnter() {
+        console.log('enter');
+        const current = col.getCached(id);
+        if (!current) return;
+        if (current.children.length || !path.length) {
+            const nid = navigation.createChild(client, col, path, id);
+            local.setFocus(nid);
+        } else {
+            const nid = navigation.createSibling(client, col, path, id);
+            if (nid != null) {
+                local.setFocus(nid);
+            }
+        }
+    },
+    onCreateChild() {
+        navigation.createChild(client, col, path, id);
+    },
+    onCreateAunt() {
+        navigation.createAunt(client, col, path, id);
+    },
+});
+
+const dragHandler = ({ node, childPath, bodyRef, col, id, local }) => (currentPath) => {
+    if (arrayStartsWith(childPath, currentPath)) {
+        return [];
+    }
+    const body = bodyRef.current;
+    if (!body) {
+        return [];
+    }
+    const bodyBox = body.getBoundingClientRect();
+    const box = node.getBoundingClientRect();
+    const current = col.getCached(id);
+    if (!current) {
+        return [];
+    }
+    const parent = node.offsetParent;
+    if (!parent) {
+        return [];
+    }
+    const pTop = parent.getBoundingClientRect().top;
+    if (local.isExpanded(id) && current.children.length) {
+        return [
+            {
+                parent,
+                top: bodyBox.top,
+                height: bodyBox.height / 2,
+                left: bodyBox.left,
+                width: bodyBox.width,
+                dest: { type: 'before', path: childPath },
+            },
+            {
+                parent,
+                top: bodyBox.top + bodyBox.height / 2,
+                height: bodyBox.height,
+                left: bodyBox.left,
+                width: bodyBox.width,
+                dest: { type: 'child', path: childPath },
+            },
+            {
+                parent,
+                top: box.bottom - 10,
+                height: box.height,
+                left: bodyBox.left,
+                width: bodyBox.width,
+                dest: { type: 'after', path: childPath },
+            },
+            // above (top half)
+            // firstChild (bottom half)
+            // below (line at end of children)
+        ];
+    } else {
+        return [
+            // above
+            {
+                parent,
+                top: bodyBox.top,
+                height: bodyBox.height / 2,
+                left: bodyBox.left,
+                width: bodyBox.width,
+                dest: { type: 'before', path: childPath },
+            },
+            // below
+            {
+                parent,
+                top: bodyBox.top + bodyBox.height / 2,
+                height: bodyBox.height / 2,
+                left: bodyBox.left,
+                width: bodyBox.width,
+                dest: { type: 'after', path: childPath },
+            },
+        ];
+    }
+    // return [];
+};
+
+// export const RootItem = ({
+//     path,
+//     id,
+//     client,
+//     local,
+//     registerDragTargets,
+//     onDragStart,
+// }: {
+//     path: Array<string>,
+//     id: string,
+//     client: Client<*>,
+//     local: LocalClient,
+//     onDragStart: (MouseEvent, Array<string>) => void,
+//     registerDragTargets: (string, ?(Array<string>) => Array<DragTarget>) => void,
+// }) => {
+//     return 'Hi';
+// };
+
+const blankBody = () => {
+    const crdt = rich.init();
+    return rich.apply(crdt, rich.insert(crdt, ':root:', 0, '\n'));
+};
+const defaultEmptyBody = blankBody();
 
 const Item = ({
     path,
@@ -48,86 +210,24 @@ const Item = ({
     if (item === false) {
         return null; // loading
     }
-    if (item == null) {
+    if (item == null && id !== 'root') {
         return 'Item does not exist';
     }
     return (
         <div
             ref={(node) => {
                 if (node) {
-                    registerDragTargets(id, (currentPath) => {
-                        if (arrayStartsWith(childPath, currentPath)) {
-                            return [];
-                        }
-                        const body = bodyRef.current;
-                        if (!body) {
-                            return [];
-                        }
-                        const bodyBox = body.getBoundingClientRect();
-                        const box = node.getBoundingClientRect();
-                        const current = col.getCached(id);
-                        if (!current) {
-                            return [];
-                        }
-                        const parent = node.offsetParent;
-                        if (!parent) {
-                            return [];
-                        }
-                        const pTop = parent.getBoundingClientRect().top;
-                        if (local.isExpanded(id) && current.children.length) {
-                            return [
-                                {
-                                    parent,
-                                    top: bodyBox.top,
-                                    height: bodyBox.height / 2,
-                                    left: bodyBox.left,
-                                    width: bodyBox.width,
-                                    dest: { type: 'before', path: childPath },
-                                },
-                                {
-                                    parent,
-                                    top: bodyBox.top + bodyBox.height / 2,
-                                    height: bodyBox.height,
-                                    left: bodyBox.left,
-                                    width: bodyBox.width,
-                                    dest: { type: 'child', path: childPath },
-                                },
-                                {
-                                    parent,
-                                    top: box.bottom - 10,
-                                    height: box.height,
-                                    left: bodyBox.left,
-                                    width: bodyBox.width,
-                                    dest: { type: 'after', path: childPath },
-                                },
-                                // above (top half)
-                                // firstChild (bottom half)
-                                // below (line at end of children)
-                            ];
-                        } else {
-                            return [
-                                // above
-                                {
-                                    parent,
-                                    top: bodyBox.top,
-                                    height: bodyBox.height / 2,
-                                    left: bodyBox.left,
-                                    width: bodyBox.width,
-                                    dest: { type: 'before', path: childPath },
-                                },
-                                // below
-                                {
-                                    parent,
-                                    top: bodyBox.top + bodyBox.height / 2,
-                                    height: bodyBox.height / 2,
-                                    left: bodyBox.left,
-                                    width: bodyBox.width,
-                                    dest: { type: 'after', path: childPath },
-                                },
-                            ];
-                        }
-                        // return [];
-                    });
+                    registerDragTargets(
+                        id,
+                        dragHandler({
+                            node,
+                            childPath,
+                            bodyRef,
+                            col,
+                            id,
+                            local,
+                        }),
+                    );
                 } else {
                     registerDragTargets(id, null);
                 }
@@ -167,73 +267,34 @@ const Item = ({
                     css={{
                         flex: 1,
                         border: '1px dashed transparent',
-                        ...(length(item.body) <= 1 ? { borderBottomColor: 'currentColor' } : null),
+                        ...(!item || length(item.body) <= 1
+                            ? { borderBottomColor: 'currentColor' }
+                            : null),
                     }}
                     innerRef={(node) => local.register(id, node)}
-                    value={item.body}
-                    actions={{
-                        onUp() {
-                            const up = navigation.goUp(col, path, id);
-                            if (up != null) {
-                                local.setFocus(up);
-                                return true;
-                            }
-                        },
-                        onIndent() {
-                            console.log('indent');
-                            return true;
-                        },
-                        onDedent() {
-                            return true;
-                        },
-                        onBackspace(contents: string) {
-                            if (contents == null) {
-                            }
-                        },
-                        onDown() {
-                            const down = navigation.goDown(col, path, id);
-                            if (down) {
-                                local.setFocus(down);
-                                return true;
-                            }
-                        },
-                        onLeft() {
-                            const up = navigation.goUp(col, path, id);
-                            if (up != null) {
-                                local.setFocus(up);
-                                return true;
-                            }
-                        },
-                        onRight() {
-                            const down = navigation.goDown(col, path, id);
-                            if (down) {
-                                local.setFocus(down);
-                                return true;
-                            }
-                        },
-                        onEnter() {
-                            console.log('enter');
-                            const current = col.getCached(id);
-                            if (!current) return;
-                            if (current.children.length || !path.length) {
-                                const nid = navigation.createChild(client, col, path, id);
-                                local.setFocus(nid);
-                            } else {
-                                const nid = navigation.createSibling(client, col, path, id);
-                                if (nid != null) {
-                                    local.setFocus(nid);
-                                }
-                            }
-                        },
-                        onCreateChild() {
-                            navigation.createChild(client, col, path, id);
-                        },
-                        onCreateAunt() {
-                            navigation.createAunt(client, col, path, id);
-                        },
-                    }}
+                    value={item ? item.body : defaultEmptyBody}
+                    actions={itemActions({ client, col, path, id, local })}
                     getStamp={client.getStamp}
-                    onChange={(body) => col.applyRichTextDelta(id, ['body'], body)}
+                    onChange={(delta) => {
+                        if (!item) {
+                            if (id !== 'root') {
+                                throw new Error('Not sure how we got here');
+                            }
+                            const body = rich.apply(defaultEmptyBody, delta);
+                            const item = {
+                                ...blankItem(),
+                                body,
+                                id,
+                            };
+                            col.save(item.id, item);
+                            // col.insertId(id, ['children'], 0, cid);
+                            // return item.id;
+                            // console.log(newBody);
+                        } else {
+                            console.log('Ok', delta);
+                            col.applyRichTextDelta(id, ['body'], delta);
+                        }
+                    }}
                     siteId={client.sessionId}
                 />
             </div>
@@ -244,17 +305,19 @@ const Item = ({
                     borderLeft: '1px solid ' + blingColor,
                 }}
             >
-                {item.children.map((id) => (
-                    <Item
-                        path={childPath}
-                        id={id}
-                        key={id}
-                        client={client}
-                        local={local}
-                        onDragStart={onDragStart}
-                        registerDragTargets={registerDragTargets}
-                    />
-                ))}
+                {item
+                    ? item.children.map((id) => (
+                          <Item
+                              path={childPath}
+                              id={id}
+                              key={id}
+                              client={client}
+                              local={local}
+                              onDragStart={onDragStart}
+                              registerDragTargets={registerDragTargets}
+                          />
+                      ))
+                    : null}
             </div>
         </div>
     );

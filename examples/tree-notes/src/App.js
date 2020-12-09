@@ -15,6 +15,7 @@ import {
     createPersistedDeltaClient,
     createPollingPersistedDeltaClient,
     createInMemoryDeltaClient,
+    createInMemoryEphemeralClient,
 } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
 import type { Data } from './auth-api';
@@ -34,6 +35,11 @@ const genId = () => Math.random().toString(36).slice(2);
 export type AuthData = { host: string, auth: Data, logout: () => mixed };
 
 const createClient = (dbName, authData) => {
+    if (!authData) {
+        const mem = createInMemoryEphemeralClient(schemas);
+        window.inMemoryClient = mem;
+        return mem;
+    }
     const url = `${authData.host}/dbs/sync?db=trees&token=${authData.auth.token}`;
     // if (false) {
     //     return createPollingPersistedDeltaClient(
@@ -104,7 +110,7 @@ const Items = ({ client, local }) => {
     );
 };
 
-const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
+const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
     const client = React.useMemo(() => {
         console.log('starting a client', authData);
         return createClient(dbName, authData);
@@ -114,6 +120,13 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
     const local = React.useMemo(() => new LocalClient('tree-notes'), []);
 
     window.client = client;
+
+    window.startUp = () => {
+        const id = 'root';
+        const item = { ...blankItem(), id };
+        col.save(id, item);
+        console.log('saving');
+    };
 
     const [col, items] = useCollection(React, client, 'items');
 
@@ -156,9 +169,6 @@ const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
                         null
                     }
                     authData={authData}
-                    // auth={auth}
-                    // host={host}
-                    // logout={logout}
                     client={client}
                 >
                     <RouteSwitch>

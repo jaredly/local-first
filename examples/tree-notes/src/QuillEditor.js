@@ -35,8 +35,10 @@ const QuillEditor = ({
     const valueRef = React.useRef(value);
     if (ui.current && value !== valueRef.current) {
         const quill = ui.current;
+        console.log('render', value);
         const newContents = stateToQuillContents(value);
         const currentContents = quill.getContents();
+        console.log(newContents, currentContents);
         if (!deepEqual(newContents.ops, currentContents.ops)) {
             console.log('new contents', newContents, currentContents, value, valueRef.current);
             const sel = quill.getSelection();
@@ -83,7 +85,7 @@ const QuillEditor = ({
         return () => innerRef(null);
     }, []);
 
-    return <div className={className} ref={ref} />;
+    return <div className={(className || '') + ' ql-container ql-bubble'} ref={ref} />;
 };
 
 export default QuillEditor;

@@ -26,6 +26,9 @@ const Top = () => {
     return (
         <Router>
             <Switch>
+                <Route path="/memory">
+                    <Main host={null} dbName="tree-notes-memory" />
+                </Route>
                 <Route path="/localhost">
                     <Main host={'localhost:9090'} dbName="tree-notes-glitch-2" />
                 </Route>
@@ -40,8 +43,16 @@ const Top = () => {
     );
 };
 
-const Main = ({ host, dbName }: { host: string, dbName: string }) => {
+const Main = ({ host, dbName }: { host: ?string, dbName: string }) => {
     console.log('main render?');
+    if (host == null) {
+        return (
+            <ThemeProvider theme={darkTheme}>
+                <CssBaseline />
+                <App dbName={dbName} authData={null} />
+            </ThemeProvider>
+        );
+    }
     return (
         <ThemeProvider theme={darkTheme}>
             <CssBaseline />
