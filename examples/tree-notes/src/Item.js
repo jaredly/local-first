@@ -198,6 +198,7 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
     const [col, item] = useItem<ItemT, *>(React, client, 'items', id);
     const childPath = React.useMemo(() => path.concat([id]), [path, id]);
     const bodyRef = React.useRef(null);
+    const [tick, setTick] = React.useState(0);
 
     const blingColor =
         path.length === 0 ? 'transparent' : `rgba(255,255,255,${1 - (path.length % 5) / 5})`;
@@ -221,6 +222,8 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
         }
         return 'Item does not exist';
     }
+    const collapsible = path.length > 0 && item.children.length > 0;
+    const collapsed = collapsible && !local.isExpanded(id);
     return (
         <div
             ref={(node) => {
@@ -250,6 +253,15 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
             >
                 <div
                     onMouseDown={(evt) => onDragStart(evt, childPath)}
+                    onClick={
+                        collapsible
+                            ? () => {
+                                  console.log('click');
+                                  local.setExpanded(id, collapsed);
+                                  setTick(tick + 1);
+                              }
+                            : null
+                    }
                     css={{
                         width: '2em',
                         alignSelf: 'stretch',
@@ -262,14 +274,18 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
                         },
                     }}
                 >
-                    <div
-                        css={{
-                            width: '.5em',
-                            height: '.5em',
-                            backgroundColor: blingColor,
-                            borderRadius: '.25em',
-                        }}
-                    />
+                    {collapsed ? (
+                        item.children.length
+                    ) : (
+                        <div
+                            css={{
+                                width: '.5em',
+                                height: '.5em',
+                                backgroundColor: blingColor,
+                                borderRadius: '.25em',
+                            }}
+                        />
+                    )}
                 </div>
                 <QuillEditor
                     css={{
@@ -295,17 +311,19 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
                     borderLeft: '1px solid ' + blingColor,
                 }}
             >
-                {item.children.map((id) => (
-                    <MemoItem
-                        path={childPath}
-                        id={id}
-                        key={id}
-                        client={client}
-                        local={local}
-                        onDragStart={onDragStart}
-                        registerDragTargets={registerDragTargets}
-                    />
-                ))}
+                {local.isExpanded(id) || path.length === 0
+                    ? item.children.map((id) => (
+                          <MemoItem
+                              path={childPath}
+                              id={id}
+                              key={id}
+                              client={client}
+                              local={local}
+                              onDragStart={onDragStart}
+                              registerDragTargets={registerDragTargets}
+                          />
+                      ))
+                    : null}
             </div>
         </div>
     );

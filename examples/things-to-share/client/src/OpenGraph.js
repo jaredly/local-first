@@ -63,26 +63,6 @@ const useStyles = makeStyles((theme) => ({
         maxHeight: '100vh',
         objectFit: 'contain',
     },
-    // images3: {
-    //     marginBottom: 16,
-    //     alignItems: 'center',
-    //     display: 'grid',
-    //     gridTemplateColumns: '1fr 1fr',
-    //     backgroundColor: 'black',
-    //     // ':first-child': {
-    //     //     gridRow: '1 / 3',
-    //     //     gridColumn: '1',
-    //     // },
-    //     // ':nth-child(1)': {
-    //     // }
-    // },
-    // images4: {
-    //     marginBottom: 16,
-    //     alignItems: 'center',
-    //     display: 'grid',
-    //     gridTemplateColumns: '1fr 1fr',
-    //     backgroundColor: 'black',
-    // },
 }));
 
 const getOgs = (data: mixed, key: string) => {
