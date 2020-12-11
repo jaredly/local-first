@@ -55,6 +55,34 @@ const useStyles = makeStyles((theme) => ({
         gridTemplateColumns: '1fr 1fr',
         backgroundColor: 'black',
     },
+    image_0_of_3: {
+        gridRow: '1 / 3',
+        gridColumn: '1',
+    },
+    image: {
+        maxHeight: '100vh',
+        objectFit: 'contain',
+    },
+    // images3: {
+    //     marginBottom: 16,
+    //     alignItems: 'center',
+    //     display: 'grid',
+    //     gridTemplateColumns: '1fr 1fr',
+    //     backgroundColor: 'black',
+    //     // ':first-child': {
+    //     //     gridRow: '1 / 3',
+    //     //     gridColumn: '1',
+    //     // },
+    //     // ':nth-child(1)': {
+    //     // }
+    // },
+    // images4: {
+    //     marginBottom: 16,
+    //     alignItems: 'center',
+    //     display: 'grid',
+    //     gridTemplateColumns: '1fr 1fr',
+    //     backgroundColor: 'black',
+    // },
 }));
 
 const getOgs = (data: mixed, key: string) => {
@@ -174,6 +202,11 @@ const OpenGraph = ({
                 <div className={styles['images' + Math.min(2, images.length)]}>
                     {images.map((url, i) => (
                         <CardMedia
+                            className={
+                                styles[`image_${i}_of_${images.length}`] +
+                                ' ' +
+                                styles.image
+                            }
                             key={url}
                             // style={i > 0 ? { marginTop: 12 } : null}
                             component="img"
