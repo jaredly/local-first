@@ -13,6 +13,7 @@ const checkSize = (state, id) => {
         size += state.map[child].size;
     });
     if (size !== node.size) {
+        console.log(size, node.size, node);
         throw new Error(`Wrong cached size ${node.size} - should be ${size}; for ${id}`);
     }
 };

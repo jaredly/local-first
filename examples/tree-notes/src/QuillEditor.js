@@ -40,7 +40,7 @@ const QuillEditor = ({
         if (!deepEqual(newContents.ops, currentContents.ops)) {
             // console.log('new contents', newContents, currentContents, value, valueRef.current);
             const sel = quill.getSelection();
-            const pos = sel ? quillToTreePos(valueRef.current, quill.getSelection()) : null;
+            const pos = sel ? quillToTreePos(valueRef.current, sel) : null;
             quill.setContents(newContents, 'crdt');
             if (pos) {
                 quill.setSelection(treeToQuillPos(value, pos));
@@ -54,7 +54,10 @@ const QuillEditor = ({
         const quill = (ui.current = new Quill(ref.current, keymap(actions)));
         innerRef(quill);
         quill.setContents(stateToQuillContents(value));
-        quill.setSelection(quill.getLength(), 0);
+        // TODO: this focuses the editor automatically, which I don't want :/
+        // I just want to prefill the selection to here, so that when it's "focus()"ed,
+        // it doesn't select at the start. Might need to hack on quill to fix.
+        // quill.setSelection(quill.getLength(), 0);
 
         quill.on('text-change', (delta: { ops: Array<QuillDelta> }, _oldDelta, source: string) => {
             if (source === 'crdt') {

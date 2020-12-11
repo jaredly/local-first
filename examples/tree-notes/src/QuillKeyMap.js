@@ -123,7 +123,7 @@ const map = (props: *, registry: *): * => ({
                     key: 27,
                     collapsed: false,
                     handler() {
-                        let selection = this.quill.getSelection;
+                        let selection = this.quill.getSelection();
                         if (!selection) return;
                         this.quill.setSelection(selection.index + selection.length, 0, 'user');
                         return false;

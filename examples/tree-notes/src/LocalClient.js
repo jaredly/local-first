@@ -34,7 +34,11 @@ export default class LocalClient {
         this.expanded = loadJson(expandKey(id)) || {};
     }
 
-    setFocus(id: string) {
+    setFocus(id: ?string) {
+        if (id == null) {
+            return;
+        }
+        // console.log('focusing', id);
         if (this.refs[id]) {
             this.refs[id].focus();
         } else {
@@ -47,6 +51,9 @@ export default class LocalClient {
     }
 
     setExpanded(id: string, expanded: boolean) {
+        if (this.expanded[id] == expanded) {
+            return;
+        }
         this.expanded[id] = expanded;
         this.save();
     }
@@ -71,6 +78,7 @@ export default class LocalClient {
         }
         this.refs[id] = node;
         if (this.focusNext === id) {
+            // console.log('found', id, 'and focusing');
             node.focus();
             this.focusNext = null;
         }

@@ -69,7 +69,7 @@ export const createAunt = (
     col: Collection<*>,
     path: Array<string>,
     id: string,
-) => {
+): ?string => {
     if (path.length < 2) {
         return;
     }
@@ -91,7 +91,7 @@ export const createChild = (
     col: Collection<*>,
     path: Array<string>,
     id: string,
-) => {
+): string => {
     const cid = client.getStamp();
     const item = {
         ...blankItem(),
@@ -107,7 +107,7 @@ export const createSibling = (
     col: Collection<*>,
     path: Array<string>,
     id: string,
-) => {
+): ?string => {
     const pid = path[path.length - 1];
     if (!pid) {
         return;

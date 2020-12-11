@@ -80,10 +80,13 @@ const itemActions = ({ client, col, path, id, local }) => ({
         }
     },
     onCreateChild() {
-        navigation.createChild(client, col, path, id);
+        local.setExpanded(id, true);
+        const newId = navigation.createChild(client, col, path, id);
+        local.setFocus(newId);
     },
     onCreateAunt() {
-        navigation.createAunt(client, col, path, id);
+        const newId = navigation.createAunt(client, col, path, id);
+        local.setFocus(newId);
     },
 });
 
@@ -267,7 +270,7 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
                         alignSelf: 'stretch',
                         cursor: 'pointer',
                         display: 'flex',
-                        alignItems: 'center',
+                        alignItems: 'flex-start',
                         justifyContent: 'center',
                         ':hover': {
                             backgroundColor: 'rgba(255,255,255,0.1)',
@@ -281,6 +284,7 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
                             css={{
                                 width: '.5em',
                                 height: '.5em',
+                                marginTop: '.5em',
                                 backgroundColor: blingColor,
                                 borderRadius: '.25em',
                             }}
