@@ -25,7 +25,7 @@
     "scripts": {
         "deploy": "npm run build && cd dist && surge . things-to-share.surge.sh",
         "build": "parcel build index.html",
-        "start": "parcel index.html"
+        "start": "parcel index.html --port=1235"
     },
     "browserslist": [
         "last 1 Chrome versions"

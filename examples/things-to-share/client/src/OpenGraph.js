@@ -57,13 +57,13 @@ export const getOg = (data: mixed, key: string) => {
     return data[key][0];
 };
 
-const VideoPreview = ({ styles, video, video_type, image }) => {
+const VideoPreview = ({ styles, video, url, video_type, image }) => {
     if (video_type !== 'text/html') {
         return <video src={video} controls />;
     }
     return (
         <a
-            href={video}
+            href={url}
             target="_blank"
             rel="noreferrer"
             className={styles.videoPreview}
@@ -181,24 +181,6 @@ const OpenGraph = ({
                 />
             ) : null}
 
-            {/* <CardActions disableSpacing>
-        <IconButton aria-label="add to favorites">
-          PlayIconFavoriteIcon />
-        </IconButton>
-        <IconButton aria-PlayCircleFilled="share">
-          <ShareIcon />
-        </IconButton>
-        <IconButton
-          className={clsx(classes.expand, {
-            [classes.expandOpen]: expanded,
-          })}
-          onClick={handleExpandClick}
-          aria-expanded={expanded}
-          aria-label="show more"
-        >
-          <ExpandMoreIcon />
-        </IconButton>
-      </CardActions> */}
             <CardHeader
                 // avatar={
                 //   <Avatar aria-label="recipe" className={classes.avatar}>
@@ -210,15 +192,18 @@ const OpenGraph = ({
                 //     {/* <MoreVertIcon /> */}
                 //   </IconButton>
                 // }
-                title={description}
                 subheader={
                     <Link
-                        color="secondary"
+                        color="white"
                         rel="noreferrer"
                         target="_blank"
                         href={url}
+                        style={{
+                            textDecoration: 'underline',
+                            color: 'white',
+                        }}
                     >
-                        {url}
+                        {description}
                     </Link>
                 }
             />
