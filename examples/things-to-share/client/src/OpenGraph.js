@@ -44,6 +44,17 @@ const useStyles = makeStyles((theme) => ({
     closer: {
         cursor: 'pointer',
     },
+
+    images1: {
+        marginBottom: 16,
+    },
+    images2: {
+        marginBottom: 16,
+        alignItems: 'center',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        backgroundColor: 'black',
+    },
 }));
 
 const getOgs = (data: mixed, key: string) => {
@@ -159,18 +170,20 @@ const OpenGraph = ({
             {type === 'image' ||
             (type === 'article' &&
                 (site_name !== 'Twitter' ||
-                    getOg(data, 'og:image:user_generated') === 'true'))
-                ? images.map((url, i) => (
-                      <CardMedia
-                          key={url}
-                          style={i > 0 ? { marginTop: 12 } : null}
-                          component="img"
-                          // className={classes.media}
-                          image={url}
-                          title="Image"
-                      />
-                  ))
-                : null}
+                    getOg(data, 'og:image:user_generated') === 'true')) ? (
+                <div className={styles['images' + Math.min(2, images.length)]}>
+                    {images.map((url, i) => (
+                        <CardMedia
+                            key={url}
+                            // style={i > 0 ? { marginTop: 12 } : null}
+                            component="img"
+                            // className={classes.media}
+                            image={url}
+                            title="Image"
+                        />
+                    ))}
+                </div>
+            ) : null}
             {type === 'video' || type === 'video.other' ? (
                 <VideoPreview
                     styles={styles}
@@ -209,7 +222,7 @@ const OpenGraph = ({
             />
             {/* $FlowFixMe */}
             {data.embedded ? (
-                <div style={{ padding: 12 }}>
+                <div style={{ padding: 12, paddingTop: 0 }}>
                     <OpenGraph nested data={data.embedded} url={url} />
                 </div>
             ) : null}

@@ -26,7 +26,7 @@
     "scripts": {
         "deploy": "npm run build && cd dist && cp index.html 200.html && surge . tree-notes.surge.sh",
         "build": "parcel build index.html",
-        "start": "parcel index.html"
+        "start": "parcel index.html --port 1234"
     },
     "browserslist": [
         "last 1 Chrome versions"
