@@ -25,6 +25,7 @@ import Item from './Item';
 import LocalClient from './LocalClient';
 import { type DropTarget } from './dragging';
 import AppShell from './AppShell';
+import { setupDragListeners, type DragInit, type DragState } from './dragging';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
@@ -75,15 +76,49 @@ type Dest =
       };
 export type DragTarget = DropTarget<Dest>;
 
-const useDragging = () => {
+const useDragging = (onDrop) => {
     const targetMakers = React.useMemo(() => ({}), []);
+
+    const [dragger, setDragger] = React.useState((null: ?DragState<Dest>));
+    const currentDragger = React.useRef(dragger);
+    currentDragger.current = dragger;
+
     const onDragStart = React.useCallback((evt, path) => {
+        if (evt.button !== 0) {
+            return;
+        }
         evt.preventDefault();
         evt.stopPropagation();
         const targets = [].concat(...Object.keys(targetMakers).map((id) => targetMakers[id](path)));
-        console.log('oh starting to drag, here we are', targets);
-        // return [];
+        targets.sort((a, b) => a.top - b.top);
+        console.log(targets);
+        setDragger({
+            dragging: {
+                pos: { x: evt.clientX, y: evt.clientY },
+                path,
+            },
+            started: false,
+            dest: null,
+            dims: null,
+            targets,
+            path,
+        });
     }, []);
+
+    React.useEffect(() => {
+        if (dragger != null) {
+            return setupDragListeners(
+                dragger.targets,
+                currentDragger,
+                false,
+                setDragger,
+                (dragInit, dest) => {
+                    onDrop(dragInit, dest);
+                },
+            );
+        }
+    }, [!!dragger]);
+
     const registerDragTargets = React.useCallback((id, cb) => {
         if (!cb) {
             delete targetMakers[id];
@@ -91,24 +126,69 @@ const useDragging = () => {
             targetMakers[id] = cb;
         }
     }, []);
-    return { onDragStart, registerDragTargets };
+    return { onDragStart, registerDragTargets, dragger };
 };
 
 const emptyPath = [];
 
-const Items = ({ client, local }) => {
-    const { registerDragTargets, onDragStart } = useDragging();
+const Items = ({ client, local, col }) => {
+    const onDrop = React.useCallback(({ path }, dest) => {
+        const id = path[path.length - 1];
+        const pid = path[path.length - 2];
+        if (!pid) {
+            return;
+        }
+        console.log('drop it here', path, dest);
+        col.removeId(pid, ['children'], id);
+        if (dest.type === 'after' || dest.type === 'before') {
+            const npid = dest.path[dest.path.length - 2];
+            const nrel = dest.path[dest.path.length - 1];
+            if (!npid) {
+                return;
+            }
+            col.insertIdRelative(npid, ['children'], id, nrel, dest.type === 'before');
+            local.setExpanded(npid, true);
+        } else {
+            const npid = dest.path[dest.path.length - 1];
+            col.insertId(npid, ['children'], 0, id);
+            local.setExpanded(npid, true);
+        }
+        local.setFocus(id);
+    }, []);
+    const { registerDragTargets, onDragStart, dragger } = useDragging(onDrop);
     const { id } = useParams();
 
     return (
-        <Item
-            path={emptyPath}
-            id={id || 'root'}
-            client={client}
-            local={local}
-            registerDragTargets={registerDragTargets}
-            onDragStart={onDragStart}
-        />
+        <React.Fragment>
+            <Item
+                path={emptyPath}
+                id={id || 'root'}
+                client={client}
+                local={local}
+                registerDragTargets={registerDragTargets}
+                onDragStart={onDragStart}
+            />
+            {dragger != null && dragger.dims != null && dragger.dest != null ? (
+                <div
+                    // className={styles.dragIndicator}
+                    style={{
+                        position: 'absolute',
+                        // height: 2,
+                        // marginTop: -2,
+                        // backgroundColor: theme.palette.warning.dark,
+                        backgroundColor: 'red',
+                        opacity: 0.5,
+                        mouseEvents: 'none',
+                        // transition: `transform ease .1s`,
+                        left: dragger.dims.left,
+                        width: dragger.dims.width,
+                        height: dragger.dims.height, // + 4,
+                        transform: `translateY(${dragger.dims.top}px)`,
+                        top: 0,
+                    }}
+                ></div>
+            ) : null}
+        </React.Fragment>
     );
 };
 
@@ -154,10 +234,10 @@ const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
             >
                 <RouteSwitch>
                     <Route path={`${match.path == '/' ? '' : match.path}/item/:id`}>
-                        <Items client={client} local={local} />
+                        <Items client={client} local={local} col={col} />
                     </Route>
                     <Route path={`${match.path == '/' ? '' : match.path}`}>
-                        <Items client={client} local={local} />
+                        <Items client={client} local={local} col={col} />
                     </Route>
                 </RouteSwitch>
             </AppShell>

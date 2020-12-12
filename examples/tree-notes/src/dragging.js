@@ -1,7 +1,7 @@
 // @flow
 
 export type DropTarget<T> = {
-    parent: Node,
+    parent: Element,
     top: number,
     height: number,
     left: number,
@@ -18,11 +18,11 @@ export type DropTarget<T> = {
 };
 
 export type DragInit = {
-    id: string,
-    type?: string,
+    // id: string,
+    // type?: string,
     path: Array<string>,
-    onStart: () => void,
-    onFinish: () => void,
+    // onStart: () => void,
+    // onFinish: () => void,
     pos: { x: number, y: number },
 };
 
@@ -37,6 +37,7 @@ export type DragState<Dest> = {
         left: number,
         width: number,
     },
+    targets: Array<DropTarget<Dest>>,
 };
 
 export type OnDragRef = (
@@ -57,14 +58,14 @@ const getPosition = function <Dest>(
     limitX: boolean,
     dragging,
 ): ?DragState<Dest> {
-    const offsetParent = boxes[0].offsetParent;
+    const offsetParent = boxes[0].parent;
     const offset = offsetParent ? offsetParent.getBoundingClientRect().top : 0;
     const matchingBoxes = limitX ? boxes.filter((box) => inside(pos.x, box)) : boxes;
     for (let i = 0; i < matchingBoxes.length; i++) {
         // if we're closer to the current than the next one, go with it
         const d0 = Math.abs(pos.y - (matchingBoxes[i].top + matchingBoxes[i].height / 2));
         const dNext =
-            i < matchingBoxes.length - 1
+            i < matchingBoxes.length - 2
                 ? limitX && !inside(pos.x, matchingBoxes[i])
                     ? Infinity
                     : Math.abs(pos.y - (matchingBoxes[i + 1].top + matchingBoxes[i + 1].height / 2))
@@ -73,13 +74,14 @@ const getPosition = function <Dest>(
             return {
                 started: true,
                 dragging,
-                dest: matchingBoxes[i].contents,
+                dest: matchingBoxes[i].dest,
                 dims: {
                     top: matchingBoxes[i].top - offset,
                     height: matchingBoxes[i].height,
                     left: matchingBoxes[i].left,
                     width: matchingBoxes[i].width,
                 },
+                targets: boxes,
             };
         }
     }
@@ -121,7 +123,8 @@ export const setupDragListeners = function <Dest: {}>(
             }
         }
         if (current.dest == null) {
-            current.dragging.onStart();
+            // STOPSHIP
+            // current.dragging.onStart();
         }
         const position = getPosition(dropTargets, pos, limitX, current.dragging);
         if (position) {
@@ -137,7 +140,8 @@ export const setupDragListeners = function <Dest: {}>(
         if (dest) {
             onDrop(dragging, dest);
         }
-        dragging.onFinish();
+        // STOPSHIP
+        // dragging.onFinish();
         setDragger(null);
     };
     window.addEventListener('touchmove', move, true);

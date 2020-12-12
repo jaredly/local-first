@@ -100,7 +100,13 @@ const itemActions = ({ client, col, path, id, local }) => ({
 });
 
 const dragHandler = ({ node, childPath, bodyRef, col, id, local }) => (currentPath) => {
-    if (arrayStartsWith(childPath, currentPath)) {
+    // TODO need to be able to escape a parent. So if you are a descendent of a thing
+    // that should not prevent you from going above or below the thing.
+    // it's only that you shouldn't be able to go inside yourself.
+    if (childPath.length === 1) {
+        return [];
+    }
+    if (arrayStartsWith(currentPath, childPath)) {
         return [];
     }
     const body = bodyRef.current;
@@ -131,15 +137,15 @@ const dragHandler = ({ node, childPath, bodyRef, col, id, local }) => (currentPa
             {
                 parent,
                 top: bodyBox.top + bodyBox.height / 2,
-                height: bodyBox.height,
+                height: bodyBox.height / 2,
                 left: bodyBox.left,
                 width: bodyBox.width,
                 dest: { type: 'child', path: childPath },
             },
             {
                 parent,
-                top: box.bottom - 10,
-                height: box.height,
+                top: box.bottom, //  - 10,
+                height: bodyBox.height / 2,
                 left: bodyBox.left,
                 width: bodyBox.width,
                 dest: { type: 'after', path: childPath },
@@ -235,7 +241,7 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
         return 'Item does not exist';
     }
     const collapsible = path.length > 0 && item.children.length > 0;
-    const collapsed = collapsible && isExpanded; // !local.isExpanded(id);
+    const collapsed = collapsible && !isExpanded; // !local.isExpanded(id);
     return (
         <div
             ref={(node) => {
