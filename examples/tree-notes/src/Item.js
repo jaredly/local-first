@@ -7,7 +7,7 @@ import { type Client } from '../../../packages/client-bundle';
 import QuillEditor from './QuillEditor';
 import type { ItemT } from '../collections';
 import * as navigation from './navigation';
-import LocalClient from './LocalClient';
+import LocalClient, { useExpanded } from './LocalClient';
 import { type DragTarget } from './App';
 import { length } from '../../../packages/rich-text-crdt/utils';
 import * as rich from '../../../packages/rich-text-crdt/';
@@ -38,6 +38,7 @@ const itemActions = ({ client, col, path, id, local }) => ({
         const newParent = navigation.indent(client, col, path, id);
         if (newParent != null) {
             local.setExpanded(newParent, true);
+            local.setFocus(id);
             return true;
         }
         return false;
@@ -206,7 +207,7 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
     const [col, item] = useItem<ItemT, *>(React, client, 'items', id);
     const childPath = React.useMemo(() => path.concat([id]), [path, id]);
     const bodyRef = React.useRef(null);
-    const [tick, setTick] = React.useState(0);
+    const isExpanded = useExpanded(local, id);
 
     const blingColor =
         path.length === 0 ? 'transparent' : `rgba(255,255,255,${1 - (path.length % 5) / 5})`;
@@ -231,7 +232,7 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
         return 'Item does not exist';
     }
     const collapsible = path.length > 0 && item.children.length > 0;
-    const collapsed = collapsible && !local.isExpanded(id);
+    const collapsed = collapsible && isExpanded; // !local.isExpanded(id);
     return (
         <div
             ref={(node) => {
@@ -264,9 +265,7 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
                     onClick={
                         collapsible
                             ? () => {
-                                  console.log('click');
                                   local.setExpanded(id, collapsed);
-                                  setTick(tick + 1);
                               }
                             : null
                     }
@@ -320,7 +319,7 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
                     borderLeft: '1px solid ' + blingColor,
                 }}
             >
-                {local.isExpanded(id) || path.length === 0
+                {isExpanded || path.length === 0
                     ? item.children.map((id) => (
                           <MemoItem
                               path={childPath}
