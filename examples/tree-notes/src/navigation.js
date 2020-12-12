@@ -64,6 +64,40 @@ export const goDown = (col: Collection<*>, path: Array<string>, id: string) => {
     return nextSibling(col, path, id);
 };
 
+export const indent = (
+    client: Client<*>,
+    col: Collection<*>,
+    path: Array<string>,
+    id: string,
+): ?string => {
+    if (!path.length) {
+        return;
+    }
+    const pid = path[path.length - 1];
+    const parent = col.getCached(pid);
+    if (!parent) {
+        return;
+    }
+    const idx = parent.children.indexOf(id);
+    if (idx === -1 || idx === 0) {
+        return;
+    }
+    const newPid = parent.children[idx - 1];
+    const newParent = col.getCached(newPid);
+    if (!newParent) {
+        return;
+    }
+    col.removeId(pid, ['children'], id);
+    if (newParent.children.length) {
+        const lastChild = newParent.children[newParent.children.length - 1];
+        col.insertIdRelative(newPid, ['children'], id, lastChild, false);
+    } else {
+        col.insertId(newPid, ['children'], 0, id);
+    }
+
+    return newPid;
+};
+
 export const createAunt = (
     client: Client<*>,
     col: Collection<*>,

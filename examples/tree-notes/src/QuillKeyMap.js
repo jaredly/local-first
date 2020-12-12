@@ -143,19 +143,22 @@ const map = (props: *, registry: *): * => ({
                         return !(atBottom(this.quill) && props.onDown() != null);
                     },
                 },
-                indent: {
-                    key: 'tab',
+                tab: {
+                    key: 9,
                     collapsed: true,
-                    shiftKey: false,
+                    // shiftKey: false,
                     handler() {
+                        // evt.preventDefault();
+                        console.log('indent here folks');
                         return !(atLeft(this.quill) && props.onIndent());
                     },
                 },
                 dedent: {
-                    key: 'tab',
+                    key: 9,
                     collapsed: true,
                     shiftKey: true,
                     handler() {
+                        console.log('dedent');
                         return !(atLeft(this.quill) && props.onDedent());
                     },
                 },

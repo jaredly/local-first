@@ -133,49 +133,35 @@ const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
 
     return (
         <div>
-            {item === false ? (
-                'Not loaded'
-            ) : (
-                // ) : item === null ? (
-                //     <button
-                //         onClick={() => {
-                //             const id = 'root';
-                //             const item = { ...blankItem(), id };
-                //             col.save(id, item);
-                //             console.log('saving');
-                //         }}
-                //     >
-                //         Create a root folks
-                //     </button>
-                <AppShell
-                    drawerItems={
-                        // <ListItem>
-                        //     <FormControlLabel
-                        //         control={
-                        //             <Switch
-                        //                 checked={showAll}
-                        //                 onChange={() => setShowAll(!showAll)}
-                        //                 color="primary"
-                        //             />
-                        //         }
-                        //         label="Show completed"
-                        //     />
-                        // </ListItem>
-                        null
-                    }
-                    authData={authData}
-                    client={client}
-                >
-                    <RouteSwitch>
-                        <Route path={`${match.path == '/' ? '' : match.path}/item/:id`}>
-                            <Items client={client} local={local} />
-                        </Route>
-                        <Route path={`${match.path == '/' ? '' : match.path}`}>
-                            <Items client={client} local={local} />
-                        </Route>
-                    </RouteSwitch>
-                </AppShell>
-            )}
+            <AppShell
+                drawerItems={
+                    // <ListItem>
+                    //     <FormControlLabel
+                    //         control={
+                    //             <Switch
+                    //                 checked={showAll}
+                    //                 onChange={() => setShowAll(!showAll)}
+                    //                 color="primary"
+                    //             />
+                    //         }
+                    //         label="Show completed"
+                    //     />
+                    // </ListItem>
+                    null
+                }
+                authData={authData}
+                client={client}
+            >
+                <RouteSwitch>
+                    <Route path={`${match.path == '/' ? '' : match.path}/item/:id`}>
+                        <Items client={client} local={local} />
+                    </Route>
+                    <Route path={`${match.path == '/' ? '' : match.path}`}>
+                        <Items client={client} local={local} />
+                    </Route>
+                </RouteSwitch>
+            </AppShell>
+            {/* )} */}
             <Snackbar
                 anchorOrigin={{
                     vertical: 'bottom',

@@ -38,7 +38,6 @@ export default class LocalClient {
         if (id == null) {
             return;
         }
-        // console.log('focusing', id);
         if (this.refs[id]) {
             this.refs[id].focus();
         } else {

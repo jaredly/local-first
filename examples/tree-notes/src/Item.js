@@ -35,7 +35,12 @@ const itemActions = ({ client, col, path, id, local }) => ({
     },
     onIndent() {
         console.log('indent');
-        return true;
+        const newParent = navigation.indent(client, col, path, id);
+        if (newParent != null) {
+            local.setExpanded(newParent, true);
+            return true;
+        }
+        return false;
     },
     onDedent() {
         return true;
