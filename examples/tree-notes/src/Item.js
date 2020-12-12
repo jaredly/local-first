@@ -34,7 +34,6 @@ const itemActions = ({ client, col, path, id, local }) => ({
         }
     },
     onIndent() {
-        console.log('indent');
         const newParent = navigation.indent(client, col, path, id);
         if (newParent != null) {
             local.setExpanded(newParent, true);
@@ -44,7 +43,11 @@ const itemActions = ({ client, col, path, id, local }) => ({
         return false;
     },
     onDedent() {
-        return true;
+        if (navigation.dedent(client, col, path, id)) {
+            local.setFocus(id);
+            return true;
+        }
+        return false;
     },
     onBackspace(contents: string) {
         if (contents == null) {

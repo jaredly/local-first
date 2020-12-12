@@ -64,6 +64,32 @@ export const goDown = (col: Collection<*>, path: Array<string>, id: string) => {
     return nextSibling(col, path, id);
 };
 
+export const dedent = (
+    client: Client<*>,
+    col: Collection<*>,
+    path: Array<string>,
+    id: string,
+): ?boolean => {
+    if (path.length < 2) {
+        return;
+    }
+    const pid = path[path.length - 1];
+    const gpid = path[path.length - 2];
+    const parent = col.getCached(pid);
+    const gparent = col.getCached(gpid);
+    if (!parent || !gparent) {
+        return;
+    }
+    const pidx = gparent.children.indexOf(pid);
+    if (pidx === -1) {
+        return;
+    }
+    col.removeId(pid, ['children'], id);
+    col.insertIdRelative(gpid, ['children'], id, pid, false);
+
+    return true;
+};
+
 export const indent = (
     client: Client<*>,
     col: Collection<*>,
