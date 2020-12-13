@@ -36,7 +36,6 @@ const TopBar = ({ openMenu, client }: Props) => {
                     </Link>
                 </Typography>
                 <div style={{ flex: 1 }} />
-                {/* {JSON.stringify(syncStatus)} */}
                 {syncStatus.status === 'connected' ? (
                     <Wifi className={styles.connected} />
                 ) : syncStatus.status === 'disconnected' ? (

@@ -211,6 +211,27 @@ const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
         window.upgradeAvailable && window.upgradeAvailable.installed,
     );
 
+    // TODO dedup this, it's a little ridiculous
+    console.log('app hello');
+    React.useEffect(() => {
+        if (window.upgradeAvailable) {
+            console.log('listeneing');
+            const listener = () => {
+                console.log('listenered!');
+                setShowUpgrade(true);
+            };
+            window.upgradeAvailable.listeners.push(listener);
+            return () => {
+                console.log('unlistenerd');
+                window.upgradeAvailable.listeners = window.upgradeAvailable.listeners.filter(
+                    (f) => f !== listener,
+                );
+            };
+        } else {
+            console.log('no upgrade support');
+        }
+    }, []);
+
     return (
         <div>
             <AppShell

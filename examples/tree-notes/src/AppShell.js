@@ -13,6 +13,7 @@ import TopBar from './TopBar';
 
 import { Route, Switch, useRouteMatch } from 'react-router-dom';
 import type { AuthData } from './App';
+import Drawer from './Drawer';
 
 const AppShell = ({
     client,
@@ -42,13 +43,13 @@ const AppShell = ({
     return (
         <React.Fragment>
             <TopBar openMenu={openMenu} client={client} />
-            {/* <Drawer
+            <Drawer
                 pageItems={drawerItems}
                 onClose={() => setMenu(false)}
                 open={menu}
                 authData={authData}
                 client={client}
-            /> */}
+            />
             <Container maxWidth={noContainer ? undefined : 'sm'} className={styles.container}>
                 {children}
             </Container>
