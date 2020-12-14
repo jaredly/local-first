@@ -8,7 +8,7 @@ import QuillEditor from './QuillEditor';
 import type { ItemT } from '../collections';
 import * as navigation from './navigation';
 import LocalClient, { useExpanded } from './LocalClient';
-import { type DragTarget } from './App';
+import { type DragTarget } from './Items';
 import { length } from '../../../packages/rich-text-crdt/utils';
 import * as rich from '../../../packages/rich-text-crdt/';
 import { blankItem } from './types';
