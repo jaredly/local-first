@@ -1,7 +1,5 @@
 // @flow
 import Container from '@material-ui/core/Container';
-import ListItem from '@material-ui/core/ListItem';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
 import { makeStyles } from '@material-ui/core/styles';
 import * as React from 'react';
 import type { Client, SyncStatus } from '../../packages/client-bundle';
@@ -19,6 +17,7 @@ const AppShell = ({
     children,
     noContainer,
     Drawer,
+    title,
 }: {
     client: Client<SyncStatus>,
     authData: ?AuthData,
@@ -32,6 +31,7 @@ const AppShell = ({
         authData: ?AuthData,
         client: Client<SyncStatus>,
     }>,
+    title: string,
 }) => {
     const [menu, setMenu] = React.useState(false);
     const styles = useStyles();
@@ -41,7 +41,7 @@ const AppShell = ({
 
     return (
         <React.Fragment>
-            <TopBar openMenu={openMenu} client={client} title="Tree Notes" />
+            <TopBar openMenu={openMenu} client={client} title={title} />
             <Drawer
                 pageItems={drawerItems}
                 onClose={() => setMenu(false)}

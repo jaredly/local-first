@@ -13,5 +13,6 @@ sketchy-null=error
 sketchy-null-bool=off
 
 [options]
+module.name_mapper='react-router-dom' -> '<PROJECT_ROOT>/node_modules/react-router-dom'
 
 [strict]

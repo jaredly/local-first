@@ -60,6 +60,7 @@ const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
     return (
         <div>
             <AppShell
+                title="Tree notes!"
                 Drawer={Drawer}
                 drawerItems={
                     // <ListItem>
