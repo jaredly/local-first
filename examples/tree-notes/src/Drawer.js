@@ -24,7 +24,7 @@ import { useCollection } from '../../../packages/client-react';
 // import ImportDialog from './ImportDialog';
 import { Switch, Route, Link } from 'react-router-dom';
 // import { showDate, today } from '../utils';
-import type { AuthData } from './App';
+import type { AuthData } from '../../shared/Auth';
 
 const MyDrawer = ({
     open,

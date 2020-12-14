@@ -27,23 +27,36 @@ const Top = () => {
         <Router>
             <Switch>
                 <Route path="/memory">
-                    <Main host={null} dbName="tree-notes-memory" />
+                    <Main host={null} dbName="tree-notes-memory" storageKey={'Nope folks'} />
                 </Route>
                 <Route path="/localhost">
-                    <Main host={'localhost:9090'} dbName="tree-notes-glitch-2" />
+                    <Main
+                        host={'localhost:9090'}
+                        dbName="tree-notes-glitch-2"
+                        storageKey={'tree-notes-local'}
+                    />
                 </Route>
-                {/* <Route path="/local">
-                    <Main host={null} dbName="planner-blob" />
-                </Route> */}
                 <Route path="/">
-                    <Main host={'local-first-server.glitch.me'} dbName="tree-notes-glitch" />
+                    <Main
+                        host={'local-first-server.glitch.me'}
+                        dbName="tree-notes-glitch"
+                        storageKey={'tree-notes'}
+                    />
                 </Route>
             </Switch>
         </Router>
     );
 };
 
-const Main = ({ host, dbName }: { host: ?string, dbName: string }) => {
+const Main = ({
+    host,
+    dbName,
+    storageKey,
+}: {
+    host: ?string,
+    dbName: string,
+    storageKey: string,
+}) => {
     console.log('main render?');
     if (host == null) {
         return (
@@ -57,7 +70,7 @@ const Main = ({ host, dbName }: { host: ?string, dbName: string }) => {
         <ThemeProvider theme={darkTheme}>
             <CssBaseline />
             <Auth
-                storageKey="tree-notes"
+                storageKey={storageKey}
                 host={host}
                 render={(auth, logout) => <App dbName={dbName} authData={{ host, auth, logout }} />}
             />

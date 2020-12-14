@@ -19,21 +19,21 @@ import {
 } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
 import type { Data } from '../../shared/auth-api';
+import type { AuthData } from '../../shared/Auth';
 
 import schemas from '../collections';
 import Item from './Item';
 import LocalClient from './LocalClient';
 import { type DropTarget } from './dragging';
-import AppShell from './AppShell';
+import AppShell from '../../shared/AppShell';
 import { setupDragListeners, type DragInit, type DragState } from './dragging';
+import Drawer from './Drawer';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
 import { blankItem } from './types';
 
 const genId = () => Math.random().toString(36).slice(2);
-
-export type AuthData = { host: string, auth: Data, logout: () => mixed };
 
 const createClient = (dbName, authData) => {
     if (!authData) {
@@ -235,6 +235,7 @@ const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
     return (
         <div>
             <AppShell
+                Drawer={Drawer}
                 drawerItems={
                     // <ListItem>
                     //     <FormControlLabel

@@ -13,6 +13,8 @@ import deepEqual from '@birchill/json-equalish';
 import type { Data, Status } from './auth-api';
 import { checkEmail, login, signup, logout, initialStatus, listen, getUser } from './auth-api';
 
+export type AuthData = { host: string, auth: Data, logout: () => mixed };
+
 const useStyles = makeStyles(theme => ({
     container: {
         paddingTop: theme.spacing(8),

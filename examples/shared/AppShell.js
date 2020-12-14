@@ -4,36 +4,34 @@ import ListItem from '@material-ui/core/ListItem';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import { makeStyles } from '@material-ui/core/styles';
 import * as React from 'react';
-import type { Client, SyncStatus } from '../../../packages/client-bundle';
-import { useCollection } from '../../../packages/client-react';
-import type { Data } from '../../shared/auth-api';
-// import Drawer from './Drawer';
-// import Items from '../TodoList/Items';
-// import TopBar from './TopBar';
-import TopBar from '../../shared/TopBar';
+import type { Client, SyncStatus } from '../../packages/client-bundle';
+import { useCollection } from '../../packages/client-react';
+import type { Data } from './auth-api';
+import TopBar from './TopBar';
+import type { AuthData } from './Auth';
 
 import { Route, Switch, useRouteMatch } from 'react-router-dom';
-import type { AuthData } from './App';
-import Drawer from './Drawer';
 
 const AppShell = ({
     client,
-    // logout,
-    // host,
-    // auth,
     authData,
     drawerItems,
     children,
     noContainer,
+    Drawer,
 }: {
     client: Client<SyncStatus>,
-    // logout: () => mixed,
-    // host: string,
-    // auth: ?Data,
     authData: ?AuthData,
     children: React.Node,
     drawerItems: React.Node,
     noContainer?: boolean,
+    Drawer: React.ComponentType<{
+        pageItems: React.Node,
+        onClose: () => void,
+        open: boolean,
+        authData: ?AuthData,
+        client: Client<SyncStatus>,
+    }>,
 }) => {
     const [menu, setMenu] = React.useState(false);
     const styles = useStyles();
@@ -58,7 +56,7 @@ const AppShell = ({
     );
 };
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles(theme => ({
     container: {
         paddingTop: theme.spacing(4),
         paddingBottom: theme.spacing(4),
