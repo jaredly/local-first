@@ -26,14 +26,17 @@ const getAllImports = (base) => {
         const imports = getImports(text);
         Object.assign(allImports, imports);
     });
-    return Object.keys(allImports);
+    return Object.keys(allImports).sort();
 };
 
 const updatePackageJson = (filePath, imports) => {
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    data.alias = {};
+    // NOTE: we're only adding, we don't remove.
     imports.forEach((name) => (data.alias[name] = `./node_modules/${name}`));
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 4));
 };
+
+const updateFlowConfig = (filePath, imports) => {};
 
 const base = path.join(__dirname, '..', 'shared');
 const imports = getAllImports(base);
