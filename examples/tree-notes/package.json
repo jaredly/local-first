@@ -26,11 +26,21 @@
     "scripts": {
         "deploy": "npm run build && cd dist && cp index.html 200.html && surge . tree-notes.surge.sh",
         "build": "parcel build index.html",
-        "start": "parcel index.html --port 1234"
+        "start": "parcel serve --no-autoinstall --port 1234 index.html"
     },
-    "browserslist": [
-        "last 1 Chrome versions"
-    ],
+    "alias": {
+        "react": "./node_modules/react",
+        "react-router-dom": "./node_modules/react-router-dom",
+        "@material-ui/core/AppBar": "./node_modules/@material-ui/core/AppBar",
+        "@material-ui/core/SvgIcon": "./node_modules/@material-ui/core/SvgIcon",
+        "@material-ui/core/IconButton": "./node_modules/@material-ui/core/IconButton",
+        "@material-ui/core/styles": "./node_modules/@material-ui/core/styles/index.js",
+        "@material-ui/core/Toolbar": "./node_modules/@material-ui/core/Toolbar",
+        "@material-ui/core/Typography": "./node_modules/@material-ui/core/Typography",
+        "@material-ui/core/Menu": "./node_modules/@material-ui/core/Menu",
+        "@material-ui/core/Wifi": "./node_modules/@material-ui/core/Wifi",
+        "@material-ui/core/WifiOff": "./node_modules/@material-ui/core/WifiOff"
+    },
     "devDependencies": {
         "@babel/core": "^7.0.0-0",
         "@babel/plugin-proposal-class-properties": "^7.8.3",

@@ -6,10 +6,11 @@ import { makeStyles } from '@material-ui/core/styles';
 import * as React from 'react';
 import type { Client, SyncStatus } from '../../../packages/client-bundle';
 import { useCollection } from '../../../packages/client-react';
-import type { Data } from './auth-api';
+import type { Data } from '../../shared/auth-api';
 // import Drawer from './Drawer';
 // import Items from '../TodoList/Items';
-import TopBar from './TopBar';
+// import TopBar from './TopBar';
+import TopBar from '../../shared/TopBar';
 
 import { Route, Switch, useRouteMatch } from 'react-router-dom';
 import type { AuthData } from './App';
@@ -42,7 +43,7 @@ const AppShell = ({
 
     return (
         <React.Fragment>
-            <TopBar openMenu={openMenu} client={client} />
+            <TopBar openMenu={openMenu} client={client} title="Tree Notes" />
             <Drawer
                 pageItems={drawerItems}
                 onClose={() => setMenu(false)}

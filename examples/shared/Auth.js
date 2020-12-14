@@ -13,7 +13,7 @@ import deepEqual from '@birchill/json-equalish';
 import type { Data, Status } from './auth-api';
 import { checkEmail, login, signup, logout, initialStatus, listen, getUser } from './auth-api';
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles(theme => ({
     container: {
         paddingTop: theme.spacing(8),
     },
@@ -65,7 +65,7 @@ in to a syncing server later.
 
 */
 
-const SignUpIn = ({ host }: { host: string }) => {
+const SignUpIn = ({ storageKey, host }: { storageKey: string, host: string }) => {
     const styles = useStyles();
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
@@ -81,7 +81,7 @@ const SignUpIn = ({ host }: { host: string }) => {
         setLoading(true);
         checkEmail(host, email)
             .then(
-                (isRegistered) => {
+                isRegistered => {
                     setState(isRegistered ? 'login' : 'register');
                 },
                 // um handle failure
@@ -94,14 +94,14 @@ const SignUpIn = ({ host }: { host: string }) => {
         if (!password.length || !email.length) {
             return;
         }
-        login(host, email, password).then(() => {
+        login(storageKey, host, email, password).then(() => {
             // setLoading(false);
             // Someone should notice that we've logged in at this point
         });
     };
     const doSignup = () => {
         setLoading(true);
-        signup(host, email, password, name).then(() => {
+        signup(storageKey, host, email, password, name).then(() => {
             // setLoading(false);
             // Someone should notice that we've logged in at this point
         });
@@ -117,7 +117,7 @@ const SignUpIn = ({ host }: { host: string }) => {
                 </div>
                 <form
                     className={styles.body}
-                    onSubmit={(evt) => {
+                    onSubmit={evt => {
                         evt.preventDefault();
                         if (state === 'initial') {
                             checkUsername();
@@ -132,10 +132,11 @@ const SignUpIn = ({ host }: { host: string }) => {
                         <Grid item>
                             <TextField
                                 value={email}
-                                onChange={(evt) => setEmail(evt.target.value)}
+                                onChange={evt => setEmail(evt.target.value)}
                                 type="email"
                                 label="Email Address"
                                 variant="outlined"
+                                autoFocus={state === 'initial'}
                                 fullWidth
                                 disabled={loading || state !== 'initial'}
                             />
@@ -144,7 +145,8 @@ const SignUpIn = ({ host }: { host: string }) => {
                             <Grid item>
                                 <TextField
                                     value={name}
-                                    onChange={(evt) => setName(evt.target.value)}
+                                    onChange={evt => setName(evt.target.value)}
+                                    autoFocus
                                     type="text"
                                     label="Display Name"
                                     variant="outlined"
@@ -157,12 +159,20 @@ const SignUpIn = ({ host }: { host: string }) => {
                             <Grid item>
                                 <TextField
                                     value={password}
-                                    onChange={(evt) => setPassword(evt.target.value)}
+                                    onChange={evt => setPassword(evt.target.value)}
                                     type="password"
+                                    autoFocus={state === 'login'}
                                     label={state === 'register' ? 'Create password' : 'Password'}
                                     variant="outlined"
                                     fullWidth
                                     disabled={loading}
+                                    inputProps={{
+                                        onKeyPress: evt => {
+                                            if (evt.key === 'Return') {
+                                                doLogin();
+                                            }
+                                        },
+                                    }}
                                 />
                             </Grid>
                         ) : null}
@@ -241,14 +251,14 @@ const SignUpIn = ({ host }: { host: string }) => {
     );
 };
 
-export const useAuthStatus = (host: string) => {
-    const [status, setStatus] = React.useState(() => initialStatus());
+export const useAuthStatus = (storageKey: string, host: string) => {
+    const [status, setStatus] = React.useState(() => initialStatus(storageKey));
     const statusRef = React.useRef(status);
     statusRef.current = status;
 
     React.useEffect(() => {
         if (status) {
-            getUser(host, status.token).then(
+            getUser(storageKey, host, status.token).then(
                 // in case user info or token changed
                 (data: ?Status) => {
                     console.log('got a new status', data);
@@ -258,13 +268,13 @@ export const useAuthStatus = (host: string) => {
                     }
                 },
                 // if we were logged out
-                (err) => setStatus(false),
+                err => setStatus(false),
             );
         }
     }, [host]);
 
     React.useEffect(() => {
-        return listen((auth) => {
+        return listen(auth => {
             if (!deepEqual(status, auth)) {
                 setStatus(auth);
             }
@@ -275,23 +285,25 @@ export const useAuthStatus = (host: string) => {
 };
 
 const Auth = ({
+    storageKey,
     host,
     render,
 }: {
+    storageKey: string,
     host: string,
     render: (data: Data, logout: () => Promise<void>) => React.Node,
 }) => {
-    const status = useAuthStatus(host);
+    const status = useAuthStatus(storageKey, host);
     console.log('aith render?', status);
     // load auth
 
     if (status === false) {
-        return <SignUpIn host={host} />;
+        return <SignUpIn storageKey={storageKey} host={host} />;
     }
     if (status == null) {
         return <div />;
     }
-    return render(status, () => logout(host, status.token));
+    return render(status, () => logout(storageKey, host, status.token));
 };
 
 export default Auth;

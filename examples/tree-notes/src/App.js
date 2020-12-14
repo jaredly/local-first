@@ -18,7 +18,7 @@ import {
     createInMemoryEphemeralClient,
 } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
-import type { Data } from './auth-api';
+import type { Data } from '../../shared/auth-api';
 
 import schemas from '../collections';
 import Item from './Item';

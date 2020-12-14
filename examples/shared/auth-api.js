@@ -5,7 +5,7 @@ const listeners = [];
 export type Data = { user: { name: string, email: string }, token: string };
 export type Status = false | null | Data;
 
-export const initialStatus = (): Status => {
+export const initialStatus = (storageKey: string): Status => {
     const raw = localStorage.getItem(storageKey);
     if (raw != null) {
         try {
@@ -41,7 +41,7 @@ export const checkEmail = async (host: string, email: string) => {
     return res.status >= 200 && res.status < 300;
 };
 
-const processResponse = async (res, sentToken: ?string) => {
+const processResponse = async (storageKey: string, res, sentToken: ?string) => {
     if (res.status !== 200 && res.status !== 204) {
         throw new Error(await res.text());
     }
@@ -49,17 +49,17 @@ const processResponse = async (res, sentToken: ?string) => {
         sentToken == null || sentToken.length == 0 ? res.headers.get('X-Session') : sentToken;
     if (token == null) {
         localStorage.removeItem(storageKey);
-        listeners.forEach((fn) => fn(false));
+        listeners.forEach(fn => fn(false));
         return null;
     }
     const user = await res.json();
     const auth = { user, token };
     localStorage.setItem(storageKey, JSON.stringify(auth));
-    listeners.forEach((fn) => fn(auth));
+    listeners.forEach(fn => fn(auth));
     return auth;
 };
 
-export const getUser = async (host: string, token: string) => {
+export const getUser = async (storageKey: string, host: string, token: string) => {
     // TODO figure out what the behavior is here if we're offline
     let res;
     try {
@@ -71,22 +71,22 @@ export const getUser = async (host: string, token: string) => {
     }
     if (res.status === 401) {
         localStorage.removeItem(storageKey);
-        listeners.forEach((fn) => fn(false));
+        listeners.forEach(fn => fn(false));
         throw new Error(`Not logged in`);
     }
-    return processResponse(res, token);
+    return processResponse(storageKey, res, token);
 };
 
-export const logout = async (host: string, token: string) => {
+export const logout = async (storageKey: string, host: string, token: string) => {
     // TODO figure out what the behavior is here if we're offline
     const res = await fetch(`${window.location.protocol}//${host}/api/logout`, {
         method: 'POST',
         headers: { Authorization: `Bearer: ${token}` },
     });
-    processResponse(res);
+    processResponse(storageKey, res);
 };
 
-export const login = async (host: string, email: string, password: string) => {
+export const login = async (storageKey: string, host: string, email: string, password: string) => {
     // TODO figure out what the behavior is here if we're offline
     const res = await fetch(`${window.location.protocol}//${host}/api/login`, {
         method: 'POST',
@@ -95,10 +95,11 @@ export const login = async (host: string, email: string, password: string) => {
             'Content-Type': 'application/json',
         },
     });
-    return processResponse(res);
+    return processResponse(storageKey, res);
 };
 
 export const signup = async (
+    storageKey: string,
     host: string,
     email: string,
     password: string,
@@ -113,7 +114,5 @@ export const signup = async (
             'Content-Type': 'application/json',
         },
     });
-    return processResponse(res);
+    return processResponse(storageKey, res);
 };
-
-export const storageKey = `tree-notes`;

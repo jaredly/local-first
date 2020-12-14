@@ -8,7 +8,7 @@ import 'typeface-roboto';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
 
-import Auth from './Auth';
+import Auth from '../../shared/Auth';
 import App from './App';
 
 const darkTheme = createMuiTheme({
@@ -57,6 +57,7 @@ const Main = ({ host, dbName }: { host: ?string, dbName: string }) => {
         <ThemeProvider theme={darkTheme}>
             <CssBaseline />
             <Auth
+                storageKey="tree-notes"
                 host={host}
                 render={(auth, logout) => <App dbName={dbName} authData={{ host, auth, logout }} />}
             />

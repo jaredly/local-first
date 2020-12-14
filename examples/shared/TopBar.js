@@ -8,13 +8,12 @@ import MenuIcon from '@material-ui/icons/Menu';
 import Wifi from '@material-ui/icons/Wifi';
 import WifiOff from '@material-ui/icons/WifiOff';
 import * as React from 'react';
-import type { Data } from './auth-api';
 import { Link } from 'react-router-dom';
-import type { Client, SyncStatus } from '../../../packages/client-bundle';
-import { useSyncStatus } from '../../../packages/client-react';
+import type { Client, SyncStatus } from '../../packages/client-bundle';
+import { useSyncStatus } from '../../packages/client-react';
 
-type Props = { client: Client<SyncStatus>, openMenu: () => void };
-const TopBar = ({ openMenu, client }: Props) => {
+type Props = { client: Client<SyncStatus>, openMenu: () => void, title: string };
+const TopBar = ({ openMenu, client, title }: Props) => {
     const styles = useStyles();
     const syncStatus = useSyncStatus(React, client);
 
@@ -32,7 +31,7 @@ const TopBar = ({ openMenu, client }: Props) => {
                 </IconButton>
                 <Typography variant="h6" className={styles.title}>
                     <Link style={{ color: 'inherit', textDecoration: 'none' }} to="/">
-                        Tree Notes
+                        {title}
                     </Link>
                 </Typography>
                 <div style={{ flex: 1 }} />
@@ -46,7 +45,7 @@ const TopBar = ({ openMenu, client }: Props) => {
     );
 };
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles(theme => ({
     connected: {
         color: theme.palette.primary.dark,
     },

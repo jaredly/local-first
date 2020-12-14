@@ -15,7 +15,7 @@ import LabelOutlined from '@material-ui/icons/LabelOutlined';
 import GetApp from '@material-ui/icons/GetApp';
 import Publish from '@material-ui/icons/Publish';
 import * as React from 'react';
-import type { Data } from './auth-api';
+import type { Data } from '../../shared/auth-api';
 // import type { ListItem } from './types';
 import { type Client, type SyncStatus, type Collection } from '../../../packages/client-bundle';
 import { useCollection } from '../../../packages/client-react';
