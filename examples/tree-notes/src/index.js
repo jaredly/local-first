@@ -9,7 +9,7 @@ import 'typeface-roboto';
 import CssBaseline from '@material-ui/core/CssBaseline';
 
 import Auth from '../../shared/Auth';
-import App from './App';
+import App, { type ConnectionConfig } from './App';
 
 const darkTheme = createMuiTheme({
     palette: {
@@ -62,7 +62,7 @@ const Main = ({
         return (
             <ThemeProvider theme={darkTheme}>
                 <CssBaseline />
-                <App dbName={dbName} authData={null} />
+                <App config={{ type: 'memory' }} />
             </ThemeProvider>
         );
     }
@@ -72,7 +72,9 @@ const Main = ({
             <Auth
                 storageKey={storageKey}
                 host={host}
-                render={(auth, logout) => <App dbName={dbName} authData={{ host, auth, logout }} />}
+                render={(auth, logout) => (
+                    <App config={{ type: 'remote', dbName, authData: { host, auth, logout } }} />
+                )}
             />
         </ThemeProvider>
     );

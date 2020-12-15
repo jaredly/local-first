@@ -32,28 +32,24 @@ type ConnectionConfig =
       }
     | {
           type: 'remote',
-          host: string,
-          docName: string,
+          dbName: string,
           autoData: AuthData,
       };
 
-const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
+const App = ({ config }: { config: ConnectionConfig }) => {
     const client = React.useMemo(() => {
-        console.log('starting a client', authData);
-        if (!authData) {
-            const mem = createInMemoryEphemeralClient(schemas);
-            window.inMemoryClient = mem;
-            return mem;
+        if (config.type === 'memory') {
+            return createInMemoryEphemeralClient(schemas);
         }
-        const url = `${authData.host}/dbs/sync?db=trees&token=${authData.auth.token}`;
+        const url = `${config.authData.host}/dbs/sync?db=trees&token=${config.authData.auth.token}`;
         return createPersistedDeltaClient(
-            dbName,
+            config.dbName,
             schemas,
-            `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
+            `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
             3,
             {},
         );
-    }, [authData]);
+    }, [config.authData]);
     const match = useRouteMatch();
     const local = React.useMemo(() => new LocalClient('tree-notes'), []);
     window.client = client;
@@ -66,7 +62,7 @@ const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
                 title="Tree notes"
                 Drawer={Drawer}
                 drawerItems={null}
-                authData={authData}
+                authData={config.authData}
                 client={client}
             >
                 <RouteSwitch>
