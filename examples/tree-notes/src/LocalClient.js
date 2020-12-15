@@ -22,19 +22,48 @@ const saveJson = (id, value) => (localStorage[id] = JSON.stringify(value));
 
 export type Node = { focus: () => void };
 
+export const useExpanded = (local: LocalClient, id: string) => {
+    const [expanded, setExpanded] = React.useState(local.isExpanded(id));
+    React.useEffect(() => {
+        return local.listen(id, (expanded) => setExpanded(expanded));
+    });
+    return expanded;
+};
+
 export default class LocalClient {
     expanded: { [key: string]: boolean } = {};
     refs: { [key: string]: React.ElementRef<*> } = {};
     focusNext: ?string = null;
     id: string;
     _saveTimeout: ?TimeoutID;
+    _listeners: { [key: string]: Array<(boolean) => void> };
 
     constructor(id: string) {
         this.id = id;
         this.expanded = loadJson(expandKey(id)) || {};
+        this._listeners = {};
     }
 
-    setFocus(id: string) {
+    teardown() {
+        localStorage.removeItem(expandKey(this.id));
+    }
+
+    listen(id: string, fn: (boolean) => void): () => void {
+        // const listener =
+        if (!this._listeners[id]) {
+            this._listeners[id] = [fn];
+        } else {
+            this._listeners[id].push(fn);
+        }
+        return () => {
+            this._listeners[id] = this._listeners[id].filter((f) => f !== fn);
+        };
+    }
+
+    setFocus(id: ?string) {
+        if (id == null) {
+            return;
+        }
         if (this.refs[id]) {
             this.refs[id].focus();
         } else {
@@ -47,7 +76,13 @@ export default class LocalClient {
     }
 
     setExpanded(id: string, expanded: boolean) {
+        if (this.expanded[id] == expanded) {
+            return;
+        }
         this.expanded[id] = expanded;
+        if (this._listeners[id]) {
+            this._listeners[id].forEach((f) => f(expanded));
+        }
         this.save();
     }
 
@@ -71,6 +106,7 @@ export default class LocalClient {
         }
         this.refs[id] = node;
         if (this.focusNext === id) {
+            // console.log('found', id, 'and focusing');
             node.focus();
             this.focusNext = null;
         }

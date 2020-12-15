@@ -12,50 +12,6 @@ import { type CRDT, type Delta } from '../../../packages/rich-text-crdt';
 import deepEqual from '@birchill/json-equalish';
 import keymap from './QuillKeyMap';
 
-// let atLeft = quill => {
-//   let sel = getSelection(quill);
-//   switch (Js.toOption(sel)) {
-//   | None => false
-//   | Some(sel) =>
-//     View.Range.indexGet(sel) == 0. && View.Range.lengthGet(sel) == 0.
-//   };
-// };
-
-// let atRight = quill => {
-//   let sel = getSelection(quill);
-//   switch (Js.toOption(sel)) {
-//   | None => false
-//   | Some(sel) =>
-//     View.Range.lengthGet(sel) == 0.
-//     && View.Range.indexGet(sel) == getLength(quill)
-//     -. 1.
-//   };
-// };
-
-// let atTop = quill => {
-//   let sel = getSelection(quill);
-//   switch (Js.toOption(sel)) {
-//   | None => false
-//   | Some(sel) =>
-//     View.Range.lengthGet(sel) == 0.
-//     &&
-//     getBounds(quill, View.Range.indexGet(sel))##top ==
-//     getBounds(quill, 0.)##top
-//   };
-// };
-
-// let atBottom = quill => {
-//   let sel = getSelection(quill);
-//   switch (Js.toOption(sel)) {
-//   | None => false
-//   | Some(sel) =>
-//     View.Range.lengthGet(sel) == 0.
-//     &&
-//     getBounds(quill, View.Range.indexGet(sel))##top ==
-//     getBounds(quill, getLength(quill))##top
-//   };
-// };
-
 const QuillEditor = ({
     value,
     onChange,
@@ -82,9 +38,9 @@ const QuillEditor = ({
         const newContents = stateToQuillContents(value);
         const currentContents = quill.getContents();
         if (!deepEqual(newContents.ops, currentContents.ops)) {
-            console.log('new contents', newContents, currentContents, value, valueRef.current);
+            // console.log('new contents', newContents, currentContents, value, valueRef.current);
             const sel = quill.getSelection();
-            const pos = sel ? quillToTreePos(valueRef.current, quill.getSelection()) : null;
+            const pos = sel ? quillToTreePos(valueRef.current, sel) : null;
             quill.setContents(newContents, 'crdt');
             if (pos) {
                 quill.setSelection(treeToQuillPos(value, pos));
@@ -94,11 +50,14 @@ const QuillEditor = ({
     valueRef.current = value;
 
     React.useEffect(() => {
-        console.log(ref);
+        // console.log(ref);
         const quill = (ui.current = new Quill(ref.current, keymap(actions)));
         innerRef(quill);
         quill.setContents(stateToQuillContents(value));
-        quill.setSelection(quill.getLength(), 0);
+        // TODO: this focuses the editor automatically, which I don't want :/
+        // I just want to prefill the selection to here, so that when it's "focus()"ed,
+        // it doesn't select at the start. Might need to hack on quill to fix.
+        // quill.setSelection(quill.getLength(), 0);
 
         quill.on('text-change', (delta: { ops: Array<QuillDelta> }, _oldDelta, source: string) => {
             if (source === 'crdt') {
@@ -127,7 +86,7 @@ const QuillEditor = ({
         return () => innerRef(null);
     }, []);
 
-    return <div className={className} ref={ref} />;
+    return <div className={(className || '') + ' ql-container ql-bubble'} ref={ref} />;
 };
 
 export default QuillEditor;

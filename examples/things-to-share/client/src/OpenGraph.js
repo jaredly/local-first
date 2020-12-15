@@ -9,6 +9,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import Typography from '@material-ui/core/Typography';
 import PlayIcon from '@material-ui/icons/PlayCircleFilled';
 import * as React from 'react';
+import * as he from 'he';
 
 const useStyles = makeStyles((theme) => ({
     //
@@ -43,6 +44,25 @@ const useStyles = makeStyles((theme) => ({
     closer: {
         cursor: 'pointer',
     },
+
+    images1: {
+        marginBottom: 16,
+    },
+    images2: {
+        marginBottom: 16,
+        alignItems: 'center',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        backgroundColor: 'black',
+    },
+    image_0_of_3: {
+        gridRow: '1 / 3',
+        gridColumn: '1',
+    },
+    image: {
+        maxHeight: '100vh',
+        objectFit: 'contain',
+    },
 }));
 
 const getOgs = (data: mixed, key: string) => {
@@ -56,13 +76,13 @@ export const getOg = (data: mixed, key: string) => {
     return data[key][0];
 };
 
-const VideoPreview = ({ styles, video, video_type, image }) => {
+const VideoPreview = ({ styles, video, url, video_type, image }) => {
     if (video_type !== 'text/html') {
         return <video src={video} controls />;
     }
     return (
         <a
-            href={video}
+            href={url}
             target="_blank"
             rel="noreferrer"
             className={styles.videoPreview}
@@ -136,10 +156,12 @@ const OpenGraph = ({
     const site_name = getOg(data, 'og:site_name');
     // for images, need to filter out twitter avatar ones probably
 
-    const [title, description] =
+    let [title, description] =
         site_name === 'Twitter'
             ? [getOg(data, 'og:description'), getOg(data, 'og:title')]
             : [getOg(data, 'og:title'), getOg(data, 'og:description')];
+    title = he.decode(title);
+    description = he.decode(description);
 
     return (
         <Card className={nested ? styles.nestedRoot : styles.root}>
@@ -156,18 +178,25 @@ const OpenGraph = ({
             {type === 'image' ||
             (type === 'article' &&
                 (site_name !== 'Twitter' ||
-                    getOg(data, 'og:image:user_generated') === 'true'))
-                ? images.map((url, i) => (
-                      <CardMedia
-                          key={url}
-                          style={i > 0 ? { marginTop: 12 } : null}
-                          component="img"
-                          // className={classes.media}
-                          image={url}
-                          title="Image"
-                      />
-                  ))
-                : null}
+                    getOg(data, 'og:image:user_generated') === 'true')) ? (
+                <div className={styles['images' + Math.min(2, images.length)]}>
+                    {images.map((url, i) => (
+                        <CardMedia
+                            className={
+                                styles[`image_${i}_of_${images.length}`] +
+                                ' ' +
+                                styles.image
+                            }
+                            key={url}
+                            // style={i > 0 ? { marginTop: 12 } : null}
+                            component="img"
+                            // className={classes.media}
+                            image={url}
+                            title="Image"
+                        />
+                    ))}
+                </div>
+            ) : null}
             {type === 'video' || type === 'video.other' ? (
                 <VideoPreview
                     styles={styles}
@@ -178,24 +207,6 @@ const OpenGraph = ({
                 />
             ) : null}
 
-            {/* <CardActions disableSpacing>
-        <IconButton aria-label="add to favorites">
-          PlayIconFavoriteIcon />
-        </IconButton>
-        <IconButton aria-PlayCircleFilled="share">
-          <ShareIcon />
-        </IconButton>
-        <IconButton
-          className={clsx(classes.expand, {
-            [classes.expandOpen]: expanded,
-          })}
-          onClick={handleExpandClick}
-          aria-expanded={expanded}
-          aria-label="show more"
-        >
-          <ExpandMoreIcon />
-        </IconButton>
-      </CardActions> */}
             <CardHeader
                 // avatar={
                 //   <Avatar aria-label="recipe" className={classes.avatar}>
@@ -207,21 +218,24 @@ const OpenGraph = ({
                 //     {/* <MoreVertIcon /> */}
                 //   </IconButton>
                 // }
-                title={description}
                 subheader={
                     <Link
-                        color="secondary"
+                        color="white"
                         rel="noreferrer"
                         target="_blank"
                         href={url}
+                        style={{
+                            textDecoration: 'underline',
+                            color: 'white',
+                        }}
                     >
-                        {url}
+                        {description}
                     </Link>
                 }
             />
             {/* $FlowFixMe */}
             {data.embedded ? (
-                <div style={{ padding: 12 }}>
+                <div style={{ padding: 12, paddingTop: 0 }}>
                     <OpenGraph nested data={data.embedded} url={url} />
                 </div>
             ) : null}

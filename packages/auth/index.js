@@ -43,9 +43,10 @@ export const setupAuth = (
         } else {
             const token = createUserSession(db, secret, user.id, req.ip);
             res.cookie('token', token, {
-                // secure: true,
-                // 30 days
-                maxAge: 30 * 24 * 3600 * 1000,
+                // TODO: this should auto-refresh when you use the app within
+                // a reasonable period of time.
+                // 60 days
+                maxAge: 60 * 24 * 3600 * 1000,
             });
             res.set('X-Session', token);
             res.status(200).json(user.info);

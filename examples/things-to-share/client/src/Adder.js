@@ -296,9 +296,11 @@ const AdderBody = ({
 
 export const getData = (host: string, link: string) =>
     fetch(
-        `${
-            window.location.protocol
-        }//${host}/proxy/info?url=${encodeURIComponent(link)}`,
+        `https://get-open-graph.jaredly.workers.dev` +
+            // `${
+            //     window.location.protocol
+            // }//${host}/proxy/info` +
+            `?url=${encodeURIComponent(link)}`,
     )
         .then((res) => res.json())
         .catch((err) => null);

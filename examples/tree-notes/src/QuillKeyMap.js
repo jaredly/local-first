@@ -29,7 +29,8 @@ const atBottom = (quill) => {
 };
 
 const map = (props: *, registry: *): * => ({
-    theme: false,
+    // theme: false,
+    theme: 'bubble',
     // registry: registry,
     placeholder: ' ',
     modules: {
@@ -48,6 +49,7 @@ const map = (props: *, registry: *): * => ({
               searchTerm,
             ),
       }, */
+        // return TRUE if the handler *fell through*. return FALSE if the handler succeeded, and bubbling should stop.
         keyboard: {
             bindings: {
                 collapse: {
@@ -121,7 +123,7 @@ const map = (props: *, registry: *): * => ({
                     key: 27,
                     collapsed: false,
                     handler() {
-                        let selection = this.quill.getSelection;
+                        let selection = this.quill.getSelection();
                         if (!selection) return;
                         this.quill.setSelection(selection.index + selection.length, 0, 'user');
                         return false;
@@ -139,6 +141,25 @@ const map = (props: *, registry: *): * => ({
                     collapsed: true,
                     handler() {
                         return !(atBottom(this.quill) && props.onDown() != null);
+                    },
+                },
+                tab: {
+                    key: 9,
+                    collapsed: true,
+                    // shiftKey: false,
+                    handler() {
+                        // evt.preventDefault();
+                        console.log('indent here folks');
+                        return !(atLeft(this.quill) && props.onIndent());
+                    },
+                },
+                dedent: {
+                    key: 9,
+                    collapsed: true,
+                    shiftKey: true,
+                    handler() {
+                        console.log('dedent');
+                        return !(atLeft(this.quill) && props.onDedent());
                     },
                 },
                 'create-child': {

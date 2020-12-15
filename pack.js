@@ -12,6 +12,12 @@ const packages = [
         start: true,
     },
     {
+        name: 'general-server',
+        entry: 'examples/general-server/glitch.js',
+        dest: 'public/general-server',
+        start: true,
+    },
+    {
         name: 'things-to-share',
         entry: 'examples/things-to-share/server/glitch.js',
         dest: 'public/things-to-share-server',

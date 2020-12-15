@@ -463,7 +463,12 @@ export const apply = (current: CRDT, delta: Delta | Array<Delta>): CRDT => {
     try {
         checkConsistency(state);
     } catch (err) {
-        debugger;
+        console.error('Inconsistent state encountered while applying a text delta!');
+        console.log(current);
+        console.log(delta);
+        console.log(state);
+        console.error(err);
+        // debugger;
     }
     return state;
 };

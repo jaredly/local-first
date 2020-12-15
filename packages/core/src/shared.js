@@ -151,7 +151,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             validate(node, schema);
             // NOTE this overwrites everything, setAttribute will do much better merges
             const delta = crdt.deltas.replace(crdt.createValue(node, getStamp(), getStamp, schema));
-            applyDelta(id, delta, true);
+            return applyDelta(id, delta, true);
         },
 
         async applyRichTextDelta(id: string, path: Array<string | number>, delta: RichTextDelta) {

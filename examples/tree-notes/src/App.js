@@ -1,10 +1,6 @@
 // @flow
 import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 
-import Button from '@material-ui/core/Button';
-import IconButton from '@material-ui/core/IconButton';
-import Snackbar from '@material-ui/core/Snackbar';
-import CloseIcon from '@material-ui/icons/Close';
 import querystring from 'querystring';
 import ListItem from '@material-ui/core/ListItem';
 import Switch from '@material-ui/core/Switch';
@@ -15,196 +11,110 @@ import {
     createPersistedDeltaClient,
     createPollingPersistedDeltaClient,
     createInMemoryDeltaClient,
+    createInMemoryEphemeralClient,
 } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
-import type { Data } from './auth-api';
+import type { Data } from '../../shared/auth-api';
+import type { AuthData } from '../../shared/Auth';
 
 import schemas from '../collections';
-import Item from './Item';
 import LocalClient from './LocalClient';
-import { type DropTarget } from './dragging';
-import AppShell from './AppShell';
+import AppShell from '../../shared/AppShell';
+import Drawer from './Drawer';
+import UpdateSnackbar from '../../shared/Update';
+import Items from './Items';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
-import { blankItem } from './types';
-
-const genId = () => Math.random().toString(36).slice(2);
-
-export type AuthData = { host: string, auth: Data, logout: () => mixed };
-
-const createClient = (dbName, authData) => {
-    const url = `${authData.host}/dbs/sync?db=trees&token=${authData.auth.token}`;
-    // if (false) {
-    //     return createPollingPersistedDeltaClient(
-    //         dbName,
-    //         schemas,
-    //         `${authData.host.startsWith('localhost:') ? 'http' : 'https'}://${url}`,
-    //         3,
-    //         {},
-    //     );
-    // }
-    return createPersistedDeltaClient(
-        dbName,
-        schemas,
-        `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
-        3,
-        {},
-    );
-    // : createPersistedBlobClient(dbName, schemas, null, 3);
-};
-
-type Dest =
+type ConnectionConfig =
     | {
-          type: 'before',
-          path: Array<string>,
+          type: 'memory',
       }
     | {
-          type: 'child',
-          path: Array<string>,
-      }
-    | {
-          type: 'after',
-          path: Array<string>,
+          type: 'remote',
+          prefix: string,
+          authData: AuthData,
       };
-export type DragTarget = DropTarget<Dest>;
 
-const useDragging = () => {
-    const targetMakers = React.useMemo(() => ({}), []);
-    const onDragStart = (evt, path) => {
-        evt.preventDefault();
-        evt.stopPropagation();
-        const targets = [].concat(...Object.keys(targetMakers).map((id) => targetMakers[id](path)));
-        console.log('oh starting to drag, here we are', targets);
-        // return [];
-    };
-    const registerDragTargets = (id, cb) => {
-        if (!cb) {
-            delete targetMakers[id];
-        } else {
-            targetMakers[id] = cb;
-        }
-    };
-    return { onDragStart, registerDragTargets };
+const parseRawDoc = (rawDoc) => {
+    if (!rawDoc || !rawDoc.trim().length) {
+        return [null, null];
+    }
+    const parts = rawDoc.split(':');
+    if (parts.length === 1) {
+        return [rawDoc, null];
+    }
+    return [parts[0], parts[1]];
 };
 
-const Items = ({ client, local }) => {
-    const { registerDragTargets, onDragStart } = useDragging();
-    const { id } = useParams();
-
-    return (
-        <Item
-            path={[]}
-            id={id || 'root'}
-            client={client}
-            local={local}
-            registerDragTargets={registerDragTargets}
-            onDragStart={onDragStart}
-        />
-    );
-};
-
-const App = ({ dbName, authData }: { dbName: string, authData: AuthData }) => {
+const App = ({ config }: { config: ConnectionConfig }) => {
+    const { doc: rawDoc } = useParams();
+    const [docId, itemId] = parseRawDoc(rawDoc);
+    const dbName = config.prefix + (docId ? '/' + docId : '');
     const client = React.useMemo(() => {
-        console.log('starting a client', authData);
-        return createClient(dbName, authData);
-    }, [authData]);
+        if (config.type === 'memory') {
+            return createInMemoryEphemeralClient(schemas);
+        }
+        const url = `${config.authData.host}/dbs/sync?db=trees/${docId || 'home'}&token=${
+            config.authData.auth.token
+        }`;
+        return createPersistedDeltaClient(
+            dbName,
+            schemas,
+            `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
+            3,
+            {},
+        );
+    }, [config.authData, docId]);
+    React.useEffect(() => {
+        if (config.type !== 'remote') {
+            return;
+        }
+        return config.authData.onLogout(() => client.teardown());
+    }, [client, config.type === 'remote' ? config.authData : null]);
     const match = useRouteMatch();
-
-    const local = React.useMemo(() => new LocalClient('tree-notes'), []);
+    const local = React.useMemo(() => new LocalClient(dbName), []);
+    React.useEffect(() => {
+        if (config.type !== 'remote') {
+            return;
+        }
+        return config.authData.onLogout(() => local.teardown());
+    }, [local, config.type === 'remote' ? config.authData : null]);
 
     window.client = client;
-
     const [col, items] = useCollection(React, client, 'items');
-
     const [_, item] = useItem(React, client, 'items', 'root');
-
-    const [showUpgrade, setShowUpgrade] = React.useState(
-        window.upgradeAvailable && window.upgradeAvailable.installed,
-    );
 
     return (
         <div>
-            {item === false ? (
-                'Not loaded'
-            ) : item === null ? (
-                <button
-                    onClick={() => {
-                        const id = 'root';
-                        const item = { ...blankItem(), id };
-                        col.save(id, item);
-                        console.log('saving');
-                    }}
-                >
-                    Create a root folks
-                </button>
-            ) : (
-                <AppShell
-                    drawerItems={
-                        // <ListItem>
-                        //     <FormControlLabel
-                        //         control={
-                        //             <Switch
-                        //                 checked={showAll}
-                        //                 onChange={() => setShowAll(!showAll)}
-                        //                 color="primary"
-                        //             />
-                        //         }
-                        //         label="Show completed"
-                        //     />
-                        // </ListItem>
-                        null
-                    }
-                    authData={authData}
-                    // auth={auth}
-                    // host={host}
-                    // logout={logout}
-                    client={client}
-                >
-                    <RouteSwitch>
-                        <Route path={`${match.path == '/' ? '' : match.path}/item/:id`}>
-                            <Items client={client} local={local} />
-                        </Route>
-                        <Route path={`${match.path == '/' ? '' : match.path}`}>
-                            <Items client={client} local={local} />
-                        </Route>
-                    </RouteSwitch>
-                </AppShell>
-            )}
-            <Snackbar
-                anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'left',
-                }}
-                open={showUpgrade}
-                autoHideDuration={6000}
-                onClose={() => setShowUpgrade(false)}
-                message="Update available"
-                action={
-                    <React.Fragment>
-                        <Button
-                            color="secondary"
-                            size="small"
-                            onClick={() => {
-                                window.upgradeAvailable.waiting.postMessage({
-                                    type: 'SKIP_WAITING',
-                                });
-                                setShowUpgrade(false);
-                            }}
-                        >
-                            Reload
-                        </Button>
-                        <IconButton
-                            size="small"
-                            aria-label="close"
-                            color="inherit"
-                            onClick={() => setShowUpgrade(false)}
-                        >
-                            <CloseIcon fontSize="small" />
-                        </IconButton>
-                    </React.Fragment>
-                }
-            />
+            <AppShell
+                title="Tree notes"
+                renderDrawer={(isOpen, onClose) => (
+                    <Drawer
+                        pageItems={null}
+                        onClose={onClose}
+                        open={isOpen}
+                        authData={config.authData}
+                        client={client}
+                    />
+                )}
+                Drawer={Drawer}
+                drawerItems={null}
+                authData={config.authData}
+                client={client}
+            >
+                <Items client={client} local={local} col={col} id={itemId} />
+                {/* <RouteSwitch>
+                    <Route path={`${match.path == '/' ? '' : match.path}/item/:id`}>
+                        <Items client={client} local={local} col={col} />
+                    </Route>
+                    <Route path={`${match.path == '/' ? '' : match.path}`}>
+                        <Items client={client} local={local} col={col} />
+                    </Route>
+                </RouteSwitch> */}
+            </AppShell>
+            {/* )} */}
+            <UpdateSnackbar />
         </div>
     );
 };

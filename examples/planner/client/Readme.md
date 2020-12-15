@@ -16,3 +16,9 @@ So, that doesn't fix "I made a change and forgot to send it". But we can assume 
 
 Ok, so I need to write a test, right?
 Do I even have tests?
+
+
+
+Um so apparently my fix didn't even totally work? There was some more broken way that things were? including some node with undefined children? idk.
+oh, it was that there was an update being applied out of order. which definitely shouldn't happen?
+And didn't happen once I deleted the app & restarted it....

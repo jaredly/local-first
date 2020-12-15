@@ -7,9 +7,11 @@ import { type Client } from '../../../packages/client-bundle';
 import QuillEditor from './QuillEditor';
 import type { ItemT } from '../collections';
 import * as navigation from './navigation';
-import LocalClient from './LocalClient';
-import { type DragTarget } from './App';
+import LocalClient, { useExpanded } from './LocalClient';
+import { type DragTarget } from './Items';
 import { length } from '../../../packages/rich-text-crdt/utils';
+import * as rich from '../../../packages/rich-text-crdt/';
+import { blankItem } from './types';
 
 const arrayStartsWith = (needle, haystack) => {
     if (haystack.length < needle.length) {
@@ -23,108 +25,219 @@ const arrayStartsWith = (needle, haystack) => {
     return true;
 };
 
-const Item = ({
-    path,
-    id,
-    client,
-    local,
-    registerDragTargets,
-    onDragStart,
-}: {
+const itemActions = ({ client, col, path, id, local }) => ({
+    onUp() {
+        const up = navigation.goUp(col, path, id);
+        if (up != null) {
+            local.setFocus(up);
+            return true;
+        }
+    },
+    onIndent() {
+        const newParent = navigation.indent(client, col, path, id);
+        if (newParent != null) {
+            local.setExpanded(newParent, true);
+            local.setFocus(id);
+            return true;
+        }
+        return false;
+    },
+    onDedent() {
+        if (navigation.dedent(client, col, path, id)) {
+            local.setFocus(id);
+            return true;
+        }
+        return false;
+    },
+    onBackspace(contents: string) {
+        if (contents == null) {
+        }
+    },
+    onDown() {
+        const down = navigation.goDown(col, path, id);
+        if (down) {
+            local.setFocus(down);
+            return true;
+        }
+    },
+    onLeft() {
+        const up = navigation.goUp(col, path, id);
+        if (up != null) {
+            local.setFocus(up);
+            return true;
+        }
+    },
+    onRight() {
+        const down = navigation.goDown(col, path, id);
+        if (down) {
+            local.setFocus(down);
+            return true;
+        }
+    },
+    onEnter() {
+        // console.log('enter');
+        const current = col.getCached(id);
+        if (!current) return;
+        if (current.children.length || !path.length) {
+            const nid = navigation.createChild(client, col, path, id);
+            local.setFocus(nid);
+        } else {
+            const nid = navigation.createSibling(client, col, path, id);
+            if (nid != null) {
+                local.setFocus(nid);
+            }
+        }
+    },
+    onCreateChild() {
+        local.setExpanded(id, true);
+        const newId = navigation.createChild(client, col, path, id);
+        local.setFocus(newId);
+    },
+    onCreateAunt() {
+        const newId = navigation.createAunt(client, col, path, id);
+        local.setFocus(newId);
+    },
+});
+
+const dragHandler = ({ node, childPath, bodyRef, col, id, local }) => (currentPath) => {
+    // TODO need to be able to escape a parent. So if you are a descendent of a thing
+    // that should not prevent you from going above or below the thing.
+    // it's only that you shouldn't be able to go inside yourself.
+    if (childPath.length === 1) {
+        return [];
+    }
+    if (arrayStartsWith(currentPath, childPath)) {
+        return [];
+    }
+    const body = bodyRef.current;
+    if (!body) {
+        return [];
+    }
+    const bodyBox = body.getBoundingClientRect();
+    const box = node.getBoundingClientRect();
+    const current = col.getCached(id);
+    if (!current) {
+        return [];
+    }
+    const parent = node.offsetParent;
+    if (!parent) {
+        return [];
+    }
+    const pTop = parent.getBoundingClientRect().top;
+    if (local.isExpanded(id) && current.children.length) {
+        return [
+            {
+                parent,
+                top: bodyBox.top,
+                height: bodyBox.height / 2,
+                left: bodyBox.left,
+                width: bodyBox.width,
+                dest: { type: 'before', path: childPath },
+            },
+            {
+                parent,
+                top: bodyBox.top + bodyBox.height / 2,
+                height: bodyBox.height / 2,
+                left: bodyBox.left,
+                width: bodyBox.width,
+                dest: { type: 'child', path: childPath },
+            },
+            {
+                parent,
+                top: box.bottom, //  - 10,
+                height: bodyBox.height / 2,
+                left: bodyBox.left,
+                width: bodyBox.width,
+                dest: { type: 'after', path: childPath },
+            },
+            // above (top half)
+            // firstChild (bottom half)
+            // below (line at end of children)
+        ];
+    } else {
+        return [
+            // above
+            {
+                parent,
+                top: bodyBox.top,
+                height: bodyBox.height / 2,
+                left: bodyBox.left,
+                width: bodyBox.width,
+                dest: { type: 'before', path: childPath },
+            },
+            // below
+            {
+                parent,
+                top: bodyBox.top + bodyBox.height / 2,
+                height: bodyBox.height / 2,
+                left: bodyBox.left,
+                width: bodyBox.width,
+                dest: { type: 'after', path: childPath },
+            },
+        ];
+    }
+};
+
+const blankBody = () => {
+    const crdt = rich.init();
+    return rich.apply(crdt, rich.insert(crdt, ':root:', 0, '\n'));
+};
+const defaultEmptyBody = blankBody();
+
+type Props = {
     path: Array<string>,
     id: string,
     client: Client<*>,
     local: LocalClient,
     onDragStart: (MouseEvent, Array<string>) => void,
     registerDragTargets: (string, ?(Array<string>) => Array<DragTarget>) => void,
-}) => {
+};
+
+const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Props) => {
     const [col, item] = useItem<ItemT, *>(React, client, 'items', id);
-    const childPath = path.concat([id]);
+    const childPath = React.useMemo(() => path.concat([id]), [path, id]);
     const bodyRef = React.useRef(null);
+    const isExpanded = useExpanded(local, id);
+
+    const blingColor =
+        path.length === 0 ? 'transparent' : `rgba(255,255,255,${1 - (path.length % 5) / 5})`;
 
     if (item === false) {
         return null; // loading
     }
     if (item == null) {
+        if (id === 'root') {
+            return (
+                <button
+                    onClick={() => {
+                        const item = { ...blankItem(), id };
+                        col.save(id, item);
+                        console.log('saving');
+                    }}
+                >
+                    Create root
+                </button>
+            );
+        }
         return 'Item does not exist';
     }
+    const collapsible = path.length > 0 && item.children.length > 0;
+    const collapsed = collapsible && !isExpanded; // !local.isExpanded(id);
     return (
         <div
             ref={(node) => {
                 if (node) {
-                    registerDragTargets(id, (currentPath) => {
-                        if (arrayStartsWith(childPath, currentPath)) {
-                            return [];
-                        }
-                        const body = bodyRef.current;
-                        if (!body) {
-                            return [];
-                        }
-                        const bodyBox = body.getBoundingClientRect();
-                        const box = node.getBoundingClientRect();
-                        const current = col.getCached(id);
-                        if (!current) {
-                            return [];
-                        }
-                        const parent = node.offsetParent;
-                        if (!parent) {
-                            return [];
-                        }
-                        const pTop = parent.getBoundingClientRect().top;
-                        if (local.isExpanded(id) && current.children.length) {
-                            return [
-                                {
-                                    parent,
-                                    top: bodyBox.top,
-                                    height: bodyBox.height / 2,
-                                    left: bodyBox.left,
-                                    width: bodyBox.width,
-                                    dest: { type: 'before', path: childPath },
-                                },
-                                {
-                                    parent,
-                                    top: bodyBox.top + bodyBox.height / 2,
-                                    height: bodyBox.height,
-                                    left: bodyBox.left,
-                                    width: bodyBox.width,
-                                    dest: { type: 'child', path: childPath },
-                                },
-                                {
-                                    parent,
-                                    top: box.bottom - 10,
-                                    height: box.height,
-                                    left: bodyBox.left,
-                                    width: bodyBox.width,
-                                    dest: { type: 'after', path: childPath },
-                                },
-                                // above (top half)
-                                // firstChild (bottom half)
-                                // below (line at end of children)
-                            ];
-                        } else {
-                            return [
-                                // above
-                                {
-                                    parent,
-                                    top: bodyBox.top,
-                                    height: bodyBox.height / 2,
-                                    left: bodyBox.left,
-                                    width: bodyBox.width,
-                                    dest: { type: 'before', path: childPath },
-                                },
-                                // below
-                                {
-                                    parent,
-                                    top: bodyBox.top + bodyBox.height / 2,
-                                    height: bodyBox.height / 2,
-                                    left: bodyBox.left,
-                                    width: bodyBox.width,
-                                    dest: { type: 'after', path: childPath },
-                                },
-                            ];
-                        }
-                        // return [];
-                    });
+                    registerDragTargets(
+                        id,
+                        dragHandler({
+                            node,
+                            childPath,
+                            bodyRef,
+                            col,
+                            id,
+                            local,
+                        }),
+                    );
                 } else {
                     registerDragTargets(id, null);
                 }
@@ -139,15 +252,39 @@ const Item = ({
             >
                 <div
                     onMouseDown={(evt) => onDragStart(evt, childPath)}
+                    onClick={
+                        collapsible
+                            ? () => {
+                                  local.setExpanded(id, collapsed);
+                              }
+                            : null
+                    }
                     css={{
                         width: '2em',
                         alignSelf: 'stretch',
                         cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'center',
                         ':hover': {
                             backgroundColor: 'rgba(255,255,255,0.1)',
                         },
                     }}
-                />
+                >
+                    {collapsed ? (
+                        item.children.length
+                    ) : (
+                        <div
+                            css={{
+                                width: '.5em',
+                                height: '.5em',
+                                marginTop: '.5em',
+                                backgroundColor: blingColor,
+                                borderRadius: '.25em',
+                            }}
+                        />
+                    )}
+                </div>
                 <QuillEditor
                     css={{
                         flex: 1,
@@ -156,73 +293,40 @@ const Item = ({
                     }}
                     innerRef={(node) => local.register(id, node)}
                     value={item.body}
-                    actions={{
-                        onUp() {
-                            const up = navigation.goUp(col, path, id);
-                            if (up != null) {
-                                local.setFocus(up);
-                                return true;
-                            }
-                        },
-                        onBackspace(contents: string) {
-                            if (contents == null) {
-                            }
-                        },
-                        onDown() {
-                            const down = navigation.goDown(col, path, id);
-                            if (down) {
-                                local.setFocus(down);
-                                return true;
-                            }
-                        },
-                        onLeft() {
-                            console.log('WIP');
-                        },
-                        onRight() {
-                            console.log('RIGHT');
-                        },
-                        onEnter() {
-                            console.log('enter');
-                            const current = col.getCached(id);
-                            if (!current) return;
-                            if (current.children.length || !path.length) {
-                                const nid = navigation.createChild(client, col, path, id);
-                                local.setFocus(nid);
-                            } else {
-                                const nid = navigation.createSibling(client, col, path, id);
-                                if (nid != null) {
-                                    local.setFocus(nid);
-                                }
-                            }
-                        },
-                        onCreateChild() {
-                            navigation.createChild(client, col, path, id);
-                        },
-                    }}
+                    actions={itemActions({ client, col, path, id, local })}
                     getStamp={client.getStamp}
-                    onChange={(body) => col.applyRichTextDelta(id, ['body'], body)}
+                    onChange={(delta) => {
+                        // console.log('Ok', delta);
+                        col.applyRichTextDelta(id, ['body'], delta);
+                    }}
                     siteId={client.sessionId}
                 />
             </div>
             <div
                 style={{
-                    paddingLeft: '2em',
+                    marginLeft: '1em',
+                    paddingLeft: '1em',
+                    borderLeft: '1px solid ' + blingColor,
                 }}
             >
-                {item.children.map((id) => (
-                    <Item
-                        path={childPath}
-                        id={id}
-                        key={id}
-                        client={client}
-                        local={local}
-                        onDragStart={onDragStart}
-                        registerDragTargets={registerDragTargets}
-                    />
-                ))}
+                {isExpanded || path.length === 0
+                    ? item.children.map((id) => (
+                          <MemoItem
+                              path={childPath}
+                              id={id}
+                              key={id}
+                              client={client}
+                              local={local}
+                              onDragStart={onDragStart}
+                              registerDragTargets={registerDragTargets}
+                          />
+                      ))
+                    : null}
             </div>
         </div>
     );
 };
 
-export default Item;
+const MemoItem = React.memo<Props>(Item);
+
+export default MemoItem;

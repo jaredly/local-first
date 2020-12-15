@@ -10,9 +10,10 @@ import * as server from './server';
 import setupSqliteServerPersistence from '../../server-bundle/sqlite-persistence';
 import { validateDelta } from '../../nested-object-crdt/src/schema.js';
 import setupServerPersistence from './memory-persistence';
-import { PersistentClock, inMemoryClockPersist } from './persistent-clock';
 import { type CRDTImpl, getCollection } from './shared';
 import type { ServerState, CRDTImpl as ServerCRDTImpl } from './server';
+import * as hlc from '../../hybrid-logical-clock/src';
+import type { HLC } from '../../hybrid-logical-clock/src';
 
 const otherMerge = (v1, m1, v2, m2) => {
     return { value: rich.merge(v1, v2), meta: null };
@@ -125,14 +126,35 @@ const someMessages = [
 ];
 const expectedValue = { yes: { one: 2, three: '4', five: { six: 8 } } };
 
+/**
+ * This is a "mock clock", just for testing.
+ * The "current time" only updates when you tell it to.
+ */
+const MockClock = (sessionId, initialTime) => {
+    let currentTime = initialTime;
+    let now = hlc.init(sessionId, currentTime);
+    const recv = (newClock: HLC) => (now = hlc.recv(now, newClock, currentTime));
+    const get = () => {
+        now = hlc.inc(now, currentTime);
+        return hlc.pack(now);
+    };
+    const setCurrentTime = newCurrentTime => (currentTime = newCurrentTime);
+    const getCurrentTime = () => currentTime;
+    return { recv, get, setCurrentTime, getCurrentTime };
+};
+
 const createClient = (sessionId, collections, messages) => {
     const persistence = makePersistence(collections);
     const state = client.initialState(persistence.collections);
-    const clock = new PersistentClock(inMemoryClockPersist());
-    // client
+    const clock = MockClock(sessionId + 'clock', 0);
+
     return {
+        _setCurrentTime: time => clock.setCurrentTime(time),
+        _getCurrentTime: () => clock.getCurrentTime(),
+        _state: state,
         sessionId,
         collections,
+        persistence,
         getMessages(): Promise<Array<ClientMessage<Delta, Data>>> {
             return client.getMessages(persistence, false);
         },
@@ -173,8 +195,8 @@ const createClient = (sessionId, collections, messages) => {
 const createServer = deltas => {
     const state: ServerState<Delta, Data> = server.default(
         serverCrdt,
-        // setupServerPersistence<Delta, Data>(),
-        setupSqliteServerPersistence('.test-data'),
+        setupServerPersistence(),
+        // setupSqliteServerPersistence('.test-data'),
         getSchemaChecker,
     );
     if (deltas) {
@@ -221,14 +243,14 @@ const createServer = deltas => {
     };
 };
 
-const fs = require('fs');
-beforeAll(() => {
-    fs.mkdirSync('./.test-data');
-});
-afterAll(() => {
-    fs.unlinkSync('./.test-data/data.db');
-    fs.rmdirSync('./.test-data');
-});
+// const fs = require('fs');
+// beforeAll(() => {
+//     fs.mkdirSync('./.test-data');
+// });
+// afterAll(() => {
+//     fs.unlinkSync('./.test-data/data.db');
+//     fs.rmdirSync('./.test-data');
+// });
 
 describe('client-server interaction', () => {
     it('Clean both - initial handshake', async () => {
@@ -273,7 +295,6 @@ describe('client-server interaction', () => {
         // hello world, back and forth
         const acks = server.receive(client.sessionId, await client.getMessages());
         const allServer = acks.concat(server.getMessages(client.sessionId));
-        console.log(allServer);
         const clientAcks = await client.receive(allServer);
         // expect(clientAcks).toEqual([]);
         // client is ack'ing the server's data, but doesn't have its own messages.
@@ -307,5 +328,162 @@ describe('client-server interaction', () => {
         expect(
             await client.receive(serverAcks.concat(server.getMessages(client.sessionId))),
         ).toEqual([]);
+    });
+
+    const settle = async (server, client) => {
+        let clientMessages = await client.getMessages();
+        let serverAcks = clientMessages.length
+            ? server.receive(client.sessionId, clientMessages)
+            : [];
+        let serverMessages = serverAcks.concat(server.getMessages(client.sessionId));
+        if (!serverMessages.length) {
+            return { clientMessages, serverMessages, clientResponses: [], serverResponses: [] };
+        }
+        // Ok this is the part where the client is like "wait nope, can't do it sorry."
+        let clientResponses = await client.receive(serverMessages);
+        let serverResponses = server.receive(client.sessionId, clientResponses);
+        if (serverResponses.length) {
+            throw new Error('after back & forth, server still wanted to ack');
+        }
+        return { clientMessages, serverMessages, clientResponses, serverResponses };
+    };
+
+    const settleMulti = async (server, clients) => {
+        const allMessages = [];
+        for (let rounds = 0; rounds < 10; rounds++) {
+            let settled = true;
+            const roundMessages = {};
+            for (let client of clients) {
+                const messages = await settle(server, client);
+                roundMessages[client.sessionId] = messages;
+                if (messages.serverMessages.length) {
+                    settled = false;
+                }
+            }
+            allMessages.push(roundMessages);
+            if (settled) {
+                return allMessages;
+            }
+        }
+        throw new Error('Not settled after 10 rounds?');
+    };
+
+    it('Two clients, should sync', async () => {
+        const client = createClient('a', ['people']);
+        const clientB = createClient('b', ['people']);
+        const server = createServer();
+
+        expect(await settleMulti(server, [client, clientB])).toHaveLength(2);
+
+        // Client and server now have equal state
+        expect(await client.getState()).toEqual(server.getState(client.collections));
+        expect(await clientB.getState()).toEqual(server.getState(clientB.collections));
+
+        const col = client.getCollection('people');
+        await col.save('two', { name: 'yoo', age: 4 });
+        await col.setAttribute('two', ['age'], 100);
+
+        expect(await settleMulti(server, [client, clientB])).toHaveLength(2);
+
+        // Client and server now have equal state
+        expect(await client.getState()).toEqual(server.getState(client.collections));
+        expect(await clientB.getState()).toEqual(server.getState(clientB.collections));
+
+        expect(await clientB.getCollection('people').load('two')).toEqual({
+            name: 'yoo',
+            age: 100,
+        });
+    });
+
+    const settleAndAssert = async (server, clients) => {
+        const allMessages = await settleMulti(server, clients);
+        for (let client of clients) {
+            expect(await client.getState()).toEqual(server.getState(client.collections));
+        }
+        incrementClocks(clients);
+        expect(allMessages).toMatchSnapshot();
+    };
+
+    const incrementClocks = clients => {
+        let maxTime = 0;
+        for (let client of clients) {
+            maxTime = Math.max(maxTime, client._getCurrentTime());
+        }
+        clients.forEach(client => client._setCurrentTime(maxTime + 100));
+    };
+
+    it('Two clients, incremental sync', async () => {
+        const client = createClient('a', ['people']);
+        const clientB = createClient('b', ['people']);
+        const server = createServer();
+
+        await settleAndAssert(server, [client, clientB]);
+
+        const col = client.getCollection('people');
+        await col.save('two', { name: 'yoo', age: 4 });
+
+        await settleAndAssert(server, [client, clientB]);
+
+        await col.setAttribute('two', ['age'], 100);
+
+        await settleAndAssert(server, [client, clientB]);
+
+        expect(await clientB.getCollection('people').load('two')).toEqual({
+            name: 'yoo',
+            age: 100,
+        });
+    });
+
+    it('Two clients make conflicting changes, later change wins', async () => {
+        const client = createClient('a', ['people']);
+        const clientB = createClient('b', ['people']);
+        const server = createServer();
+
+        await client.getCollection('people').save('two', { name: 'yoo', age: 4 });
+
+        await settleAndAssert(server, [client, clientB]);
+
+        await client.getCollection('people').setAttribute('two', ['age'], 100);
+        incrementClocks([client, clientB]);
+        await clientB.getCollection('people').setAttribute('two', ['age'], 200);
+
+        await settleAndAssert(server, [client, clientB]);
+
+        expect(await client.getCollection('people').load('two')).toEqual({
+            name: 'yoo',
+            age: 200,
+        });
+    });
+
+    // HMMM I should do some tests where I "reinflate" the client from persistence.
+
+    it('Client loses a record for some reason (??). Panic ensues.', async () => {
+        const client = createClient('a', ['people']);
+        const clientB = createClient('b', ['people']);
+        const server = createServer();
+
+        await client.getCollection('people').save('two', { name: 'yoo', age: 4 });
+
+        await settleAndAssert(server, [client, clientB]);
+
+        await client.getCollection('people').setAttribute('two', ['age'], 100);
+        // oh noes! we lost our datas.
+        clientB.persistence._db.collections['people:nodes'] = {};
+        clientB._state.people.cache = {};
+
+        await settleAndAssert(server, [client, clientB]);
+
+        expect(await clientB.getCollection('people').load('two')).toEqual({
+            name: 'yoo',
+            age: 100,
+        });
+    });
+
+    it('Client that gets an unexpected update should request a full dump', async () => {
+        fail;
+    });
+
+    it('If client accidentally loses all data, it should request a full dump on startup', async () => {
+        fail;
     });
 });
