@@ -48,12 +48,14 @@ const processResponse = async (storageKey: string, res, sentToken: ?string) => {
     const token =
         sentToken == null || sentToken.length == 0 ? res.headers.get('X-Session') : sentToken;
     if (token == null) {
+        // console.log('no token returned, clearing out');
         localStorage.removeItem(storageKey);
         listeners.forEach(fn => fn(false));
         return null;
     }
     const user = await res.json();
     const auth = { user, token };
+    // console.log('token returned', auth);
     localStorage.setItem(storageKey, JSON.stringify(auth));
     listeners.forEach(fn => fn(auth));
     return auth;

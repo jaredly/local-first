@@ -125,6 +125,7 @@ const SignUpIn = ({ storageKey, host }: { storageKey: string, host: string }) =>
                 <form
                     className={styles.body}
                     onSubmit={evt => {
+                        console.log('on submit', state);
                         evt.preventDefault();
                         if (state === 'initial') {
                             checkUsername();
@@ -168,14 +169,17 @@ const SignUpIn = ({ storageKey, host }: { storageKey: string, host: string }) =>
                                     value={password}
                                     onChange={evt => setPassword(evt.target.value)}
                                     type="password"
-                                    autoFocus={state === 'login'}
+                                    // autoFocus={state === 'login'}
                                     label={state === 'register' ? 'Create password' : 'Password'}
+                                    autoFocus
                                     variant="outlined"
                                     fullWidth
                                     disabled={loading}
                                     inputProps={{
                                         onKeyPress: evt => {
-                                            if (evt.key === 'Return') {
+                                            if (evt.key === 'Enter') {
+                                                evt.preventDefault();
+                                                evt.stopPropagation();
                                                 doLogin();
                                             }
                                         },
