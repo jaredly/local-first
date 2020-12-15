@@ -176,26 +176,7 @@ const dragHandler = ({ node, childPath, bodyRef, col, id, local }) => (currentPa
             },
         ];
     }
-    // return [];
 };
-
-// export const RootItem = ({
-//     path,
-//     id,
-//     client,
-//     local,
-//     registerDragTargets,
-//     onDragStart,
-// }: {
-//     path: Array<string>,
-//     id: string,
-//     client: Client<*>,
-//     local: LocalClient,
-//     onDragStart: (MouseEvent, Array<string>) => void,
-//     registerDragTargets: (string, ?(Array<string>) => Array<DragTarget>) => void,
-// }) => {
-//     return 'Hi';
-// };
 
 const blankBody = () => {
     const crdt = rich.init();

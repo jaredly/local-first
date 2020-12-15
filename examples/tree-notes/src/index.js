@@ -58,14 +58,14 @@ const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
             <Auth
                 storageKey={prefix + '/auth'}
                 host={host}
-                render={(auth, logout) => (
+                render={(authData) => (
                     <Switch>
                         <Route path="/:doc">
                             <App
                                 config={{
                                     type: 'remote',
                                     prefix,
-                                    authData: { host, auth, logout },
+                                    authData,
                                 }}
                             />
                         </Route>
@@ -74,7 +74,7 @@ const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
                                 config={{
                                     type: 'remote',
                                     prefix,
-                                    authData: { host, auth, logout },
+                                    authData,
                                 }}
                             />
                         </Route>

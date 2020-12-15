@@ -286,6 +286,7 @@ function createClient<Delta, Data, SyncStatus>(
             return persistence.fullExport();
         },
         teardown: async () => {
+            console.log('tearing down folks');
             clock.teardown();
             await persistence.teardown();
         },

@@ -13,7 +13,12 @@ import deepEqual from '@birchill/json-equalish';
 import type { Data, Status } from './auth-api';
 import { checkEmail, login, signup, logout, initialStatus, listen, getUser } from './auth-api';
 
-export type AuthData = { host: string, auth: Data, logout: () => mixed };
+export type AuthData = {
+    host: string,
+    auth: Data,
+    logout: () => mixed,
+    onLogout: (() => void) => () => void,
+};
 
 const useStyles = makeStyles(theme => ({
     container: {
@@ -293,11 +298,26 @@ const Auth = ({
 }: {
     storageKey: string,
     host: string,
-    render: (data: Data, logout: () => Promise<void>) => React.Node,
+    render: (authData: AuthData) => React.Node,
 }) => {
     const status = useAuthStatus(storageKey, host);
     console.log('aith render?', status);
     // load auth
+    const listeners = React.useMemo(() => [], []);
+    const onLogout = React.useCallback(fn => {
+        listeners.push(fn);
+        return () => {
+            const idx = listeners.indexOf(fn);
+            if (idx !== -1) {
+                listeners.splice(idx, 1);
+            }
+        };
+    }, []);
+    const doLogout = React.useCallback(() => {
+        logout(storageKey, host, status.token);
+        console.log('calling listeners', listeners);
+        listeners.forEach(fn => fn());
+    }, [storageKey, host, status]);
 
     if (status === false) {
         return <SignUpIn storageKey={storageKey} host={host} />;
@@ -305,7 +325,7 @@ const Auth = ({
     if (status == null) {
         return <div />;
     }
-    return render(status, () => logout(storageKey, host, status.token));
+    return render({ host, auth: status, logout: doLogout, onLogout });
 };
 
 export default Auth;

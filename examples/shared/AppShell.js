@@ -16,7 +16,7 @@ const AppShell = ({
     drawerItems,
     children,
     noContainer,
-    Drawer,
+    renderDrawer,
     title,
 }: {
     client: Client<SyncStatus>,
@@ -24,13 +24,7 @@ const AppShell = ({
     children: React.Node,
     drawerItems: React.Node,
     noContainer?: boolean,
-    Drawer: React.ComponentType<{
-        pageItems: React.Node,
-        onClose: () => void,
-        open: boolean,
-        authData: ?AuthData,
-        client: Client<SyncStatus>,
-    }>,
+    renderDrawer: (boolean, () => void) => React.Node,
     title: string,
 }) => {
     const [menu, setMenu] = React.useState(false);
@@ -42,13 +36,7 @@ const AppShell = ({
     return (
         <React.Fragment>
             <TopBar openMenu={openMenu} client={client} title={title} />
-            <Drawer
-                pageItems={drawerItems}
-                onClose={() => setMenu(false)}
-                open={menu}
-                authData={authData}
-                client={client}
-            />
+            {renderDrawer(menu, () => setMenu(false))}
             <Container maxWidth={noContainer ? undefined : 'sm'} className={styles.container}>
                 {children}
             </Container>

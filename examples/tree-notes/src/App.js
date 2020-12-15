@@ -50,6 +50,7 @@ const parseRawDoc = (rawDoc) => {
 const App = ({ config }: { config: ConnectionConfig }) => {
     const { doc: rawDoc } = useParams();
     const [docId, itemId] = parseRawDoc(rawDoc);
+    const dbName = config.prefix + (docId ? '/' + docId : '');
     const client = React.useMemo(() => {
         if (config.type === 'memory') {
             return createInMemoryEphemeralClient(schemas);
@@ -58,15 +59,28 @@ const App = ({ config }: { config: ConnectionConfig }) => {
             config.authData.auth.token
         }`;
         return createPersistedDeltaClient(
-            config.prefix + (docId ? '/' + docId : ''),
+            dbName,
             schemas,
             `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
             3,
             {},
         );
     }, [config.authData, docId]);
+    React.useEffect(() => {
+        if (config.type !== 'remote') {
+            return;
+        }
+        return config.authData.onLogout(() => client.teardown());
+    }, [client, config.type === 'remote' ? config.authData : null]);
     const match = useRouteMatch();
-    const local = React.useMemo(() => new LocalClient('tree-notes'), []);
+    const local = React.useMemo(() => new LocalClient(dbName), []);
+    React.useEffect(() => {
+        if (config.type !== 'remote') {
+            return;
+        }
+        return config.authData.onLogout(() => local.teardown());
+    }, [local, config.type === 'remote' ? config.authData : null]);
+
     window.client = client;
     const [col, items] = useCollection(React, client, 'items');
     const [_, item] = useItem(React, client, 'items', 'root');
@@ -75,6 +89,15 @@ const App = ({ config }: { config: ConnectionConfig }) => {
         <div>
             <AppShell
                 title="Tree notes"
+                renderDrawer={(isOpen, onClose) => (
+                    <Drawer
+                        pageItems={null}
+                        onClose={onClose}
+                        open={isOpen}
+                        authData={config.authData}
+                        client={client}
+                    />
+                )}
                 Drawer={Drawer}
                 drawerItems={null}
                 authData={config.authData}

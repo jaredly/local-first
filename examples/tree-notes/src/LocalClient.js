@@ -44,6 +44,10 @@ export default class LocalClient {
         this._listeners = {};
     }
 
+    teardown() {
+        localStorage.removeItem(expandKey(this.id));
+    }
+
     listen(id: string, fn: (boolean) => void): () => void {
         // const listener =
         if (!this._listeners[id]) {
