@@ -18,6 +18,8 @@ module.name_mapper='@birchill/json-equalish' -> '<PROJECT_ROOT>/node_modules/@bi
 module.name_mapper='@material-ui/core/AppBar' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/AppBar'
 module.name_mapper='@material-ui/core/Button' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/Button'
 module.name_mapper='@material-ui/core/Container' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/Container'
+module.name_mapper='@material-ui/core/Dialog' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/Dialog'
+module.name_mapper='@material-ui/core/DialogTitle' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/DialogTitle'
 module.name_mapper='@material-ui/core/Grid' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/Grid'
 module.name_mapper='@material-ui/core/IconButton' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/IconButton'
 module.name_mapper='@material-ui/core/Paper' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/Paper'
@@ -30,6 +32,7 @@ module.name_mapper='@material-ui/icons/Close' -> '<PROJECT_ROOT>/node_modules/@m
 module.name_mapper='@material-ui/icons/Menu' -> '<PROJECT_ROOT>/node_modules/@material-ui/icons/Menu'
 module.name_mapper='@material-ui/icons/Wifi' -> '<PROJECT_ROOT>/node_modules/@material-ui/icons/Wifi'
 module.name_mapper='@material-ui/icons/WifiOff' -> '<PROJECT_ROOT>/node_modules/@material-ui/icons/WifiOff'
+module.name_mapper='pako' -> '<PROJECT_ROOT>/node_modules/pako'
 module.name_mapper='react' -> '<PROJECT_ROOT>/node_modules/react'
 module.name_mapper='react-router-dom' -> '<PROJECT_ROOT>/node_modules/react-router-dom'
 

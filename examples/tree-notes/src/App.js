@@ -26,35 +26,38 @@ import Items from './Items';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
-const createClient = (dbName, authData) => {
-    if (!authData) {
-        const mem = createInMemoryEphemeralClient(schemas);
-        window.inMemoryClient = mem;
-        return mem;
-    }
-    const url = `${authData.host}/dbs/sync?db=trees&token=${authData.auth.token}`;
-    return createPersistedDeltaClient(
-        dbName,
-        schemas,
-        `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
-        3,
-        {},
-    );
-};
+type ConnectionConfig =
+    | {
+          type: 'memory',
+      }
+    | {
+          type: 'remote',
+          host: string,
+          docName: string,
+          autoData: AuthData,
+      };
 
 const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
     const client = React.useMemo(() => {
         console.log('starting a client', authData);
-        return createClient(dbName, authData);
+        if (!authData) {
+            const mem = createInMemoryEphemeralClient(schemas);
+            window.inMemoryClient = mem;
+            return mem;
+        }
+        const url = `${authData.host}/dbs/sync?db=trees&token=${authData.auth.token}`;
+        return createPersistedDeltaClient(
+            dbName,
+            schemas,
+            `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
+            3,
+            {},
+        );
     }, [authData]);
     const match = useRouteMatch();
-
     const local = React.useMemo(() => new LocalClient('tree-notes'), []);
-
     window.client = client;
-
     const [col, items] = useCollection(React, client, 'items');
-
     const [_, item] = useItem(React, client, 'items', 'root');
 
     return (
@@ -62,21 +65,7 @@ const App = ({ dbName, authData }: { dbName: string, authData: ?AuthData }) => {
             <AppShell
                 title="Tree notes"
                 Drawer={Drawer}
-                drawerItems={
-                    // <ListItem>
-                    //     <FormControlLabel
-                    //         control={
-                    //             <Switch
-                    //                 checked={showAll}
-                    //                 onChange={() => setShowAll(!showAll)}
-                    //                 color="primary"
-                    //             />
-                    //         }
-                    //         label="Show completed"
-                    //     />
-                    // </ListItem>
-                    null
-                }
+                drawerItems={null}
                 authData={authData}
                 client={client}
             >

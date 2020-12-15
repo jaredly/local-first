@@ -51,7 +51,10 @@
         "querystring": "./node_modules/querystring",
         "react": "./node_modules/react",
         "react-dom": "./node_modules/react-dom",
-        "react-router-dom": "./node_modules/react-router-dom"
+        "react-router-dom": "./node_modules/react-router-dom",
+        "@material-ui/core/Dialog": "./node_modules/@material-ui/core/Dialog",
+        "@material-ui/core/DialogTitle": "./node_modules/@material-ui/core/DialogTitle",
+        "pako": "./node_modules/pako"
     },
     "devDependencies": {
         "@babel/core": "^7.0.0-0",

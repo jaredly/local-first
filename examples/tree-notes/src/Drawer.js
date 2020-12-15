@@ -25,6 +25,8 @@ import { useCollection } from '../../../packages/client-react';
 import { Switch, Route, Link } from 'react-router-dom';
 // import { showDate, today } from '../utils';
 import type { AuthData } from '../../shared/Auth';
+import ExportDialog from '../../shared/ExportDialog';
+import ImportDialog from '../../shared/ImportDialog';
 
 const MyDrawer = ({
     open,
@@ -45,7 +47,7 @@ const MyDrawer = ({
 }) => {
     // const [tagsCol, tags] = useCollection(React, client, 'tags');
     // const [editTag, setEditTag] = React.useState(false);
-    // const [dialog, setDialog] = React.useState(null);
+    const [dialog, setDialog] = React.useState(null);
 
     return (
         <React.Fragment>
@@ -73,7 +75,7 @@ const MyDrawer = ({
                         Home
                     </ListItem>
                     <Divider />
-                    {/* <ListItem button onClick={() => setDialog('export')}>
+                    <ListItem button onClick={() => setDialog('export')}>
                         <ListItemIcon>
                             <GetApp />
                         </ListItemIcon>
@@ -85,7 +87,7 @@ const MyDrawer = ({
                         </ListItemIcon>
                         <ListItemText primary="Import" />
                     </ListItem>
-                    <Divider /> */}
+                    <Divider />
                     {/* {Object.keys(tags).map((k) => (
                         <ListItem button onClick={() => setEditTag(tags[k])} key={k}>
                             <ListItemIcon>
@@ -112,7 +114,7 @@ const MyDrawer = ({
                 </List>
                 <Divider />
             </Drawer>
-            {/* <ExportDialog
+            <ExportDialog
                 open={dialog === 'export'}
                 client={client}
                 onClose={() => setDialog(null)}
@@ -122,7 +124,7 @@ const MyDrawer = ({
                 client={client}
                 onClose={() => setDialog(null)}
             />
-            {editTag !== false ? (
+            {/* {editTag !== false ? (
                 <EditTagDialog
                     client={client}
                     tagsCol={tagsCol}
