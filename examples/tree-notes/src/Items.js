@@ -102,10 +102,12 @@ const Items = ({
     client,
     local,
     col,
+    id,
 }: {
     client: Client<SyncStatus>,
     local: LocalClient,
     col: Collection<ItemT>,
+    id: ?string,
 }) => {
     const onDrop = React.useCallback(({ path }, dest) => {
         const id = path[path.length - 1];
@@ -131,7 +133,7 @@ const Items = ({
         local.setFocus(id);
     }, []);
     const { registerDragTargets, onDragStart, dragger } = useDragging(onDrop);
-    const { id } = useParams();
+    // const { id } = useParams();
 
     return (
         <React.Fragment>

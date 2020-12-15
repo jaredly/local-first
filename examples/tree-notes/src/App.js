@@ -32,24 +32,39 @@ type ConnectionConfig =
       }
     | {
           type: 'remote',
-          dbName: string,
-          autoData: AuthData,
+          prefix: string,
+          authData: AuthData,
       };
 
+const parseRawDoc = (rawDoc) => {
+    if (!rawDoc || !rawDoc.trim().length) {
+        return [null, null];
+    }
+    const parts = rawDoc.split(':');
+    if (parts.length === 1) {
+        return [rawDoc, null];
+    }
+    return [parts[0], parts[1]];
+};
+
 const App = ({ config }: { config: ConnectionConfig }) => {
+    const { doc: rawDoc } = useParams();
+    const [docId, itemId] = parseRawDoc(rawDoc);
     const client = React.useMemo(() => {
         if (config.type === 'memory') {
             return createInMemoryEphemeralClient(schemas);
         }
-        const url = `${config.authData.host}/dbs/sync?db=trees&token=${config.authData.auth.token}`;
+        const url = `${config.authData.host}/dbs/sync?db=trees/${docId || 'home'}&token=${
+            config.authData.auth.token
+        }`;
         return createPersistedDeltaClient(
-            config.dbName,
+            config.prefix + (docId ? '/' + docId : ''),
             schemas,
             `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
             3,
             {},
         );
-    }, [config.authData]);
+    }, [config.authData, docId]);
     const match = useRouteMatch();
     const local = React.useMemo(() => new LocalClient('tree-notes'), []);
     window.client = client;
@@ -65,14 +80,15 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 authData={config.authData}
                 client={client}
             >
-                <RouteSwitch>
+                <Items client={client} local={local} col={col} id={itemId} />
+                {/* <RouteSwitch>
                     <Route path={`${match.path == '/' ? '' : match.path}/item/:id`}>
                         <Items client={client} local={local} col={col} />
                     </Route>
                     <Route path={`${match.path == '/' ? '' : match.path}`}>
                         <Items client={client} local={local} col={col} />
                     </Route>
-                </RouteSwitch>
+                </RouteSwitch> */}
             </AppShell>
             {/* )} */}
             <UpdateSnackbar />

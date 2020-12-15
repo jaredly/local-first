@@ -3,6 +3,7 @@ import { render } from 'react-dom';
 import React from 'react';
 import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
+import { useRouteMatch } from 'react-router-dom';
 
 import 'typeface-roboto';
 
@@ -27,38 +28,23 @@ const Top = () => {
         <Router>
             <Switch>
                 <Route path="/memory">
-                    <Main host={null} dbName="tree-notes-memory" storageKey={'Nope folks'} />
+                    <Main host={null} />
                 </Route>
                 <Route path="/localhost">
-                    <Main
-                        host={'localhost:9090'}
-                        dbName="tree-notes-glitch-2"
-                        storageKey={'tree-notes-local'}
-                    />
+                    <Main host={'localhost:9090'} prefix={'tree-notes-local'} />
                 </Route>
                 <Route path="/">
-                    <Main
-                        host={'local-first-server.glitch.me'}
-                        dbName="tree-notes-glitch"
-                        storageKey={'tree-notes'}
-                    />
+                    <Main host={'local-first-server.glitch.me'} prefix={'tree-notes'} />
                 </Route>
             </Switch>
         </Router>
     );
 };
 
-const Main = ({
-    host,
-    dbName,
-    storageKey,
-}: {
-    host: ?string,
-    dbName: string,
-    storageKey: string,
-}) => {
+const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
     console.log('main render?');
-    if (host == null) {
+    const match = useRouteMatch();
+    if (host == null || prefix == null) {
         return (
             <ThemeProvider theme={darkTheme}>
                 <CssBaseline />
@@ -70,10 +56,29 @@ const Main = ({
         <ThemeProvider theme={darkTheme}>
             <CssBaseline />
             <Auth
-                storageKey={storageKey}
+                storageKey={prefix + '/auth'}
                 host={host}
                 render={(auth, logout) => (
-                    <App config={{ type: 'remote', dbName, authData: { host, auth, logout } }} />
+                    <Switch>
+                        <Route path="/:doc">
+                            <App
+                                config={{
+                                    type: 'remote',
+                                    prefix,
+                                    authData: { host, auth, logout },
+                                }}
+                            />
+                        </Route>
+                        <Route path="/">
+                            <App
+                                config={{
+                                    type: 'remote',
+                                    prefix,
+                                    authData: { host, auth, logout },
+                                }}
+                            />
+                        </Route>
+                    </Switch>
                 )}
             />
         </ThemeProvider>

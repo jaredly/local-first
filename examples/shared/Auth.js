@@ -114,7 +114,7 @@ const SignUpIn = ({ storageKey, host }: { storageKey: string, host: string }) =>
             <Paper className={styles.root}>
                 <div className={styles.topBar}>
                     <Typography variant="h4">
-                        {state === 'register' ? 'Register' : 'Login'}
+                        {state === 'register' ? 'Register' : 'Login'} to {host}
                     </Typography>
                 </div>
                 <form
