@@ -150,11 +150,17 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         async save(id: string, node: T) {
             validate(node, schema);
             // NOTE this overwrites everything, setAttribute will do much better merges
+            // Hmmm I think I want a method that will do "merge in all (changed) values"
             const delta = crdt.deltas.replace(crdt.createValue(node, getStamp(), getStamp, schema));
             return applyDelta(id, delta, true);
         },
 
-        async applyRichTextDelta(id: string, path: Array<string | number>, delta: RichTextDelta) {
+        async applyRichTextDelta(
+            id: string,
+            path: Array<string | number>,
+            // $FlowFixMe um it wants to ebe OtherDelta or something?
+            delta: Array<RichTextDelta>,
+        ) {
             const sub = subSchema(schema, path);
             if (sub !== 'rich-text') {
                 throw new Error(`Schema at path is not a rich-text`);

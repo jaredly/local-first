@@ -295,9 +295,9 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
                     value={item.body}
                     actions={itemActions({ client, col, path, id, local })}
                     getStamp={client.getStamp}
-                    onChange={(delta) => {
+                    onChange={(deltas) => {
                         // console.log('Ok', delta);
-                        col.applyRichTextDelta(id, ['body'], delta);
+                        col.applyRichTextDelta(id, ['body'], deltas);
                     }}
                     siteId={client.sessionId}
                 />

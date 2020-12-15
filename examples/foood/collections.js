@@ -4,13 +4,12 @@
 
 Schemas:
 
-
-
 */
 
-const Settings = {
+const SettingsSchema = {
     type: 'object',
     attributes: {
+        id: 'string',
         // This is a list of ids of tags that are to be treated as "categories".
         // e.g. they are shown at the top of the home page.
         categories: 'id-array',
@@ -40,6 +39,79 @@ const CommentSchema = {
     },
 };
 
+const IngredientSchema = {
+    type: 'object',
+    attributes: {
+        id: 'string',
+        name: 'string',
+        alternateNames: 'id-array',
+        kinds: 'id-array',
+    },
+};
+
+/*::
+
+type SettingsT = {
+    id: string,
+    categories: Array<string>,
+}
+
+type IngredientT = {
+    id: string,
+    name: string,
+    alternateNames: Array<string>,
+    kinds: Array<string>, // like "nut" or "flour" probably. Do I normalize these? maybe not just now.
+}
+
+type CommentT = {
+    id: string,
+    author: string,
+    text: QuillDelta,
+    date: number,
+    happiness: number,
+    images: Array<string>,
+    recipeVersion: string,
+}
+
+type RecipeT = {
+    id: string,
+    title: string,
+    author: string,
+    source: string,
+    contents: RecipeContents,
+    status: 'evaluation' | 'approved' | 'rejected',
+    createdDate: number,
+    updatedDate: number,
+    trashedDate?: ?number,
+    comments: {[id: string]: CommentT}
+}
+
+type QuillDelta = Array<{insert: string}>;
+
+type RecipeContents = {
+    ovenTemp: ?number,
+    bakeTime: ?number,
+    yield: ?string,
+    // So some things will be hyperlinks.
+    // So 1 cup macadamia nuts, chopped
+    // 1 cup will be a link, to `foood://amount/cups/1`
+    // and macadamia nuts will point to `foood://ingredient/143242`
+    ingredients: Array<QuillDelta>,
+    instructions: Array<QuillDelta>,
+    notes: ?string,
+
+    version: string,
+    changeLog: Array<{
+        fromVersion: string,
+        changes: mixed, // hm what I want is to be able to reconstruct the previous version from this
+        // but for now I might not. Or I'll just keep the whole thing around? and I can go make it more compact later...
+        changeNote: string,
+        date: number,
+    }>
+}
+
+*/
+
 const RecipeSchema = {
     type: 'object',
     attributes: {
@@ -47,10 +119,9 @@ const RecipeSchema = {
         title: 'string',
         author: 'string',
         source: 'string',
-        // this has ingredients + instructions
-        // also metadata like ovenTemp, bakeTime, yield
-        // also maybe "notes"?
-        contents: 'object', // opaque, because we do internal manual versioning.
+        // This is `RecipeContents`
+        // but opaque, because we do internal manual versioning.
+        contents: 'object',
         status: 'string', // 'evaluating' | 'approved' | 'rejected'
         createdDate: 'int',
         updatedDate: 'int',
@@ -62,96 +133,11 @@ const RecipeSchema = {
     },
 };
 
-const ItemSchema = {
-    type: 'object',
-    attributes: {
-        id: 'string',
-        author: 'string',
-        body: 'rich-text',
-        tags: { type: 'map', value: 'number' },
-        createdDate: 'number',
-        completed: { type: 'optional', value: 'number' },
-
-        children: 'id-array',
-
-        columnData: { type: 'map', value: 'rich-text' },
-        childColumnConfig: {
-            type: 'optional',
-            value: {
-                type: 'object',
-                attributes: {
-                    recursive: 'boolean',
-                    columns: {
-                        type: 'map',
-                        value: {
-                            type: 'object',
-                            attributes: {
-                                title: 'string',
-                                kind: 'string',
-                                width: { type: 'optional', value: 'number' },
-                            },
-                        },
-                    },
-                },
-            },
-        },
-
-        // hmk right?
-
-        style: 'string', // header | code | quote | todo
-        theme: 'string', // list | blog | whiteboard | mindmap
-        numbering: {
-            type: 'optional',
-            value: {
-                type: 'object',
-                attributes: {
-                    style: 'string',
-                    startWith: { type: 'optional', value: 'number' },
-                },
-            },
-        }, // {style: numbers | letters | roman, startWith?: number}
-
-        trashed: { type: 'optional', value: 'number' },
-        // {[reaction-name]: {[userid]: date}}
-        reactions: { type: 'map', value: { type: 'map', value: 'number' } },
-    },
-};
-
-/*::
-import type {CRDT} from '../../packages/rich-text-crdt'
-export type ItemT = {
-    id: string,
-    author: string,
-    body: CRDT,
-    tags: {[key: string]: number},
-    createdDate: number,
-    completed?: number,
-
-    columnData: {[colId: string]: CRDT},
-    childColumnConfig: ?{
-        columns: {[colId: string]: {
-            title: string,
-            kind: string,
-            width?: number,
-        }},
-        recursive: boolean,
-    },
-    children: Array<string>,
-
-    style: string,
-    theme: string,
-    numbering: ?{
-        style: string,
-        startWith?: number,
-    },
-
-    trashed?: number,
-    reactions: {[reactionId: string]: {[userId: string]: number}}
-}
-*/
-
 const schemas = {
-    items: ItemSchema,
+    recipes: RecipeSchema,
+    ingredients: IngredientSchema,
+    tags: TagSchema,
+    settings: SettingsSchema,
 };
 
 module.exports = schemas;
