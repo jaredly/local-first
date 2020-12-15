@@ -14,6 +14,7 @@ export type Type =
     | 'array'
     | 'any'
     | 'rich-text'
+    // this means "unique string array" basically. "ordered set"
     | 'id-array'
     | {| type: 'array', item: Type |}
     | Schema

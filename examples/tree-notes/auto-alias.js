@@ -82,5 +82,5 @@ const updateFlowConfig = (filePath, imports) => {
 
 const base = path.join(__dirname, '..', 'shared');
 const imports = getAllImports(base);
-updatePackageJson(path.join(__dirname, 'package.json'), imports);
-updateFlowConfig(path.join(__dirname, '.flowconfig'), imports);
+updatePackageJson('package.json', imports);
+updateFlowConfig('.flowconfig', imports);
