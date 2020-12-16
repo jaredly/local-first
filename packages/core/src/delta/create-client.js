@@ -312,6 +312,11 @@ function createClient<Delta, Data, SyncStatus>(
             //
         },
         getCollection<T>(colid: string) {
+            if (state[colid] == null) {
+                throw new Error(
+                    `Trying to get a collection ${colid} that wasn't set up for this client.`,
+                );
+            }
             if (!collections[colid]) {
                 collections[colid] = getCollection(
                     colid,

@@ -60,7 +60,7 @@ const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
                 host={host}
                 render={(authData) => (
                     <Switch>
-                        <Route path="/:doc">
+                        <Route path="/doc/:doc">
                             <App
                                 config={{
                                     type: 'remote',

@@ -48,8 +48,8 @@ const parseRawDoc = (rawDoc) => {
 };
 
 const App = ({ config }: { config: ConnectionConfig }) => {
-    const { doc: rawDoc } = useParams();
-    const [docId, itemId] = parseRawDoc(rawDoc);
+    const { doc: docId } = useParams();
+    // const [docId, itemId] = parseRawDoc(rawDoc);
     const dbName = config.prefix + (docId ? '/' + docId : '');
     const client = React.useMemo(() => {
         if (config.type === 'memory') {
@@ -103,15 +103,15 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 authData={config.authData}
                 client={client}
             >
-                <Items client={client} local={local} col={col} id={itemId} />
-                {/* <RouteSwitch>
+                {/* <Items client={client} local={local} col={col} id={itemId} /> */}
+                <RouteSwitch>
                     <Route path={`${match.path == '/' ? '' : match.path}/item/:id`}>
                         <Items client={client} local={local} col={col} />
                     </Route>
                     <Route path={`${match.path == '/' ? '' : match.path}`}>
                         <Items client={client} local={local} col={col} />
                     </Route>
-                </RouteSwitch> */}
+                </RouteSwitch>
             </AppShell>
             {/* )} */}
             <UpdateSnackbar />

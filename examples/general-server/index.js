@@ -12,8 +12,9 @@ const fs = require('fs');
 const dataPath = __dirname + '/.data/store';
 const port = process.env.PORT != null ? parseInt(process.env.PORT) : 9090;
 
-const treeNotesSchemas = require('./treeNotesSchemas');
-const result = runMulti2(dataPath, { trees: treeNotesSchemas }, port);
+const treeNotesSchemas = require('../tree-notes/collections.js');
+const fooodSchemas = require('../foood/collections.js');
+const result = runMulti2(dataPath, { trees: treeNotesSchemas, foood: fooodSchemas }, port);
 
 console.log('listening on ' + port);
 result.app.get('/', (req, res) => {

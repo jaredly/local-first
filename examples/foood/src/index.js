@@ -16,30 +16,12 @@ const darkTheme = createMuiTheme({
     palette: {
         type: 'dark',
 
-        primary: { main: '#2196f3' },
+        primary: { main: '#ff9800' },
         secondary: {
             main: '#ffea00',
         },
     },
 });
-
-const Top = () => {
-    return (
-        <Router>
-            <Switch>
-                <Route path="/memory">
-                    <Main host={null} />
-                </Route>
-                <Route path="/localhost">
-                    <Main host={'localhost:9090'} prefix={'tree-notes-local'} />
-                </Route>
-                <Route path="/">
-                    <Main host={'local-first-server.glitch.me'} prefix={'tree-notes'} />
-                </Route>
-            </Switch>
-        </Router>
-    );
-};
 
 const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
     console.log('main render?');
@@ -69,6 +51,24 @@ const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
                 )}
             />
         </ThemeProvider>
+    );
+};
+
+const Top = () => {
+    return (
+        <Router>
+            <Switch>
+                <Route path="/memory">
+                    <Main host={null} />
+                </Route>
+                <Route path="/localhost">
+                    <Main host={'localhost:9090'} prefix={'foood-local'} />
+                </Route>
+                <Route path="/">
+                    <Main host={'local-first-server.glitch.me'} prefix={'foood'} />
+                </Route>
+            </Switch>
+        </Router>
     );
 };
 

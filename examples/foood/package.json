@@ -1,5 +1,5 @@
 {
-    "name": "tree-notes-client",
+    "name": "foood-client",
     "private": true,
     "version": "1.0.0",
     "dependencies": {
@@ -8,6 +8,7 @@
         "@material-ui/core": "^4.9.9",
         "@material-ui/icons": "^4.9.1",
         "@material-ui/lab": "^4.0.0-alpha.49",
+        "cheerio": "^1.0.0-rc.3",
         "gravatar-url": "^3.1.0",
         "idb": "^5.0.1",
         "pako": "^1.0.11",
@@ -20,9 +21,9 @@
         "typeface-roboto": "^0.0.75"
     },
     "scripts": {
-        "deploy": "npm run build && cd dist && cp index.html 200.html && surge . tree-notes.surge.sh",
+        "deploy": "npm run build && cd dist && cp index.html 200.html && surge . foood2.surge.sh",
         "build": "parcel build index.html",
-        "start": "parcel serve --no-autoinstall --port 1234 index.html"
+        "start": "parcel serve --no-autoinstall --port 1236 index.html"
     },
     "alias": {
         "@birchill/json-equalish": "./node_modules/@birchill/json-equalish",

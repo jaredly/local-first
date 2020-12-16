@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<meta charset="utf8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="icon" type="image/png" href="/icons/favicon.png" sizes="192x192" />
+<link rel="stylesheet" href="node_modules/quill/dist/quill.bubble.css" />
+<!-- <link rel="stylesheet" href="node_modules/quill-cursors/dist/quill-cursors.css" /> -->
+<title>Foood</title>
+<style>
+    body {
+        font-weight: 200;
+    }
+    div {
+        box-sizing: border-box;
+    }
+    .ql-tooltip {
+        z-index: 1000;
+    }
+    .ql-editor {
+        padding: 4px;
+    }
+    .ql-container {
+        min-height: 1.5em;
+    }
+    .ql-editor a {
+        color: inherit;
+    }
+    .ql-container.ql-bubble:not(.ql-disabled) a {
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    /* ok */
+</style>
+<body>
+    <noscript>
+        <h1 style="padding: 50px;">
+            btw this won't work without javascript folks
+        </h1>
+    </noscript>
+    <script src="src/run.js"></script>
+</body>
