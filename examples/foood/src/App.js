@@ -21,6 +21,7 @@ import schemas from '../collections';
 import AppShell from '../../shared/AppShell';
 import Drawer from './Drawer';
 import UpdateSnackbar from '../../shared/Update';
+import Editor from './Editor';
 // import Items from './Items';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
@@ -76,6 +77,8 @@ const App = ({ config }: { config: ConnectionConfig }) => {
     const [col, recipes] = useCollection(React, client, 'recipes');
     const [_, homepage] = useItem(React, client, 'settings', 'home');
 
+    const pathPrefix = match.path == '/' ? '' : match.path;
+
     return (
         <div>
             <AppShell
@@ -94,15 +97,21 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 client={client}
             >
                 {/* <Items client={client} local={local} col={col} id={itemId} /> */}
-                Hello folks
-                {/* <RouteSwitch>
-                    <Route path={`${match.path == '/' ? '' : match.path}/item/:id`}>
-                        <Items client={client} local={local} col={col} />
+                <RouteSwitch>
+                    <Route path={`${pathPrefix}/recipe/new`}>
+                        {/* Make a recipe */}
+                        <Editor />
+                        {/* <Items client={client} local={local} col={col} /> */}
                     </Route>
-                    <Route path={`${match.path == '/' ? '' : match.path}`}>
-                        <Items client={client} local={local} col={col} />
+                    <Route path={`${pathPrefix}/recipe/:id`}>
+                        Hello repo
+                        {/* <Items client={client} local={local} col={col} /> */}
                     </Route>
-                </RouteSwitch> */}
+                    <Route path={`${pathPrefix}`}>
+                        It's the home slice
+                        {/* <Items client={client} local={local} col={col} /> */}
+                    </Route>
+                </RouteSwitch>
             </AppShell>
             {/* )} */}
             <UpdateSnackbar />
