@@ -8,25 +8,23 @@ var ListItem = Quill.import('formats/list/item');
 var ListContainer = Quill.import('formats/list');
 var Block = Quill.import('blots/block');
 
-class IngredientListItem extends Block {
-    // formatAt(index, length, name, value) {
-    //     if (name === 'list') {
-    //         // Allow changing or removing list format
-    //         super.formatAt(name, value);
-    //     }
-    //     // Otherwise ignore
-    // }
-    // static value(node) {
-    //     return 'yes-please';
-    // }
-}
+class IngredientListItem extends Block {}
 IngredientListItem.tagName = 'li';
-IngredientListItem.className = 'plain-list-item-folks';
+IngredientListItem.className = 'ingredient-list';
 IngredientListItem.blotName = 'ingredient';
 IngredientListItem.requiredContainer = ListContainer;
 ListContainer.allowedChildren.push(IngredientListItem);
 
 Quill.register(IngredientListItem, true);
+
+class InstructionListItem extends Block {}
+InstructionListItem.tagName = 'li';
+InstructionListItem.className = 'instruction-list';
+InstructionListItem.blotName = 'instruction';
+InstructionListItem.requiredContainer = ListContainer;
+ListContainer.allowedChildren.push(InstructionListItem);
+
+Quill.register(InstructionListItem, true);
 
 const keymap = (props: *, registry: *): * => ({
     // theme: false,
@@ -40,7 +38,7 @@ const keymap = (props: *, registry: *): * => ({
                 { ingredient: true },
                 // ok
                 { list: 'bullet' },
-                { list: 'checked' },
+                { instruction: true },
             ],
         ],
         // imageResize: {},
