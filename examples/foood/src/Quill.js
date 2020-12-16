@@ -5,19 +5,28 @@ import deepEqual from '@birchill/json-equalish';
 import { type QuillDelta } from '../../../packages/rich-text-crdt/quill-deltas';
 
 var ListItem = Quill.import('formats/list/item');
+var ListContainer = Quill.import('formats/list');
+var Block = Quill.import('blots/block');
 
-class PlainListItem extends ListItem {
-    formatAt(index, length, name, value) {
-        if (name === 'list') {
-            // Allow changing or removing list format
-            super.formatAt(name, value);
-        }
-        // Otherwise ignore
-    }
+class IngredientListItem extends Block {
+    // formatAt(index, length, name, value) {
+    //     if (name === 'list') {
+    //         // Allow changing or removing list format
+    //         super.formatAt(name, value);
+    //     }
+    //     // Otherwise ignore
+    // }
+    // static value(node) {
+    //     return 'yes-please';
+    // }
 }
-PlainListItem.blotName = 'plain-list-item';
+IngredientListItem.tagName = 'li';
+IngredientListItem.className = 'plain-list-item-folks';
+IngredientListItem.blotName = 'ingredient';
+IngredientListItem.requiredContainer = ListContainer;
+ListContainer.allowedChildren.push(IngredientListItem);
 
-Quill.register(PlainListItem, true);
+Quill.register(IngredientListItem, true);
 
 const keymap = (props: *, registry: *): * => ({
     // theme: false,
@@ -25,7 +34,15 @@ const keymap = (props: *, registry: *): * => ({
     // registry: registry,
     placeholder: ' ',
     modules: {
-        toolbar: true,
+        toolbar: [
+            ['bold', 'italic', 'underline', 'strike'],
+            [
+                { ingredient: true },
+                // ok
+                { list: 'bullet' },
+                { list: 'checked' },
+            ],
+        ],
         // imageResize: {},
         // cursors: true,
         /* "mention": {

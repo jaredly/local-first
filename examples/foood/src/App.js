@@ -22,7 +22,6 @@ import AppShell from '../../shared/AppShell';
 import Drawer from './Drawer';
 import UpdateSnackbar from '../../shared/Update';
 import Editor from './Editor';
-// import Items from './Items';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
