@@ -191,6 +191,9 @@ module.exports = config => {
         }
     });
 
+    // Clear out devDependencies
+    packageJson.devDependencies = {};
+
     Object.keys(files).forEach(file => {
         const rel = path.relative(base, file);
         const full = path.join(config.dest, rel);

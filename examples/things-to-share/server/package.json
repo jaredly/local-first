@@ -16,5 +16,8 @@
     "scripts": {
         "deploy": "./deploy.sh",
         "start": "node ./run.js"
+    },
+    "engines": {
+        "node": "12.x"
     }
 }

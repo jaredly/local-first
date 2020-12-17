@@ -14,7 +14,7 @@ import type { Data } from './auth-api';
 import Home from './Home';
 import { useCollection } from '../../../../packages/client-react';
 // import { default as makeDeltaInMemoryPersistence } from '../../../../packages/idb/src/delta-mem';
-import { LinkSchema, type LinkT, TagSchema } from './types';
+import { LinkSchema, type LinkT, TagSchema } from '../../shared/types';
 
 const schemas = {
     tags: TagSchema,

@@ -6,13 +6,29 @@ import QuillEditor from './Quill';
 
 const RecipeEditor = () => {
     const [value, setValue] = React.useState([]);
+    const quillRef = React.useRef(null);
+    const quillRefGet = React.useCallback((node) => {
+        quillRef.current = node;
+    }, []);
     return (
         <div>
             dare to edit
+            <button
+                onClick={() => {
+                    const quill = quillRef.current;
+                    if (!quill) return;
+                    console.log(quill.getSelection());
+                    console.log(quill.getContents());
+                    console.log(quill.getFormat());
+                }}
+            >
+                Hello
+            </button>
             <QuillEditor
                 value={value}
                 onChange={(v) => setValue(v.ops)}
                 actions={null}
+                innerRef={quillRefGet}
                 // getStamp,
                 // siteId,
                 // actions,

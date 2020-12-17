@@ -81,13 +81,13 @@ const QuillEditor = ({
     onChange,
     // getStamp,
     // siteId,
-    // innerRef,
+    innerRef,
     actions,
     className,
 }: {
     value: Array<QuillDelta>,
-    // innerRef: (node: ?{ focus: () => void }) => void,
-    onChange: (Array<QuillDelta>) => mixed,
+    innerRef?: ?(node: ?{ focus: () => void }) => mixed,
+    onChange: ({ ops: Array<QuillDelta> }) => mixed,
     // getStamp: () => string,
     // siteId: string,
     actions: *,
@@ -116,7 +116,9 @@ const QuillEditor = ({
     React.useEffect(() => {
         // console.log(ref);
         const quill = (ui.current = new Quill(ref.current, keymap(actions)));
-        // innerRef(quill);
+        if (innerRef) {
+            innerRef(quill);
+        }
         quill.setContents(value);
         // TODO: this focuses the editor automatically, which I don't want :/
         // I just want to prefill the selection to here, so that when it's "focus()"ed,
@@ -130,7 +132,11 @@ const QuillEditor = ({
 
             onChange(quill.getContents());
         });
-        // return () => innerRef(null);
+        if (innerRef) {
+            return () => {
+                innerRef(null);
+            };
+        }
     }, []);
 
     return <div className={(className || '') + ' ql-container ql-bubble'} ref={ref} />;
