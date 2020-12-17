@@ -7,6 +7,9 @@
         "@babel/register": "^7.9.0",
         "flow-bin": "^0.123.0"
     },
+    "dependencies": {
+        "regenerator-runtime": "^0.13.7"
+    },
     "engines": {
         "node": "12.x"
     }
