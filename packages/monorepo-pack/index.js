@@ -9,11 +9,15 @@ const traverse = require('@babel/traverse');
 const generate = require('@babel/generator');
 const recast = require('recast');
 
+// This is for treating "local" files as "library import" files.
+// E.g. if you want to develop a monorepo where everything's just importing
+// each other, but then when you publish the libraries, have them go
+// through npm.
 const asExternal = (config, full) => {
     return null; // no external support yet
 };
 
-const requireRewriter = (currentPath, config, onInternalFile) => babel => {
+const requireRewriter = (currentPath, config, onInternalFile, onLibraryImport) => babel => {
     const { types: t } = babel;
 
     const checkImport = name => {
@@ -27,6 +31,8 @@ const requireRewriter = (currentPath, config, onInternalFile) => babel => {
             onInternalFile(full);
             const newRel = path.relative(path.dirname(currentPath), full);
             return newRel.startsWith('.') ? newRel : './' + newRel;
+        } else {
+            onLibraryImport(name);
         }
     };
 
@@ -67,7 +73,8 @@ const requireRewriter = (currentPath, config, onInternalFile) => babel => {
 const processFile = (path, config, addFile) => {
     const code = fs.readFileSync(path, 'utf8');
 
-    const plugin = requireRewriter(path, config, addFile);
+    let libraryImports = {};
+    const plugin = requireRewriter(path, config, addFile, name => (libraryImports[name] = true));
     const { code: es5 } = transform(code, {
         plugins: [plugin],
         presets: [require.resolve('@babel/preset-env'), require.resolve('@babel/preset-flow')],
@@ -85,7 +92,7 @@ const processFile = (path, config, addFile) => {
     traverse.default(ast, plugin(babel).visitor);
     const { code: flow } = recast.print(ast);
 
-    return { es5, flow };
+    return { es5, flow, libraryImports: Object.keys(libraryImports) };
 };
 
 const mkdirp = dir => {
@@ -137,12 +144,19 @@ const packageJsonsFor = file => {
 const collectPackageJsons = files => {
     const all = {};
     Object.keys(files).forEach(name => {
+        if (files[name].libraryImports.length === 0) {
+            // don't grab package.jsons for files that don't import anything
+            // this allows frontends and backends to share e.g. types-only files
+            // without needing a separate directory.
+            return;
+        }
         packageJsonsFor(name).forEach(p => (all[p] = true));
     });
     return Object.keys(all);
 };
 
 module.exports = config => {
+    // files[x] = output
     const files = {};
     const toProcess = [path.resolve(config.entry)];
     mkdirp(config.dest);

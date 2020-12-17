@@ -11,8 +11,9 @@ const fs = require('fs');
 const dataPath = '.data/store';
 const port = process.env.PORT != null ? parseInt(process.env.PORT) : 9090;
 
-const treeNotesSchemas = require('./treeNotesSchemas');
-const result = runMulti2(dataPath, { trees: treeNotesSchemas }, port);
+const treeNotesSchemas = require('../tree-notes/collections.js');
+const fooodSchemas = require('../foood/collections.js');
+const result = runMulti2(dataPath, { trees: treeNotesSchemas, foood: fooodSchemas }, port);
 
 console.log('listening on ' + port);
 result.app.get('/', (req, res) => {
@@ -26,4 +27,7 @@ if (process.env.BACKUP_SECRET) {
         '/backup/' + process.env.BACKUP_SECRET,
         backupRoute('.data/store', process.env.FIREBASE_APP),
     );
+}
+if (process.env.BACKUP_DOWNLOAD) {
+    result.app.get('/backup/' + process.env.BACKUP_DOWNLOAD, downloadRoute('.data/store'));
 }
