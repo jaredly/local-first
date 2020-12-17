@@ -68,8 +68,8 @@ const backup = async (bucket, prefix, suffix, buffer) => {
 
 const tarfs = require('tar-fs');
 
-const backupFolder = (bucket, prefix, folder) => {
-    return new Promise((res, rej) => {
+const tarFolder = folder =>
+    new Promise((res, rej) => {
         const stream = tarfs.pack(folder);
         const bufs = [];
         stream.on('data', function(d) {
@@ -80,8 +80,13 @@ const backupFolder = (bucket, prefix, folder) => {
         });
         stream.on('end', function() {
             const buf = Buffer.concat(bufs);
-            res(backup(bucket, prefix, '.tar.gz', buf));
+            res(buf);
         });
+    });
+
+const backupFolder = (bucket, prefix, folder) => {
+    return tarFolder(folder).then(buf => {
+        return backup(bucket, prefix, '.tar.gz', buf);
     });
 };
 
@@ -111,6 +116,16 @@ const backupRoute = (baseDir, appId) => (req, res) => {
             res.end();
         },
     );
+};
+
+const downloadRoute = folder => (req, res) => {
+    tarFolder(folder).then(buffer => {
+        const hash = crypto.createHash('md5');
+        hash.update(buffer);
+        const digest = hash.digest('base64');
+        res.setHeader(`Content-disposition', 'attachment; filename=${digest}.json.gz`);
+        res.send(buffer);
+    });
 };
 
 module.exports = backupRoute;

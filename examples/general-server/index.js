@@ -22,9 +22,12 @@ result.app.get('/', (req, res) => {
     res.end();
 });
 if (process.env.BACKUP_SECRET) {
-    const backupRoute = require('@local-first/server-backup');
+    const backupRoute = require('../../packages/server-backup');
     result.app.get(
         '/backup/' + process.env.BACKUP_SECRET,
         backupRoute('.data/store', process.env.FIREBASE_APP),
     );
+}
+if (process.env.BACKUP_DOWNLOAD) {
+    result.app.get('/backup/' + process.env.BACKUP_DOWNLOAD, downloadRoute('.data/store'));
 }
