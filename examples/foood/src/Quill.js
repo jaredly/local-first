@@ -7,6 +7,7 @@ import { type QuillDelta } from '../../../packages/rich-text-crdt/quill-deltas';
 var ListItem = Quill.import('formats/list/item');
 var ListContainer = Quill.import('formats/list');
 var Block = Quill.import('blots/block');
+var Inline = Quill.import('blots/inline');
 
 class IngredientListItem extends Block {}
 IngredientListItem.tagName = 'li';
@@ -26,6 +27,43 @@ ListContainer.allowedChildren.push(InstructionListItem);
 
 Quill.register(InstructionListItem, true);
 
+class Measurement extends Inline {
+    static create(value) {
+        const node = super.create(value);
+        node.setAttribute('data-measure', JSON.stringify(value));
+        node.onmouseover = () => {
+            console.log('mouse', node);
+        };
+        return node;
+    }
+
+    static formats(domNode) {
+        const raw = domNode.getAttribute('data-measure');
+        if (!raw) {
+            return null;
+        }
+        try {
+            return JSON.parse(raw);
+        } catch {
+            return null;
+        }
+    }
+
+    format(name, value) {
+        console.log('format measurement', name, value);
+        if (name !== this.statics.blotName || !value) {
+            super.format(name, value);
+        } else {
+            this.domNode.setAttribute('data-measure', JSON.stringify(value));
+        }
+    }
+}
+Measurement.blotName = 'measurement';
+Measurement.tagName = 'SPAN';
+Measurement.className = 'measurement';
+
+Quill.register(Measurement, true);
+
 const keymap = (props: *, registry: *): * => ({
     // theme: false,
     theme: 'snow',
@@ -33,7 +71,7 @@ const keymap = (props: *, registry: *): * => ({
     placeholder: ' ',
     modules: {
         toolbar: [
-            ['bold', 'italic', 'underline', 'strike'],
+            ['bold', 'italic', 'underline', 'strike', 'link'],
             [
                 { ingredient: true },
                 // ok
@@ -86,7 +124,7 @@ const QuillEditor = ({
     className,
 }: {
     value: Array<QuillDelta>,
-    innerRef?: ?(node: ?{ focus: () => void }) => mixed,
+    innerRef?: ?(node: ?Quill) => mixed,
     onChange: ({ ops: Array<QuillDelta> }) => mixed,
     // getStamp: () => string,
     // siteId: string,

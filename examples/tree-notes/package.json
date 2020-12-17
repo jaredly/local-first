@@ -54,7 +54,8 @@
         "react-router-dom": "./node_modules/react-router-dom",
         "@material-ui/core/Dialog": "./node_modules/@material-ui/core/Dialog",
         "@material-ui/core/DialogTitle": "./node_modules/@material-ui/core/DialogTitle",
-        "pako": "./node_modules/pako"
+        "pako": "./node_modules/pako",
+        "@material-ui/core/CircularProgress": "./node_modules/@material-ui/core/CircularProgress"
     },
     "devDependencies": {
         "@babel/core": "^7.0.0-0",

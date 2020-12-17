@@ -17,6 +17,7 @@ sketchy-null-bool=off
 module.name_mapper='@birchill/json-equalish' -> '<PROJECT_ROOT>/node_modules/@birchill/json-equalish'
 module.name_mapper='@material-ui/core/AppBar' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/AppBar'
 module.name_mapper='@material-ui/core/Button' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/Button'
+module.name_mapper='@material-ui/core/CircularProgress' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/CircularProgress'
 module.name_mapper='@material-ui/core/Container' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/Container'
 module.name_mapper='@material-ui/core/Dialog' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/Dialog'
 module.name_mapper='@material-ui/core/DialogTitle' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/DialogTitle'

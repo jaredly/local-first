@@ -7,6 +7,7 @@ import Typography from '@material-ui/core/Typography';
 import MenuIcon from '@material-ui/icons/Menu';
 import Wifi from '@material-ui/icons/Wifi';
 import WifiOff from '@material-ui/icons/WifiOff';
+import CircularProgress from '@material-ui/core/CircularProgress';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import type { Client, SyncStatus } from '../../packages/client-bundle';
@@ -35,11 +36,15 @@ const TopBar = ({ openMenu, client, title }: Props) => {
                     </Link>
                 </Typography>
                 <div style={{ flex: 1 }} />
-                {syncStatus.status === 'connected' ? (
-                    <Wifi className={styles.connected} />
-                ) : syncStatus.status === 'disconnected' ? (
-                    <WifiOff className={styles.disconnected} />
-                ) : null}
+                <div style={{ width: 24, height: 24 }}>
+                    {syncStatus.status === 'connected' ? (
+                        <Wifi className={styles.connected} />
+                    ) : syncStatus.status === 'disconnected' ? (
+                        <WifiOff className={styles.disconnected} />
+                    ) : (
+                        <CircularProgress className={styles.loading} size={24} />
+                    )}
+                </div>
             </Toolbar>
         </AppBar>
     );
