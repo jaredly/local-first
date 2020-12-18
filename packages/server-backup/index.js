@@ -123,7 +123,7 @@ const downloadRoute = folder => (req, res) => {
         const hash = crypto.createHash('md5');
         hash.update(buffer);
         const digest = hash.digest('base64');
-        res.setHeader(`Content-disposition', 'attachment; filename=${digest}.json.gz`);
+        res.setHeader('Content-disposition', `attachment; filename=${digest}.tgz`);
         res.send(buffer);
     });
 };
@@ -131,3 +131,4 @@ const downloadRoute = folder => (req, res) => {
 module.exports = backupRoute;
 module.exports.backupFolder = backupFolder;
 module.exports.backup = backup;
+module.exports.downloadRoute = downloadRoute;

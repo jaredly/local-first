@@ -29,5 +29,6 @@ if (process.env.BACKUP_SECRET) {
     );
 }
 if (process.env.BACKUP_DOWNLOAD) {
+    const { downloadRoute } = require('../../packages/server-backup');
     result.app.get('/backup/' + process.env.BACKUP_DOWNLOAD, downloadRoute('.data/store'));
 }
