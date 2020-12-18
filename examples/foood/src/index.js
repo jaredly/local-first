@@ -65,6 +65,9 @@ const Top = () => {
                     <Main host={'localhost:9090'} prefix={'foood-local'} />
                 </Route>
                 <Route path="/">
+                    <Main host={'localhost:9090'} prefix={'foood-local'} />
+                </Route>
+                <Route path="/prod">
                     <Main host={'local-first-server.glitch.me'} prefix={'foood'} />
                 </Route>
             </Switch>

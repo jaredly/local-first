@@ -1,5 +1,10 @@
 // @flow
 
+/**
+ * A script for parsing recipes from forsythrecipes
+ * into the format expected by foood
+ */
+
 const fs = require('fs');
 const cheerio = require('cheerio');
 

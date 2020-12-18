@@ -64,56 +64,6 @@ Measurement.className = 'measurement';
 
 Quill.register(Measurement, true);
 
-const keymap = (props: *, registry: *): * => ({
-    // theme: false,
-    theme: 'snow',
-    // registry: registry,
-    placeholder: ' ',
-    modules: {
-        toolbar: [
-            ['bold', 'italic', 'underline', 'strike', 'link'],
-            [
-                { ingredient: true },
-                // ok
-                { list: 'bullet' },
-                { instruction: true },
-            ],
-        ],
-        // imageResize: {},
-        // cursors: true,
-        /* "mention": {
-        "mentionDenotationChars": [|"/"|],
-        "source":
-          (. searchTerm: string, renderList, mentionChar: string) =>
-            renderList(.
-              [|
-                {"id": 0, "value": "Header"},
-                {"id": 1, "value": "Normal"},
-                {"id": 2, "value": "Code"},
-              |],
-              searchTerm,
-            ),
-      }, */
-        // return TRUE if the handler *fell through*. return FALSE if the handler succeeded, and bubbling should stop.
-        keyboard: {
-            bindings: {
-                // collapse: {
-                //     key: 'z',
-                //     collapsed: true,
-                //     altKey: true,
-                //     handler: () => props.onToggleCollapse(),
-                // },
-                // 'collapse-mac': {
-                //     key: `Ω`,
-                //     collapsed: true,
-                //     altKey: true,
-                //     handler: () => props.onToggleCollapse(),
-                // },
-            },
-        },
-    },
-});
-
 const QuillEditor = ({
     value,
     onChange,
@@ -122,6 +72,7 @@ const QuillEditor = ({
     innerRef,
     actions,
     className,
+    config,
 }: {
     value: Array<QuillDelta>,
     innerRef?: ?(node: ?Quill) => mixed,
@@ -130,6 +81,7 @@ const QuillEditor = ({
     // siteId: string,
     actions: *,
     className?: string,
+    config: *,
 }) => {
     const ref = React.useRef(null);
     const ui = React.useRef(null);
@@ -153,7 +105,7 @@ const QuillEditor = ({
 
     React.useEffect(() => {
         // console.log(ref);
-        const quill = (ui.current = new Quill(ref.current, keymap(actions)));
+        const quill = (ui.current = new Quill(ref.current, config));
         if (innerRef) {
             innerRef(quill);
         }

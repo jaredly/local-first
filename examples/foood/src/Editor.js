@@ -46,24 +46,7 @@ const formatIngredients = (quill, contents, index, length) => {
 };
 
 const RecipeEditor = () => {
-    const [value, setValue] = React.useState([
-        {
-            insert: `
-My first attempt at a simple sweet rice dish using a steaming basket went like this:
-Soak 2 cups of very short grain sweet rice (the package says apple brand sweet rice, and also "Qabkawg mov plaum" but I don't know if that's a brand or a description) in water for an hour to many hours.
-Bring water to a boil in this cool vase-looking aluminum pot that Saem Gilcrest lent to me, and place the rice in a deep woven basket, so the basket is above the water. Keep water simmering and steam for about 18 minutes, occasionally tossing the rice in the basket so it rotates. 
-
-Stir together with 
-3 T. orange syrup from Candied Orange Zest
-2 T. coconut cream powder
-1/4-1/2 t. citric acid
-pinch salt?
-crushed pineapple would also be great, but I haven't tired that yet.
-
-This fills a spot that a very much sweeter/fatter rice pudding might do; it's tasty, and not that unhealthy.
-`,
-        },
-    ]);
+    const [value, setValue] = React.useState([{ insert: `\n` }]);
     const quillRef = React.useRef(null);
     const quillRefGet = React.useCallback((node) => {
         quillRef.current = node;
@@ -81,25 +64,30 @@ This fills a spot that a very much sweeter/fatter rice pudding might do; it's ta
                         return;
                     }
                     quill.formatLine(index, length, 'ingredient', true, 'user');
-                    // formatIngredients(quill, quill.getContents(), index, length);
                 }}
             >
-                Hello
+                Ingredients
             </button>
             <button
                 onClick={() => {
                     const quill = quillRef.current;
                     if (!quill) return;
-                    quill.format('measurement', false);
+                    const { index, length } = quill.getSelection();
+                    if (quill.getFormat().instruction === true) {
+                        quill.formatLine(index, length, 'instruction', false, 'user');
+                        return;
+                    }
+                    quill.formatLine(index, length, 'instruction', true, 'user');
                 }}
             >
-                Undo
+                Instructions
             </button>
             <QuillEditor
                 value={value}
                 onChange={(v) => setValue(v.ops)}
                 actions={null}
                 innerRef={quillRefGet}
+                config={quillConfig}
                 // getStamp,
                 // siteId,
                 // actions,
@@ -113,6 +101,62 @@ This fills a spot that a very much sweeter/fatter rice pudding might do; it's ta
             />
         </div>
     );
+};
+
+const quillConfig = {
+    theme: 'snow',
+    placeholder: 'Paste or type recipe here...',
+    modules: {
+        toolbar: [['bold', 'italic', 'underline', 'strike', 'link'], [{ list: 'bullet' }]],
+        keyboard: {
+            bindings: {
+                backspace: {
+                    key: 8,
+                    collapsed: true,
+                    handler() {
+                        const format = this.quill.getFormat();
+                        const sel = this.quill.getSelection();
+                        const raw = this.quill.getText();
+                        if (raw[sel.index - 1] === '\n' || sel.index === 0) {
+                            if (format.instruction) {
+                                this.quill.formatLine(sel.index, sel.length, 'instruction', false);
+                                return false;
+                            }
+                            if (format.ingredient) {
+                                this.quill.formatLine(sel.index, sel.length, 'ingredient', false);
+                                return false;
+                            }
+                        }
+                        // console.log(format, sel, [raw.slice(sel.index), raw[sel.index - 1]]);
+                        return true;
+                    },
+                },
+                enter: {
+                    key: 'Enter',
+                    collapsed: true,
+                    handler() {
+                        const format = this.quill.getFormat();
+                        const sel = this.quill.getSelection();
+                        const raw = this.quill.getText();
+                        if (
+                            raw[sel.index - 1] === '\n' &&
+                            (raw[sel.index] === '\n' || sel.index === raw.length)
+                        ) {
+                            if (format.instruction) {
+                                this.quill.formatLine(sel.index, sel.length, 'instruction', false);
+                                return false;
+                            }
+                            if (format.ingredient) {
+                                this.quill.formatLine(sel.index, sel.length, 'ingredient', false);
+                                return false;
+                            }
+                        }
+                        return true;
+                    },
+                },
+            },
+        },
+    },
 };
 
 export default RecipeEditor;

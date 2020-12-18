@@ -1,6 +1,6 @@
 // @flow
 
-export const fractions = {
+const fractions = {
     '1/2': '½',
     '1/3': '⅓',
     '2/3': '⅔',
@@ -90,7 +90,7 @@ const getNumbers = (text) => {
 //     });
 // }, 1000);
 
-export const parse = (text: string) => {
+const parse = (text /*: string*/) => {
     // how do ingredients work?
     // first, we've got "numbers and units"
     // yeah, so we can format them as something special
@@ -98,3 +98,5 @@ export const parse = (text: string) => {
     // console.log('(parsing)', text);
     return getNumbers(text);
 };
+
+module.exports = { parse, fractions };
