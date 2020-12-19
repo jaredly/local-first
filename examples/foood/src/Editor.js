@@ -60,12 +60,17 @@ const formatIngredients = (quill, contents, index, length) => {
 };
 
 const makeRecipeDelta = (recipe) => {
+    let ovenTemp = null;
     const deltas = [{ insert: recipe.description + '\n\n' }];
     recipe.recipeIngredient.forEach((line) => {
         deltas.push({ insert: line }, { insert: '\n', attributes: { ingredient: true } });
     });
     deltas.push({ insert: '\n' });
     if (typeof recipe.recipeInstructions === 'string') {
+        const oven = recipe.recipeInstructions.match(/oven.+?\b(\d{3})°?\b/i);
+        if (oven) {
+            ovenTemp = oven[1];
+        }
         deltas.push(
             { insert: recipe.recipeInstructions },
             { insert: '\n', attributes: { instruction: true } },
@@ -74,6 +79,11 @@ const makeRecipeDelta = (recipe) => {
         recipe.recipeInstructions.forEach((line) => {
             const text = instructionText(line);
             if (text) {
+                const oven = text.match(/oven.+?\b(\d{3})°?\b/i);
+                if (oven) {
+                    ovenTemp = oven[1];
+                }
+                console.log(text, oven);
                 deltas.push(
                     { insert: text.trim() },
                     { insert: '\n', attributes: { instruction: true } },
@@ -81,7 +91,7 @@ const makeRecipeDelta = (recipe) => {
             }
         });
     }
-    return deltas;
+    return { deltas, ovenTemp };
 };
 
 const getImage = (image) => {
@@ -179,7 +189,10 @@ const RecipeEditor = ({ recipe }: { recipe: RecipeT }) => {
                                 if (recipe.prepTime) {
                                     setPrepTime(showTime(parseTime(recipe.prepTime)));
                                 }
-                                const contents = makeRecipeDelta(recipe);
+                                const { deltas: contents, ovenTemp } = makeRecipeDelta(recipe);
+                                if (ovenTemp) {
+                                    setOvenTemp(ovenTemp);
+                                }
                                 setText(contents.concat(text));
                             },
                             (err) => console.error(err),
