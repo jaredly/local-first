@@ -99,7 +99,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 <RouteSwitch>
                     <Route path={`${pathPrefix}/recipe/new`}>
                         {/* Make a recipe */}
-                        <Editor />
+                        <Editor recipe={blankRecipe} />
                         {/* <Items client={client} local={local} col={col} /> */}
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id`}>
@@ -116,6 +116,19 @@ const App = ({ config }: { config: ConnectionConfig }) => {
             <UpdateSnackbar />
         </div>
     );
+};
+
+const blankRecipe = {
+    title: '',
+    source: '',
+    status: 'evaluation',
+    contents: {
+        ovenTemp: null,
+        bakeTime: null,
+        totalTime: null,
+        yield: null,
+        text: [{ insert: '\n' }],
+    },
 };
 
 export default App;

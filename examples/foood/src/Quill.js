@@ -79,6 +79,7 @@ const QuillEditor = ({
     onChange: (
         { ops: Array<QuillDelta> },
         { ops: Array<QuillDelta>, length: () => number },
+        string,
     ) => mixed,
     // getStamp: () => string,
     // siteId: string,

@@ -118,7 +118,7 @@ const detectLists = (text /*:string*/) => {
             if (title === 'ingredients') {
                 status = 'ingredients';
             }
-            if (title === 'instructions' || title === 'directions') {
+            if (title === 'instructions' || title === 'directions' || title === 'steps') {
                 status = 'instructions';
             }
             if (title === 'notes') {

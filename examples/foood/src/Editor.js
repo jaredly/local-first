@@ -4,6 +4,19 @@ import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 // import Quill from 'quill';
 import QuillEditor from './Quill';
 import { parse, detectLists } from './parse';
+import TextField from '@material-ui/core/TextField';
+import type { RecipeContents, RecipeT } from '../collections';
+import urlImport from './urlImport';
+
+const instructionText = (instruction) => {
+    if (typeof instruction === 'string') {
+        return instruction;
+    }
+    if (instruction['@type'] === 'HowToStep') {
+        return instruction.text;
+    }
+    // TODO HowToSection maybe
+};
 
 // TODO: this will happen automatically on rendering, as we can be pretty sure of its accuracy.
 const formatIngredients = (quill, contents, index, length) => {
@@ -45,15 +58,182 @@ const formatIngredients = (quill, contents, index, length) => {
     // then search those bounds, identifying amounts (incl units) and ingredient names.
 };
 
-const RecipeEditor = () => {
-    const [value, setValue] = React.useState([{ insert: `\n` }]);
+const makeRecipeDelta = (recipe) => {
+    const deltas = [{ insert: recipe.description + '\n\n' }];
+    recipe.recipeIngredient.forEach((line) => {
+        deltas.push({ insert: line }, { insert: '\n', attributes: { ingredient: true } });
+    });
+    deltas.push({ insert: '\n' });
+    if (typeof recipe.recipeInstructions === 'string') {
+        deltas.push(
+            { insert: recipe.recipeInstructions },
+            { insert: '\n', attributes: { instruction: true } },
+        );
+    } else if (Array.isArray(recipe.recipeInstructions)) {
+        recipe.recipeInstructions.forEach((line) => {
+            const text = instructionText(line);
+            if (text) {
+                deltas.push(
+                    { insert: text.trim() },
+                    { insert: '\n', attributes: { instruction: true } },
+                );
+            }
+        });
+    }
+    return deltas;
+};
+
+const getImage = (image) => {
+    if (!image) {
+        return null;
+    }
+    if (typeof image === 'string') {
+        return image;
+    }
+    if (Array.isArray(image)) {
+        return image[0];
+    }
+    if (image['@type'] === 'ImageObject') {
+        return image.url;
+    }
+    return image.url;
+};
+
+const RecipeEditor = ({ recipe }: { recipe: RecipeT }) => {
+    const [ovenTemp, setOvenTemp] = React.useState(recipe.contents.ovenTemp ?? '');
+    const [cookTime, setCookTime] = React.useState(recipe.contents.cookTime ?? '');
+    const [prepTime, setPrepTime] = React.useState(recipe.contents.prepTime ?? '');
+    const [totalTime, setTotalTime] = React.useState(recipe.contents.totalTime ?? '');
+    const [yieldAmt, setYield] = React.useState(recipe.contents.yield ?? '');
+    const [image, setImage] = React.useState(recipe.image ?? '');
+    const [text, setText] = React.useState(recipe.contents.text);
+    const [title, setTitle] = React.useState(recipe.title);
+    const [source, setSource] = React.useState(recipe.source);
+    const [status, setStatus] = React.useState(recipe.status);
+
     const quillRef = React.useRef(null);
     const quillRefGet = React.useCallback((node) => {
         quillRef.current = node;
+        window.quill = node;
     }, []);
     return (
         <div>
-            dare to edit
+            <TextField
+                value={title}
+                onChange={(evt) => setTitle(evt.target.value)}
+                label="Title"
+                variant="outlined"
+                // inputProps={{ style: { width: 80 } }}
+                // size="small"
+                fullWidth
+                style={{ marginBottom: 8 }}
+            />
+            <div style={{ display: 'flex', alignItems: 'stretch', marginBottom: 16 }}>
+                <TextField
+                    value={source}
+                    onChange={(evt) => setSource(evt.target.value)}
+                    label="Source"
+                    variant="outlined"
+                    // inputProps={{ style: { width: 80 } }}
+                    size="small"
+                    fullWidth
+                />
+                <button
+                    onClick={() => {
+                        urlImport(source).then(
+                            (recipe) => {
+                                console.log('Found!');
+                                console.log(recipe);
+                                if (!recipe) {
+                                    return; // failed tho
+                                }
+                                setTitle(recipe.name);
+                                setYield(recipe.recipeYield);
+                                const image = getImage(recipe.image);
+                                if (image) {
+                                    setImage(image);
+                                }
+                                const parseTime = (time) => {
+                                    const [_, sub] = time.split('T');
+                                    const [hours, minutes] = sub.split('H');
+                                    return { hours: +hours, minutes: +minutes.slice(0, -1) };
+                                };
+                                const showTime = (time) => {
+                                    if (time.hours != 0) {
+                                        return `${time.hours} hours, ${time.minutes} min`;
+                                    }
+                                    return `${time.minutes} min`;
+                                };
+                                if (recipe.totalTime) {
+                                    setTotalTime(showTime(parseTime(recipe.totalTime)));
+                                }
+                                if (recipe.cookTime) {
+                                    setCookTime(showTime(parseTime(recipe.cookTime)));
+                                }
+                                if (recipe.prepTime) {
+                                    setPrepTime(showTime(parseTime(recipe.prepTime)));
+                                }
+                                const contents = makeRecipeDelta(recipe);
+                                setText(contents.concat(text));
+                            },
+                            (err) => console.error(err),
+                        );
+                    }}
+                >
+                    Import
+                </button>
+            </div>
+            <TextField
+                value={image}
+                onChange={(evt) => setImage(evt.target.value)}
+                label="Image"
+                variant="outlined"
+                size="small"
+                fullWidth
+                style={{ marginBottom: 16 }}
+            />
+            {image != '' ? <img src={image} style={{ width: 100, height: 100 }} /> : null}
+            <div>
+                <TextField
+                    value={ovenTemp}
+                    onChange={(evt) => setOvenTemp(evt.target.value)}
+                    label="Oven Temp"
+                    variant="outlined"
+                    inputProps={{ style: { width: 80 } }}
+                    size="small"
+                />
+                <TextField
+                    value={prepTime}
+                    onChange={(evt) => setPrepTime(evt.target.value)}
+                    label="Prep time"
+                    variant="outlined"
+                    inputProps={{ style: { width: 80 } }}
+                    size="small"
+                />
+                <TextField
+                    value={cookTime}
+                    onChange={(evt) => setCookTime(evt.target.value)}
+                    label="Cook time"
+                    variant="outlined"
+                    inputProps={{ style: { width: 80 } }}
+                    size="small"
+                />
+                <TextField
+                    value={totalTime}
+                    onChange={(evt) => setTotalTime(evt.target.value)}
+                    label="Total time"
+                    variant="outlined"
+                    inputProps={{ style: { width: 80 } }}
+                    size="small"
+                />
+                <TextField
+                    value={yieldAmt}
+                    onChange={(evt) => setYield(evt.target.value)}
+                    label="Yield"
+                    variant="outlined"
+                    size="small"
+                />
+            </div>
             <button
                 onClick={() => {
                     const quill = quillRef.current;
@@ -83,31 +263,28 @@ const RecipeEditor = () => {
                 Instructions
             </button>
             <QuillEditor
-                value={value}
+                value={text}
                 onChange={(newValue, change, source) => {
-                    setValue(newValue.ops);
-                    const skip = change.ops[0].retain ?? 0;
+                    setText(newValue.ops);
+                    const skip =
+                        typeof change.ops[0].retain !== 'undefined' ? change.ops[0].retain : 0;
                     const len = change.length() - skip;
                     if (len > 5 && source === 'user') {
+                        const quill = quillRef.current;
+                        if (!quill) return;
                         console.log('OK', change, len);
                         console.log(skip, change.ops[0]);
                         const text = newValue.ops
-                            .map((op) => op.insert)
+                            .map((op) => (typeof op.insert === 'string' ? op.insert : null))
                             .join('')
                             .slice(skip, skip + len);
                         const { ingredients, instructions } = detectLists(text);
                         console.log(ingredients, instructions);
                         ingredients.forEach((index) => {
-                            quillRef.current.formatLine(skip + index, 0, 'ingredient', true, 'api');
+                            quill.formatLine(skip + index, 0, 'ingredient', true, 'api');
                         });
                         instructions.forEach((index) => {
-                            quillRef.current.formatLine(
-                                skip + index,
-                                0,
-                                'instruction',
-                                true,
-                                'api',
-                            );
+                            quill.formatLine(skip + index, 0, 'instruction', true, 'api');
                         });
                     }
                 }}
@@ -120,9 +297,9 @@ const RecipeEditor = () => {
                 // className,
             />
             <textarea
-                value={JSON.stringify(value, null, 2)}
+                value={JSON.stringify(text, null, 2)}
                 onChange={(evt) => {
-                    setValue(JSON.parse(evt.target.value));
+                    setText(JSON.parse(evt.target.value));
                 }}
             />
         </div>

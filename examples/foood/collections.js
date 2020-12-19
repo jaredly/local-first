@@ -93,19 +93,22 @@ export type RecipeT = {
     title: string,
     author: string,
     source: string,
+    image: string,
     contents: RecipeContents,
-    status: 'evaluation' | 'approved' | 'rejected',
+    status: 'import' | 'evaluation' | 'approved' | 'rejected',
     createdDate: number,
     updatedDate: number,
     trashedDate?: ?number,
     comments: {[id: string]: CommentT}
 }
 
-export type QuillDelta = Array<{insert: string}>;
+import { type QuillDelta } from '../../packages/rich-text-crdt/quill-deltas';
 
 export type RecipeContents = {
-    ovenTemp: ?number,
-    bakeTime: ?number,
+    ovenTemp: ?string,
+    cookTime: ?string,
+    prepTime: ?string,
+    totalTime: ?string,
     yield: ?string,
 
     // ok actually, it will all be one big "contents"
@@ -154,6 +157,7 @@ const RecipeSchema = {
         title: 'string',
         author: 'string',
         source: 'string',
+        image: 'string',
         // This is `RecipeContents`
         // but opaque, because we do internal manual versioning.
         contents: 'object',
