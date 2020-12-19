@@ -95,7 +95,7 @@ export type RecipeT = {
     source: string,
     image: string,
     contents: RecipeContents,
-    status: 'import' | 'evaluation' | 'approved' | 'rejected',
+    status: 'imported' | 'untried' | 'approved' | 'rejected',
     createdDate: number,
     updatedDate: number,
     trashedDate?: ?number,

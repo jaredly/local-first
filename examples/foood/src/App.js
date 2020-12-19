@@ -121,7 +121,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
 const blankRecipe = {
     title: '',
     source: '',
-    status: 'evaluation',
+    status: 'untried',
     contents: {
         ovenTemp: null,
         bakeTime: null,
@@ -129,6 +129,8 @@ const blankRecipe = {
         yield: null,
         text: [{ insert: '\n' }],
     },
+    comments: {},
+    author: '',
 };
 
 export default App;

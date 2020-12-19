@@ -5,6 +5,7 @@ import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 import QuillEditor from './Quill';
 import { parse, detectLists } from './parse';
 import TextField from '@material-ui/core/TextField';
+import Button from '@material-ui/core/Button';
 import type { RecipeContents, RecipeT } from '../collections';
 import urlImport from './urlImport';
 
@@ -99,6 +100,8 @@ const getImage = (image) => {
     return image.url;
 };
 
+const statuses = ['imported', 'untried', 'approved', 'rejected'];
+
 const RecipeEditor = ({ recipe }: { recipe: RecipeT }) => {
     const [ovenTemp, setOvenTemp] = React.useState(recipe.contents.ovenTemp ?? '');
     const [cookTime, setCookTime] = React.useState(recipe.contents.cookTime ?? '');
@@ -155,6 +158,9 @@ const RecipeEditor = ({ recipe }: { recipe: RecipeT }) => {
                                 }
                                 const parseTime = (time) => {
                                     const [_, sub] = time.split('T');
+                                    if (!sub.includes('H')) {
+                                        return { hours: 0, minutes: +sub.slice(0, -1) };
+                                    }
                                     const [hours, minutes] = sub.split('H');
                                     return { hours: +hours, minutes: +minutes.slice(0, -1) };
                                 };
@@ -233,6 +239,20 @@ const RecipeEditor = ({ recipe }: { recipe: RecipeT }) => {
                     variant="outlined"
                     size="small"
                 />
+            </div>
+            <div>
+                {statuses.map((name) => (
+                    <Button
+                        key={name}
+                        variant={status === name ? 'contained' : 'outlined'}
+                        color="primary"
+                        onClick={() => {
+                            setStatus(name);
+                        }}
+                    >
+                        {name}
+                    </Button>
+                ))}
             </div>
             <button
                 onClick={() => {
