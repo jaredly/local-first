@@ -60,6 +60,7 @@ const fullRaw = `(?<number>${totalNumber('')})(\\s*-\\s*(?<range>${totalNumber(
 )}))?(?:\\s*(?<unit>${unitRx}))?`;
 console.log(fullRaw);
 const rx = new RegExp(fullRaw, 'g');
+const rxStart = new RegExp('^\\s*[-*]?\\s*' + fullRaw, 'g');
 
 const getNumbers = (text) => {
     const results = [];
@@ -99,4 +100,47 @@ const parse = (text /*: string*/) => {
     return getNumbers(text);
 };
 
-module.exports = { parse, fractions };
+const detectLists = (text /*:string*/) => {
+    const lines = text.split('\n');
+    let at = 0;
+    let status = null;
+    const ingredients = [];
+    const instructions = [];
+    lines.forEach((line) => {
+        // let current = at
+        at += line.length + 1;
+        if (!line.trim().length) {
+            return;
+        }
+        const short = line.match(/^\s*(\w+)\s*:?\.?\s*$/i);
+        if (short) {
+            const title = short[1].toLowerCase();
+            if (title === 'ingredients') {
+                status = 'ingredients';
+            }
+            if (title === 'instructions' || title === 'directions') {
+                status = 'instructions';
+            }
+            if (title === 'notes') {
+                status = 'notes';
+            }
+            console.log('title', title);
+            return;
+        }
+        if (status === 'ingredients') {
+            ingredients.push(at - 1);
+        }
+        if (status === 'instructions') {
+            instructions.push(at - 1);
+        }
+        if (status === null) {
+            const match = line.trim().match(rxStart);
+            if (match) {
+                ingredients.push(at - 1);
+            }
+        }
+    });
+    return { ingredients, instructions };
+};
+
+module.exports = { parse, fractions, detectLists };

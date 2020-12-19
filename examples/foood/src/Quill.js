@@ -76,7 +76,10 @@ const QuillEditor = ({
 }: {
     value: Array<QuillDelta>,
     innerRef?: ?(node: ?Quill) => mixed,
-    onChange: ({ ops: Array<QuillDelta> }) => mixed,
+    onChange: (
+        { ops: Array<QuillDelta> },
+        { ops: Array<QuillDelta>, length: () => number },
+    ) => mixed,
     // getStamp: () => string,
     // siteId: string,
     actions: *,
@@ -115,13 +118,22 @@ const QuillEditor = ({
         // it doesn't select at the start. Might need to hack on quill to fix.
         // quill.setSelection(quill.getLength(), 0);
 
-        quill.on('text-change', (delta: { ops: Array<QuillDelta> }, _oldDelta, source: string) => {
-            if (source === 'remote') {
-                return;
-            }
+        quill.on(
+            'text-change',
+            (
+                delta: { ops: Array<QuillDelta>, length: () => number },
+                _oldDelta,
+                source: string,
+            ) => {
+                if (source === 'remote') {
+                    return;
+                }
 
-            onChange(quill.getContents());
-        });
+                // console.log('text change here we are', delta, source, _oldDelta);
+
+                onChange(quill.getContents(), delta, source);
+            },
+        );
         if (innerRef) {
             return () => {
                 innerRef(null);

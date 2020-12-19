@@ -3,7 +3,7 @@ import * as React from 'react';
 import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 // import Quill from 'quill';
 import QuillEditor from './Quill';
-import { parse } from './parse';
+import { parse, detectLists } from './parse';
 
 // TODO: this will happen automatically on rendering, as we can be pretty sure of its accuracy.
 const formatIngredients = (quill, contents, index, length) => {
@@ -84,7 +84,33 @@ const RecipeEditor = () => {
             </button>
             <QuillEditor
                 value={value}
-                onChange={(v) => setValue(v.ops)}
+                onChange={(newValue, change, source) => {
+                    setValue(newValue.ops);
+                    const skip = change.ops[0].retain ?? 0;
+                    const len = change.length() - skip;
+                    if (len > 5 && source === 'user') {
+                        console.log('OK', change, len);
+                        console.log(skip, change.ops[0]);
+                        const text = newValue.ops
+                            .map((op) => op.insert)
+                            .join('')
+                            .slice(skip, skip + len);
+                        const { ingredients, instructions } = detectLists(text);
+                        console.log(ingredients, instructions);
+                        ingredients.forEach((index) => {
+                            quillRef.current.formatLine(skip + index, 0, 'ingredient', true, 'api');
+                        });
+                        instructions.forEach((index) => {
+                            quillRef.current.formatLine(
+                                skip + index,
+                                0,
+                                'instruction',
+                                true,
+                                'api',
+                            );
+                        });
+                    }
+                }}
                 actions={null}
                 innerRef={quillRefGet}
                 config={quillConfig}
@@ -127,7 +153,6 @@ const quillConfig = {
                                 return false;
                             }
                         }
-                        // console.log(format, sel, [raw.slice(sel.index), raw[sel.index - 1]]);
                         return true;
                     },
                 },
