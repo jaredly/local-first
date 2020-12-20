@@ -141,77 +141,90 @@ const RecipeEditor = ({ recipe }: { recipe: RecipeT }) => {
                 fullWidth
                 style={{ marginBottom: 8 }}
             />
-            <div style={{ display: 'flex', alignItems: 'stretch', marginBottom: 16 }}>
-                <TextField
-                    value={source}
-                    onChange={(evt) => setSource(evt.target.value)}
-                    label="Source"
-                    variant="outlined"
-                    // inputProps={{ style: { width: 80 } }}
-                    size="small"
-                    fullWidth
-                />
-                <button
-                    onClick={() => {
-                        urlImport(source).then(
-                            (recipe) => {
-                                console.log('Found!');
-                                console.log(recipe);
-                                if (!recipe) {
-                                    return; // failed tho
-                                }
-                                setTitle(recipe.name);
-                                setYield(recipe.recipeYield);
-                                const image = getImage(recipe.image);
-                                if (image) {
-                                    setImage(image);
-                                }
-                                const parseTime = (time) => {
-                                    const [_, sub] = time.split('T');
-                                    if (!sub.includes('H')) {
-                                        return { hours: 0, minutes: +sub.slice(0, -1) };
-                                    }
-                                    const [hours, minutes] = sub.split('H');
-                                    return { hours: +hours, minutes: +minutes.slice(0, -1) };
-                                };
-                                const showTime = (time) => {
-                                    if (time.hours != 0) {
-                                        return `${time.hours} hours, ${time.minutes} min`;
-                                    }
-                                    return `${time.minutes} min`;
-                                };
-                                if (recipe.totalTime) {
-                                    setTotalTime(showTime(parseTime(recipe.totalTime)));
-                                }
-                                if (recipe.cookTime) {
-                                    setCookTime(showTime(parseTime(recipe.cookTime)));
-                                }
-                                if (recipe.prepTime) {
-                                    setPrepTime(showTime(parseTime(recipe.prepTime)));
-                                }
-                                const { deltas: contents, ovenTemp } = makeRecipeDelta(recipe);
-                                if (ovenTemp) {
-                                    setOvenTemp(ovenTemp);
-                                }
-                                setText(contents.concat(text));
-                            },
-                            (err) => console.error(err),
-                        );
-                    }}
-                >
-                    Import
-                </button>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+                <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'stretch', marginBottom: 16 }}>
+                        <TextField
+                            value={source}
+                            onChange={(evt) => setSource(evt.target.value)}
+                            label="Source"
+                            variant="outlined"
+                            // inputProps={{ style: { width: 80 } }}
+                            size="small"
+                            fullWidth
+                        />
+                        <button
+                            onClick={() => {
+                                urlImport(source).then(
+                                    (recipe) => {
+                                        console.log('Found!');
+                                        console.log(recipe);
+                                        if (!recipe) {
+                                            return; // failed tho
+                                        }
+                                        setTitle(recipe.name);
+                                        setYield(recipe.recipeYield);
+                                        const image = getImage(recipe.image);
+                                        if (image) {
+                                            setImage(image);
+                                        }
+                                        const parseTime = (time) => {
+                                            const [_, sub] = time.split('T');
+                                            if (!sub.includes('H')) {
+                                                return { hours: 0, minutes: +sub.slice(0, -1) };
+                                            }
+                                            const [hours, minutes] = sub.split('H');
+                                            return {
+                                                hours: +hours,
+                                                minutes: +minutes.slice(0, -1),
+                                            };
+                                        };
+                                        const showTime = (time) => {
+                                            if (time.hours != 0) {
+                                                return `${time.hours} hours, ${time.minutes} min`;
+                                            }
+                                            return `${time.minutes} min`;
+                                        };
+                                        if (recipe.totalTime) {
+                                            setTotalTime(showTime(parseTime(recipe.totalTime)));
+                                        }
+                                        if (recipe.cookTime) {
+                                            setCookTime(showTime(parseTime(recipe.cookTime)));
+                                        }
+                                        if (recipe.prepTime) {
+                                            setPrepTime(showTime(parseTime(recipe.prepTime)));
+                                        }
+                                        const { deltas: contents, ovenTemp } = makeRecipeDelta(
+                                            recipe,
+                                        );
+                                        if (ovenTemp) {
+                                            setOvenTemp(ovenTemp);
+                                        }
+                                        setText(contents.concat(text));
+                                    },
+                                    (err) => console.error(err),
+                                );
+                            }}
+                        >
+                            Import
+                        </button>
+                    </div>
+                    <TextField
+                        value={image}
+                        onChange={(evt) => setImage(evt.target.value)}
+                        label="Image"
+                        variant="outlined"
+                        size="small"
+                        fullWidth
+                    />
+                </div>
+                {image != '' ? (
+                    <img
+                        src={image}
+                        style={{ width: 100, height: 100, marginLeft: 16, borderRadius: 20 }}
+                    />
+                ) : null}
             </div>
-            <TextField
-                value={image}
-                onChange={(evt) => setImage(evt.target.value)}
-                label="Image"
-                variant="outlined"
-                size="small"
-                fullWidth
-                style={{ marginBottom: 16 }}
-            />
-            {image != '' ? <img src={image} style={{ width: 100, height: 100 }} /> : null}
             <div>
                 <TextField
                     value={ovenTemp}
@@ -253,7 +266,7 @@ const RecipeEditor = ({ recipe }: { recipe: RecipeT }) => {
                     size="small"
                 />
             </div>
-            <div>
+            <div style={{ margin: '16px 0' }}>
                 {statuses.map((name) => (
                     <Button
                         key={name}
@@ -262,6 +275,7 @@ const RecipeEditor = ({ recipe }: { recipe: RecipeT }) => {
                         onClick={() => {
                             setStatus(name);
                         }}
+                        style={{ marginRight: 8 }}
                     >
                         {name}
                     </Button>
@@ -302,6 +316,7 @@ const RecipeEditor = ({ recipe }: { recipe: RecipeT }) => {
                     const skip =
                         typeof change.ops[0].retain !== 'undefined' ? change.ops[0].retain : 0;
                     const len = change.length() - skip;
+                    // On paste, do some autodetection
                     if (len > 5 && source === 'user') {
                         const quill = quillRef.current;
                         if (!quill) return;
@@ -324,17 +339,13 @@ const RecipeEditor = ({ recipe }: { recipe: RecipeT }) => {
                 actions={null}
                 innerRef={quillRefGet}
                 config={quillConfig}
-                // getStamp,
-                // siteId,
-                // actions,
-                // className,
             />
-            <textarea
+            {/* <textarea
                 value={JSON.stringify(text, null, 2)}
                 onChange={(evt) => {
                     setText(JSON.parse(evt.target.value));
                 }}
-            />
+            /> */}
         </div>
     );
 };
