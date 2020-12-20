@@ -88,7 +88,7 @@ export const useCollection = function<T: {}, SyncStatus>(
     React: *,
     client: Client<SyncStatus>,
     name: string,
-) {
+): [Collection<T>, { [key: string]: T }] {
     const col = React.useMemo(() => client.getCollection<T>(name), []);
     // TODO something to indicate whether we've loaded from the database yet
     // also something to indicate whether we've ever synced with a server.

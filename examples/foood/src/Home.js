@@ -1,4 +1,7 @@
 // @flow
+import * as React from 'react';
+import type { RecipeT } from '../collections';
+import type { Client, Collection } from '../../../packages/client-bundle';
 
 // TODO: list all *tags*, based on stuff.
 // Include a url for importing if you want to be fast
@@ -7,3 +10,28 @@
 
 // Am I ready for bulk import?
 // Seems like I might be.
+
+const Home = ({
+    col,
+    recipes,
+    client,
+}: {
+    col: Collection<RecipeT>,
+    client: Client<*>,
+    recipes: { [key: string]: RecipeT },
+}) => {
+    return (
+        <div>
+            Recipes!!
+            {Object.keys(recipes).map((id) => (
+                <div>
+                    {recipes[id].title}
+                    {recipes[id].contents.totalTime}
+                    {recipes[id].status}
+                </div>
+            ))}
+        </div>
+    );
+};
+
+export default Home;

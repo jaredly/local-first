@@ -22,6 +22,7 @@ import AppShell from '../../shared/AppShell';
 import Drawer from './Drawer';
 import UpdateSnackbar from '../../shared/Update';
 import Editor from './Editor';
+import Home from './Home';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
@@ -99,7 +100,19 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 <RouteSwitch>
                     <Route path={`${pathPrefix}/recipe/new`}>
                         {/* Make a recipe */}
-                        <Editor recipe={blankRecipe} />
+                        <Editor
+                            onSave={(recipe) => {
+                                console.log('saving', recipe);
+                                col.save(recipe.id, recipe)
+                                    .catch((err) => {
+                                        console.error('error', err);
+                                    })
+                                    .then(() => {
+                                        window.location = match.path;
+                                    });
+                            }}
+                            recipe={blankRecipe}
+                        />
                         {/* <Items client={client} local={local} col={col} /> */}
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id`}>
@@ -108,6 +121,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                     </Route>
                     <Route path={`${pathPrefix}`}>
                         It's the home slice
+                        <Home col={col} recipes={recipes} />
                         {/* <Items client={client} local={local} col={col} /> */}
                     </Route>
                 </RouteSwitch>
@@ -124,7 +138,7 @@ const blankRecipe = {
     status: 'untried',
     contents: {
         ovenTemp: null,
-        bakeTime: null,
+        cookTime: null,
         totalTime: null,
         yield: null,
         text: [{ insert: '\n' }],

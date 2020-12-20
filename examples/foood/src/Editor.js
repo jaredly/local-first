@@ -112,7 +112,7 @@ const getImage = (image) => {
 
 const statuses = ['imported', 'untried', 'approved', 'rejected'];
 
-const RecipeEditor = ({ recipe }: { recipe: RecipeT }) => {
+const RecipeEditor = ({ recipe, onSave }: { recipe: RecipeT, onSave: (RecipeT) => void }) => {
     const [ovenTemp, setOvenTemp] = React.useState(recipe.contents.ovenTemp ?? '');
     const [cookTime, setCookTime] = React.useState(recipe.contents.cookTime ?? '');
     const [prepTime, setPrepTime] = React.useState(recipe.contents.prepTime ?? '');
@@ -281,34 +281,44 @@ const RecipeEditor = ({ recipe }: { recipe: RecipeT }) => {
                     </Button>
                 ))}
             </div>
-            <button
-                onClick={() => {
-                    const quill = quillRef.current;
-                    if (!quill) return;
-                    const { index, length } = quill.getSelection();
-                    if (quill.getFormat().ingredient === true) {
-                        quill.formatLine(index, length, 'ingredient', false, 'user');
-                        return;
-                    }
-                    quill.formatLine(index, length, 'ingredient', true, 'user');
-                }}
-            >
-                Ingredients
-            </button>
-            <button
-                onClick={() => {
-                    const quill = quillRef.current;
-                    if (!quill) return;
-                    const { index, length } = quill.getSelection();
-                    if (quill.getFormat().instruction === true) {
-                        quill.formatLine(index, length, 'instruction', false, 'user');
-                        return;
-                    }
-                    quill.formatLine(index, length, 'instruction', true, 'user');
-                }}
-            >
-                Instructions
-            </button>
+            <div>
+                <Button
+                    onClick={() => {
+                        const quill = quillRef.current;
+                        if (!quill) return;
+                        const { index, length } = quill.getSelection();
+                        if (quill.getFormat().ingredient === true) {
+                            quill.formatLine(index, length, 'ingredient', false, 'user');
+                            return;
+                        }
+                        quill.formatLine(index, length, 'ingredient', true, 'user');
+                    }}
+                >
+                    <img
+                        src={require('../icons/icon_plain.svg')}
+                        style={{ marginRight: 8, display: 'inline-block' }}
+                    />
+                    Ingredient
+                </Button>
+                <Button
+                    onClick={() => {
+                        const quill = quillRef.current;
+                        if (!quill) return;
+                        const { index, length } = quill.getSelection();
+                        if (quill.getFormat().instruction === true) {
+                            quill.formatLine(index, length, 'instruction', false, 'user');
+                            return;
+                        }
+                        quill.formatLine(index, length, 'instruction', true, 'user');
+                    }}
+                >
+                    <img
+                        src={require('../icons/knife.svg')}
+                        style={{ marginRight: 8, display: 'inline-block' }}
+                    />
+                    Instruction
+                </Button>
+            </div>
             <QuillEditor
                 value={text}
                 onChange={(newValue, change, source) => {
@@ -346,6 +356,36 @@ const RecipeEditor = ({ recipe }: { recipe: RecipeT }) => {
                     setText(JSON.parse(evt.target.value));
                 }}
             /> */}
+            <div>
+                <Button
+                    onClick={() => {
+                        onSave({
+                            id: Math.random().toString(36).slice(2),
+                            createdDate: Date.now(),
+                            updatedDate: Date.now(),
+                            image,
+                            title,
+                            source,
+                            status,
+                            contents: {
+                                changeLog: [],
+                                version: Math.random().toString(36).slice(2),
+                                prepTime,
+                                ovenTemp,
+                                cookTime,
+                                totalTime,
+                                yield: yieldAmt,
+                                text,
+                            },
+                            comments: {},
+                            author: '',
+                        });
+                    }}
+                >
+                    Save
+                </Button>
+                <Button onClick={() => {}}>Cancel</Button>
+            </div>
         </div>
     );
 };
@@ -354,7 +394,8 @@ const quillConfig = {
     theme: 'snow',
     placeholder: 'Paste or type recipe here...',
     modules: {
-        toolbar: [['bold', 'italic', 'underline', 'strike', 'link'], [{ list: 'bullet' }]],
+        // toolbar: [['bold', 'italic', 'underline', 'strike', 'link'], [{ list: 'bullet' }]],
+        tookbar: false,
         keyboard: {
             bindings: {
                 backspace: {
