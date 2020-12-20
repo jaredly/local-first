@@ -11,35 +11,25 @@ const backOff = (
         .then(succeeded => {
             if (succeeded) {
                 return;
-            } else {
+            } else if (globalThis.document != undefined) {
                 const tid = setTimeout(() => {
-                    document.removeEventListener(
-                        'visibilitychange',
-                        listener,
-                        false,
-                    );
+                    document.removeEventListener('visibilitychange', listener, false);
                     backOff(fn, wait * rate, rate, initialWait);
                 }, wait);
 
                 const listener = () => {
                     if (!document.hidden) {
-                        document.removeEventListener(
-                            'visibilitychange',
-                            listener,
-                            false,
-                        );
+                        document.removeEventListener('visibilitychange', listener, false);
                         clearTimeout(tid);
                         backOff(fn, initialWait, rate, initialWait);
                     }
                 };
 
                 if (wait > 1000) {
-                    document.addEventListener(
-                        'visibilitychange',
-                        listener,
-                        false,
-                    );
+                    document.addEventListener('visibilitychange', listener, false);
                 }
+            } else {
+                backOff(fn, wait * rate, rate, initialWait);
             }
         });
 };
