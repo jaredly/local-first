@@ -1,6 +1,6 @@
 // @flow
 
-import type { Client } from '../types';
+import type { Client, Collection } from '../types';
 import type {
     Persistence,
     OldNetwork,
@@ -247,11 +247,20 @@ export function createManualClient<Delta, Data>(
     schemas: { [colid: string]: Schema },
     clock: PersistentClock,
     persistence: DeltaPersistence,
-): any {
+): {|
+    state: { [key: string]: CollectionState<Data, any> },
+    persistence: DeltaPersistence,
+    clock: PersistentClock,
+    getMessages: () => Promise<Array<ClientMessage<Delta, Data>>>,
+    receive: (
+        messages: Array<ServerMessage<Delta, Data>>,
+    ) => Promise<Array<ClientMessage<Delta, Data>>>,
+    getCollection<T>(colid: string): Collection<T>,
+|} {
     const state = initialState(persistence.collections);
 
     return {
-        _state: state,
+        state,
         persistence,
         clock,
         getMessages(): Promise<Array<ClientMessage<Delta, Data>>> {
@@ -262,14 +271,14 @@ export function createManualClient<Delta, Data>(
         ): Promise<Array<ClientMessage<Delta, Data>>> {
             return handleMessages(crdt, persistence, messages, state, clock.recv, () => {});
         },
-        async getState() {
-            const data = {};
-            for (let col of persistence.collections) {
-                data[col] = await this.getCollection(col).loadAll();
-            }
-            return data;
-        },
-        getCollection(colid: string) {
+        // async getState() {
+        //     const data = {};
+        //     for (let col of persistence.collections) {
+        //         data[col] = await this.getCollection(col).loadAll();
+        //     }
+        //     return data;
+        // },
+        getCollection<T>(colid: string): Collection<T> {
             return getCollection(
                 colid,
                 crdt,

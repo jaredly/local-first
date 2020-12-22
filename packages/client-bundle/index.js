@@ -38,9 +38,15 @@ import {
 import { default as makeDeltaInMemoryPersistence } from '../idb/src/delta-mem';
 
 export { default as makeDeltaInMemoryPersistence } from '../idb/src/delta-mem';
-export { default as createDeltaClient } from '../core/src/delta/create-client';
+export {
+    default as createDeltaClient,
+    createManualClient as createManualDeltaClient,
+} from '../core/src/delta/create-client';
 export { default as makeDeltaPersistence } from '../idb/src/delta';
-export { default as createPollingNetwork } from '../core/src/delta/polling-network';
+export {
+    default as createPollingNetwork,
+    doSync as oneTimePollingSync,
+} from '../core/src/delta/polling-network';
 export { default as createWebSocketNetwork, SyncStatus } from '../core/src/delta/websocket-network';
 
 export {

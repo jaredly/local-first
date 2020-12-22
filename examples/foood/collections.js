@@ -99,7 +99,8 @@ export type RecipeT = {
     createdDate: number,
     updatedDate: number,
     trashedDate?: ?number,
-    comments: {[id: string]: CommentT}
+    comments: {[id: string]: CommentT},
+    tags: {[id: string]: number},
 }
 
 import { type QuillDelta } from '../../packages/rich-text-crdt/quill-deltas';
@@ -169,6 +170,7 @@ const RecipeSchema = {
             type: 'map',
             value: CommentSchema,
         },
+        tags: { type: 'optional', value: { type: 'map', value: 'int' } },
     },
 };
 

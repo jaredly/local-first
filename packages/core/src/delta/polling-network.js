@@ -51,7 +51,7 @@ export const doSync = <Delta, Data>(
     getMessages: (reconnected: boolean) => Promise<Array<ClientMessage<Delta, Data>>>,
     handleMessages: (Array<ServerMessage<Delta, Data>>) => Promise<mixed>,
 ) => {
-    return syncFetch(url, sessionId, getMessages, messages => handleMessages(messages)).then(
+    return syncFetch(url, sessionId, getMessages, handleMessages).then(
         () => {
             return true;
         },
@@ -62,51 +62,6 @@ export const doSync = <Delta, Data>(
         },
     );
 };
-
-// export const createManualNetwork = <Delta, Data>(
-//     url: string,
-// ): NetworkCreator<Delta, Data, SyncStatus> => (
-//     sessionId,
-//     getMessages,
-//     handleMessages,
-// ): Network<SyncStatus> => {
-//     return {
-//         initial: { status: 'disconnected' },
-//         createSync: (sendCrossTabChange, updateStatus) => {
-//             console.log('Im the leader (polling)');
-//             const check = () =>
-//                 doSync(
-//                     url,
-//                     sessionId,
-//                     getMessages,
-//                     handleMessages,
-//                     sendCrossTabChange,
-//                     updateStatus,
-//                 );
-//             // syncFetch(url, sessionId, getMessages, messages =>
-//             //     handleMessages(messages, sendCrossTabChange),
-//             // ).then(
-//             //     () => {
-//             //         updateStatus({ status: 'connected' });
-//             //         return true;
-//             //     },
-//             //     err => {
-//             //         console.error('Failed to sync polling');
-//             //         console.error(err.stack);
-//             //         updateStatus({
-//             //             status: 'disconnected',
-//             //         });
-//             //         return false;
-//             //     },
-//             // );
-//             // start polling
-//             // poll();
-
-//             // TODO check out this error
-//             return () => check();
-//         },
-//     };
-// };
 
 const createPollingNetwork = <Delta, Data>(
     url: string,

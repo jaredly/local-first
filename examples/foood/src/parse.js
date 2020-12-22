@@ -58,7 +58,7 @@ const unitRx = Object.keys(units)
 const fullRaw = `(?<number>${totalNumber('')})(\\s*-\\s*(?<range>${totalNumber(
     '_range',
 )}))?(?:\\s*(?<unit>${unitRx}))?`;
-console.log(fullRaw);
+// console.log(fullRaw);
 const rx = new RegExp(fullRaw, 'g');
 const rxStart = new RegExp('^\\s*[-*]?\\s*' + fullRaw, 'g');
 
@@ -100,6 +100,20 @@ const parse = (text /*: string*/) => {
     return getNumbers(text);
 };
 
+const Delta = require('quill-delta');
+const rawToDeltas = (text /*:string*/) => {
+    let doc = new Delta().insert(text);
+    const { ingredients, instructions } = detectLists(text);
+    // console.log(ingredients, instructions);
+    ingredients.forEach((pos) => {
+        doc = doc.compose(new Delta().retain(pos).retain(1, { ingredient: true }));
+    });
+    instructions.forEach((pos) => {
+        doc = doc.compose(new Delta().retain(pos).retain(1, { instruction: true }));
+    });
+    return doc;
+};
+
 const detectLists = (text /*:string*/) => {
     const lines = text.split('\n');
     let at = 0;
@@ -124,7 +138,7 @@ const detectLists = (text /*:string*/) => {
             if (title === 'notes') {
                 status = 'notes';
             }
-            console.log('title', title);
+            // console.log('title', title);
             return;
         }
         if (status === 'ingredients') {
@@ -143,4 +157,4 @@ const detectLists = (text /*:string*/) => {
     return { ingredients, instructions };
 };
 
-module.exports = { parse, fractions, detectLists };
+module.exports = { parse, fractions, detectLists, rawToDeltas };

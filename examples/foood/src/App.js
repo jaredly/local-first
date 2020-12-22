@@ -115,13 +115,15 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                         />
                         {/* <Items client={client} local={local} col={col} /> */}
                     </Route>
+                    <Route path={`${pathPrefix}/tag/:tagid`}>
+                        <Home client={client} />
+                    </Route>
                     <Route path={`${pathPrefix}/recipe/:id`}>
                         Hello repo
                         {/* <Items client={client} local={local} col={col} /> */}
                     </Route>
                     <Route path={`${pathPrefix}`}>
-                        It's the home slice
-                        <Home col={col} recipes={recipes} />
+                        <Home client={client} />
                         {/* <Items client={client} local={local} col={col} /> */}
                     </Route>
                 </RouteSwitch>

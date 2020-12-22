@@ -59,6 +59,9 @@ const metaForSchema = function<T, Other>(
     if (typeof schema === 'string') {
         return { type: 'plain', hlcStamp };
     }
+    if (schema == null) {
+        throw new Error(`Null schema. Value: ${JSON.stringify(value) ?? 'undefined'}`);
+    }
     switch (schema.type) {
         case 'array':
             if (!Array.isArray(value)) {
@@ -82,9 +85,13 @@ const metaForSchema = function<T, Other>(
             if (value == null || typeof value !== 'object') {
                 throw new Error(`Not an object`);
             }
-            return createDeepMapMeta(value, hlcStamp, getStamp, (item, key) =>
-                metaForSchema(item, hlcStamp, getStamp, schema.attributes[key], createOtherMeta),
-            );
+            return createDeepMapMeta(value, hlcStamp, getStamp, (item, key) => {
+                const sub = schema.attributes[key];
+                if (sub == null) {
+                    throw new Error(`Sub schema not defined: ${key}`);
+                }
+                return metaForSchema(item, hlcStamp, getStamp, sub, createOtherMeta);
+            });
         default:
             throw new Error('Unexpected schema type: ' + JSON.stringify(schema));
     }
