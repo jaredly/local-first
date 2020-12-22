@@ -23,6 +23,7 @@ import Drawer from './Drawer';
 import UpdateSnackbar from '../../shared/Update';
 import Editor from './Editor';
 import Home from './Home';
+import RecipeView from './Recipe';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
@@ -113,18 +114,15 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                             }}
                             recipe={blankRecipe}
                         />
-                        {/* <Items client={client} local={local} col={col} /> */}
                     </Route>
                     <Route path={`${pathPrefix}/tag/:tagid`}>
                         <Home client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id`}>
-                        Hello repo
-                        {/* <Items client={client} local={local} col={col} /> */}
+                        <RecipeView client={client} />
                     </Route>
                     <Route path={`${pathPrefix}`}>
                         <Home client={client} />
-                        {/* <Items client={client} local={local} col={col} /> */}
                     </Route>
                 </RouteSwitch>
             </AppShell>

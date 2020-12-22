@@ -108,11 +108,11 @@ const Home = ({ client }: { client: Client<*> }) => {
                 </div>
                 <div className={styles.recipes}>
                     {matches.map((id) => (
-                        <div className={styles.recipe}>
+                        <Link to={'/recipe/' + id} className={styles.recipe}>
                             {recipes[id].title}
                             {/* {recipes[id].contents.totalTime}
                             {recipes[id].status} */}
-                        </div>
+                        </Link>
                     ))}
                 </div>
             </div>
