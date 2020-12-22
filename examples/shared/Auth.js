@@ -263,7 +263,7 @@ const SignUpIn = ({ storageKey, host }: { storageKey: string, host: string }) =>
 };
 
 export const useAuthStatus = (storageKey: string, host: string) => {
-    const [status, setStatus] = React.useState(() => initialStatus(storageKey));
+    const [status, setStatus] = React.useState<Status | false>(() => initialStatus(storageKey));
     const statusRef = React.useRef(status);
     statusRef.current = status;
 
@@ -318,6 +318,9 @@ const Auth = ({
         };
     }, []);
     const doLogout = React.useCallback(() => {
+        if (status === false || status == null) {
+            return;
+        }
         logout(storageKey, host, status.token);
         console.log('calling listeners', listeners);
         listeners.forEach(fn => fn());
