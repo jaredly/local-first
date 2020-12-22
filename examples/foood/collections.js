@@ -60,6 +60,13 @@ const IngredientSchema = {
 
 /*::
 
+export type TagT = {
+    id: string,
+    text: string,
+    color: ?string,
+    created: number,
+}
+
 export type TechniqueT = {
     id: string,
     title: string,
