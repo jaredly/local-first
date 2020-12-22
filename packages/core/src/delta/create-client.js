@@ -242,6 +242,48 @@ const tabIsolatedNetwork = function<SyncStatus>(
     };
 };
 
+export function createManualClient<Delta, Data>(
+    crdt: CRDTImpl<Delta, Data>,
+    schemas: { [colid: string]: Schema },
+    clock: PersistentClock,
+    persistence: DeltaPersistence,
+): any {
+    const state = initialState(persistence.collections);
+
+    return {
+        _state: state,
+        persistence,
+        clock,
+        getMessages(): Promise<Array<ClientMessage<Delta, Data>>> {
+            return getMessages(persistence, false);
+        },
+        receive(
+            messages: Array<ServerMessage<Delta, Data>>,
+        ): Promise<Array<ClientMessage<Delta, Data>>> {
+            return handleMessages(crdt, persistence, messages, state, clock.recv, () => {});
+        },
+        async getState() {
+            const data = {};
+            for (let col of persistence.collections) {
+                data[col] = await this.getCollection(col).loadAll();
+            }
+            return data;
+        },
+        getCollection(colid: string) {
+            return getCollection(
+                colid,
+                crdt,
+                persistence,
+                state[colid],
+                clock.get,
+                () => {},
+                () => {},
+                schemas[colid],
+            );
+        },
+    };
+}
+
 function createClient<Delta, Data, SyncStatus>(
     name: string,
     crdt: CRDTImpl<Delta, Data>,

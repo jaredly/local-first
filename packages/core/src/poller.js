@@ -1,5 +1,7 @@
 // @flow
 
+// This is a function that will poll periodically, but will
+// pause while the window is out of sight.
 const poller = (time: number, fn: () => Promise<void>) => {
     let tid = null;
     const poll = () => {
@@ -11,6 +13,7 @@ const poller = (time: number, fn: () => Promise<void>) => {
                 tid = setTimeout(poll, time);
             });
     };
+    // $FlowFixMe
     if (globalThis.document) {
         document.addEventListener(
             'visibilitychange',

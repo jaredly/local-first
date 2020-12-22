@@ -11,6 +11,7 @@ const backOff = (
         .then(succeeded => {
             if (succeeded) {
                 return;
+                // $FlowFixMe
             } else if (globalThis.document != undefined) {
                 const tid = setTimeout(() => {
                     document.removeEventListener('visibilitychange', listener, false);

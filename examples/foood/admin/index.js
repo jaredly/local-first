@@ -1,6 +1,6 @@
 console.log('hi');
 
-// import createPollingNetwork from '../../../packages/core/src/delta/polling-network'
+import { createManualNetwork } from '../../../packages/core/src/delta/polling-network';
 // import createDeltaClient from '../../../packages/core/delta/create-client'
 import {
     clientCrdtImpl,
@@ -21,7 +21,7 @@ const client = createDeltaClient(
     schemas,
     new PersistentClock(inMemoryClockPersist()),
     makeDeltaInMemoryPersistence(Object.keys(schemas)),
-    createPollingNetwork(url),
+    createManualClient(url),
 );
 
 console.log('hi');

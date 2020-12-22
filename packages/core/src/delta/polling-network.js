@@ -7,6 +7,7 @@ import type {
     DeltaPersistence,
     FullPersistence,
     NetworkCreator,
+    PeerChange,
 } from '../types';
 import type { HLC } from '../../../hybrid-logical-clock';
 import * as hlc from '../../../hybrid-logical-clock';
@@ -44,6 +45,69 @@ const syncFetch = async function<Delta, Data>(
     await onMessages(data);
 };
 
+export const doSync = <Delta, Data>(
+    url: string,
+    sessionId: string,
+    getMessages: (reconnected: boolean) => Promise<Array<ClientMessage<Delta, Data>>>,
+    handleMessages: (Array<ServerMessage<Delta, Data>>) => Promise<mixed>,
+) => {
+    return syncFetch(url, sessionId, getMessages, messages => handleMessages(messages)).then(
+        () => {
+            return true;
+        },
+        err => {
+            console.error('Failed to sync polling');
+            console.error(err.stack);
+            return false;
+        },
+    );
+};
+
+// export const createManualNetwork = <Delta, Data>(
+//     url: string,
+// ): NetworkCreator<Delta, Data, SyncStatus> => (
+//     sessionId,
+//     getMessages,
+//     handleMessages,
+// ): Network<SyncStatus> => {
+//     return {
+//         initial: { status: 'disconnected' },
+//         createSync: (sendCrossTabChange, updateStatus) => {
+//             console.log('Im the leader (polling)');
+//             const check = () =>
+//                 doSync(
+//                     url,
+//                     sessionId,
+//                     getMessages,
+//                     handleMessages,
+//                     sendCrossTabChange,
+//                     updateStatus,
+//                 );
+//             // syncFetch(url, sessionId, getMessages, messages =>
+//             //     handleMessages(messages, sendCrossTabChange),
+//             // ).then(
+//             //     () => {
+//             //         updateStatus({ status: 'connected' });
+//             //         return true;
+//             //     },
+//             //     err => {
+//             //         console.error('Failed to sync polling');
+//             //         console.error(err.stack);
+//             //         updateStatus({
+//             //             status: 'disconnected',
+//             //         });
+//             //         return false;
+//             //     },
+//             // );
+//             // start polling
+//             // poll();
+
+//             // TODO check out this error
+//             return () => check();
+//         },
+//     };
+// };
+
 const createPollingNetwork = <Delta, Data>(
     url: string,
 ): NetworkCreator<Delta, Data, SyncStatus> => (
@@ -54,32 +118,28 @@ const createPollingNetwork = <Delta, Data>(
     return {
         initial: { status: 'disconnected' },
         createSync: (sendCrossTabChange, updateStatus) => {
+            const handle = messages => handleMessages(messages, sendCrossTabChange);
             console.log('Im the leader (polling)');
             const poll = poller(
                 3 * 1000,
                 () =>
                     new Promise(res => {
-                        backOff(() =>
-                            syncFetch(url, sessionId, getMessages, messages =>
-                                handleMessages(messages, sendCrossTabChange),
-                            ).then(
-                                () => {
+                        backOff(() => {
+                            return doSync(url, sessionId, getMessages, handle).then(success => {
+                                if (success) {
                                     updateStatus({ status: 'connected' });
                                     res();
-                                    return true;
-                                },
-                                err => {
-                                    console.error('Failed to sync polling');
-                                    console.error(err.stack);
+                                } else {
                                     updateStatus({
                                         status: 'disconnected',
                                     });
-                                    return false;
-                                },
-                            ),
-                        );
+                                }
+                                return success;
+                            });
+                        });
                     }),
             );
+            // start polling
             poll();
             return debounce(poll);
         },

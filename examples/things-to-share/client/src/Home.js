@@ -35,7 +35,7 @@ const matches = (term, link) => {
     if (link.url.toLowerCase().includes(term)) {
         return true;
     }
-    if (!link.fetchedContent) {
+    if (link.fetchedContent == null) {
         return false;
     }
     const fields = searchableFields(link.fetchedContent);
@@ -105,7 +105,7 @@ const UncompletedList = ({ client, host, showAll, tags, linksCol, links }) => {
     const [initiallyCompleted, setInitiallyCompleted] = React.useState(() => {
         const completed = {};
         Object.keys(links).forEach((k) => {
-            if (links[k].completed) {
+            if (links[k].completed != null) {
                 completed[k] = true;
             }
         });
@@ -118,7 +118,7 @@ const UncompletedList = ({ client, host, showAll, tags, linksCol, links }) => {
         const newCompleted = {};
         let hasNew = false;
         Object.keys(links).forEach((k) => {
-            if (!lastLinks.current[k] && links[k].completed) {
+            if (!lastLinks.current[k] && links[k].completed != null) {
                 newCompleted[k] = true;
                 hasNew = true;
             }
