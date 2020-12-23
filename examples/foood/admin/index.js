@@ -109,8 +109,9 @@ const main = async () => {
 
     const allRecipes = await col.loadAll();
     const allTags = await tagsCol.loadAll();
-    fs.writeFileSync('./recipes.json', JSON.stringify(allRecipes, null, 2), 'utf8');
-    fs.writeFileSync('./tags.json', JSON.stringify(allTags, null, 2), 'utf8');
+
+    // fs.writeFileSync('./recipes.json', JSON.stringify(allRecipes, null, 2), 'utf8');
+    // fs.writeFileSync('./tags.json', JSON.stringify(allTags, null, 2), 'utf8');
 
     const allTagsByName = {};
     Object.keys(allTags).forEach((id) => (allTagsByName[allTags[id].text] = allTags[id]));
@@ -164,6 +165,11 @@ const main = async () => {
     }
     await sync(client, url);
     console.log('added', i);
+
+    const fooodStuffs = getFooodStuffs()
+    // lists
+    // madeIts (comments)
+    // recipes
 
     // Object.keys()
 
