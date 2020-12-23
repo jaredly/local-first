@@ -109,13 +109,10 @@ const Home = ({ client }: { client: Client<*> }) => {
         }
         return (
             <div>
+                <Link style={{ color: 'inherit' }} to="/">
+                    Home
+                </Link>
                 <div style={{ display: 'flex', position: 'relative', marginBottom: 8 }}>
-                    <Link
-                        style={{ position: 'absolute', top: 0, left: 0, color: 'inherit' }}
-                        to="/"
-                    >
-                        Back
-                    </Link>
                     <div style={{ flex: 1, textAlign: 'center', fontSize: 24, fontWeight: 'bold' }}>
                         {selectedTag.text}
                     </div>

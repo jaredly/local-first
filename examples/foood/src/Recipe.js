@@ -20,36 +20,23 @@ const useStyles = makeStyles((theme) => ({
     tags: {
         display: 'flex',
         flexWrap: 'wrap',
+        alignItems: 'center',
+        marginBottom: 8,
+        fontSize: '60%',
     },
     tag: {
-        width: 150,
-        height: 150,
         color: 'inherit',
-        boxShadow: '0 0 2px white',
-        padding: 16,
-        margin: 8,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        textDecoration: 'none',
+        marginRight: 8,
+        padding: 8,
+        display: 'inline-block',
+        lineHeight: 1,
         borderRadius: 4,
-    },
-    recipes: {
-        display: 'flex',
-        flexWrap: 'wrap',
-    },
-    recipe: {
-        width: 150,
-        height: 150,
-        color: 'inherit',
-        boxShadow: '0 0 2px white',
-        padding: 16,
-        margin: 8,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
+        backgroundColor: 'rgba(255,255,255,0.1)',
         textDecoration: 'none',
-        borderRadius: 4,
+    },
+
+    instruction: {
+        // cursor: 'pointer',
     },
 
     instructionGroup: {
@@ -123,7 +110,10 @@ const renderOps = ({ ops }, styles) => {
 const Plain = ({ children }) => (
     <div style={{ minHeight: '1em' }}>{children.length ? children : '&nbsp;'}</div>
 );
-const Instruction = ({ children }) => <div style={{ color: 'red' }}>{children}</div>;
+const Instruction = ({ children }) => {
+    const styles = useStyles();
+    return <div className={styles.instruction}>{children}</div>;
+};
 const Ingredient = ({ children }) => {
     const [checked, setChecked] = React.useState(false);
     const styles = useStyles();
@@ -173,6 +163,7 @@ const RecipeView = ({ client }: { client: Client<*> }) => {
     const match = useRouteMatch();
     const { id } = match.params;
     const [col, recipe] = useItem(React, client, 'recipes', id);
+    const [_, tags] = useCollection(React, client, 'tags');
     const styles = useStyles();
     if (!recipe) {
         return <div>Recipe not found</div>;
@@ -180,8 +171,19 @@ const RecipeView = ({ client }: { client: Client<*> }) => {
     return (
         <div className={styles.container}>
             <div className={styles.title}>{recipe.title}</div>
-            {/* {JSON.stringify(recipe.contents.text)} */}
-            {renderOps(recipe.contents.text, styles)}
+            {recipe.tags != null && Object.keys(recipe.tags).length > 0 ? (
+                <div className={styles.tags}>
+                    <div style={{ marginRight: 8 }}>Tags:</div>
+                    {Object.keys(recipe.tags)
+                        .filter((tid) => !!tags[tid])
+                        .map((tid) => (
+                            <Link to={`/tag/${tid}`} className={styles.tag}>
+                                {tags[tid].text}
+                            </Link>
+                        ))}
+                </div>
+            ) : null}
+            <div className={styles.text}>{renderOps(recipe.contents.text, styles)}</div>
         </div>
     );
 };

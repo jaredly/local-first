@@ -61,6 +61,7 @@ const fullRaw = `(?<number>${totalNumber('')})(\\s*-\\s*(?<range>${totalNumber(
 // console.log(fullRaw);
 const rx = new RegExp(fullRaw, 'g');
 const rxStart = new RegExp('^\\s*[-*]?\\s*' + fullRaw, 'g');
+const informal = new RegExp('^(shy|heaping|dash|pinch)\b', 'i');
 
 const getNumbers = (text) => {
     const results = [];
@@ -150,6 +151,8 @@ const detectLists = (text /*:string*/) => {
         if (status === null) {
             const match = line.trim().match(rxStart);
             if (match) {
+                ingredients.push(at - 1);
+            } else if (line.trim().match(informal)) {
                 ingredients.push(at - 1);
             }
         }
