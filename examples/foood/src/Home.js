@@ -21,23 +21,26 @@ const useStyles = makeStyles((theme) => ({
     tags: {
         display: 'flex',
         flexWrap: 'wrap',
+        justifyContent: 'center',
     },
     tag: {
-        width: 150,
-        height: 150,
+        width: 120,
+        height: 120,
         color: 'inherit',
-        boxShadow: '0 0 2px white',
+        // boxShadow: '0 0 2px white',
+        border: '1px solid #aaa',
         padding: 16,
         margin: 8,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         textDecoration: 'none',
-        borderRadius: 4,
+        // borderRadius: 4,
     },
     recipes: {
         display: 'flex',
         flexWrap: 'wrap',
+        justifyContent: 'center',
     },
     recipe: {
         width: 150,
@@ -51,6 +54,9 @@ const useStyles = makeStyles((theme) => ({
         justifyContent: 'space-between',
         textDecoration: 'none',
         borderRadius: 4,
+    },
+    tagRecipes: {
+        fontSize: '80%',
     },
     // root: {
     //     backgroundColor: theme.palette.background.paper,
@@ -102,9 +108,16 @@ const Home = ({ client }: { client: Client<*> }) => {
         }
         return (
             <div>
-                <div>
-                    <Link to="/">Back</Link>
-                    {selectedTag.text}
+                <div style={{ display: 'flex', position: 'relative', marginBottom: 8 }}>
+                    <Link
+                        style={{ position: 'absolute', top: 0, left: 0, color: 'inherit' }}
+                        to="/"
+                    >
+                        Back
+                    </Link>
+                    <div style={{ flex: 1, textAlign: 'center', fontSize: 24, fontWeight: 'bold' }}>
+                        {selectedTag.text}
+                    </div>
                 </div>
                 <div className={styles.recipes}>
                     {matches.map((id) => (
@@ -121,7 +134,6 @@ const Home = ({ client }: { client: Client<*> }) => {
 
     return (
         <div>
-            Recipes!!
             <div className={styles.tags}>
                 {tagIds.map((id) => (
                     <Tag key={id} count={tagCounts[id]} tag={tags[id]} />
