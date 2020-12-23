@@ -8,7 +8,10 @@ import { makeStyles } from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme) => ({
     container: {
-        paddingTop: theme.spacing(8),
+        // paddingTop: theme.spacing(8),
+        fontSize: 20,
+        lineHeight: 1.8,
+        fontWeight: 300,
     },
     title: {
         fontSize: 24,
@@ -48,69 +51,110 @@ const useStyles = makeStyles((theme) => ({
         textDecoration: 'none',
         borderRadius: 4,
     },
-    // root: {
-    //     backgroundColor: theme.palette.background.paper,
-    //     overflow: 'hidden',
-    // },
-    // body: {
-    //     padding: theme.spacing(2),
-    // },
-    // topBar: {
-    //     padding: theme.spacing(2),
-    //     backgroundColor: theme.palette.primary.light,
-    //     color: theme.palette.primary.contrastText,
-    // },
+
+    instructionGroup: {
+        padding: 16,
+    },
+    ingredientGroup: {
+        padding: 16,
+    },
+    ingredient: {
+        cursor: 'pointer',
+        '&:hover': {
+            backgroundColor: 'rgba(255,255,255,0.1)',
+        },
+    },
+    checkedIngredient: {
+        textDecoration: 'line-through',
+        textDecorationColor: 'rgba(255,255,255,0.3)',
+        opacity: 0.8,
+        cursor: 'pointer',
+        '&:hover': {
+            backgroundColor: 'rgba(255,255,255,0.1)',
+        },
+    },
 }));
 
-const renderOps = ({ ops }) => {
-    const lines = [{ chunks: [], format: null }];
+const getType = (fmt) =>
+    fmt == null ? null : fmt.ingredient ? 'ingredient' : fmt.instruction ? 'instruction' : null;
+
+const renderOps = ({ ops }, styles) => {
+    const lines: Array<{ chunks: *, type: ?string }> = [{ chunks: [], type: null }];
     ops.forEach((op) => {
         if (op.insert === '\n') {
-            lines[lines.length - 1].format = op.attributes;
-            lines.push({ chunks: [], format: null });
+            lines[lines.length - 1].type = getType(op.attributes);
+            lines.push({ chunks: [], type: null });
         } else {
             const opLines = op.insert.split('\n');
             const first = opLines.shift();
             lines[lines.length - 1].chunks.push({ text: first, format: op.attributes });
             opLines.forEach((text) =>
-                lines.push({ chunks: [{ text, format: op.attributes }], format: null }),
+                lines.push({ chunks: [{ text, format: op.attributes }], type: null }),
             );
         }
     });
-    return lines.map((line, i) => {
-        const Comp = componentForFormat(line.format);
+    const groups = [];
+    lines.forEach((line) => {
+        if (!groups.length || groups[groups.length - 1].type !== line.type) {
+            groups.push({ type: line.type, lines: [line] });
+        } else {
+            groups[groups.length - 1].lines.push(line);
+        }
+    });
+    return groups.map(({ type, lines }, i) => {
         return (
-            <Comp
-                key={i}
-                children={line.chunks.map((chunk, i) => (
-                    <span>{chunk.text}</span>
-                ))}
-            />
+            <div className={type != null ? styles[type + 'Group'] : null}>
+                {lines.map((line, i) => {
+                    const Comp = componentForFormat(line.type);
+                    return (
+                        <Comp
+                            key={i}
+                            children={line.chunks.map((chunk, i) => (
+                                <span>{chunk.text}</span>
+                            ))}
+                        />
+                    );
+                })}
+            </div>
         );
     });
 };
 
-const Plain = ({ children }) => <div>{children}</div>;
+const Plain = ({ children }) => (
+    <div style={{ minHeight: '1em' }}>{children.length ? children : '&nbsp;'}</div>
+);
 const Instruction = ({ children }) => <div style={{ color: 'red' }}>{children}</div>;
-const Ingredient = ({ children }) => (
-    <div style={{ fontWeight: 'bold', display: 'flex' }}>
-        {/* <img
+const Ingredient = ({ children }) => {
+    const [checked, setChecked] = React.useState(false);
+    const styles = useStyles();
+    return (
+        <div
+            className={checked ? styles.checkedIngredient : styles.ingredient}
+            style={{ display: 'flex' }}
+            onMouseDown={(_) => setChecked(!checked)}
+        >
+            {/* <img
             src={require('../icons/icon_plain.svg')}
             style={{ marginRight: 8, marginBottom: -3 }}
         /> */}
-        <input type="checkbox" style={{ marginRight: 8 }} />
-        <div style={{ flex: 1 }}>{children}</div>
-    </div>
-);
+            <input
+                checked={checked}
+                type="checkbox"
+                style={{ marginRight: 8, position: 'relative', top: 8 }}
+            />
+            <div style={{ flex: 1 }}>{children}</div>
+        </div>
+    );
+};
 
-const componentForFormat = (format) => {
-    if (!format) {
+const componentForFormat = (format: ?string) => {
+    if (format == null) {
         return Plain;
     }
-    if (format.instruction) {
+    if (format === 'instruction') {
         return Instruction;
     }
-    if (format.ingredient) {
+    if (format === 'ingredient') {
         return Ingredient;
     }
     return Plain;
@@ -125,7 +169,7 @@ const formatClass = (format) => {
     }
 };
 
-const RecipeView = ({ client }) => {
+const RecipeView = ({ client }: { client: Client<*> }) => {
     const match = useRouteMatch();
     const { id } = match.params;
     const [col, recipe] = useItem(React, client, 'recipes', id);
@@ -134,10 +178,10 @@ const RecipeView = ({ client }) => {
         return <div>Recipe not found</div>;
     }
     return (
-        <div>
+        <div className={styles.container}>
             <div className={styles.title}>{recipe.title}</div>
             {/* {JSON.stringify(recipe.contents.text)} */}
-            {renderOps(recipe.contents.text)}
+            {renderOps(recipe.contents.text, styles)}
         </div>
     );
 };

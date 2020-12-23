@@ -133,18 +133,26 @@ const App = ({ config }: { config: ConnectionConfig }) => {
 };
 
 const blankRecipe = {
+    id: '',
     title: '',
+    author: '',
     source: '',
+    image: '',
     status: 'untried',
+    createdDate: 0,
+    updatedDate: 0,
     contents: {
         ovenTemp: null,
         cookTime: null,
         totalTime: null,
+        prepTime: null,
         yield: null,
         text: [{ insert: '\n' }],
+        changeLog: [],
+        version: '',
     },
     comments: {},
-    author: '',
+    tags: {},
 };
 
 export default App;

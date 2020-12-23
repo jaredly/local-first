@@ -379,6 +379,7 @@ const RecipeEditor = ({ recipe, onSave }: { recipe: RecipeT, onSave: (RecipeT) =
                             },
                             comments: {},
                             author: '',
+                            tags: {},
                         });
                     }}
                 >
