@@ -123,7 +123,10 @@ export const runMulti2 = (
             res.end();
         } else {
             const subPath = parts.slice(1);
-            const dbPath = path.join(dataPath, parts[0], '@' + req.auth.id, subPath.join('/'));
+            const dbPath =
+                subPath[0] === 'public'
+                    ? path.join(dataPath, parts[0], subPath.join('/'))
+                    : path.join(dataPath, parts[0], '@' + req.auth.id, subPath.join('/'));
             req.dbName = dbName;
             req.dbConfig = config;
             req.dataPath = dbPath;

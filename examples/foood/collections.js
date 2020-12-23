@@ -95,6 +95,8 @@ export type CommentT = {
     recipeVersion: string,
 }
 
+type Status = 'approved' | 'rejected';
+
 export type RecipeT = {
     id: string,
     title: string,
@@ -102,7 +104,9 @@ export type RecipeT = {
     source: string,
     image: string,
     contents: RecipeContents,
-    status: 'imported' | 'untried' | 'approved' | 'rejected',
+    statuses: {
+        [userId: string]: Status,
+    },
     createdDate: number,
     updatedDate: number,
     trashedDate?: ?number,
@@ -171,7 +175,7 @@ const RecipeSchema = {
         // This is `RecipeContents`
         // but opaque, because we do internal manual versioning.
         contents: 'object',
-        status: 'string', // 'evaluating' | 'approved' | 'rejected'
+        statuses: { type: 'map', value: 'string' }, // 'evaluating' | 'approved' | 'rejected'
         createdDate: 'int',
         updatedDate: 'int',
         trashedDate: { type: 'optional', value: 'int' },

@@ -133,6 +133,7 @@ const Home = ({ client }: { client: Client<*> }) => {
     return (
         <div>
             <div className={styles.tags}>
+                {tagIds.length === 0 ? 'No tags defined' : null}
                 {tagIds.map((id) => (
                     <Tag key={id} count={tagCounts[id]} tag={tags[id]} />
                 ))}

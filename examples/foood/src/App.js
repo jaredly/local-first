@@ -53,7 +53,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
         if (config.type === 'memory') {
             return createInMemoryEphemeralClient(schemas);
         }
-        const url = `${config.authData.host}/dbs/sync?db=foood&token=${config.authData.auth.token}`;
+        const url = `${config.authData.host}/dbs/sync?db=foood/public&token=${config.authData.auth.token}`;
         return createPersistedDeltaClient(
             config.prefix,
             schemas,
@@ -138,7 +138,7 @@ const blankRecipe = {
     author: '',
     source: '',
     image: '',
-    status: 'untried',
+    statuses: {},
     createdDate: 0,
     updatedDate: 0,
     contents: {

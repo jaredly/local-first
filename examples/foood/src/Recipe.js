@@ -107,9 +107,7 @@ const renderOps = ({ ops }, styles) => {
     });
 };
 
-const Plain = ({ children }) => (
-    <div style={{ minHeight: '1em' }}>{children.length ? children : '&nbsp;'}</div>
-);
+const Plain = ({ children }) => <div style={{ minHeight: '1em' }}>{children}</div>;
 const Instruction = ({ children }) => {
     const styles = useStyles();
     return <div className={styles.instruction}>{children}</div>;
