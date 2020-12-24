@@ -111,6 +111,15 @@ const MyDrawer = ({
                             <ListItemText primary="Sign out" />
                         </ListItem>
                     ) : null}
+                    <ListItem>
+                        <ListItemText
+                            primary={`Version: ${
+                                process.env.VERSION != null
+                                    ? process.env.VERSION.slice(0, 5)
+                                    : 'dev'
+                            }`}
+                        />
+                    </ListItem>
                 </List>
                 <Divider />
             </Drawer>

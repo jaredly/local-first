@@ -351,6 +351,9 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         },
 
         async load(id: string) {
+            if (!id) {
+                throw new Error(`No id specified to load.`);
+            }
             const v = await persistence.load(colid, id);
             if (!v) {
                 return null;

@@ -25,7 +25,7 @@
     },
     "scripts": {
         "deploy": "npm run build && cd dist && cp index.html 200.html && surge . tree-notes.surge.sh",
-        "build": "parcel build index.html",
+        "build": "env VERSION=$(git rev-parse HEAD) parcel build index.html",
         "start": "parcel serve --no-autoinstall --port 1234 index.html"
     },
     "alias": {

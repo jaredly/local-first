@@ -35,9 +35,15 @@ export const useItems = function<T: {}, SyncStatus>(
     React.useEffect(() => {
         const listeners = ids.map(id => {
             if (!items || !items[id]) {
-                col.load(id).then(data => {
-                    setItems(items => ({ ...items, [id]: data }));
-                });
+                col.load(id).then(
+                    data => {
+                        setItems(items => ({ ...items, [id]: data }));
+                    },
+                    err => {
+                        console.error('Unable to load item!', id);
+                        console.error(err);
+                    },
+                );
             }
             return col.onItemChange(id, data => setItems(items => ({ ...items, [id]: data })));
         });
@@ -75,9 +81,15 @@ export const useItem = function<T: {}, SyncStatus>(
                     setItem(false);
                 }
             }
-            col.load(id).then(data => {
-                setItem(data);
-            });
+            col.load(id).then(
+                data => {
+                    setItem(data);
+                },
+                err => {
+                    console.error('Unable to load item!', id);
+                    console.error(err);
+                },
+            );
         }
         return col.onItemChange(id, setItem);
     }, [id]);
