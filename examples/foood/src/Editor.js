@@ -112,7 +112,15 @@ const getImage = (image) => {
 
 const statuses = ['imported', 'untried', 'approved', 'rejected'];
 
-const RecipeEditor = ({ recipe, onSave }: { recipe: RecipeT, onSave: (RecipeT) => void }) => {
+const RecipeEditor = ({
+    actorId,
+    recipe,
+    onSave,
+}: {
+    actorId: string,
+    recipe: RecipeT,
+    onSave: (RecipeT) => void,
+}) => {
     const [ovenTemp, setOvenTemp] = React.useState(recipe.contents.ovenTemp ?? '');
     const [cookTime, setCookTime] = React.useState(recipe.contents.cookTime ?? '');
     const [prepTime, setPrepTime] = React.useState(recipe.contents.prepTime ?? '');
@@ -122,7 +130,7 @@ const RecipeEditor = ({ recipe, onSave }: { recipe: RecipeT, onSave: (RecipeT) =
     const [text, setText] = React.useState(recipe.contents.text);
     const [title, setTitle] = React.useState(recipe.title);
     const [source, setSource] = React.useState(recipe.source);
-    const [status, setStatus] = React.useState(recipe.status);
+    const [status, setStatus] = React.useState(recipe.statuses[actorId]);
 
     const quillRef = React.useRef(null);
     const quillRefGet = React.useCallback((node) => {
@@ -366,7 +374,7 @@ const RecipeEditor = ({ recipe, onSave }: { recipe: RecipeT, onSave: (RecipeT) =
                             image,
                             title,
                             source,
-                            status,
+                            statuses: status == null ? {} : { [actorId]: status },
                             contents: {
                                 changeLog: [],
                                 version: Math.random().toString(36).slice(2),

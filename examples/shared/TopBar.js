@@ -13,8 +13,13 @@ import { Link } from 'react-router-dom';
 import type { Client, SyncStatus } from '../../packages/client-bundle';
 import { useSyncStatus } from '../../packages/client-react';
 
-type Props = { client: Client<SyncStatus>, openMenu: () => void, title: string };
-const TopBar = ({ openMenu, client, title }: Props) => {
+type Props = {
+    client: Client<SyncStatus>,
+    openMenu: () => void,
+    title: string,
+    icons?: React.Node,
+};
+const TopBar = ({ openMenu, client, title, icons }: Props) => {
     const styles = useStyles();
     const syncStatus = useSyncStatus(React, client);
 
@@ -36,6 +41,7 @@ const TopBar = ({ openMenu, client, title }: Props) => {
                     </Link>
                 </Typography>
                 <div style={{ flex: 1 }} />
+                {icons}
                 <div style={{ width: 24, height: 24 }}>
                     {syncStatus.status === 'connected' ? (
                         <Wifi className={styles.connected} />

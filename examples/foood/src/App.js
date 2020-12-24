@@ -1,5 +1,5 @@
 // @flow
-import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
+import { Route, Link, useRouteMatch, useParams, useHistory } from 'react-router-dom';
 
 import querystring from 'querystring';
 import ListItem from '@material-ui/core/ListItem';
@@ -13,6 +13,8 @@ import {
     createInMemoryDeltaClient,
     createInMemoryEphemeralClient,
 } from '../../../packages/client-bundle';
+import IconButton from '@material-ui/core/IconButton';
+import SearchIcon from '@material-ui/icons/Search';
 import { useCollection, useItem } from '../../../packages/client-react';
 import type { Data } from '../../shared/auth-api';
 import type { AuthData } from '../../shared/Auth';
@@ -24,6 +26,7 @@ import UpdateSnackbar from '../../shared/Update';
 import Editor from './Editor';
 import Home from './Home';
 import RecipeView from './Recipe';
+import Search from './Search';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
@@ -71,6 +74,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
         });
     }, [client, config.type === 'remote' ? config.authData : null]);
     const match = useRouteMatch();
+    const history = useHistory();
 
     const authData = config.type === 'remote' ? config.authData : null;
 
@@ -93,15 +97,35 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                         client={client}
                     />
                 )}
+                topIcons={
+                    <IconButton
+                        edge="start"
+                        // className={styles.menuButton}
+                        style={{ marginRight: 16 }}
+                        color="inherit"
+                        aria-label="menu"
+                        href={'/search'}
+                        onClick={(evt) => {
+                            if (evt.button == 0 && !evt.ctrlKey && !evt.metaKey) {
+                                history.push('/search');
+                                evt.preventDefault();
+                                evt.stopPropagation();
+                            }
+                        }}
+                    >
+                        <SearchIcon />
+                    </IconButton>
+                }
                 drawerItems={null}
                 authData={authData}
                 client={client}
             >
-                {/* <Items client={client} local={local} col={col} id={itemId} /> */}
                 <RouteSwitch>
                     <Route path={`${pathPrefix}/recipe/new`}>
-                        {/* Make a recipe */}
                         <Editor
+                            actorId={
+                                config.type === 'remote' ? config.authData.auth.user.email : 'main'
+                            }
                             onSave={(recipe) => {
                                 console.log('saving', recipe);
                                 col.save(recipe.id, recipe)
@@ -114,6 +138,9 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                             }}
                             recipe={blankRecipe}
                         />
+                    </Route>
+                    <Route path={`${pathPrefix}/search`}>
+                        <Search client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/tag/:tagid`}>
                         <Home client={client} />

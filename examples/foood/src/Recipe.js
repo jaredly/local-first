@@ -123,8 +123,7 @@ const Ingredient = ({ children }) => {
         >
             {/* <img
             src={require('../icons/icon_plain.svg')}
-            style={{ marginRight: 8, marginBottom: -3 }}
-        /> */}
+            style={{ marginRight: 8, marginBottom: -3 }} */}
             <input
                 checked={checked}
                 type="checkbox"

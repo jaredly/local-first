@@ -18,6 +18,7 @@ const AppShell = ({
     noContainer,
     renderDrawer,
     title,
+    topIcons,
 }: {
     client: Client<SyncStatus>,
     authData: ?AuthData,
@@ -26,6 +27,7 @@ const AppShell = ({
     noContainer?: boolean,
     renderDrawer: (boolean, () => void) => React.Node,
     title: string,
+    topIcons?: React.Node,
 }) => {
     const [menu, setMenu] = React.useState(false);
     const styles = useStyles();
@@ -35,7 +37,7 @@ const AppShell = ({
 
     return (
         <React.Fragment>
-            <TopBar openMenu={openMenu} client={client} title={title} />
+            <TopBar openMenu={openMenu} client={client} title={title} icons={topIcons} />
             {renderDrawer(menu, () => setMenu(false))}
             <Container maxWidth={noContainer ? undefined : 'sm'} className={styles.container}>
                 {children}
