@@ -15,6 +15,7 @@ import {
 } from '../../../packages/client-bundle';
 import IconButton from '@material-ui/core/IconButton';
 import SearchIcon from '@material-ui/icons/Search';
+import AddIcon from '@material-ui/icons/Add';
 import { useCollection, useItem } from '../../../packages/client-react';
 import type { Data } from '../../shared/auth-api';
 import type { AuthData } from '../../shared/Auth';
@@ -98,23 +99,42 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                     />
                 )}
                 topIcons={
-                    <IconButton
-                        edge="start"
-                        // className={styles.menuButton}
-                        style={{ marginRight: 16 }}
-                        color="inherit"
-                        aria-label="menu"
-                        href={'/search'}
-                        onClick={(evt) => {
-                            if (evt.button == 0 && !evt.ctrlKey && !evt.metaKey) {
-                                history.push('/search');
-                                evt.preventDefault();
-                                evt.stopPropagation();
-                            }
-                        }}
-                    >
-                        <SearchIcon />
-                    </IconButton>
+                    <React.Fragment>
+                        <IconButton
+                            edge="start"
+                            // className={styles.menuButton}
+                            style={{ marginRight: 16 }}
+                            color="inherit"
+                            aria-label="menu"
+                            href={'/recipe/new'}
+                            onClick={(evt) => {
+                                if (evt.button == 0 && !evt.ctrlKey && !evt.metaKey) {
+                                    history.push('/recipe/new');
+                                    evt.preventDefault();
+                                    evt.stopPropagation();
+                                }
+                            }}
+                        >
+                            <AddIcon />
+                        </IconButton>
+                        <IconButton
+                            edge="start"
+                            // className={styles.menuButton}
+                            style={{ marginRight: 16 }}
+                            color="inherit"
+                            aria-label="menu"
+                            href={'/search'}
+                            onClick={(evt) => {
+                                if (evt.button == 0 && !evt.ctrlKey && !evt.metaKey) {
+                                    history.push('/search');
+                                    evt.preventDefault();
+                                    evt.stopPropagation();
+                                }
+                            }}
+                        >
+                            <SearchIcon />
+                        </IconButton>
+                    </React.Fragment>
                 }
                 drawerItems={null}
                 authData={authData}
