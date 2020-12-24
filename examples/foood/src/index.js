@@ -68,7 +68,11 @@ const Top = () => {
                     <Main host={'local-first-server.glitch.me'} prefix={'foood'} />
                 </Route>
                 <Route path="/">
-                    <Main host={'localhost:9090'} prefix={'foood-local'} />
+                    {window.location.hostname === 'localhost' ? (
+                        <Main host={'localhost:9090'} prefix={'foood-local'} />
+                    ) : (
+                        <Main host={'local-first-server.glitch.me'} prefix={'foood'} />
+                    )}
                 </Route>
             </Switch>
         </Router>
