@@ -5,7 +5,7 @@ import Button from '@material-ui/core/Button';
 import type { RecipeT, TagT } from '../collections';
 import type { Client, Collection } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
-import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
+import { Route, Link, useRouteMatch, useParams, useLocation, useHistory } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
 import Fuse from 'fuse.js';
 
@@ -40,24 +40,21 @@ const useStyles = makeStyles((theme) => ({
         textDecoration: 'none',
         // borderRadius: 4,
     },
-    recipes: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
+    results: {
+        marginTop: theme.spacing(2),
     },
-    recipe: {
-        width: 180,
-        height: 100,
+    showMoreButton: {
+        marginTop: theme.spacing(2),
+        marginLeft: 16,
+    },
+    recipeTitle: {
+        padding: '8px 16px',
+        display: 'block',
         color: 'inherit',
-        // boxShadow: '0 0 2px white',
-        border: '1px solid #aaa',
-        padding: 16,
-        margin: 2,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
         textDecoration: 'none',
-        // borderRadius: 4,
+        '&:hover': {
+            backgroundColor: `rgba(255,255,255,0.1)`,
+        },
     },
     tagRecipes: {
         fontSize: '80%',
@@ -101,24 +98,47 @@ const useDebounce = (fn, initialValue, timer, uniquifier) => {
     return value;
 };
 
-const defaultShowAmount = 30;
+const defaultShowAmount = 15;
+
+// A custom hook that builds on useLocation to parse
+// the query string for you.
+function useQuery() {
+    return new URLSearchParams(useLocation().search);
+}
+
+const useSetTitle = (title) => {
+    React.useEffect(() => {
+        document.title = title;
+    }, [title]);
+};
 
 const Search = ({ client }: { client: Client<*> }) => {
     const match = useRouteMatch();
     const [col, recipes] = useCollection(React, client, 'recipes');
     const [tagsCol, tags] = useCollection(React, client, 'tags');
     const styles = useStyles();
+    const history = useHistory();
 
-    const [searchText, setSearchText] = React.useState('');
+    const query = useQuery();
+    const searchText = query.get('q') || '';
+
+    // const [searchText, setSearchText] = React.useState('');
     const [showUpTo, setShowUpTo] = React.useState(defaultShowAmount);
-    const results = useDebounce(() => runSearch(recipes, searchText), null, 300, [searchText]);
+    const results = useDebounce(
+        () => runSearch(recipes, searchText),
+        () => runSearch(recipes, searchText),
+        300,
+        [recipes, searchText],
+    );
+
+    useSetTitle(`Search: ${searchText}`);
 
     return (
         <div className={styles.container}>
             <TextField
                 value={searchText}
                 onChange={(evt) => {
-                    setSearchText(evt.target.value);
+                    history.replace(match.path + '?q=' + evt.target.value);
                     setShowUpTo(defaultShowAmount);
                 }}
                 fullWidth
@@ -129,17 +149,17 @@ const Search = ({ client }: { client: Client<*> }) => {
             {results == null ? null : results.length ? (
                 <div className={styles.results}>
                     {results.slice(0, showUpTo).map(({ item }) => (
-                        <div key={item.id}>
-                            <Link
-                                to={`/recipe/${item.id}`}
-                                style={{ color: 'inherit', textDecoration: 'none' }}
-                            >
+                        <div key={item.id} className={styles.recipe}>
+                            <Link to={`/recipe/${item.id}`} className={styles.recipeTitle}>
                                 {item.title}
                             </Link>
                         </div>
                     ))}
                     {results.length > showUpTo ? (
-                        <Button onClick={() => setShowUpTo(showUpTo + defaultShowAmount)}>
+                        <Button
+                            onClick={() => setShowUpTo(showUpTo + defaultShowAmount)}
+                            className={styles.showMoreButton}
+                        >
                             Show more
                         </Button>
                     ) : null}
@@ -178,24 +198,25 @@ const runSearch = (recipes, needle) => {
         // todo allow searching comments?
     }));
 
-    // If there's whitespace, do a fuzzy search
-    const exacts =
-        lowerNeedle.trim() === lowerNeedle
-            ? toSearch.filter(
-                  (item) =>
-                      item.title.toLowerCase().includes(lowerNeedle) ||
-                      item.contents.toLowerCase().includes(lowerNeedle),
-              )
-            : [];
-    if (exacts.length) {
-        return exacts
-            .sort((a, b) => {
-                const aa = a.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
-                const ba = b.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
-                return ba - aa;
-            })
-            .map((item) => ({ item }));
-    }
+    // TODO(jared): Maybe bring this back? idk what I really want.
+    // const exacts =
+    //     // whitespace around term breaks out into fuzzy
+    //     lowerNeedle.trim() === lowerNeedle
+    //         ? toSearch.filter(
+    //               (item) =>
+    //                   item.title.toLowerCase().includes(lowerNeedle) ||
+    //                   item.contents.toLowerCase().includes(lowerNeedle),
+    //           )
+    //         : [];
+    // if (exacts.length) {
+    //     return exacts
+    //         .sort((a, b) => {
+    //             const aa = a.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
+    //             const ba = b.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
+    //             return ba - aa;
+    //         })
+    //         .map((item) => ({ item }));
+    // }
 
     const fuse = new Fuse(toSearch, {
         includeScore: true,

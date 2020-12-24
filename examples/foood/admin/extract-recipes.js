@@ -38,7 +38,7 @@ const getAllRecipes = () => {
     // Determine which of these are really "tags", e.g. they have mostly references to other recipes.
     $('div[title]').each((_, item) => {
         var node = $(item);
-        if (!node.attr('created')) {
+        if (!node.attr('created') || node.attr('tags') === 'systenConfig') {
             return;
         }
         const title = node.attr('title');

@@ -156,12 +156,22 @@ const formatClass = (format) => {
     }
 };
 
+const useSetTitle = (title) => {
+    React.useEffect(() => {
+        document.title = title;
+    }, [title]);
+};
+
 const RecipeView = ({ client }: { client: Client<*> }) => {
     const match = useRouteMatch();
     const { id } = match.params;
     const [col, recipe] = useItem(React, client, 'recipes', id);
     const [_, tags] = useCollection(React, client, 'tags');
     const styles = useStyles();
+    useSetTitle(recipe ? `${recipe.title} | Foood` : 'Foood');
+    if (recipe === false) {
+        return <div />; // wait on it
+    }
     if (!recipe) {
         return <div>Recipe not found</div>;
     }

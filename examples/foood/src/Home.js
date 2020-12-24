@@ -83,6 +83,12 @@ const Tag = ({ tag, count }: { tag: TagT, count: number }) => {
     );
 };
 
+const useSetTitle = (title) => {
+    React.useEffect(() => {
+        document.title = title;
+    }, [title]);
+};
+
 const Home = ({ client }: { client: Client<*> }) => {
     const match = useRouteMatch();
     const [col, recipes] = useCollection(React, client, 'recipes');
@@ -98,6 +104,12 @@ const Home = ({ client }: { client: Client<*> }) => {
     });
 
     const tagIds = Object.keys(tags).sort((a, b) => (tagCounts[b] || 0) - (tagCounts[a] || 0));
+
+    useSetTitle(
+        match.params.tagid && tags[match.params.tagid]
+            ? `${tags[match.params.tagid].text} | Foood`
+            : 'Foood',
+    );
 
     if (match.params.tagid) {
         const matches = Object.keys(recipes).filter((id) =>
