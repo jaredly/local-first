@@ -24,7 +24,7 @@ const darkTheme = createMuiTheme({
 });
 
 const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
-    console.log('main render?');
+    console.log('main render?', host);
     const match = useRouteMatch();
     if (host == null || prefix == null) {
         return (
@@ -64,11 +64,11 @@ const Top = () => {
                 <Route path="/localhost">
                     <Main host={'localhost:9090'} prefix={'foood-local'} />
                 </Route>
-                <Route path="/">
-                    <Main host={'localhost:9090'} prefix={'foood-local'} />
-                </Route>
                 <Route path="/prod">
                     <Main host={'local-first-server.glitch.me'} prefix={'foood'} />
+                </Route>
+                <Route path="/">
+                    <Main host={'localhost:9090'} prefix={'foood-local'} />
                 </Route>
             </Switch>
         </Router>
