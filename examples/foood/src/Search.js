@@ -1,11 +1,13 @@
 // @flow
 import * as React from 'react';
 import TextField from '@material-ui/core/TextField';
+import Button from '@material-ui/core/Button';
 import type { RecipeT, TagT } from '../collections';
 import type { Client, Collection } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
 import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
+import Fuse from 'fuse.js';
 
 // TODO: list all *tags*, based on stuff.
 // Include a url for importing if you want to be fast
@@ -84,6 +86,23 @@ const Tag = ({ tag, count }: { tag: TagT, count: number }) => {
     );
 };
 
+const useDebounce = (fn, initialValue, timer, uniquifier) => {
+    const [value, setValue] = React.useState(initialValue);
+    // const tid = React.useRef(null)
+    React.useEffect(() => {
+        console.log('set up');
+        // clearTimeout(tid.current)
+        const id = setTimeout(() => {
+            console.log('bounced');
+            setValue(fn());
+        }, timer);
+        return () => clearTimeout(id);
+    }, uniquifier);
+    return value;
+};
+
+const defaultShowAmount = 30;
+
 const Search = ({ client }: { client: Client<*> }) => {
     const match = useRouteMatch();
     const [col, recipes] = useCollection(React, client, 'recipes');
@@ -91,57 +110,43 @@ const Search = ({ client }: { client: Client<*> }) => {
     const styles = useStyles();
 
     const [searchText, setSearchText] = React.useState('');
-
-    // const tagCounts = {};
-    // Object.keys(recipes).forEach((id) => {
-    //     if (!recipes[id].tags) return;
-    //     Object.keys(recipes[id].tags).forEach((tid) => {
-    //         tagCounts[tid] = (tagCounts[tid] || 0) + 1;
-    //     });
-    // });
-
-    // const tagIds = Object.keys(tags).sort((a, b) => (tagCounts[b] || 0) - (tagCounts[a] || 0));
-
-    // if (match.params.tagid) {
-    //     const matches = Object.keys(recipes).filter((id) =>
-    //         recipes[id].tags ? recipes[id].tags[match.params.tagid] != null : false,
-    //     );
-    //     const selectedTag = tags[match.params.tagid];
-    //     if (!selectedTag) {
-    //         return <div>Tag not found</div>;
-    //     }
-    //     return (
-    //         <div>
-    //             <Link style={{ color: 'inherit' }} to="/">
-    //                 Home
-    //             </Link>
-    //             <div style={{ display: 'flex', position: 'relative', marginBottom: 8 }}>
-    //                 <div style={{ flex: 1, textAlign: 'center', fontSize: 24, fontWeight: 'bold' }}>
-    //                     {selectedTag.text}
-    //                 </div>
-    //             </div>
-    //             <div className={styles.recipes}>
-    //                 {matches.map((id) => (
-    //                     <Link to={'/recipe/' + id} className={styles.recipe}>
-    //                         {recipes[id].title}
-    //                         {/* {recipes[id].contents.totalTime}
-    //                         {recipes[id].status} */}
-    //                     </Link>
-    //                 ))}
-    //             </div>
-    //         </div>
-    //     );
-    // }
+    const [showUpTo, setShowUpTo] = React.useState(defaultShowAmount);
+    const results = useDebounce(() => runSearch(recipes, searchText), null, 300, [searchText]);
 
     return (
         <div className={styles.container}>
             <TextField
                 value={searchText}
-                onChange={(evt) => setSearchText(evt.target.value)}
+                onChange={(evt) => {
+                    setSearchText(evt.target.value);
+                    setShowUpTo(defaultShowAmount);
+                }}
                 fullWidth
                 label="Search"
                 variant="outlined"
+                autoFocus
             />
+            {results == null ? null : results.length ? (
+                <div className={styles.results}>
+                    {results.slice(0, showUpTo).map(({ item }) => (
+                        <div key={item.id}>
+                            <Link
+                                to={`/recipe/${item.id}`}
+                                style={{ color: 'inherit', textDecoration: 'none' }}
+                            >
+                                {item.title}
+                            </Link>
+                        </div>
+                    ))}
+                    {results.length > showUpTo ? (
+                        <Button onClick={() => setShowUpTo(showUpTo + defaultShowAmount)}>
+                            Show more
+                        </Button>
+                    ) : null}
+                </div>
+            ) : (
+                'No results'
+            )}
             {/* <div className={styles.tags}>
                 {tagIds.length === 0 ? 'No tags defined' : null}
                 {tagIds.map((id) => (
@@ -158,5 +163,58 @@ const Search = ({ client }: { client: Client<*> }) => {
         </div>
     );
 };
+
+const runSearch = (recipes, needle) => {
+    if (!needle.trim()) {
+        return null;
+    }
+    const lowerNeedle = needle.toLowerCase();
+
+    const toSearch = Object.keys(recipes).map((id) => ({
+        id: id,
+        title: recipes[id].title,
+        source: recipes[id].source,
+        contents: deltaToString(recipes[id].contents.text),
+        // todo allow searching comments?
+    }));
+
+    // If there's whitespace, do a fuzzy search
+    const exacts =
+        lowerNeedle.trim() === lowerNeedle
+            ? toSearch.filter(
+                  (item) =>
+                      item.title.toLowerCase().includes(lowerNeedle) ||
+                      item.contents.toLowerCase().includes(lowerNeedle),
+              )
+            : [];
+    if (exacts.length) {
+        return exacts
+            .sort((a, b) => {
+                const aa = a.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
+                const ba = b.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
+                return ba - aa;
+            })
+            .map((item) => ({ item }));
+    }
+
+    const fuse = new Fuse(toSearch, {
+        includeScore: true,
+        keys: [
+            { name: 'title', weight: 1 },
+            { name: 'source', weight: 0.2 },
+            { name: 'contents', weight: 0.5 },
+        ],
+    });
+    return fuse.search(needle);
+
+    // const results = toSearch.map(item => {
+    //     if (item.title.includes(needle)) {
+    //         return {item, score: 1}
+    //     }
+    // })
+};
+
+const deltaToString = (delta) =>
+    delta.ops.map((op) => (typeof op.insert === 'string' ? op.insert : '')).join('');
 
 export default Search;

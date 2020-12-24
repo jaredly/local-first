@@ -149,7 +149,7 @@ export type RecipeContents = {
     // instructions: Array<QuillDelta>,
     // notes: ?string,
 
-    text: Array<QuillDelta>,
+    text: {ops: Array<QuillDelta>},
 
     version: string,
     changeLog: Array<{
