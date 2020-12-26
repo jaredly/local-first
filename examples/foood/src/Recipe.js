@@ -169,11 +169,11 @@ const useSetTitle = (title) => {
 const RecipeView = ({ client }: { client: Client<*> }) => {
     const match = useRouteMatch();
     const { id } = match.params;
-    const [col, recipe] = useItem(React, client, 'recipes', id);
-    const [_, tags] = useCollection(React, client, 'tags');
+    const [col, recipe] = useItem<RecipeT, _>(React, client, 'recipes', id);
+    const [_, tags] = useCollection<TagT, _>(React, client, 'tags');
     const styles = useStyles();
     const history = useHistory();
-    useSetTitle(recipe ? `${recipe.title} | Foood` : 'Foood');
+    useSetTitle(recipe ? `${recipe.about.title} | Foood` : 'Foood');
     if (recipe === false) {
         return <div />; // wait on it
     }
@@ -183,7 +183,7 @@ const RecipeView = ({ client }: { client: Client<*> }) => {
     return (
         <div className={styles.container}>
             <div className={styles.title}>
-                {recipe.title}
+                {recipe.about.title}
                 <IconButton
                     edge="start"
                     // className={styles.menuButton}

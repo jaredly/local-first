@@ -91,8 +91,8 @@ const useSetTitle = (title) => {
 
 const Home = ({ client }: { client: Client<*> }) => {
     const match = useRouteMatch();
-    const [col, recipes] = useCollection(React, client, 'recipes');
-    const [tagsCol, tags] = useCollection(React, client, 'tags');
+    const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
+    const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
     const styles = useStyles();
 
     const tagCounts = {};
@@ -132,10 +132,10 @@ const Home = ({ client }: { client: Client<*> }) => {
                 <div className={styles.recipes}>
                     {matches.map((id) => (
                         <Link
-                            to={`/recipe/${id}/title/${escapeTitle(recipes[id].title)}`}
+                            to={`/recipe/${id}/title/${escapeTitle(recipes[id].about.title)}`}
                             className={styles.recipe}
                         >
-                            {recipes[id].title}
+                            {recipes[id].about.title}
                             {/* {recipes[id].contents.totalTime}
                             {recipes[id].status} */}
                         </Link>

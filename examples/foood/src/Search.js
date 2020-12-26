@@ -114,8 +114,8 @@ const useSetTitle = (title) => {
 
 const Search = ({ client }: { client: Client<*> }) => {
     const match = useRouteMatch();
-    const [col, recipes] = useCollection(React, client, 'recipes');
-    const [tagsCol, tags] = useCollection(React, client, 'tags');
+    const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
+    const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
     const styles = useStyles();
     const history = useHistory();
 
@@ -192,10 +192,9 @@ const runSearch = (recipes, needle) => {
 
     const toSearch = Object.keys(recipes).map((id) => ({
         id: id,
-        title: recipes[id].title,
-        source: recipes[id].source,
+        title: recipes[id].about.title,
+        source: recipes[id].about.source,
         contents: deltaToString(recipes[id].contents.text),
-        // todo allow searching comments?
     }));
 
     // TODO(jared): Maybe bring this back? idk what I really want.

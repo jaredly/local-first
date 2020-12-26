@@ -45,7 +45,7 @@ const MyDrawer = ({
     // auth: ?Data,
     pageItems: React.Node,
 }) => {
-    // const [tagsCol, tags] = useCollection(React, client, 'tags');
+    // const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
     // const [editTag, setEditTag] = React.useState(false);
     const [dialog, setDialog] = React.useState(null);
 

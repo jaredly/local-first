@@ -81,8 +81,8 @@ const App = ({ config }: { config: ConnectionConfig }) => {
     const authData = config.type === 'remote' ? config.authData : null;
 
     window.client = client;
-    const [col, recipes] = useCollection(React, client, 'recipes');
-    const [_, homepage] = useItem(React, client, 'settings', 'home');
+    const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
+    // const [_, homepage] = useItem<SettingsT, _>(React, client, 'settings', 'home');
 
     const pathPrefix = match.path == '/' ? '' : match.path;
 
