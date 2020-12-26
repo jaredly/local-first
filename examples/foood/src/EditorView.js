@@ -49,6 +49,8 @@ const EditorView = ({ client, actorId }: { client: Client<*>, actorId: string })
                     });
                 }
 
+                await col.setAttribute(recipe.id, ['updatedDate'], Date.now());
+
                 history.push(`/recipe/${recipe.id}`);
 
                 // col.updateAttributes(recipe.id, ['about'], about)

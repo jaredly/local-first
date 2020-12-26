@@ -29,6 +29,7 @@ import Home from './Home';
 import RecipeView from './Recipe';
 import Search from './Search';
 import EditorView from './EditorView';
+import Latest from './Latest';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
@@ -147,15 +148,32 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 <RouteSwitch>
                     <Route path={`${pathPrefix}/recipe/new`}>
                         <Editor
-                            actorId={actorId}
-                            onSave={(recipe) => {
-                                console.log('saving', recipe);
-                                col.save(recipe.id, recipe)
+                            about={blankRecipe.about}
+                            meta={blankRecipe.contents.meta}
+                            text={blankRecipe.contents.text}
+                            status={null}
+                            onSave={(about, meta, text, status) => {
+                                const id = client.getStamp();
+                                col.save(id, {
+                                    id,
+                                    about,
+                                    statuses: status != null ? { [(actorId: string)]: status } : {},
+                                    createdDate: Date.now(),
+                                    updatedDate: Date.now(),
+                                    contents: {
+                                        meta,
+                                        text,
+                                        changeLog: [],
+                                        version: id,
+                                    },
+                                    comments: {},
+                                    tags: {},
+                                })
                                     .catch((err) => {
                                         console.error('error', err);
                                     })
                                     .then(() => {
-                                        window.location = match.path;
+                                        history.push(`/recipe/${id}`);
                                     });
                             }}
                             recipe={blankRecipe}
@@ -175,6 +193,9 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id`}>
                         <RecipeView client={client} />
+                    </Route>
+                    <Route path={`${pathPrefix}/latest`}>
+                        <Latest client={client} />
                     </Route>
                     <Route path={`${pathPrefix}`}>
                         <Home client={client} />

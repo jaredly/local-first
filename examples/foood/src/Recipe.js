@@ -16,10 +16,12 @@ const useStyles = makeStyles((theme) => ({
         fontWeight: 300,
     },
     title: {
-        fontSize: 24,
-        marginBottom: 16,
+        fontSize: 44,
+        lineHeight: 1,
+        marginBottom: 20,
         display: 'flex',
         justifyContent: 'space-between',
+        fontFamily: "'Abril Fatface', cursive",
     },
     tags: {
         display: 'flex',
@@ -66,12 +68,25 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
-const getType = (fmt) =>
-    fmt == null ? null : fmt.ingredient ? 'ingredient' : fmt.instruction ? 'instruction' : null;
+type Format = 'ingredient' | 'instruction' | { header: number };
+const getType = (fmt): ?Format =>
+    fmt == null
+        ? null
+        : fmt.ingredient
+        ? 'ingredient'
+        : fmt.instruction
+        ? 'instruction'
+        : fmt.header != null
+        ? fmt
+        : null;
 
 const renderOps = ({ ops }, styles) => {
-    const lines: Array<{ chunks: *, type: ?string }> = [{ chunks: [], type: null }];
+    const lines: Array<{ chunks: *, type: ?Format }> = [{ chunks: [], type: null }];
     ops.forEach((op) => {
+        if (typeof op.insert !== 'string') {
+            // STOPSHIP: handle images and such
+            return;
+        }
         if (op.insert === '\n') {
             lines[lines.length - 1].type = getType(op.attributes);
             lines.push({ chunks: [], type: null });
@@ -93,28 +108,86 @@ const renderOps = ({ ops }, styles) => {
         }
     });
     return groups.map(({ type, lines }, i) => {
+        const Container = containerForFormat(type);
         return (
-            <div className={type != null ? styles[type + 'Group'] : null}>
+            <Container type={type} key={i}>
                 {lines.map((line, i) => {
                     const Comp = componentForFormat(line.type);
                     return (
                         <Comp
                             key={i}
-                            children={line.chunks.map((chunk, i) => (
-                                <span>{chunk.text}</span>
-                            ))}
+                            type={type}
+                            children={line.chunks.map(
+                                (chunk, i) => showChunk(chunk, i),
+                                // <span>{chunk.text}</span>
+                            )}
                         />
                     );
                 })}
-            </div>
+            </Container>
         );
     });
+};
+
+const showChunk = (chunk, i) => {
+    // STOPSHIP: handle multiple formats
+    if (!chunk.format) {
+        return <span key={i}>{chunk.text}</span>;
+    }
+    if (chunk.format.bold) {
+        return <strong key={i}>{chunk.text}</strong>;
+    }
+    if (chunk.format.italic) {
+        return <em key={i}>{chunk.text}</em>;
+    }
+    if (chunk.format.underline) {
+        return (
+            <span style={{ textDecoration: 'underline' }} key={i}>
+                {chunk.text}
+            </span>
+        );
+    }
+    if (chunk.format.link) {
+        return (
+            <a target="_blank" noreferrer noopener key={i} href={chunk.format.link}>
+                {chunk.text}
+            </a>
+        );
+    }
+    return <span key={i}>{chunk.text}</span>;
+};
+
+const InstructionGroup = ({ children }) => {
+    const styles = useStyles();
+    return <ol className={styles.instructionGroup}>{children}</ol>;
+};
+
+const IngredientGroup = ({ children }) => {
+    const styles = useStyles();
+    return <div className={styles.instructionGroup}>{children}</div>;
+};
+
+const containerForFormat = (format) => {
+    if (format === 'instruction') {
+        return InstructionGroup;
+    }
+    if (format === 'ingredient') {
+        return IngredientGroup;
+    }
+    return ({ children }) => <div>{children}</div>;
+};
+
+const stylesForFormat = (format) => {
+    if (typeof format === 'string') {
+        return format + 'Group';
+    }
+    return null;
 };
 
 const Plain = ({ children }) => <div style={{ minHeight: '1em' }}>{children}</div>;
 const Instruction = ({ children }) => {
     const styles = useStyles();
-    return <div className={styles.instruction}>{children}</div>;
+    return <li className={styles.instruction}>{children}</li>;
 };
 const Ingredient = ({ children }) => {
     const [checked, setChecked] = React.useState(false);
@@ -130,6 +203,7 @@ const Ingredient = ({ children }) => {
             style={{ marginRight: 8, marginBottom: -3 }} */}
             <input
                 checked={checked}
+                onChange={(_) => {}}
                 type="checkbox"
                 style={{ marginRight: 8, position: 'relative', top: 8 }}
             />
@@ -138,7 +212,23 @@ const Ingredient = ({ children }) => {
     );
 };
 
-const componentForFormat = (format: ?string) => {
+const Header = ({ children, type }) => {
+    if (!type || typeof type.header !== 'number') {
+        return <div>{children}</div>;
+    }
+    if (type.header === 1) {
+        return <h1>{children}</h1>;
+    }
+    if (type.header === 2) {
+        return <h2>{children}</h2>;
+    }
+    if (type.header === 3) {
+        return <h3>{children}</h3>;
+    }
+    return <h4>{children}</h4>;
+};
+
+const componentForFormat = (format: ?Format) => {
     if (format == null) {
         return Plain;
     }
@@ -147,6 +237,9 @@ const componentForFormat = (format: ?string) => {
     }
     if (format === 'ingredient') {
         return Ingredient;
+    }
+    if (typeof format.header === 'number') {
+        return Header;
     }
     return Plain;
 };

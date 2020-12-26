@@ -83,7 +83,7 @@ const Tag = ({ tag, count }: { tag: TagT, count: number }) => {
     );
 };
 
-const useSetTitle = (title) => {
+export const useSetTitle = (title) => {
     React.useEffect(() => {
         document.title = title;
     }, [title]);
@@ -147,6 +147,7 @@ const Home = ({ client }: { client: Client<*> }) => {
 
     return (
         <div>
+            <Link to="/latest">Latest</Link>
             <div className={styles.tags}>
                 {tagIds.length === 0 ? 'No tags defined' : null}
                 {tagIds.map((id) => (
@@ -161,6 +162,27 @@ const Home = ({ client }: { client: Client<*> }) => {
                 </div>
             ))} */}
         </div>
+    );
+};
+
+export const RecipeBlock = ({
+    recipe,
+    tags,
+}: {
+    recipe: RecipeT,
+    tags: { [key: string]: TagT },
+}) => {
+    const styles = useStyles();
+
+    return (
+        <Link
+            to={`/recipe/${recipe.id}/title/${escapeTitle(recipe.about.title)}`}
+            className={styles.recipe}
+        >
+            {recipe.about.title}
+            {/* {recipes[id].contents.totalTime}
+                            {recipes[id].status} */}
+        </Link>
     );
 };
 

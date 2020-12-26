@@ -78,6 +78,26 @@ const makeRecipeDelta = (recipe) => {
         );
     } else if (Array.isArray(recipe.recipeInstructions)) {
         recipe.recipeInstructions.forEach((line) => {
+            if (line['@type'] === 'HowToSection') {
+                deltas.push(
+                    { insert: line.name.trim() },
+                    { insert: '\n', attributes: { header: 3 } },
+                );
+                line.itemListElement.forEach((child) => {
+                    const text = instructionText(child);
+                    if (text) {
+                        const oven = text.match(/oven.+?\b(\d{3})°?\b/i);
+                        if (oven) {
+                            ovenTemp = oven[1];
+                        }
+                        deltas.push(
+                            { insert: text.trim() },
+                            { insert: '\n', attributes: { instruction: true } },
+                        );
+                    }
+                });
+                return;
+            }
             const text = instructionText(line);
             if (text) {
                 const oven = text.match(/oven.+?\b(\d{3})°?\b/i);
@@ -128,7 +148,7 @@ const RecipeEditor = ({
     meta: RecipeMeta,
     text: RecipeText,
     status: ?RecipeStatus,
-    onSave: (RecipeAbout, RecipeMeta, RecipeText, ?RecipeStatus) => void,
+    onSave: (RecipeAbout, RecipeMeta, RecipeText, ?RecipeStatus) => mixed,
 }) => {
     const [ovenTemp, setOvenTemp] = React.useState(meta.ovenTemp ?? '');
     const [cookTime, setCookTime] = React.useState(meta.cookTime ?? '');
