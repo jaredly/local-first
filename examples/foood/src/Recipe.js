@@ -147,7 +147,7 @@ const renderSource = (source) => {
         return null;
     }
     const match = source.match(/^https?:\/\/(?<host>[^/]+)/);
-    if (match) {
+    if (match && match.groups) {
         return (
             <a rel="noopener noreferrer" target="_blank" href={source}>
                 {match.groups.host}

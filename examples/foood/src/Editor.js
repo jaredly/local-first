@@ -7,11 +7,20 @@ import QuillEditor from './Quill';
 import { parse, detectLists } from './parse';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
-import type { RecipeMeta, RecipeAbout, RecipeText, RecipeStatus } from '../collections';
+import type { RecipeMeta, RecipeAbout, RecipeText, RecipeStatus, TagT } from '../collections';
 import urlImport from './urlImport';
 import { makeStyles } from '@material-ui/core/styles';
+import { useCollection, useItem } from '../../../packages/client-react';
+import type { Client, Collection } from '../../../packages/client-bundle';
+
+import Grid from '@material-ui/core/Grid';
+import Autocomplete, { createFilterOptions } from '@material-ui/lab/Autocomplete';
+const filter = createFilterOptions();
 
 const useStyles = makeStyles((theme) => ({
+    tags: {
+        marginBottom: theme.spacing(3),
+    },
     container: {
         // display: 'flex',
         // alignItems: 'stretch',
@@ -165,13 +174,19 @@ const RecipeEditor = ({
     meta,
     text: initialText,
     onSave,
+    onCancel,
     status: initialStatus,
+    client,
+    tags,
 }: {
     about: RecipeAbout,
     meta: RecipeMeta,
     text: RecipeText,
     status: ?RecipeStatus,
-    onSave: (RecipeAbout, RecipeMeta, RecipeText, ?RecipeStatus) => mixed,
+    onSave: (RecipeAbout, RecipeMeta, RecipeText, ?RecipeStatus, Array<string>) => mixed,
+    onCancel: () => mixed,
+    client: Client<*>,
+    tags: { [key: string]: number },
 }) => {
     const [ovenTemp, setOvenTemp] = React.useState(meta.ovenTemp ?? '');
     const [cookTime, setCookTime] = React.useState(meta.cookTime ?? '');
@@ -183,7 +198,10 @@ const RecipeEditor = ({
     const [source, setSource] = React.useState(about.source);
     const [text, setText] = React.useState(initialText);
     const [status, setStatus] = React.useState(initialStatus);
+    const [editTags, setEditTags] = React.useState<Array<string>>(Object.keys(tags));
     const styles = useStyles();
+
+    const [tagsCol, allTags] = useCollection<TagT, _>(React, client, 'tags');
 
     const quillRef = React.useRef(null);
     const quillRefGet = React.useCallback((node) => {
@@ -285,6 +303,70 @@ const RecipeEditor = ({
                         style={{ width: 100, height: 100, marginLeft: 16, borderRadius: 20 }}
                     />
                 ) : null}
+            </div>
+            <div className={styles.tags}>
+                <Autocomplete
+                    multiple
+                    id="tags-standard"
+                    options={Object.keys(allTags).map((k) => allTags[k])}
+                    // getOptionLabel={(option) => option.text}
+                    selectOnFocus
+                    clearOnBlur
+                    handleHomeEndKeys
+                    renderOption={(option) => option.text}
+                    value={editTags.filter((t) => !!allTags[t]).map((k) => allTags[k])}
+                    freeSolo
+                    filterOptions={(options, params) => {
+                        const filtered = filter(options, params);
+
+                        if (params.inputValue !== '') {
+                            filtered.push({
+                                inputValue: params.inputValue,
+                                text: `Add "${params.inputValue}"`,
+                            });
+                        }
+
+                        return filtered;
+                    }}
+                    getOptionLabel={(option) => {
+                        // e.g value selected with enter, right from the input
+                        if (typeof option === 'string') {
+                            return option;
+                        }
+                        if (option.inputValue) {
+                            return option.inputValue;
+                        }
+                        return option.text;
+                    }}
+                    onChange={(event, newValue) => {
+                        const added = newValue[newValue.length - 1];
+
+                        if ((added && typeof added === 'string') || added.inputValue) {
+                            const text = typeof added === 'string' ? added : added.inputValue;
+                            const tid = client.getStamp();
+                            tagsCol
+                                .save(tid, {
+                                    id: tid,
+                                    text,
+                                    color: null,
+                                    created: Date.now(),
+                                })
+                                .then(() => {
+                                    setEditTags(
+                                        newValue
+                                            .slice(0, -1)
+                                            .map((tag) => tag.id)
+                                            .concat([tid]),
+                                    );
+                                });
+                            return;
+                        }
+                        setEditTags(newValue.map((tag) => tag.id));
+                    }}
+                    renderInput={(params) => (
+                        <TextField {...params} variant="outlined" label="Tags" placeholder="Tags" />
+                    )}
+                />
             </div>
             <div>
                 <TextField
@@ -446,12 +528,19 @@ const RecipeEditor = ({
                             },
                             text,
                             status,
+                            editTags,
                         );
                     }}
                 >
                     Save
                 </Button>
-                <Button onClick={() => {}}>Cancel</Button>
+                <Button
+                    onClick={() => {
+                        onCancel();
+                    }}
+                >
+                    Cancel
+                </Button>
             </div>
         </div>
     );

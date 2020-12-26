@@ -23,11 +23,16 @@ const EditorView = ({ client, actorId }: { client: Client<*>, actorId: string })
 
     return (
         <Editor
+            client={client}
+            tags={recipe.tags}
             about={recipe.about}
             meta={recipe.contents.meta}
             text={recipe.contents.text}
             status={recipe.statuses[actorId]}
-            onSave={async (about, meta, text, status) => {
+            onCancel={() => {
+                history.push(`/recipe/${id}`);
+            }}
+            onSave={async (about, meta, text, status, tags) => {
                 for (const key of Object.keys(about)) {
                     if (about[key] !== recipe.about[key]) {
                         await col.setAttribute(recipe.id, ['about', key], about[key]);
@@ -50,6 +55,19 @@ const EditorView = ({ client, actorId }: { client: Client<*>, actorId: string })
                 }
 
                 await col.setAttribute(recipe.id, ['updatedDate'], Date.now());
+
+                // Remove old tags
+                for (const tid of Object.keys(recipe.tags)) {
+                    if (!tags.includes(tid)) {
+                        await col.clearAttribute(recipe.id, ['tags', tid]);
+                    }
+                }
+                // Add new tags
+                for (const tid of tags) {
+                    if (recipe.tags[tid] == null) {
+                        await col.setAttribute(recipe.id, ['tags', tid], Date.now());
+                    }
+                }
 
                 history.push(`/recipe/${recipe.id}`);
 

@@ -43,10 +43,14 @@ const getAllRecipes = () => {
     // Determine which of these are really "tags", e.g. they have mostly references to other recipes.
     $('div[title]').each((_, item) => {
         var node = $(item);
-        if (!node.attr('created') || node.attr('tags') === 'systenConfig') {
+        const title = node.attr('title');
+        if (
+            !node.attr('created') ||
+            node.attr('tags') === 'systenConfig' //||
+            // title === 'UploadLog'
+        ) {
             return;
         }
-        const title = node.attr('title');
         const body = node.text().trim();
         const refs = [...body.matchAll(/\[\[(?<title>[^\]]+)\]\]/g)].map((ref) => ref.groups.title);
         const lines = body.split('\n').length;
@@ -95,6 +99,17 @@ const getAllRecipes = () => {
         //         matches += 1;
         //     }
         // });
+    });
+
+    const emptyTags = [];
+    Object.keys(tags).forEach((name) => {
+        if (!tags[name].recipes.some((name) => recipes[name] != null)) {
+            console.log('Empty tag!');
+            emptyTags.push(name);
+        }
+    });
+    emptyTags.forEach((name) => {
+        delete tags[name];
     });
 
     return { recipes, tags };
