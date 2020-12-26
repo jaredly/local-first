@@ -9,6 +9,14 @@ import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 import type { RecipeMeta, RecipeAbout, RecipeText, RecipeStatus } from '../collections';
 import urlImport from './urlImport';
+import { makeStyles } from '@material-ui/core/styles';
+
+const useStyles = makeStyles((theme) => ({
+    editorContainer: {
+        border: '1px solid currentcolor',
+        padding: theme.spacing(1),
+    },
+}));
 
 const instructionText = (instruction) => {
     if (typeof instruction === 'string') {
@@ -160,6 +168,7 @@ const RecipeEditor = ({
     const [source, setSource] = React.useState(about.source);
     const [text, setText] = React.useState(initialText);
     const [status, setStatus] = React.useState(initialStatus);
+    const styles = useStyles();
 
     const quillRef = React.useRef(null);
     const quillRefGet = React.useCallback((node) => {
@@ -361,6 +370,7 @@ const RecipeEditor = ({
                 </Button>
             </div>
             <QuillEditor
+                className={styles.editorContainer}
                 value={text.ops}
                 onChange={(newValue, change, source) => {
                     setText(newValue);
@@ -430,11 +440,11 @@ const RecipeEditor = ({
 };
 
 const quillConfig = {
-    theme: 'snow',
+    theme: 'bubble',
     placeholder: 'Paste or type recipe here...',
     modules: {
         // toolbar: [['bold', 'italic', 'underline', 'strike', 'link'], [{ list: 'bullet' }]],
-        tookbar: false,
+        // tookbar: false,
         keyboard: {
             bindings: {
                 backspace: {

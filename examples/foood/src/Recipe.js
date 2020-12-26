@@ -167,7 +167,7 @@ const showChunk = (chunk, i) => {
     }
     if (chunk.format.link) {
         return (
-            <a target="_blank" noreferrer noopener key={i} href={chunk.format.link}>
+            <a target="_blank" rel="noreferrer noopener" key={i} href={chunk.format.link}>
                 {chunk.text}
             </a>
         );
@@ -330,7 +330,7 @@ const RecipeView = ({ client }: { client: Client<*> }) => {
                     {Object.keys(recipe.tags)
                         .filter((tid) => !!tags[tid])
                         .map((tid) => (
-                            <Link to={`/tag/${tid}`} className={styles.tag}>
+                            <Link to={`/tag/${tid}`} className={styles.tag} key={tid}>
                                 {tags[tid].text}
                             </Link>
                         ))}
