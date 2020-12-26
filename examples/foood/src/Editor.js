@@ -198,7 +198,9 @@ const RecipeEditor = ({
     const [source, setSource] = React.useState(about.source);
     const [text, setText] = React.useState(initialText);
     const [status, setStatus] = React.useState(initialStatus);
-    const [editTags, setEditTags] = React.useState<Array<string>>(Object.keys(tags));
+    const [editTags, setEditTags] = React.useState<Array<{ id: string } | { text: string }>>(
+        Object.keys(tags).map((id) => ({ id })),
+    );
     const styles = useStyles();
 
     const [tagsCol, allTags] = useCollection<TagT, _>(React, client, 'tags');
@@ -314,7 +316,12 @@ const RecipeEditor = ({
                     clearOnBlur
                     handleHomeEndKeys
                     renderOption={(option) => option.text}
-                    value={editTags.filter((t) => !!allTags[t]).map((k) => allTags[k])}
+                    value={
+                        editTags
+                            .map((t) => (typeof t.id === 'string' ? allTags[t.id] : t))
+                            .filter(Boolean)
+                        // editTags.filter((t) => !!allTags[t]).map((k) => allTags[k])
+                    }
                     freeSolo
                     filterOptions={(options, params) => {
                         const filtered = filter(options, params);
@@ -343,25 +350,10 @@ const RecipeEditor = ({
 
                         if ((added && typeof added === 'string') || added.inputValue) {
                             const text = typeof added === 'string' ? added : added.inputValue;
-                            const tid = client.getStamp();
-                            tagsCol
-                                .save(tid, {
-                                    id: tid,
-                                    text,
-                                    color: null,
-                                    created: Date.now(),
-                                })
-                                .then(() => {
-                                    setEditTags(
-                                        newValue
-                                            .slice(0, -1)
-                                            .map((tag) => tag.id)
-                                            .concat([tid]),
-                                    );
-                                });
+                            setEditTags(newValue.slice(0, -1).concat({ text }));
                             return;
                         }
-                        setEditTags(newValue.map((tag) => tag.id));
+                        setEditTags(newValue);
                     }}
                     renderInput={(params) => (
                         <TextField {...params} variant="outlined" label="Tags" placeholder="Tags" />
@@ -509,7 +501,23 @@ const RecipeEditor = ({
                     color="primary"
                     variant="contained"
                     style={{ marginRight: 16 }}
-                    onClick={() => {
+                    onClick={async () => {
+                        const tags = [];
+                        for (const tag of editTags) {
+                            if (typeof tag.id === 'undefined' && typeof tag.text === 'string') {
+                                const text = tag.text;
+                                const tid = client.getStamp();
+                                await tagsCol.save(tid, {
+                                    id: tid,
+                                    text,
+                                    color: null,
+                                    created: Date.now(),
+                                });
+                                tags.push(tid);
+                            } else if (typeof tag.id === 'string') {
+                                tags.push(tag.id);
+                            }
+                        }
                         // TODO maybe just use the col here?
                         // Or go through and diff at the top side?
                         onSave(
@@ -528,7 +536,7 @@ const RecipeEditor = ({
                             },
                             text,
                             status,
-                            editTags,
+                            tags,
                         );
                     }}
                 >
