@@ -7,6 +7,7 @@ import { Route, Link, useRouteMatch, useParams, useHistory } from 'react-router-
 import IconButton from '@material-ui/core/IconButton';
 import EditIcon from '@material-ui/icons/Edit';
 import { makeStyles } from '@material-ui/core/styles';
+import deepEqual from '@birchill/json-equalish';
 
 const useStyles = makeStyles((theme) => ({
     container: {
@@ -69,16 +70,33 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 type Format = 'ingredient' | 'instruction' | { header: number };
-const getType = (fmt): ?Format =>
-    fmt == null
-        ? null
-        : fmt.ingredient
-        ? 'ingredient'
-        : fmt.instruction
-        ? 'instruction'
-        : fmt.header != null
-        ? fmt
-        : null;
+const getType = (fmt): ?Format => {
+    if (!fmt) {
+        return null;
+    }
+    const keys = Object.keys(fmt);
+    if (!keys.length) {
+        return null;
+    }
+    if (keys.length > 1) {
+        console.error('Multiple keys!');
+    }
+    const key = keys[0];
+    if (fmt[key] === true) {
+        return key;
+    }
+    return fmt;
+};
+
+// fmt == null
+//     ? null
+//     : fmt.ingredient
+//     ? 'ingredient'
+//     : fmt.instruction
+//     ? 'instruction'
+//     : fmt.header != null
+//     ? fmt
+//     : null;
 
 const renderOps = ({ ops }, styles) => {
     const lines: Array<{ chunks: *, type: ?Format }> = [{ chunks: [], type: null }];
@@ -101,7 +119,7 @@ const renderOps = ({ ops }, styles) => {
     });
     const groups = [];
     lines.forEach((line) => {
-        if (!groups.length || groups[groups.length - 1].type !== line.type) {
+        if (!groups.length || !deepEqual(groups[groups.length - 1].type, line.type)) {
             groups.push({ type: line.type, lines: [line] });
         } else {
             groups[groups.length - 1].lines.push(line);
@@ -174,6 +192,14 @@ const containerForFormat = (format) => {
     if (format === 'ingredient') {
         return IngredientGroup;
     }
+    if (format) {
+        if (format.list === 'ordered') {
+            return ({ children }) => <ol>{children}</ol>;
+        }
+        if (format.list === 'unordered') {
+            return ({ children }) => <ul>{children}</ul>;
+        }
+    }
     return ({ children }) => <div>{children}</div>;
 };
 
@@ -240,6 +266,9 @@ const componentForFormat = (format: ?Format) => {
     }
     if (typeof format.header === 'number') {
         return Header;
+    }
+    if (typeof format.list === 'string') {
+        return ({ children }) => <li>{children}</li>;
     }
     return Plain;
 };
