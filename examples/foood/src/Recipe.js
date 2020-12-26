@@ -133,7 +133,7 @@ const renderAuthor = (author) => {
     }
     // Imported author, this is a name
     if (author.startsWith(':')) {
-        return <span>{author}</span>;
+        return <span style={{ marginLeft: 16 }}>{author.slice(1)}</span>;
     }
     // STOPSHIP: figure out how I want to deal with multi-user situations.
     // Do I just assume that users on the same server are allowed to see

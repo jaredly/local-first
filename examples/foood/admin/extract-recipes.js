@@ -46,13 +46,17 @@ const getAllRecipes = () => {
         const title = node.attr('title');
         if (
             !node.attr('created') ||
-            node.attr('tags') === 'systenConfig' //||
-            // title === 'UploadLog'
+            node.attr('tags') === 'systenConfig' ||
+            title === 'UploadLog' ||
+            title === 'SiteTitle' ||
+            title === 'SiteSubtitle'
         ) {
             return;
         }
         const body = node.text().trim();
-        const refs = [...body.matchAll(/\[\[(?<title>[^\]]+)\]\]/g)].map((ref) => ref.groups.title);
+        const refs = [...body.matchAll(/\[\[(?<title>[^\]\|]+)\]\]/g)].map(
+            (ref) => ref.groups.title,
+        );
         const lines = body.split('\n').length;
         if (refs.length > lines * 0.75) {
             // at least 3 quarters of lines are references
@@ -65,7 +69,7 @@ const getAllRecipes = () => {
             id: '',
             about: {
                 title: title,
-                author: node.attr('creator') ? ':' + node.attri('creator') : '',
+                author: node.attr('creator') ? ':' + node.attr('creator') : '',
                 image: '',
                 source: 'forsythrecipes',
             },
@@ -104,7 +108,7 @@ const getAllRecipes = () => {
     const emptyTags = [];
     Object.keys(tags).forEach((name) => {
         if (!tags[name].recipes.some((name) => recipes[name] != null)) {
-            console.log('Empty tag!');
+            console.log('Empty tag!', name);
             emptyTags.push(name);
         }
     });
