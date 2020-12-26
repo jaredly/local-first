@@ -111,7 +111,7 @@ const MyDrawer = ({
                             <ListItemText primary="Sign out" />
                         </ListItem>
                     ) : null}
-                    <ListItem>
+                    <ListItem component={Link} to="/debug">
                         <ListItemText
                             primary={`Version: ${
                                 process.env.VERSION != null

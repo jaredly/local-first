@@ -30,6 +30,7 @@ import RecipeView from './Recipe';
 import Search from './Search';
 import EditorView from './EditorView';
 import Latest from './Latest';
+import Debug from './Debug';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
@@ -199,6 +200,9 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                     </Route>
                     <Route path={`${pathPrefix}/latest`}>
                         <Latest client={client} />
+                    </Route>
+                    <Route path={`${pathPrefix}/debug`}>
+                        <Debug client={client} />
                     </Route>
                     <Route path={`${pathPrefix}`}>
                         <Home client={client} />

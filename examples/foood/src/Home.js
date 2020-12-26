@@ -181,7 +181,7 @@ const Home = ({ client }: { client: Client<*> }) => {
 
     return (
         <div>
-            <Link to="/latest">Latest</Link>
+            <Link to="/latest">Latest Recipes</Link>
             <div className={styles.tags}>
                 {tagIds.length === 0 ? 'No tags defined' : null}
                 {tagIds.map((id) => (
