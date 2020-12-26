@@ -43,6 +43,7 @@ const useStyles = makeStyles((theme) => ({
         justifyContent: 'center',
     },
     recipe: {
+        position: 'relative',
         width: 180,
         height: 100,
         color: 'inherit',
@@ -54,7 +55,34 @@ const useStyles = makeStyles((theme) => ({
         flexDirection: 'column',
         justifyContent: 'space-between',
         textDecoration: 'none',
+        backgroundColor: 'rgb(100,100,100)',
         // borderRadius: 4,
+    },
+    recipeWithImage: {
+        position: 'relative',
+        width: 180,
+        height: 100,
+        color: 'inherit',
+        // boxShadow: '0 0 2px white',
+        // border: '1px solid #aaa',
+        margin: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        textDecoration: 'none',
+    },
+    recipeImage: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+    },
+    recipeTitle: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'rgba(50,50,50,0.7)',
+        padding: theme.spacing(1),
     },
     tagRecipes: {
         fontSize: '80%',
@@ -83,9 +111,13 @@ const Tag = ({ tag, count }: { tag: TagT, count: number }) => {
     );
 };
 
-export const useSetTitle = (title) => {
+export const useSetTitle = (title: ?string) => {
     React.useEffect(() => {
-        document.title = title;
+        if (title != null) {
+            document.title = title;
+        } else {
+            document.title = 'Foood';
+        }
     }, [title]);
 };
 
@@ -131,14 +163,16 @@ const Home = ({ client }: { client: Client<*> }) => {
                 </div>
                 <div className={styles.recipes}>
                     {matches.map((id) => (
-                        <Link
-                            to={`/recipe/${id}/title/${escapeTitle(recipes[id].about.title)}`}
-                            className={styles.recipe}
-                        >
-                            {recipes[id].about.title}
-                            {/* {recipes[id].contents.totalTime}
-                            {recipes[id].status} */}
-                        </Link>
+                        // <Link
+                        //     key={id}
+                        //     to={`/recipe/${id}/title/${escapeTitle(recipes[id].about.title)}`}
+                        //     className={styles.recipe}
+                        // >
+                        //     {recipes[id].about.title}
+                        //     {/* {recipes[id].contents.totalTime}
+                        //     {recipes[id].status} */}
+                        // </Link>
+                        <RecipeBlock recipe={recipes[id]} tags={tags} key={id} />
                     ))}
                 </div>
             </div>
@@ -174,14 +208,20 @@ export const RecipeBlock = ({
 }) => {
     const styles = useStyles();
 
+    const href = `/recipe/${recipe.id}/title/${escapeTitle(recipe.about.title)}`;
+
+    if (recipe.about.image) {
+        return (
+            <Link to={href} className={styles.recipeWithImage}>
+                <img src={recipe.about.image} className={styles.recipeImage} />
+                <div className={styles.recipeTitle}>{recipe.about.title}</div>
+            </Link>
+        );
+    }
+
     return (
-        <Link
-            to={`/recipe/${recipe.id}/title/${escapeTitle(recipe.about.title)}`}
-            className={styles.recipe}
-        >
-            {recipe.about.title}
-            {/* {recipes[id].contents.totalTime}
-                            {recipes[id].status} */}
+        <Link to={href} className={styles.recipe}>
+            <div className={styles.recipeTitle}>{recipe.about.title}</div>
         </Link>
     );
 };

@@ -89,7 +89,10 @@ const renderOps = ({ ops }: RecipeText): React.Node => {
     });
     const groups = [];
     lines.forEach((line) => {
-        if (!groups.length || !deepEqual(groups[groups.length - 1].type, line.type)) {
+        if (
+            !groups.length ||
+            (line.type != null && !deepEqual(groups[groups.length - 1].type, line.type))
+        ) {
             groups.push({ type: line.type, lines: [line] });
         } else {
             groups[groups.length - 1].lines.push(line);
