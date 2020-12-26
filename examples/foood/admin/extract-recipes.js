@@ -5,6 +5,11 @@
  * into the format expected by foood
  */
 
+/*::
+
+import type {RecipeT} from '../collections'
+ */
+
 const fs = require('fs');
 const cheerio = require('cheerio');
 
@@ -24,7 +29,7 @@ const getAllRecipes = () => {
 
     const parseDate = (text) => {
         if (!text) {
-            return null;
+            return Date.now();
         }
         const match = text.match(/^(?<year>\d{4})(?<month>\d{2})(?<day>\d{2})\d+$/);
         if (!match) {
@@ -52,12 +57,14 @@ const getAllRecipes = () => {
             tags[title] = { recipes: refs, created: parseDate(node.attr('created')) };
             return;
         }
-        const recipe = {
+        const recipe /*:RecipeT*/ = {
             id: '',
-            title: title,
-            author: node.attr('creator') || '',
-            image: '',
-            source: 'forsythrecipes',
+            about: {
+                title: title,
+                author: node.attr('creator') || '',
+                image: '',
+                source: 'forsythrecipes',
+            },
             statuses: {},
             // modifier: node.attr('modifier'),
             createdDate: parseDate(node.attr('created')),
@@ -67,11 +74,13 @@ const getAllRecipes = () => {
             contents: {
                 changeLog: [],
                 version: genId(),
-                ovenTemp: null,
-                cookTime: null,
-                prepTime: null,
-                totalTime: null,
-                yield: null,
+                meta: {
+                    ovenTemp: null,
+                    cookTime: null,
+                    prepTime: null,
+                    totalTime: null,
+                    yield: null,
+                },
                 text: rawToDeltas(body),
             },
         };
@@ -79,7 +88,7 @@ const getAllRecipes = () => {
             recipe.updatedDate = recipe.createdDate;
         }
         // recipes.push(recipe);
-        recipes[recipe.title] = recipe;
+        recipes[recipe.about.title] = recipe;
         // const haystack = recipe.body.toLowerCase();
         // ingredientNames.forEach((name) => {
         //     if (haystack.includes(name.toLowerCase())) {

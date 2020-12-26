@@ -7,6 +7,7 @@ require('@babel/register')({
     plugins: ['@babel/plugin-proposal-class-properties'],
 });
 
+// $FlowFixMe it's fine
 const fetch = require('../../planner/server/node_modules/node-fetch');
 global.fetch = fetch;
 require('./index.js');

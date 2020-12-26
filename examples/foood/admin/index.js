@@ -13,6 +13,7 @@ import {
 } from '../../../packages/client-bundle';
 import fs from 'fs';
 import getForsythRecipes from './extract-recipes';
+import type { RecipeT, TagT } from '../collections';
 
 const schemas = require('../collections');
 
@@ -102,12 +103,12 @@ const main = async () => {
     const clock = new PersistentClock(inMemoryClockPersist());
     const client = createManualDeltaClient(clientCrdtImpl, schemas, clock, persistence);
 
-    const col = client.getCollection('recipes');
-    const tagsCol = client.getCollection('tags');
+    const col = client.getCollection<RecipeT>('recipes');
+    const tagsCol = client.getCollection<TagT>('tags');
 
     await sync(client, url);
 
-    const allRecipes = await col.loadAll();
+    const allRecipes: { [key: string]: RecipeT } = await col.loadAll();
     const allTags = await tagsCol.loadAll();
 
     // fs.writeFileSync('./recipes.json', JSON.stringify(allRecipes, null, 2), 'utf8');
@@ -117,7 +118,7 @@ const main = async () => {
     Object.keys(allTags).forEach((id) => (allTagsByName[allTags[id].text] = allTags[id]));
     const allRecipesByTitle = {};
     Object.keys(allRecipes).forEach(
-        (id) => (allRecipesByTitle[allRecipes[id].title] = allRecipes[id]),
+        (id) => (allRecipesByTitle[allRecipes[id].about.title] = allRecipes[id]),
     );
 
     const { recipes, tags } = getForsythRecipes();
@@ -131,6 +132,7 @@ const main = async () => {
                 id,
                 text: name,
                 created: tags[name].created,
+                color: null,
             });
         }
     }

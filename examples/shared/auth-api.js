@@ -41,6 +41,11 @@ export const checkEmail = async (host: string, email: string) => {
     return res.status >= 200 && res.status < 300;
 };
 
+const clearLoginInfo = (storageKey: string) => {
+    localStorage.removeItem(storageKey);
+    listeners.forEach(fn => fn(false));
+};
+
 const processResponse = async (storageKey: string, res, sentToken: ?string) => {
     if (res.status !== 200 && res.status !== 204) {
         throw new Error(await res.text());
@@ -49,8 +54,7 @@ const processResponse = async (storageKey: string, res, sentToken: ?string) => {
         sentToken == null || sentToken.length == 0 ? res.headers.get('X-Session') : sentToken;
     if (token == null) {
         // console.log('no token returned, clearing out');
-        localStorage.removeItem(storageKey);
-        listeners.forEach(fn => fn(false));
+        clearLoginInfo(storageKey);
         return null;
     }
     const user = await res.json();
@@ -81,11 +85,21 @@ export const getUser = async (storageKey: string, host: string, token: string) =
 
 export const logout = async (storageKey: string, host: string, token: string) => {
     // TODO figure out what the behavior is here if we're offline
-    const res = await fetch(`${window.location.protocol}//${host}/api/logout`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer: ${token}` },
-    });
-    processResponse(storageKey, res);
+    try {
+        const res = await fetch(`${window.location.protocol}//${host}/api/logout`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer: ${token}` },
+        });
+        processResponse(storageKey, res);
+    } catch (err) {
+        console.log('Failed to logout', err.message);
+        if (err.message === 'Failed to fetch') {
+            // Clear it anyway.
+            clearLoginInfo(storageKey);
+            return;
+        }
+        throw err;
+    }
 };
 
 export const login = async (storageKey: string, host: string, email: string, password: string) => {

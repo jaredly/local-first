@@ -3,7 +3,9 @@ import * as React from 'react';
 import type { RecipeT, TagT } from '../collections';
 import type { Client, Collection } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
-import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
+import { Route, Link, useRouteMatch, useParams, useHistory } from 'react-router-dom';
+import IconButton from '@material-ui/core/IconButton';
+import EditIcon from '@material-ui/icons/Edit';
 import { makeStyles } from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme) => ({
@@ -16,6 +18,8 @@ const useStyles = makeStyles((theme) => ({
     title: {
         fontSize: 24,
         marginBottom: 16,
+        display: 'flex',
+        justifyContent: 'space-between',
     },
     tags: {
         display: 'flex',
@@ -168,6 +172,7 @@ const RecipeView = ({ client }: { client: Client<*> }) => {
     const [col, recipe] = useItem(React, client, 'recipes', id);
     const [_, tags] = useCollection(React, client, 'tags');
     const styles = useStyles();
+    const history = useHistory();
     useSetTitle(recipe ? `${recipe.title} | Foood` : 'Foood');
     if (recipe === false) {
         return <div />; // wait on it
@@ -177,7 +182,26 @@ const RecipeView = ({ client }: { client: Client<*> }) => {
     }
     return (
         <div className={styles.container}>
-            <div className={styles.title}>{recipe.title}</div>
+            <div className={styles.title}>
+                {recipe.title}
+                <IconButton
+                    edge="start"
+                    // className={styles.menuButton}
+                    style={{ marginRight: 16 }}
+                    color="inherit"
+                    aria-label="menu"
+                    href={'/recipe/new'}
+                    onClick={(evt) => {
+                        if (evt.button == 0 && !evt.ctrlKey && !evt.metaKey) {
+                            history.push('/recipe/new');
+                            evt.preventDefault();
+                            evt.stopPropagation();
+                        }
+                    }}
+                >
+                    <EditIcon />
+                </IconButton>
+            </div>
             {recipe.tags != null && Object.keys(recipe.tags).length > 0 ? (
                 <div className={styles.tags}>
                     <div style={{ marginRight: 8 }}>Tags:</div>

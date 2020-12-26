@@ -112,6 +112,10 @@ const getImage = (image) => {
 
 const statuses = ['imported', 'untried', 'approved', 'rejected'];
 
+// Ok so what is it that we're editing?
+// about: {title, author, source, image}
+// contents: {}
+
 const RecipeEditor = ({
     actorId,
     recipe,
@@ -121,15 +125,15 @@ const RecipeEditor = ({
     recipe: RecipeT,
     onSave: (RecipeT) => void,
 }) => {
-    const [ovenTemp, setOvenTemp] = React.useState(recipe.contents.ovenTemp ?? '');
-    const [cookTime, setCookTime] = React.useState(recipe.contents.cookTime ?? '');
-    const [prepTime, setPrepTime] = React.useState(recipe.contents.prepTime ?? '');
-    const [totalTime, setTotalTime] = React.useState(recipe.contents.totalTime ?? '');
-    const [yieldAmt, setYield] = React.useState(recipe.contents.yield ?? '');
-    const [image, setImage] = React.useState(recipe.image ?? '');
+    const [ovenTemp, setOvenTemp] = React.useState(recipe.contents.meta.ovenTemp ?? '');
+    const [cookTime, setCookTime] = React.useState(recipe.contents.meta.cookTime ?? '');
+    const [prepTime, setPrepTime] = React.useState(recipe.contents.meta.prepTime ?? '');
+    const [totalTime, setTotalTime] = React.useState(recipe.contents.meta.totalTime ?? '');
+    const [yieldAmt, setYield] = React.useState(recipe.contents.meta.yield ?? '');
+    const [image, setImage] = React.useState(recipe.about.image ?? '');
+    const [title, setTitle] = React.useState(recipe.about.title);
+    const [source, setSource] = React.useState(recipe.about.source);
     const [text, setText] = React.useState(recipe.contents.text);
-    const [title, setTitle] = React.useState(recipe.title);
-    const [source, setSource] = React.useState(recipe.source);
     const [status, setStatus] = React.useState(recipe.statuses[actorId]);
 
     const quillRef = React.useRef(null);
@@ -208,7 +212,7 @@ const RecipeEditor = ({
                                         if (ovenTemp) {
                                             setOvenTemp(ovenTemp);
                                         }
-                                        setText(contents.concat(text));
+                                        setText({ ops: contents.concat(text.ops) });
                                     },
                                     (err) => console.error(err),
                                 );
@@ -293,7 +297,7 @@ const RecipeEditor = ({
                 <Button
                     onClick={() => {
                         const quill = quillRef.current;
-                        if (!quill) return;
+                        if (!quill || !quill.getSelection()) return;
                         const { index, length } = quill.getSelection();
                         if (quill.getFormat().ingredient === true) {
                             quill.formatLine(index, length, 'ingredient', false, 'user');
@@ -311,7 +315,7 @@ const RecipeEditor = ({
                 <Button
                     onClick={() => {
                         const quill = quillRef.current;
-                        if (!quill) return;
+                        if (!quill || !quill.getSelection()) return;
                         const { index, length } = quill.getSelection();
                         if (quill.getFormat().instruction === true) {
                             quill.formatLine(index, length, 'instruction', false, 'user');
@@ -328,9 +332,9 @@ const RecipeEditor = ({
                 </Button>
             </div>
             <QuillEditor
-                value={text}
+                value={text.ops}
                 onChange={(newValue, change, source) => {
-                    setText(newValue.ops);
+                    setText(newValue);
                     const skip =
                         typeof change.ops[0].retain !== 'undefined' ? change.ops[0].retain : 0;
                     const len = change.length() - skip;
@@ -367,26 +371,32 @@ const RecipeEditor = ({
             <div>
                 <Button
                     onClick={() => {
+                        // TODO maybe just use the col here?
+                        // Or go through and diff at the top side?
                         onSave({
-                            id: Math.random().toString(36).slice(2),
-                            createdDate: Date.now(),
+                            id: recipe.id || Math.random().toString(36).slice(2),
+                            createdDate: recipe.createdDate || Date.now(),
                             updatedDate: Date.now(),
-                            image,
-                            title,
-                            source,
+                            about: {
+                                title,
+                                author: '',
+                                image,
+                                source,
+                            },
                             statuses: status == null ? {} : { [actorId]: status },
                             contents: {
                                 changeLog: [],
                                 version: Math.random().toString(36).slice(2),
-                                prepTime,
-                                ovenTemp,
-                                cookTime,
-                                totalTime,
-                                yield: yieldAmt,
+                                meta: {
+                                    prepTime,
+                                    ovenTemp,
+                                    cookTime,
+                                    totalTime,
+                                    yield: yieldAmt,
+                                },
                                 text,
                             },
                             comments: {},
-                            author: '',
                             tags: {},
                         });
                     }}

@@ -131,7 +131,10 @@ const Home = ({ client }: { client: Client<*> }) => {
                 </div>
                 <div className={styles.recipes}>
                     {matches.map((id) => (
-                        <Link to={'/recipe/' + id} className={styles.recipe}>
+                        <Link
+                            to={`/recipe/${id}/title/${escapeTitle(recipes[id].title)}`}
+                            className={styles.recipe}
+                        >
                             {recipes[id].title}
                             {/* {recipes[id].contents.totalTime}
                             {recipes[id].status} */}
@@ -160,5 +163,7 @@ const Home = ({ client }: { client: Client<*> }) => {
         </div>
     );
 };
+
+const escapeTitle = (title) => title.replace(/[^a-zA-Z0-9_-]+/g, '-');
 
 export default Home;

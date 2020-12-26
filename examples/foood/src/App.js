@@ -20,7 +20,7 @@ import { useCollection, useItem } from '../../../packages/client-react';
 import type { Data } from '../../shared/auth-api';
 import type { AuthData } from '../../shared/Auth';
 
-import schemas from '../collections';
+import schemas, { type RecipeT } from '../collections';
 import AppShell from '../../shared/AppShell';
 import Drawer from './Drawer';
 import UpdateSnackbar from '../../shared/Update';
@@ -28,6 +28,7 @@ import Editor from './Editor';
 import Home from './Home';
 import RecipeView from './Recipe';
 import Search from './Search';
+import EditorView from './EditorView';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
@@ -84,6 +85,9 @@ const App = ({ config }: { config: ConnectionConfig }) => {
     const [_, homepage] = useItem(React, client, 'settings', 'home');
 
     const pathPrefix = match.path == '/' ? '' : match.path;
+
+    // STOPSHIP: instead of the email, use the userId
+    const actorId = authData ? authData.auth.user.email : 'main';
 
     return (
         <div>
@@ -143,9 +147,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 <RouteSwitch>
                     <Route path={`${pathPrefix}/recipe/new`}>
                         <Editor
-                            actorId={
-                                config.type === 'remote' ? config.authData.auth.user.email : 'main'
-                            }
+                            actorId={actorId}
                             onSave={(recipe) => {
                                 console.log('saving', recipe);
                                 col.save(recipe.id, recipe)
@@ -165,6 +167,12 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                     <Route path={`${pathPrefix}/tag/:tagid`}>
                         <Home client={client} />
                     </Route>
+                    <Route path={`${pathPrefix}/recipe/:id/title/:title`}>
+                        <RecipeView client={client} />
+                    </Route>
+                    <Route path={`${pathPrefix}/recipe/:id/edit`}>
+                        <EditorView actorId={actorId} client={client} />
+                    </Route>
                     <Route path={`${pathPrefix}/recipe/:id`}>
                         <RecipeView client={client} />
                     </Route>
@@ -179,22 +187,26 @@ const App = ({ config }: { config: ConnectionConfig }) => {
     );
 };
 
-const blankRecipe = {
+const blankRecipe: RecipeT = {
     id: '',
-    title: '',
-    author: '',
-    source: '',
-    image: '',
+    about: {
+        title: '',
+        author: '',
+        source: '',
+        image: '',
+    },
     statuses: {},
     createdDate: 0,
     updatedDate: 0,
     contents: {
-        ovenTemp: null,
-        cookTime: null,
-        totalTime: null,
-        prepTime: null,
-        yield: null,
-        text: [{ insert: '\n' }],
+        meta: {
+            ovenTemp: null,
+            cookTime: null,
+            totalTime: null,
+            prepTime: null,
+            yield: null,
+        },
+        text: { ops: [{ insert: '\n' }] },
         changeLog: [],
         version: '',
     },
