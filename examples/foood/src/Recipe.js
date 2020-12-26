@@ -8,6 +8,7 @@ import IconButton from '@material-ui/core/IconButton';
 import EditIcon from '@material-ui/icons/Edit';
 import { makeStyles } from '@material-ui/core/styles';
 import deepEqual from '@birchill/json-equalish';
+import renderQuill from './renderQuill';
 
 const useStyles = makeStyles((theme) => ({
     container: {
@@ -68,210 +69,6 @@ const useStyles = makeStyles((theme) => ({
         },
     },
 }));
-
-type Format = 'ingredient' | 'instruction' | { header: number };
-const getType = (fmt): ?Format => {
-    if (!fmt) {
-        return null;
-    }
-    const keys = Object.keys(fmt);
-    if (!keys.length) {
-        return null;
-    }
-    if (keys.length > 1) {
-        console.error('Multiple keys!');
-    }
-    const key = keys[0];
-    if (fmt[key] === true) {
-        return key;
-    }
-    return fmt;
-};
-
-// fmt == null
-//     ? null
-//     : fmt.ingredient
-//     ? 'ingredient'
-//     : fmt.instruction
-//     ? 'instruction'
-//     : fmt.header != null
-//     ? fmt
-//     : null;
-
-const renderOps = ({ ops }, styles) => {
-    const lines: Array<{ chunks: *, type: ?Format }> = [{ chunks: [], type: null }];
-    ops.forEach((op) => {
-        if (typeof op.insert !== 'string') {
-            // STOPSHIP: handle images and such
-            return;
-        }
-        if (op.insert === '\n') {
-            lines[lines.length - 1].type = getType(op.attributes);
-            lines.push({ chunks: [], type: null });
-        } else {
-            const opLines = op.insert.split('\n');
-            const first = opLines.shift();
-            lines[lines.length - 1].chunks.push({ text: first, format: op.attributes });
-            opLines.forEach((text) =>
-                lines.push({ chunks: [{ text, format: op.attributes }], type: null }),
-            );
-        }
-    });
-    const groups = [];
-    lines.forEach((line) => {
-        if (!groups.length || !deepEqual(groups[groups.length - 1].type, line.type)) {
-            groups.push({ type: line.type, lines: [line] });
-        } else {
-            groups[groups.length - 1].lines.push(line);
-        }
-    });
-    return groups.map(({ type, lines }, i) => {
-        const Container = containerForFormat(type);
-        return (
-            <Container type={type} key={i}>
-                {lines.map((line, i) => {
-                    const Comp = componentForFormat(line.type);
-                    return (
-                        <Comp
-                            key={i}
-                            type={type}
-                            children={line.chunks.map(
-                                (chunk, i) => showChunk(chunk, i),
-                                // <span>{chunk.text}</span>
-                            )}
-                        />
-                    );
-                })}
-            </Container>
-        );
-    });
-};
-
-const showChunk = (chunk, i) => {
-    // STOPSHIP: handle multiple formats
-    if (!chunk.format) {
-        return <span key={i}>{chunk.text}</span>;
-    }
-    if (chunk.format.bold) {
-        return <strong key={i}>{chunk.text}</strong>;
-    }
-    if (chunk.format.italic) {
-        return <em key={i}>{chunk.text}</em>;
-    }
-    if (chunk.format.underline) {
-        return (
-            <span style={{ textDecoration: 'underline' }} key={i}>
-                {chunk.text}
-            </span>
-        );
-    }
-    if (chunk.format.link) {
-        return (
-            <a target="_blank" rel="noreferrer noopener" key={i} href={chunk.format.link}>
-                {chunk.text}
-            </a>
-        );
-    }
-    return <span key={i}>{chunk.text}</span>;
-};
-
-const InstructionGroup = ({ children }) => {
-    const styles = useStyles();
-    return <ol className={styles.instructionGroup}>{children}</ol>;
-};
-
-const IngredientGroup = ({ children }) => {
-    const styles = useStyles();
-    return <div className={styles.instructionGroup}>{children}</div>;
-};
-
-const containerForFormat = (format) => {
-    if (format === 'instruction') {
-        return InstructionGroup;
-    }
-    if (format === 'ingredient') {
-        return IngredientGroup;
-    }
-    if (format) {
-        if (format.list === 'ordered') {
-            return ({ children }) => <ol>{children}</ol>;
-        }
-        if (format.list === 'unordered') {
-            return ({ children }) => <ul>{children}</ul>;
-        }
-    }
-    return ({ children }) => <div>{children}</div>;
-};
-
-const stylesForFormat = (format) => {
-    if (typeof format === 'string') {
-        return format + 'Group';
-    }
-    return null;
-};
-
-const Plain = ({ children }) => <div style={{ minHeight: '1em' }}>{children}</div>;
-const Instruction = ({ children }) => {
-    const styles = useStyles();
-    return <li className={styles.instruction}>{children}</li>;
-};
-const Ingredient = ({ children }) => {
-    const [checked, setChecked] = React.useState(false);
-    const styles = useStyles();
-    return (
-        <div
-            className={checked ? styles.checkedIngredient : styles.ingredient}
-            style={{ display: 'flex' }}
-            onMouseDown={(_) => setChecked(!checked)}
-        >
-            {/* <img
-            src={require('../icons/icon_plain.svg')}
-            style={{ marginRight: 8, marginBottom: -3 }} */}
-            <input
-                checked={checked}
-                onChange={(_) => {}}
-                type="checkbox"
-                style={{ marginRight: 8, position: 'relative', top: 8 }}
-            />
-            <div style={{ flex: 1 }}>{children}</div>
-        </div>
-    );
-};
-
-const Header = ({ children, type }) => {
-    if (!type || typeof type.header !== 'number') {
-        return <div>{children}</div>;
-    }
-    if (type.header === 1) {
-        return <h1>{children}</h1>;
-    }
-    if (type.header === 2) {
-        return <h2>{children}</h2>;
-    }
-    if (type.header === 3) {
-        return <h3>{children}</h3>;
-    }
-    return <h4>{children}</h4>;
-};
-
-const componentForFormat = (format: ?Format) => {
-    if (format == null) {
-        return Plain;
-    }
-    if (format === 'instruction') {
-        return Instruction;
-    }
-    if (format === 'ingredient') {
-        return Ingredient;
-    }
-    if (typeof format.header === 'number') {
-        return Header;
-    }
-    if (typeof format.list === 'string') {
-        return ({ children }) => <li>{children}</li>;
-    }
-    return Plain;
-};
 
 const formatClass = (format) => {
     if (!format) {
@@ -336,7 +133,7 @@ const RecipeView = ({ client }: { client: Client<*> }) => {
                         ))}
                 </div>
             ) : null}
-            <div className={styles.text}>{renderOps(recipe.contents.text, styles)}</div>
+            <div className={styles.text}>{renderQuill(recipe.contents.text)}</div>
         </div>
     );
 };
