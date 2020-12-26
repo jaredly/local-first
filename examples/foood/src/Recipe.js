@@ -17,6 +17,12 @@ const useStyles = makeStyles((theme) => ({
         lineHeight: 1.8,
         fontWeight: 300,
     },
+    headerImage: {
+        width: '100%',
+        maxHeight: 300,
+        borderRadius: 8,
+        objectFit: 'cover',
+    },
     title: {
         fontSize: 44,
         lineHeight: 1,
@@ -42,31 +48,8 @@ const useStyles = makeStyles((theme) => ({
         backgroundColor: 'rgba(255,255,255,0.1)',
         textDecoration: 'none',
     },
-
-    instruction: {
-        // cursor: 'pointer',
-    },
-
-    instructionGroup: {
-        padding: 16,
-    },
-    ingredientGroup: {
-        padding: 16,
-    },
-    ingredient: {
-        cursor: 'pointer',
-        '&:hover': {
-            backgroundColor: 'rgba(255,255,255,0.1)',
-        },
-    },
-    checkedIngredient: {
-        textDecoration: 'line-through',
-        textDecorationColor: 'rgba(255,255,255,0.3)',
-        opacity: 0.8,
-        cursor: 'pointer',
-        '&:hover': {
-            backgroundColor: 'rgba(255,255,255,0.1)',
-        },
+    text: {
+        marginTop: theme.spacing(2),
     },
 }));
 
@@ -101,11 +84,13 @@ const RecipeView = ({ client }: { client: Client<*> }) => {
     }
     return (
         <div className={styles.container}>
+            {recipe.about.image ? (
+                <img src={recipe.about.image} className={styles.headerImage} />
+            ) : null}
             <div className={styles.title}>
                 {recipe.about.title}
                 <IconButton
                     edge="start"
-                    // className={styles.menuButton}
                     style={{ marginRight: 16 }}
                     color="inherit"
                     aria-label="menu"
@@ -121,21 +106,55 @@ const RecipeView = ({ client }: { client: Client<*> }) => {
                     <EditIcon />
                 </IconButton>
             </div>
-            {recipe.tags != null && Object.keys(recipe.tags).length > 0 ? (
-                <div className={styles.tags}>
-                    <div style={{ marginRight: 8 }}>Tags:</div>
-                    {Object.keys(recipe.tags)
-                        .filter((tid) => !!tags[tid])
-                        .map((tid) => (
-                            <Link to={`/tag/${tid}`} className={styles.tag} key={tid}>
-                                {tags[tid].text}
-                            </Link>
-                        ))}
-                </div>
-            ) : null}
+            <div className={styles.meta}>
+                {recipe.tags != null && Object.keys(recipe.tags).length > 0 ? (
+                    <div className={styles.tags}>
+                        <div style={{ marginRight: 8 }}>Tags:</div>
+                        {Object.keys(recipe.tags)
+                            .filter((tid) => !!tags[tid])
+                            .map((tid) => (
+                                <Link to={`/tag/${tid}`} className={styles.tag} key={tid}>
+                                    {tags[tid].text}
+                                </Link>
+                            ))}
+                    </div>
+                ) : null}
+                {renderSource(recipe.about.source)}
+                {renderAuthor(recipe.about.author)}
+            </div>
             <div className={styles.text}>{renderQuill(recipe.contents.text)}</div>
         </div>
     );
+};
+
+const renderAuthor = (author) => {
+    if (!author) {
+        return null;
+    }
+    // Imported author, this is a name
+    if (author.startsWith(':')) {
+        return <span>{author}</span>;
+    }
+    // STOPSHIP: figure out how I want to deal with multi-user situations.
+    // Do I just assume that users on the same server are allowed to see
+    // each other's names?
+    // And that there will be few enough users that I can just enumerate them?
+    return null;
+};
+
+const renderSource = (source) => {
+    if (!source) {
+        return null;
+    }
+    const match = source.match(/^https?:\/\/(?<host>[^/]+)/);
+    if (match) {
+        return (
+            <a rel="noopener noreferrer" target="_blank" href={source}>
+                {match.groups.host}
+            </a>
+        );
+    }
+    return <span>{source}</span>;
 };
 
 export default RecipeView;

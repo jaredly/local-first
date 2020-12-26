@@ -11,38 +11,6 @@ import deepEqual from '@birchill/json-equalish';
 import type { RecipeText } from '../collections';
 
 const useStyles = makeStyles((theme) => ({
-    container: {
-        // paddingTop: theme.spacing(8),
-        fontSize: 20,
-        lineHeight: 1.8,
-        fontWeight: 300,
-    },
-    title: {
-        fontSize: 44,
-        lineHeight: 1,
-        marginBottom: 20,
-        display: 'flex',
-        justifyContent: 'space-between',
-        fontFamily: "'Abril Fatface', cursive",
-    },
-    tags: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        marginBottom: 8,
-        fontSize: '60%',
-    },
-    tag: {
-        color: 'inherit',
-        marginRight: 8,
-        padding: 8,
-        display: 'inline-block',
-        lineHeight: 1,
-        borderRadius: 4,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        textDecoration: 'none',
-    },
-
     instruction: {
         // cursor: 'pointer',
     },
