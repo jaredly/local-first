@@ -12,9 +12,24 @@ import urlImport from './urlImport';
 import { makeStyles } from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme) => ({
+    container: {
+        // display: 'flex',
+        // alignItems: 'stretch',
+        // flexDirection: 'column',
+        marginBottom: 50,
+    },
     editorContainer: {
         border: '1px solid currentcolor',
         padding: theme.spacing(1),
+    },
+    buttons: {
+        padding: theme.spacing(2),
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        textAlign: 'center',
+        background: theme.palette.background.default,
     },
 }));
 
@@ -176,7 +191,7 @@ const RecipeEditor = ({
         window.quill = node;
     }, []);
     return (
-        <div>
+        <div className={styles.container}>
             <TextField
                 value={title}
                 onChange={(evt) => setTitle(evt.target.value)}
@@ -407,8 +422,11 @@ const RecipeEditor = ({
                     setText(JSON.parse(evt.target.value));
                 }}
             /> */}
-            <div>
+            <div className={styles.buttons}>
                 <Button
+                    color="primary"
+                    variant="contained"
+                    style={{ marginRight: 16 }}
                     onClick={() => {
                         // TODO maybe just use the col here?
                         // Or go through and diff at the top side?

@@ -61,7 +61,7 @@ const getAllRecipes = () => {
             id: '',
             about: {
                 title: title,
-                author: node.attr('creator') || '',
+                author: node.attr('creator') ? ':' + node.attri('creator') : '',
                 image: '',
                 source: 'forsythrecipes',
             },
