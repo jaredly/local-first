@@ -2,11 +2,12 @@
 import * as React from 'react';
 import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 // import Quill from 'quill';
+// import { type QuillDelta } from '../../../packages/rich-text-crdt/quill-deltas';
 import QuillEditor from './Quill';
 import { parse, detectLists } from './parse';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
-import type { RecipeContents, RecipeT } from '../collections';
+import type { RecipeMeta, RecipeAbout, RecipeText, RecipeStatus } from '../collections';
 import urlImport from './urlImport';
 
 const instructionText = (instruction) => {
@@ -110,31 +111,35 @@ const getImage = (image) => {
     return image.url;
 };
 
-const statuses = ['imported', 'untried', 'approved', 'rejected'];
+const statuses: Array<RecipeStatus> = ['approved', 'rejected'];
 
 // Ok so what is it that we're editing?
 // about: {title, author, source, image}
 // contents: {}
 
 const RecipeEditor = ({
-    actorId,
-    recipe,
+    about,
+    meta,
+    text: initialText,
     onSave,
+    status: initialStatus,
 }: {
-    actorId: string,
-    recipe: RecipeT,
-    onSave: (RecipeT) => void,
+    about: RecipeAbout,
+    meta: RecipeMeta,
+    text: RecipeText,
+    status: ?RecipeStatus,
+    onSave: (RecipeAbout, RecipeMeta, RecipeText, ?RecipeStatus) => void,
 }) => {
-    const [ovenTemp, setOvenTemp] = React.useState(recipe.contents.meta.ovenTemp ?? '');
-    const [cookTime, setCookTime] = React.useState(recipe.contents.meta.cookTime ?? '');
-    const [prepTime, setPrepTime] = React.useState(recipe.contents.meta.prepTime ?? '');
-    const [totalTime, setTotalTime] = React.useState(recipe.contents.meta.totalTime ?? '');
-    const [yieldAmt, setYield] = React.useState(recipe.contents.meta.yield ?? '');
-    const [image, setImage] = React.useState(recipe.about.image ?? '');
-    const [title, setTitle] = React.useState(recipe.about.title);
-    const [source, setSource] = React.useState(recipe.about.source);
-    const [text, setText] = React.useState(recipe.contents.text);
-    const [status, setStatus] = React.useState(recipe.statuses[actorId]);
+    const [ovenTemp, setOvenTemp] = React.useState(meta.ovenTemp ?? '');
+    const [cookTime, setCookTime] = React.useState(meta.cookTime ?? '');
+    const [prepTime, setPrepTime] = React.useState(meta.prepTime ?? '');
+    const [totalTime, setTotalTime] = React.useState(meta.totalTime ?? '');
+    const [yieldAmt, setYield] = React.useState(meta.yield ?? '');
+    const [image, setImage] = React.useState(about.image ?? '');
+    const [title, setTitle] = React.useState(about.title);
+    const [source, setSource] = React.useState(about.source);
+    const [text, setText] = React.useState(initialText);
+    const [status, setStatus] = React.useState(initialStatus);
 
     const quillRef = React.useRef(null);
     const quillRefGet = React.useCallback((node) => {
@@ -285,7 +290,11 @@ const RecipeEditor = ({
                         variant={status === name ? 'contained' : 'outlined'}
                         color="primary"
                         onClick={() => {
-                            setStatus(name);
+                            if (status === name) {
+                                setStatus(null);
+                            } else {
+                                setStatus(name);
+                            }
                         }}
                         style={{ marginRight: 8 }}
                     >
@@ -373,32 +382,23 @@ const RecipeEditor = ({
                     onClick={() => {
                         // TODO maybe just use the col here?
                         // Or go through and diff at the top side?
-                        onSave({
-                            id: recipe.id || Math.random().toString(36).slice(2),
-                            createdDate: recipe.createdDate || Date.now(),
-                            updatedDate: Date.now(),
-                            about: {
+                        onSave(
+                            {
                                 title,
-                                author: '',
+                                author: about.author,
                                 image,
                                 source,
                             },
-                            statuses: status == null ? {} : { [actorId]: status },
-                            contents: {
-                                changeLog: [],
-                                version: Math.random().toString(36).slice(2),
-                                meta: {
-                                    prepTime,
-                                    ovenTemp,
-                                    cookTime,
-                                    totalTime,
-                                    yield: yieldAmt,
-                                },
-                                text,
+                            {
+                                prepTime,
+                                ovenTemp,
+                                cookTime,
+                                totalTime,
+                                yield: yieldAmt,
                             },
-                            comments: {},
-                            tags: {},
-                        });
+                            text,
+                            status,
+                        );
                     }}
                 >
                     Save

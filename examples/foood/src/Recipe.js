@@ -190,10 +190,10 @@ const RecipeView = ({ client }: { client: Client<*> }) => {
                     style={{ marginRight: 16 }}
                     color="inherit"
                     aria-label="menu"
-                    href={'/recipe/new'}
+                    href={`/recipe/${recipe.id}/edit`}
                     onClick={(evt) => {
                         if (evt.button == 0 && !evt.ctrlKey && !evt.metaKey) {
-                            history.push('/recipe/new');
+                            history.push(`/recipe/${recipe.id}/edit`);
                             evt.preventDefault();
                             evt.stopPropagation();
                         }

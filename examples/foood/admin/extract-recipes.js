@@ -47,7 +47,7 @@ const getAllRecipes = () => {
             return;
         }
         const title = node.attr('title');
-        const body = node.text();
+        const body = node.text().trim();
         const refs = [...body.matchAll(/\[\[(?<title>[^\]]+)\]\]/g)].map((ref) => ref.groups.title);
         const lines = body.split('\n').length;
         if (refs.length > lines * 0.75) {

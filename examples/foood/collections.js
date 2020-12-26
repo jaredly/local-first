@@ -95,19 +95,21 @@ export type CommentT = {
     recipeVersion: string,
 }
 
-type Status = 'approved' | 'rejected';
+export type RecipeStatus = 'approved' | 'rejected';
+
+export type RecipeAbout = {
+    title: string,
+    author: string,
+    source: string,
+    image: string,
+}
 
 export type RecipeT = {
     id: string,
-    about: {
-        title: string,
-        author: string,
-        source: string,
-        image: string,
-    },
+    about: RecipeAbout,
     contents: RecipeContents,
     statuses: {
-        [userId: string]: Status,
+        [userId: string]: RecipeStatus,
     },
     createdDate: number,
     updatedDate: number,
@@ -120,16 +122,20 @@ export type RecipeT = {
 
 import { type QuillDelta } from '../../packages/rich-text-crdt/quill-deltas';
 
-export type RecipeContents = {
-    meta: {
-        ovenTemp: ?string,
-        cookTime: ?string,
-        prepTime: ?string,
-        totalTime: ?string,
-        yield: ?string,
-    },
+export type RecipeText = {ops: Array<QuillDelta>}
 
-    text: {ops: Array<QuillDelta>},
+export type RecipeMeta = {
+    ovenTemp: ?string,
+    cookTime: ?string,
+    prepTime: ?string,
+    totalTime: ?string,
+    yield: ?string,
+}
+
+export type RecipeContents = {
+    meta: RecipeMeta,
+
+    text: RecipeText,
 
     version: string,
     changeLog: Array<{

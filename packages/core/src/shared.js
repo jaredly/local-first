@@ -94,6 +94,13 @@ const send = <Data, T>(state: CollectionState<Data, T>, id: string, value: ?T) =
     }
 };
 
+const atPath = (value, path) => {
+    if (path.length === 0) {
+        return value;
+    }
+    return atPath(value[path[0]], path.slice(1));
+};
+
 // This is the full version, non-patch I think?
 // Ok I believe this also works with the patch version.
 export const getCollection = function<Delta, Data, RichTextDelta, T>(
@@ -151,6 +158,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             validate(node, schema);
             // NOTE this overwrites everything, setAttribute will do much better merges
             // Hmmm I think I want a method that will do "merge in all (changed) values"
+            // SEE "updateAttributes" for that WIP
             const delta = crdt.deltas.replace(crdt.createValue(node, getStamp(), getStamp, schema));
             return applyDelta(id, delta, true);
         },
@@ -289,6 +297,26 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
 
             return applyDelta(id, delta);
         },
+
+        // STOPSHIP test all this madness
+        // This does a shallow check of object's keys for exact equality.
+        // async updateAttributes(id: string, path: Array<string | number>, value: any) {
+        //     const sub = subSchema(schema, path);
+        //     validate(value, sub);
+        //     if (state.cache[id] == null) {
+        //         const stored = await persistence.load(colid, id);
+        //         if (!stored) {
+        //             throw new Error(`Cannot set attribute, node with id ${id} doesn't exist`);
+        //         }
+        //         state.cache[id] = stored;
+        //     }
+        //     const prev = atPath(crdt.value(state.cache[id]), path);
+        //     for (const key of Object.keys(value)) {
+        //         if (value[key] !== prev[key]) {
+        //             await this.setAttribute(id, path.concat([key]), value[key]);
+        //         }
+        //     }
+        // },
 
         async setAttribute(id: string, path: Array<string | number>, value: any) {
             const sub = subSchema(schema, path);
