@@ -58,16 +58,25 @@ const parseRawDoc = (rawDoc) => {
 const App = ({ config }: { config: ConnectionConfig }) => {
     const client = React.useMemo(() => {
         if (config.type === 'memory') {
-            return createInMemoryEphemeralClient(schemas);
+            // return createInMemoryEphemeralClient(schemas);
+            throw new Error('hm');
         }
         const url = `${config.authData.host}/dbs/sync?db=foood/public&token=${config.authData.auth.token}`;
-        return createPersistedDeltaClient(
+        return createPollingPersistedDeltaClient(
             config.prefix,
             schemas,
-            `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
+            `${config.authData.host.startsWith('localhost:') ? 'http' : 'https'}://${url}`,
             3,
             {},
+            30 * 1000,
         );
+        // return createPersistedDeltaClient(
+        //     config.prefix,
+        //     schemas,
+        //     `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
+        //     3,
+        //     {},
+        // );
     }, [config.type === 'remote' ? config.authData : null]);
     React.useEffect(() => {
         if (config.type !== 'remote') {

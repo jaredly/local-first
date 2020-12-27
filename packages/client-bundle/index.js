@@ -149,9 +149,10 @@ export const createPersistedDeltaClient = (
 export const createPollingPersistedDeltaClient = (
     name: string,
     schemas: { [colid: string]: Schema },
-    url: ?string,
+    url: string,
     version: number,
     indexes: { [colid: string]: { [indexId: string]: IndexConfig } },
+    pollTimeout: number = 3000,
 ): Client<PollingSyncStatus> => {
     return createDeltaClient<*, *, PollingSyncStatus>(
         name,
@@ -159,7 +160,7 @@ export const createPollingPersistedDeltaClient = (
         schemas,
         new PersistentClock(localStorageClockPersist(name)),
         makeDeltaPersistence(name, Object.keys(schemas), version, indexes),
-        url != null ? createPollingNetwork(url) : nullNetwork,
+        createPollingNetwork(url, pollTimeout),
     );
 };
 

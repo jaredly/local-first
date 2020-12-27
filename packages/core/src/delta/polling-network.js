@@ -65,6 +65,7 @@ export const doSync = <Delta, Data>(
 
 const createPollingNetwork = <Delta, Data>(
     url: string,
+    pollTimeout: number = 3000,
 ): NetworkCreator<Delta, Data, SyncStatus> => (
     sessionId,
     getMessages,
@@ -74,9 +75,9 @@ const createPollingNetwork = <Delta, Data>(
         initial: { status: 'disconnected' },
         createSync: (sendCrossTabChange, updateStatus) => {
             const handle = messages => handleMessages(messages, sendCrossTabChange);
-            console.log('Im the leader (polling)');
+            console.log('Im the leader (polling)', pollTimeout, 'timeput');
             const poll = poller(
-                3 * 1000,
+                pollTimeout,
                 () =>
                     new Promise(res => {
                         backOff(() => {

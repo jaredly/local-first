@@ -37,7 +37,7 @@ const MyDrawer = ({
     // logout,
     pageItems,
 }: {
-    client: Client<SyncStatus>,
+    client: Client<*>,
     open: boolean,
     onClose: () => void,
     authData: ?AuthData,

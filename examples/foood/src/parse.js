@@ -107,7 +107,9 @@ const detectLinks = (text) => {
     return matches.map((match) => [
         match.index,
         match[0].length,
+        // $FlowFixMe
         match.groups.name,
+        // $FlowFixMe
         { link: match.groups.href },
     ]);
 };

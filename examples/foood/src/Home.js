@@ -135,7 +135,7 @@ export const useSetTitle = (title: ?string) => {
     }, [title]);
 };
 
-export const sortRecipes = (recipeA, recipeB, actorId) => {
+export const sortRecipes = (recipeA: RecipeT, recipeB: RecipeT, actorId: string) => {
     const statusA = recipeA.statuses[actorId];
     const statusB = recipeB.statuses[actorId];
     if (statusA === statusB) {

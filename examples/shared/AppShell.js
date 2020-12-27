@@ -20,7 +20,7 @@ const AppShell = ({
     title,
     topIcons,
 }: {
-    client: Client<SyncStatus>,
+    client: Client<*>,
     authData: ?AuthData,
     children: React.Node,
     drawerItems: React.Node,

@@ -6,7 +6,7 @@ import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
 import pako from 'pako';
 import * as React from 'react';
-import type { Client, SyncStatus } from '../../../packages/client-bundle';
+import type { Client } from '../../../packages/client-bundle';
 
 const genId = () =>
     Math.random()
@@ -24,7 +24,7 @@ const ImportDialog = ({
     onClose,
     open,
 }: {
-    client: Client<SyncStatus>,
+    client: Client<*>,
     onClose: () => void,
     open: boolean,
 }) => {
