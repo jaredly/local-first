@@ -130,7 +130,7 @@ const Tag = ({
             {tag.text}
             <div className={styles.tagRecipes}>
                 {approvedCount ? `${approvedCount} recipes` : ''}
-                {approvedCount && count ? ', ' : ''}
+                {approvedCount && count > approvedCount ? ', ' : ''}
                 {count > approvedCount ? `${count - approvedCount} pending` : ''}
             </div>
         </Link>

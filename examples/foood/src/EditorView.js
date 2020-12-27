@@ -23,6 +23,7 @@ const EditorView = ({ client, actorId }: { client: Client<*>, actorId: string })
 
     return (
         <Editor
+            actorId={actorId}
             client={client}
             tags={recipe.tags}
             about={recipe.about}

@@ -12,6 +12,31 @@ const toMap = (items) => {
 import type {RecipeT} from '../collections'
 */
 
+// $FlowFixMe it's fine
+const fetch = require('../../planner/server/node_modules/node-fetch');
+const cheerio = require('cheerio')
+const {findImage} = require('../src/urlImport')
+
+const findImageFromPage = async (source) => {
+    console.log('Fetching', source, 'for image')
+    const contents = await (await fetch(source)).text()
+    const $ = cheerio.load(contents)
+    const jsons = []
+    $('script[type]').each((_, json) => {
+        const node = $(json)
+        if (node.attr('type') === 'application/ld+json') {
+            jsons.push(node.html())
+        }
+    })
+    for (const json of jsons) {
+        const image = findImage(JSON.parse(json))
+        if (image) {
+            return image
+        }
+    }
+    return ''
+}
+
 module.exports = async (client/*: * */, actorId/*: string*/, sync/*: () => Promise<mixed>*/) => {
     // ingredients -> get imported as is
     const ingredients = require('./ingredients.json');
@@ -80,6 +105,10 @@ module.exports = async (client/*: * */, actorId/*: string*/, sync/*: () => Promi
         let image = '';
 
         const comments = {}
+
+        if (recipe.source) {
+            image = await findImageFromPage(recipe.source).catch(err => '')
+        }
 
         await recipesCol.save(recipe.id, {
             id: recipe.id,
@@ -209,3 +238,5 @@ const createDeltas = (recipe, ingredientsById) => {
     }
     return deltas;
 };
+
+module.exports.findImageFromPage = findImageFromPage

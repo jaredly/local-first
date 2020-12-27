@@ -1,16 +1,24 @@
 // @flow
 
 const proxy = 'https://get-page.jaredly.workers.dev/';
-const processRecipe = async (url /*:string*/) => {
+
+const getJsons = async (url) => {
     const res = await fetch(`${proxy}?url=${encodeURIComponent(url)}`);
     const text = await res.text();
     const node = document.createElement('div');
     node.innerHTML = text;
     let recipeData = null;
     const jsons = [...node.querySelectorAll('script[type="application/ld+json"]')];
+    return jsons;
+};
+
+const processRecipe = async (url /*:string*/) => {
+    const jsons = await getJsons(url);
+    let recipeData = null;
+
     for (let json of jsons) {
         const data = JSON.parse(json.textContent);
-        const recipe = findRecipe(data);
+        const recipe = findOfType(data, 'Recipe');
         if (recipe) {
             return recipe;
         }
@@ -19,14 +27,25 @@ const processRecipe = async (url /*:string*/) => {
     }
 };
 
-const findRecipe = (data) => {
-    if (data['@type'] === 'Recipe') {
+const findImage = (data) => {
+    const image = findOfType(data, 'ImageObject');
+    if (image) {
+        return image.contentUrl || image.url;
+    }
+    const webPage = findOfType(data, 'WebPage');
+    if (webPage && webPage.primaryImageOfPage) {
+        return webPage.primaryImageOfPage.contentUrl || webPage.primaryImageOfPage.url;
+    }
+};
+
+const findOfType = (data, type) => {
+    if (data['@type'] === type) {
         return data;
     }
 
     if (Array.isArray(data)) {
         for (const sub of data) {
-            const res = findRecipe(sub);
+            const res = findOfType(sub, type);
             if (res) {
                 return res;
             }
@@ -35,7 +54,7 @@ const findRecipe = (data) => {
 
     if (data['@type'] == null && data['@graph'] != null) {
         for (let sub of data['@graph']) {
-            const res = findRecipe(sub);
+            const res = findOfType(sub, type);
             if (res) {
                 return res;
             }
@@ -44,6 +63,7 @@ const findRecipe = (data) => {
 };
 
 module.exports = processRecipe;
+module.exports.findImage = findImage;
 
 /*
 

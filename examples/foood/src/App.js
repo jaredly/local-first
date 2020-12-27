@@ -155,6 +155,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 <RouteSwitch>
                     <Route path={`${pathPrefix}/recipe/new`}>
                         <Editor
+                            actorId={actorId}
                             client={client}
                             onCancel={() => history.back()}
                             tags={{}}

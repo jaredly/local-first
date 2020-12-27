@@ -202,6 +202,7 @@ const RecipeEditor = ({
     status: initialStatus,
     client,
     tags,
+    actorId,
 }: {
     about: RecipeAbout,
     meta: RecipeMeta,
@@ -212,6 +213,7 @@ const RecipeEditor = ({
     onDelete?: ?() => mixed,
     client: Client<*>,
     tags: { [key: string]: number },
+    actorId: string,
 }) => {
     const [ovenTemp, setOvenTemp] = React.useState(meta.ovenTemp ?? '');
     const [cookTime, setCookTime] = React.useState(meta.cookTime ?? '');
@@ -544,6 +546,7 @@ const RecipeEditor = ({
                                     text,
                                     color: null,
                                     created: Date.now(),
+                                    authorId: actorId,
                                 });
                                 tags.push(tid);
                             } else if (typeof tag.id === 'string') {
