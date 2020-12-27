@@ -35,9 +35,9 @@ const Latest = ({ client, actorId }: { client: Client<*>, actorId: string }) => 
             : 'Foood',
     );
 
-    const ids = Object.keys(recipes).sort(
-        (a, b) => recipes[b].updatedDate - recipes[a].updatedDate,
-    );
+    const ids = Object.keys(recipes)
+        .filter((id) => recipes[id].trashedDate == null)
+        .sort((a, b) => recipes[b].updatedDate - recipes[a].updatedDate);
 
     return (
         <div className={styles.container}>

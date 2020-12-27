@@ -30,7 +30,7 @@ const syncFetch = async function<Delta, Data>(
     onMessages: (Array<ServerMessage<Delta, Data>>) => Promise<mixed>,
 ) {
     const messages = await getMessages(true);
-    console.log('sync:messages', messages);
+    // console.log('sync:messages', messages);
     // console.log('messages', messages);
     const res = await fetch(addParams(url, `sessionId=${sessionId}`), {
         method: 'POST',

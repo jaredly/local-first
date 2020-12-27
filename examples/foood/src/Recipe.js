@@ -127,6 +127,7 @@ const RecipeView = ({ client, actorId }: { client: Client<*>, actorId: string })
                 ) : null}
                 {renderSource(recipe.about.source)}
                 {renderAuthor(recipe.about.author)}
+                <span>Updated {new Date(recipe.updatedDate).toLocaleDateString()}</span>
             </div>
             <div className={styles.status}>
                 {statuses.map((name) => (

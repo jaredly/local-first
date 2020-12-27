@@ -34,7 +34,7 @@ const EditorView = ({ client, actorId }: { client: Client<*>, actorId: string })
             }}
             onDelete={async () => {
                 await col.setAttribute(id, ['trashedDate'], Date.now());
-                history.back();
+                history.goBack();
             }}
             onSave={async (about, meta, text, status, tags) => {
                 for (const key of Object.keys(about)) {

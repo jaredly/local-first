@@ -16,6 +16,8 @@ const cheerio = require('cheerio');
 // const ingredientNames = require('../.import/themealdb.com/in.json').map((m) => m[0]);
 const { detectLists, parse, rawToDeltas } = require('../src/parse');
 
+const tenYearsAgo = Date.now() - 1000 * 60 * 60 * 24 * 365 * 10;
+
 const getAllRecipes = () => {
     const $ = cheerio.load(fs.readFileSync('../.import/Forsyth Recipes.htm'));
 
@@ -29,12 +31,12 @@ const getAllRecipes = () => {
 
     const parseDate = (text) => {
         if (!text) {
-            return Date.now();
+            return tenYearsAgo;
         }
         const match = text.match(/^(?<year>\d{4})(?<month>\d{2})(?<day>\d{2})\d+$/);
         if (!match) {
             console.log('Not a date?', text);
-            return Date.now();
+            return tenYearsAgo;
         }
         return new Date(+match.groups.year, +match.groups.month - 1, +match.groups.day).getTime();
     };

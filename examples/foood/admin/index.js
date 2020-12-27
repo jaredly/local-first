@@ -14,6 +14,7 @@ import {
 import fs from 'fs';
 import getForsythRecipes from './extract-recipes';
 import type { RecipeT, TagT } from '../collections';
+import importFooodData from './import-from-foood';
 
 const schemas = require('../collections');
 
@@ -108,6 +109,9 @@ const main = async () => {
 
     await sync(client, url);
 
+    const userId = '1';
+    await importFooodData(client, userId, () => sync(client, url));
+
     const allRecipes: { [key: string]: RecipeT } = await col.loadAll();
     const allTags = await tagsCol.loadAll();
 
@@ -133,6 +137,7 @@ const main = async () => {
                 text: name,
                 created: tags[name].created,
                 color: null,
+                authorId: ':forsythrecipes-import',
             });
         }
     }

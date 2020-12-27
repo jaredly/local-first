@@ -81,7 +81,7 @@ export const setupExpress = () => {
     const app = express();
     const wsInst = ws(app);
     app.use(require('cors')({ exposedHeaders: ['etag', 'X-Session'] }));
-    app.use(require('body-parser').json());
+    app.use(require('body-parser').json({ limit: '5mb' }));
 
     return { app, wsInst };
 };

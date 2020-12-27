@@ -116,7 +116,6 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                     <React.Fragment>
                         <IconButton
                             edge="start"
-                            // className={styles.menuButton}
                             style={{ marginRight: 16 }}
                             color="inherit"
                             aria-label="menu"
@@ -133,7 +132,6 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                         </IconButton>
                         <IconButton
                             edge="start"
-                            // className={styles.menuButton}
                             style={{ marginRight: 16 }}
                             color="inherit"
                             aria-label="menu"

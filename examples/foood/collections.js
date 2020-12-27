@@ -32,6 +32,7 @@ const TagSchema = {
         text: 'string',
         color: { type: 'optional', value: 'string' },
         created: 'int',
+        authorId: 'string',
     },
 };
 
@@ -39,7 +40,7 @@ const CommentSchema = {
     type: 'object',
     attributes: {
         id: 'string',
-        author: 'string',
+        authorId: 'string',
         text: 'object', // this'll be a quill delta, but we don't need real-time or intelligent merging here
         date: 'int',
         happiness: 'int',
@@ -53,8 +54,11 @@ const IngredientSchema = {
     attributes: {
         id: 'string',
         name: 'string',
-        alternateNames: 'id-array',
-        kinds: 'id-array',
+        alternateNames: { type: 'map', value: 'int' },
+        kinds: { type: 'map', value: 'int' },
+        densities: { type: 'map', value: 'float' },
+        defaultUnit: 'string',
+        authorId: 'string',
     },
 };
 
@@ -65,6 +69,7 @@ export type TagT = {
     text: string,
     color: ?string,
     created: number,
+    authorId: string,
 }
 
 export type TechniqueT = {
@@ -83,12 +88,14 @@ export type IngredientT = {
     name: string,
     alternateNames: Array<string>,
     kinds: Array<string>, // like "nut" or "flour" probably. Do I normalize these? maybe not just now.
-    densities: {[variant: string]: number}
+    densities: {[variant: string]: number},
+    defaultUnit: string,
+    authorId: string,
 }
 
 export type CommentT = {
     id: string,
-    author: string,
+    authorId: string,
     text: QuillDelta,
     date: number,
     happiness: number,
