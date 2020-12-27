@@ -125,27 +125,47 @@ const showChunk = (chunk, i) => {
     if (!chunk.format) {
         return <span key={i}>{chunk.text}</span>;
     }
-    if (chunk.format.bold) {
-        return <strong key={i}>{chunk.text}</strong>;
-    }
-    if (chunk.format.italic) {
-        return <em key={i}>{chunk.text}</em>;
-    }
-    if (chunk.format.underline) {
-        return (
-            <span style={{ textDecoration: 'underline' }} key={i}>
-                {chunk.text}
-            </span>
-        );
-    }
-    if (chunk.format.link) {
-        return (
-            <a target="_blank" rel="noreferrer noopener" key={i} href={chunk.format.link}>
-                {chunk.text}
-            </a>
-        );
-    }
-    return <span key={i}>{chunk.text}</span>;
+    const format = chunk.format;
+    const keys = Object.keys(format);
+    let contents = chunk.text;
+    keys.forEach((key) => {
+        if (key === 'bold' && format[key]) {
+            contents = <strong key={i}>{contents}</strong>;
+        }
+        if (key === 'italic') {
+            contents = <em key={i}>{contents}</em>;
+        }
+        if (key === 'underline') {
+            contents = (
+                <span style={{ textDecoration: 'underline' }} key={i}>
+                    {contents}
+                </span>
+            );
+        }
+        if (key === 'link') {
+            contents = (
+                <a target="_blank" rel="noreferrer noopener" key={i} href={format[key]}>
+                    {contents}
+                </a>
+            );
+        }
+        if (key === 'ingredientLink') {
+            contents = (
+                <span
+                    style={{
+                        display: 'inline-block',
+                        padding: '0 8px',
+                        lineHeight: 1.4,
+                        borderRadius: 8,
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    }}
+                >
+                    {contents}
+                </span>
+            );
+        }
+    });
+    return contents;
 };
 
 const InstructionGroup = ({ children }) => {

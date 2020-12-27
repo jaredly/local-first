@@ -7,7 +7,14 @@ import QuillEditor from './Quill';
 import { parse, detectLists } from './parse';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
-import type { RecipeMeta, RecipeAbout, RecipeText, RecipeStatus, TagT } from '../collections';
+import type {
+    RecipeMeta,
+    RecipeAbout,
+    RecipeText,
+    RecipeStatus,
+    TagT,
+    IngredientT,
+} from '../collections';
 import urlImport from './urlImport';
 import { makeStyles } from '@material-ui/core/styles';
 import { useCollection, useItem } from '../../../packages/client-react';
@@ -39,6 +46,25 @@ const useStyles = makeStyles((theme) => ({
         right: 0,
         textAlign: 'center',
         background: theme.palette.background.default,
+    },
+
+    formatTooltip: {
+        padding: '4px 8px',
+        position: 'absolute',
+        borderRadius: 4,
+        zIndex: 1000,
+        backgroundColor: 'white',
+        color: 'black',
+    },
+    formatButton: {
+        backgroundColor: '#aaa',
+        cursor: 'pointer',
+        border: 'none',
+        borderRadius: 4,
+    },
+    formatButtonSelected: {
+        backgroundColor: 'black',
+        color: 'white',
     },
 }));
 
@@ -192,6 +218,52 @@ const DeleteButton = ({ onConfirm }) => {
     );
 };
 
+// const formats = formats => [
+//     {format: {bold: true}, title: 'B', selected: formats.bold},
+//     {format: {}}
+// ]
+
+const cx = (...args) => args.filter(Boolean).join(' ');
+
+const Tooltip = ({ data: { selection, formats, bounds, quill }, ingredients, ingredientsCol }) => {
+    const styles = useStyles();
+    return (
+        <div
+            className={styles.formatTooltip}
+            onMouseDown={(evt) => {
+                evt.stopPropagation();
+                evt.preventDefault();
+            }}
+            onClick={(evt) => {
+                evt.stopPropagation();
+                evt.preventDefault();
+            }}
+            onMouseUp={(evt) => {
+                evt.stopPropagation();
+                evt.preventDefault();
+            }}
+            style={{
+                top: bounds.top + bounds.height + 8,
+                left: bounds.left,
+                // width: bounds.width,
+            }}
+        >
+            <button
+                onClick={() => {
+                    quill.format('bold', formats.bold ? false : true);
+                }}
+                className={cx(
+                    styles.formatButton,
+                    formats.bold ? styles.formatButtonSelected : null,
+                )}
+            >
+                B
+            </button>
+            Tooltip: {JSON.stringify(formats)}
+        </div>
+    );
+};
+
 const RecipeEditor = ({
     about,
     meta,
@@ -228,6 +300,14 @@ const RecipeEditor = ({
     const [editTags, setEditTags] = React.useState<Array<{ id: string } | { text: string }>>(
         Object.keys(tags).map((id) => ({ id })),
     );
+    const [showTooltip, setShowTooltip] = React.useState(null);
+
+    const [ingredients, ingredientsCol] = useCollection<IngredientT, _>(
+        React,
+        client,
+        'ingredients',
+    );
+
     const styles = useStyles();
 
     const [tagsCol, allTags] = useCollection<TagT, _>(React, client, 'tags');
@@ -236,6 +316,25 @@ const RecipeEditor = ({
     const quillRefGet = React.useCallback((node) => {
         quillRef.current = node;
         window.quill = node;
+        if (node) {
+            node.on('selection-change', (selection) => {
+                if (!selection) {
+                    return setShowTooltip(null);
+                }
+                const formats = node.getFormat(selection.index, selection.length);
+                const bounds = node.getBounds(selection.index, selection.length);
+                setShowTooltip({ selection, formats, bounds, quill: node });
+            });
+            node.on('text-change', () => {
+                const selection = node.getSelection();
+                if (!selection) {
+                    return setShowTooltip(null);
+                }
+                const formats = node.getFormat(selection.index, selection.length);
+                const bounds = node.getBounds(selection.index, selection.length);
+                setShowTooltip({ selection, formats, bounds, quill: node });
+            });
+        }
     }, []);
     return (
         <div className={styles.container}>
@@ -491,44 +590,47 @@ const RecipeEditor = ({
                     Instruction
                 </Button>
             </div>
-            <QuillEditor
-                className={styles.editorContainer}
-                value={text.ops}
-                onChange={(newValue, change, source) => {
-                    setText(newValue);
-                    const skip =
-                        typeof change.ops[0].retain !== 'undefined' ? change.ops[0].retain : 0;
-                    const len = change.length() - skip;
-                    // On paste, do some autodetection
-                    if (len > 5 && source === 'user') {
-                        const quill = quillRef.current;
-                        if (!quill) return;
-                        console.log('OK', change, len);
-                        console.log(skip, change.ops[0]);
-                        const text = newValue.ops
-                            .map((op) => (typeof op.insert === 'string' ? op.insert : null))
-                            .join('')
-                            .slice(skip, skip + len);
-                        const { ingredients, instructions } = detectLists(text);
-                        console.log(ingredients, instructions);
-                        ingredients.forEach((index) => {
-                            quill.formatLine(skip + index, 0, 'ingredient', true, 'api');
-                        });
-                        instructions.forEach((index) => {
-                            quill.formatLine(skip + index, 0, 'instruction', true, 'api');
-                        });
-                    }
-                }}
-                actions={null}
-                innerRef={quillRefGet}
-                config={quillConfig}
-            />
-            {/* <textarea
-                value={JSON.stringify(text, null, 2)}
-                onChange={(evt) => {
-                    setText(JSON.parse(evt.target.value));
-                }}
-            /> */}
+            <div style={{ position: 'relative' }}>
+                <QuillEditor
+                    className={styles.editorContainer}
+                    value={text.ops}
+                    onChange={(newValue, change, source) => {
+                        setText(newValue);
+                        const skip =
+                            typeof change.ops[0].retain !== 'undefined' ? change.ops[0].retain : 0;
+                        const len = change.length() - skip;
+                        // On paste, do some autodetection
+                        if (len > 5 && source === 'user') {
+                            const quill = quillRef.current;
+                            if (!quill) return;
+                            console.log('OK', change, len);
+                            console.log(skip, change.ops[0]);
+                            const text = newValue.ops
+                                .map((op) => (typeof op.insert === 'string' ? op.insert : null))
+                                .join('')
+                                .slice(skip, skip + len);
+                            const { ingredients, instructions } = detectLists(text);
+                            console.log(ingredients, instructions);
+                            ingredients.forEach((index) => {
+                                quill.formatLine(skip + index, 0, 'ingredient', true, 'api');
+                            });
+                            instructions.forEach((index) => {
+                                quill.formatLine(skip + index, 0, 'instruction', true, 'api');
+                            });
+                        }
+                    }}
+                    actions={null}
+                    innerRef={quillRefGet}
+                    config={quillConfig}
+                />
+                {showTooltip ? (
+                    <Tooltip
+                        data={showTooltip}
+                        ingredients={ingredients}
+                        ingredientsCol={ingredientsCol}
+                    />
+                ) : null}
+            </div>
             {onDelete != null ? <DeleteButton onConfirm={onDelete} /> : null}
             <div className={styles.buttons}>
                 <Button
@@ -590,11 +692,9 @@ const RecipeEditor = ({
 };
 
 const quillConfig = {
-    theme: 'bubble',
+    theme: null,
     placeholder: 'Paste or type recipe here...',
     modules: {
-        // toolbar: [['bold', 'italic', 'underline', 'strike', 'link'], [{ list: 'bullet' }]],
-        // tookbar: false,
         keyboard: {
             bindings: {
                 backspace: {

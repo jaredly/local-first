@@ -27,6 +27,38 @@ ListContainer.allowedChildren.push(InstructionListItem);
 
 Quill.register(InstructionListItem, true);
 
+class IngredientLink extends Inline {
+    static create(value) {
+        const node = super.create(value);
+        node.setAttribute('data-ingredient', value);
+        // node.onmouseover = () => {
+        //     console.log('mouse', node);
+        // };
+        return node;
+    }
+
+    static formats(domNode) {
+        const raw = domNode.getAttribute('data-ingredient');
+        if (!raw) {
+            return null;
+        }
+        return raw;
+    }
+
+    format(name, value) {
+        if (name !== this.statics.blotName || !value) {
+            super.format(name, value);
+        } else {
+            this.domNode.setAttribute('data-ingredient', value);
+        }
+    }
+}
+IngredientLink.blotName = 'ingredientLink';
+IngredientLink.tagName = 'SPAN';
+IngredientLink.className = 'ingredientLink';
+
+Quill.register(IngredientLink, true);
+
 class Measurement extends Inline {
     static create(value) {
         const node = super.create(value);
@@ -67,8 +99,6 @@ Quill.register(Measurement, true);
 const QuillEditor = ({
     value,
     onChange,
-    // getStamp,
-    // siteId,
     innerRef,
     actions,
     className,
@@ -81,8 +111,6 @@ const QuillEditor = ({
         { ops: Array<QuillDelta>, length: () => number },
         string,
     ) => mixed,
-    // getStamp: () => string,
-    // siteId: string,
     actions: *,
     className?: string,
     config: *,
