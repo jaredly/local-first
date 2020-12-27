@@ -184,7 +184,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                         />
                     </Route>
                     <Route path={`${pathPrefix}/search`}>
-                        <Search client={client} />
+                        <Search client={client} actorId={actorId} />
                     </Route>
                     <Route path={`${pathPrefix}/tag/:tagid`}>
                         <Home actorId={actorId} client={client} />

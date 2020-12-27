@@ -8,6 +8,7 @@ import { useCollection, useItem } from '../../../packages/client-react';
 import { Route, Link, useRouteMatch, useParams, useLocation, useHistory } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
 import Fuse from 'fuse.js';
+import { sortRecipes, RecipeBlock } from './Home';
 
 // TODO: list all *tags*, based on stuff.
 // Include a url for importing if you want to be fast
@@ -40,8 +41,18 @@ const useStyles = makeStyles((theme) => ({
         textDecoration: 'none',
         // borderRadius: 4,
     },
+    sectionTitle: {
+        textAlign: 'center',
+        fontWeight: 'bold',
+        padding: theme.spacing(2),
+    },
     results: {
         marginTop: theme.spacing(2),
+    },
+    recipes: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
     },
     showMoreButton: {
         marginTop: theme.spacing(2),
@@ -112,7 +123,7 @@ const useSetTitle = (title) => {
     }, [title]);
 };
 
-const Search = ({ client }: { client: Client<*> }) => {
+const Search = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
     const match = useRouteMatch();
     const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
     const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
@@ -125,8 +136,8 @@ const Search = ({ client }: { client: Client<*> }) => {
     // const [searchText, setSearchText] = React.useState('');
     const [showUpTo, setShowUpTo] = React.useState(defaultShowAmount);
     const results = useDebounce(
-        () => runSearch(recipes, searchText),
-        () => runSearch(recipes, searchText),
+        () => runSearch(recipes, searchText, actorId),
+        () => runSearch(recipes, searchText, actorId),
         300,
         [recipes, searchText],
     );
@@ -146,16 +157,47 @@ const Search = ({ client }: { client: Client<*> }) => {
                 variant="outlined"
                 autoFocus
             />
-            {results == null ? null : results.length ? (
+            {results == null ? null : results[0].length ? (
                 <div className={styles.results}>
-                    {results.slice(0, showUpTo).map(({ item }) => (
-                        <div key={item.id} className={styles.recipe}>
-                            <Link to={`/recipe/${item.id}`} className={styles.recipeTitle}>
-                                {item.title}
-                            </Link>
+                    <div className={styles.sectionTitle}>Title match</div>
+                    <div className={styles.recipes}>
+                        {results[0].slice(0, showUpTo).map((id) => (
+                            <RecipeBlock
+                                key={id}
+                                actorId={actorId}
+                                recipe={recipes[id]}
+                                tags={tags}
+                            />
+                            // <div key={id} className={styles.recipe}>
+                            //     <Link to={`/recipe/${id}`} className={styles.recipeTitle}>
+                            //         {recipes[id].title}
+                            //     </Link>
+                            // </div>
+                        ))}
+                    </div>
+                    {showUpTo > results[0].length && results[1].length > 0 ? (
+                        <div className={styles.sectionTitle}>Contents match</div>
+                    ) : null}
+                    {showUpTo > results[0].length ? (
+                        <div className={styles.recipes}>
+                            {results[1]
+                                .slice(0, Math.max(0, showUpTo - results[0].length))
+                                .map((id) => (
+                                    <RecipeBlock
+                                        key={id}
+                                        actorId={actorId}
+                                        recipe={recipes[id]}
+                                        tags={tags}
+                                    />
+                                    // <div key={id} className={styles.recipe}>
+                                    //     <Link to={`/recipe/${id}`} className={styles.recipeTitle}>
+                                    //         {recipes[id].title}
+                                    //     </Link>
+                                    // </div>
+                                ))}
                         </div>
-                    ))}
-                    {results.length > showUpTo ? (
+                    ) : null}
+                    {results[0].length + results[1].length > showUpTo ? (
                         <Button
                             onClick={() => setShowUpTo(showUpTo + defaultShowAmount)}
                             className={styles.showMoreButton}
@@ -184,56 +226,46 @@ const Search = ({ client }: { client: Client<*> }) => {
     );
 };
 
-const runSearch = (recipes, needle) => {
+const runSearch = (recipes, needle, actorId) => {
     if (!needle.trim()) {
         return null;
     }
     const lowerNeedle = needle.toLowerCase();
 
     const toSearch = Object.keys(recipes)
-        .filter((id) => recipes[id].trashedDate == null)
+        .filter(
+            (id) => recipes[id].trashedDate == null && recipes[id].statuses[actorId] !== 'rejected',
+        )
         .map((id) => ({
             id: id,
             title: recipes[id].about.title,
-            source: recipes[id].about.source,
-            contents: deltaToString(recipes[id].contents.text),
+            lowerTitle: recipes[id].about.title.toLowerCase(),
+            // source: recipes[id].about.source,
+            contents: deltaToString(recipes[id].contents.text).toLowerCase(),
+            // status: recipes[id].statuses[actorId]
         }));
 
     // TODO(jared): Maybe bring this back? idk what I really want.
-    const exacts =
-        // whitespace around term breaks out into fuzzy
-        lowerNeedle.trim() === lowerNeedle
-            ? toSearch.filter(
-                  (item) =>
-                      item.title.toLowerCase().includes(lowerNeedle) ||
-                      item.contents.toLowerCase().includes(lowerNeedle),
-              )
-            : [];
-    // if (exacts.length) {
-    return exacts
-        .sort((a, b) => {
-            const aa = a.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
-            const ba = b.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
-            return ba - aa;
-        })
-        .map((item) => ({ item }));
-    // }
+    const titleMatch = toSearch
+        .filter((item) => item.lowerTitle.includes(lowerNeedle))
+        .map((item) => item.id)
+        .sort((a, b) => sortRecipes(recipes[a], recipes[b], actorId));
+    const bodyMatch = toSearch
+        .filter(
+            (item) => !item.lowerTitle.includes(lowerNeedle) && item.contents.includes(lowerNeedle),
+        )
+        .map((item) => item.id)
+        .sort((a, b) => sortRecipes(recipes[a], recipes[b], actorId));
 
-    // const fuse = new Fuse(toSearch, {
-    //     includeScore: true,
-    //     keys: [
-    //         { name: 'title', weight: 1 },
-    //         { name: 'source', weight: 0.2 },
-    //         { name: 'contents', weight: 0.5 },
-    //     ],
-    // });
-    // return fuse.search(needle);
+    return [titleMatch, bodyMatch];
 
-    // const results = toSearch.map(item => {
-    //     if (item.title.includes(needle)) {
-    //         return {item, score: 1}
-    //     }
-    // })
+    // return exacts
+    //     .sort((a, b) => {
+    //         const aa = a.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
+    //         const ba = b.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
+    //         return ba - aa;
+    //     })
+    //     .map((item) => ({ item }));
 };
 
 const deltaToString = (delta) =>

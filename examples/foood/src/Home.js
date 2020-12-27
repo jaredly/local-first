@@ -93,6 +93,11 @@ const useStyles = makeStyles((theme) => ({
         // textDecorationColor: theme.palette.primary.light,
         // textDecoration: 'underline',
     },
+    rejectedRecipeTitle: {
+        fontStyle: 'italic',
+        textDecoration: 'line-through',
+        textDecorationColor: theme.palette.secondary.light,
+    },
     tagRecipes: {
         fontSize: '80%',
     },
@@ -130,6 +135,27 @@ export const useSetTitle = (title: ?string) => {
     }, [title]);
 };
 
+export const sortRecipes = (recipeA, recipeB, actorId) => {
+    const statusA = recipeA.statuses[actorId];
+    const statusB = recipeB.statuses[actorId];
+    if (statusA === statusB) {
+        return recipeB.updatedDate - recipeA.updatedDate;
+    }
+    if (statusA === 'approved') {
+        return -1;
+    }
+    if (statusB === 'approved') {
+        return 1;
+    }
+    if (statusA === 'rejected') {
+        return 1;
+    }
+    if (statusB === 'rejected') {
+        return -1;
+    }
+    return recipeB.updatedDate - recipeA.updatedDate;
+};
+
 const Home = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
     const match = useRouteMatch();
     const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
@@ -153,11 +179,13 @@ const Home = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
     );
 
     if (match.params.tagid) {
-        const matches = Object.keys(recipes).filter((id) =>
-            recipes[id].trashedDate == null && recipes[id].tags
-                ? recipes[id].tags[match.params.tagid] != null
-                : false,
-        );
+        const matches = Object.keys(recipes)
+            .filter((id) =>
+                recipes[id].trashedDate == null && recipes[id].tags
+                    ? recipes[id].tags[match.params.tagid] != null
+                    : false,
+            )
+            .sort((a, b) => sortRecipes(recipes[a], recipes[b], actorId));
         const selectedTag = tags[match.params.tagid];
         if (!selectedTag) {
             return <div>Tag not found</div>;
