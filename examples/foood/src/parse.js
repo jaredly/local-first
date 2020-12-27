@@ -101,6 +101,17 @@ const parse = (text /*: string*/) => {
     return getNumbers(text);
 };
 
+const detectLinks = (text) => {
+    const rx = /\[\[(?<name>[^\]|]+)\|(?<href>[^\]]+)\]\]/g;
+    const matches = [...text.matchAll(rx)].reverse();
+    return matches.map((match) => [
+        match.index,
+        match[0].length,
+        match.groups.name,
+        { link: match.groups.href },
+    ]);
+};
+
 const Delta = require('quill-delta');
 const rawToDeltas = (text /*:string*/) => {
     let doc = new Delta().insert(text);
@@ -112,6 +123,13 @@ const rawToDeltas = (text /*:string*/) => {
     instructions.forEach((pos) => {
         doc = doc.compose(new Delta().retain(pos).retain(1, { instruction: true }));
     });
+
+    // NOTE: it's very important that links are listed in reverse order
+    const links = detectLinks(text);
+    links.forEach(([index, length, insert, attributes]) => {
+        doc = doc.compose(new Delta().retain(index).delete(length).insert(insert, attributes));
+    });
+
     return doc;
 };
 

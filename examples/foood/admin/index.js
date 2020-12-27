@@ -139,10 +139,14 @@ const main = async () => {
 
     await sync(client, url);
 
-    // const recipesToAdd = {}
+    // STOPSHIP: switch back to random id
+    const deterministicIDs = true;
+
+    let titleIndex = 0;
     let i = 0;
     for (const title of Object.keys(recipes)) {
-        if (!allRecipesByTitle[title]) {
+        titleIndex += 1;
+        if (!allRecipesByTitle[title] || deterministicIDs) {
             if (i++ % 20 == 0) {
                 await sync(client, url);
             }
@@ -156,10 +160,7 @@ const main = async () => {
                     recipes[title].tags[tagId] = Date.now();
                 }
             });
-            // if (Object.keys(recipes[title].tags).length) {
-            //     console.log(title, recipes[title].tags);
-            // }
-            const id = genId();
+            const id = deterministicIDs ? titleIndex.toString().padStart(10, '0') : genId();
             recipes[title].id = id;
             await col.save(id, recipes[title]);
             // recipesToAdd[title] = id
