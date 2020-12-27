@@ -22,6 +22,8 @@ import type { Client, Collection } from '../../../packages/client-bundle';
 
 import Grid from '@material-ui/core/Grid';
 import Autocomplete, { createFilterOptions } from '@material-ui/lab/Autocomplete';
+import Tooltip from './Tooltip';
+
 const filter = createFilterOptions();
 
 const useStyles = makeStyles((theme) => ({
@@ -46,25 +48,6 @@ const useStyles = makeStyles((theme) => ({
         right: 0,
         textAlign: 'center',
         background: theme.palette.background.default,
-    },
-
-    formatTooltip: {
-        padding: '4px 8px',
-        position: 'absolute',
-        borderRadius: 4,
-        zIndex: 1000,
-        backgroundColor: 'white',
-        color: 'black',
-    },
-    formatButton: {
-        backgroundColor: '#aaa',
-        cursor: 'pointer',
-        border: 'none',
-        borderRadius: 4,
-    },
-    formatButtonSelected: {
-        backgroundColor: 'black',
-        color: 'white',
     },
 }));
 
@@ -222,47 +205,6 @@ const DeleteButton = ({ onConfirm }) => {
 //     {format: {bold: true}, title: 'B', selected: formats.bold},
 //     {format: {}}
 // ]
-
-const cx = (...args) => args.filter(Boolean).join(' ');
-
-const Tooltip = ({ data: { selection, formats, bounds, quill }, ingredients, ingredientsCol }) => {
-    const styles = useStyles();
-    return (
-        <div
-            className={styles.formatTooltip}
-            onMouseDown={(evt) => {
-                evt.stopPropagation();
-                evt.preventDefault();
-            }}
-            onClick={(evt) => {
-                evt.stopPropagation();
-                evt.preventDefault();
-            }}
-            onMouseUp={(evt) => {
-                evt.stopPropagation();
-                evt.preventDefault();
-            }}
-            style={{
-                top: bounds.top + bounds.height + 8,
-                left: bounds.left,
-                // width: bounds.width,
-            }}
-        >
-            <button
-                onClick={() => {
-                    quill.format('bold', formats.bold ? false : true);
-                }}
-                className={cx(
-                    styles.formatButton,
-                    formats.bold ? styles.formatButtonSelected : null,
-                )}
-            >
-                B
-            </button>
-            Tooltip: {JSON.stringify(formats)}
-        </div>
-    );
-};
 
 const RecipeEditor = ({
     about,
