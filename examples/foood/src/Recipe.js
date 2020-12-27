@@ -127,7 +127,9 @@ const RecipeView = ({ client, actorId }: { client: Client<*>, actorId: string })
                 ) : null}
                 {renderSource(recipe.about.source)}
                 {renderAuthor(recipe.about.author)}
-                <span>Updated {new Date(recipe.updatedDate).toLocaleDateString()}</span>
+                <span style={{ marginLeft: 16 }}>
+                    Updated {new Date(recipe.updatedDate).toLocaleDateString()}
+                </span>
             </div>
             <div className={styles.status}>
                 {statuses.map((name) => (
@@ -136,11 +138,11 @@ const RecipeView = ({ client, actorId }: { client: Client<*>, actorId: string })
                         variant={status === name ? 'contained' : 'outlined'}
                         color="primary"
                         onClick={async () => {
-                            await col.setAttribute(
-                                recipe.id,
-                                ['statuses', actorId],
-                                status === name ? null : name,
-                            );
+                            if (status === name) {
+                                await col.clearAttribute(recipe.id, ['statuses', actorId]);
+                            } else {
+                                await col.setAttribute(recipe.id, ['statuses', actorId], name);
+                            }
                         }}
                         style={{ marginRight: 8 }}
                     >

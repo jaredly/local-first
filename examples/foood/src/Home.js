@@ -115,12 +115,24 @@ const useStyles = makeStyles((theme) => ({
     // },
 }));
 
-const Tag = ({ tag, count }: { tag: TagT, count: number }) => {
+const Tag = ({
+    tag,
+    count,
+    approvedCount,
+}: {
+    approvedCount: number,
+    tag: TagT,
+    count: number,
+}) => {
     const styles = useStyles();
     return (
         <Link to={'/tag/' + tag.id} className={styles.tag}>
             {tag.text}
-            <div className={styles.tagRecipes}>{count} recipes</div>
+            <div className={styles.tagRecipes}>
+                {approvedCount ? `${approvedCount} recipes` : ''}
+                {approvedCount && count ? ', ' : ''}
+                {count > approvedCount ? `${count - approvedCount} pending` : ''}
+            </div>
         </Link>
     );
 };
@@ -169,8 +181,24 @@ const Home = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
             tagCounts[tid] = (tagCounts[tid] || 0) + 1;
         });
     });
+    const approvedTagCounts = {};
+    Object.keys(recipes).forEach((id) => {
+        if (
+            recipes[id].trashedDate != null ||
+            !recipes[id].tags ||
+            recipes[id].statuses[actorId] !== 'approved'
+        )
+            return;
+        Object.keys(recipes[id].tags).forEach((tid) => {
+            approvedTagCounts[tid] = (approvedTagCounts[tid] || 0) + 1;
+        });
+    });
 
-    const tagIds = Object.keys(tags).sort((a, b) => (tagCounts[b] || 0) - (tagCounts[a] || 0));
+    const tagIds = Object.keys(tags).sort((a, b) =>
+        approvedTagCounts[a] === approvedTagCounts[b]
+            ? (tagCounts[b] || 0) - (tagCounts[a] || 0)
+            : (approvedTagCounts[b] || 0) - (approvedTagCounts[a] || 0),
+    );
 
     useSetTitle(
         match.params.tagid && tags[match.params.tagid]
@@ -224,7 +252,12 @@ const Home = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
             <div className={styles.tags}>
                 {tagIds.length === 0 ? 'No tags defined' : null}
                 {tagIds.map((id) => (
-                    <Tag key={id} count={tagCounts[id]} tag={tags[id]} />
+                    <Tag
+                        key={id}
+                        approvedCount={approvedTagCounts[id] || 0}
+                        count={tagCounts[id] || 0}
+                        tag={tags[id]}
+                    />
                 ))}
             </div>
             {/* {Object.keys(recipes).map((id) => (

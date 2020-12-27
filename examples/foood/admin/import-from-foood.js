@@ -162,7 +162,7 @@ const createDeltas = (recipe, ingredientsById) => {
     // STOPSHIP: handle headers!
     const deltas = [];
     if (recipe.description) {
-        deltas.push({ insert: recipe.description });
+        deltas.push({ insert: recipe.description + '\n\n' });
     }
     if (recipe.ingredients.length) {
         deltas.push({ insert: 'Ingredients' }, { insert: '\n', attributes: { header: 3 } });

@@ -43,7 +43,11 @@ const EditorView = ({ client, actorId }: { client: Client<*>, actorId: string })
                     }
                 }
                 if (status != recipe.statuses[actorId]) {
-                    await col.setAttribute(recipe.id, ['statuses', actorId], status);
+                    if (status == null) {
+                        await col.clearAttribute(recipe.id, ['statuses', actorId]);
+                    } else {
+                        await col.setAttribute(recipe.id, ['statuses', actorId], status);
+                    }
                 }
                 if (
                     !deepEqual(meta, recipe.contents.meta) ||
