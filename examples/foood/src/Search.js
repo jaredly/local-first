@@ -190,42 +190,44 @@ const runSearch = (recipes, needle) => {
     }
     const lowerNeedle = needle.toLowerCase();
 
-    const toSearch = Object.keys(recipes).map((id) => ({
-        id: id,
-        title: recipes[id].about.title,
-        source: recipes[id].about.source,
-        contents: deltaToString(recipes[id].contents.text),
-    }));
+    const toSearch = Object.keys(recipes)
+        .filter((id) => recipes[id].trashedDate == null)
+        .map((id) => ({
+            id: id,
+            title: recipes[id].about.title,
+            source: recipes[id].about.source,
+            contents: deltaToString(recipes[id].contents.text),
+        }));
 
     // TODO(jared): Maybe bring this back? idk what I really want.
-    // const exacts =
-    //     // whitespace around term breaks out into fuzzy
-    //     lowerNeedle.trim() === lowerNeedle
-    //         ? toSearch.filter(
-    //               (item) =>
-    //                   item.title.toLowerCase().includes(lowerNeedle) ||
-    //                   item.contents.toLowerCase().includes(lowerNeedle),
-    //           )
-    //         : [];
+    const exacts =
+        // whitespace around term breaks out into fuzzy
+        lowerNeedle.trim() === lowerNeedle
+            ? toSearch.filter(
+                  (item) =>
+                      item.title.toLowerCase().includes(lowerNeedle) ||
+                      item.contents.toLowerCase().includes(lowerNeedle),
+              )
+            : [];
     // if (exacts.length) {
-    //     return exacts
-    //         .sort((a, b) => {
-    //             const aa = a.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
-    //             const ba = b.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
-    //             return ba - aa;
-    //         })
-    //         .map((item) => ({ item }));
+    return exacts
+        .sort((a, b) => {
+            const aa = a.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
+            const ba = b.title.toLowerCase().includes(lowerNeedle) ? 1 : 0;
+            return ba - aa;
+        })
+        .map((item) => ({ item }));
     // }
 
-    const fuse = new Fuse(toSearch, {
-        includeScore: true,
-        keys: [
-            { name: 'title', weight: 1 },
-            { name: 'source', weight: 0.2 },
-            { name: 'contents', weight: 0.5 },
-        ],
-    });
-    return fuse.search(needle);
+    // const fuse = new Fuse(toSearch, {
+    //     includeScore: true,
+    //     keys: [
+    //         { name: 'title', weight: 1 },
+    //         { name: 'source', weight: 0.2 },
+    //         { name: 'contents', weight: 0.5 },
+    //     ],
+    // });
+    // return fuse.search(needle);
 
     // const results = toSearch.map(item => {
     //     if (item.title.includes(needle)) {

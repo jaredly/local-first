@@ -169,12 +169,36 @@ const statuses: Array<RecipeStatus> = ['approved', 'rejected'];
 // about: {title, author, source, image}
 // contents: {}
 
+const DeleteButton = ({ onConfirm }) => {
+    const [really, setReally] = React.useState(false);
+    if (really) {
+        return (
+            <div>
+                <Button color="secondary" onClick={() => setReally(false)}>
+                    Never mind
+                </Button>
+                <Button color="primary" onClick={() => onConfirm()}>
+                    Really delete?
+                </Button>
+            </div>
+        );
+    }
+    return (
+        <div>
+            <Button color="primary" onClick={() => setReally(true)}>
+                Delete Recipe
+            </Button>
+        </div>
+    );
+};
+
 const RecipeEditor = ({
     about,
     meta,
     text: initialText,
     onSave,
     onCancel,
+    onDelete,
     status: initialStatus,
     client,
     tags,
@@ -185,6 +209,7 @@ const RecipeEditor = ({
     status: ?RecipeStatus,
     onSave: (RecipeAbout, RecipeMeta, RecipeText, ?RecipeStatus, Array<string>) => mixed,
     onCancel: () => mixed,
+    onDelete?: ?() => mixed,
     client: Client<*>,
     tags: { [key: string]: number },
 }) => {
@@ -496,6 +521,7 @@ const RecipeEditor = ({
                     setText(JSON.parse(evt.target.value));
                 }}
             /> */}
+            {onDelete != null ? <DeleteButton onConfirm={onDelete} /> : null}
             <div className={styles.buttons}>
                 <Button
                     color="primary"

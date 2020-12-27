@@ -129,7 +129,7 @@ const Home = ({ client }: { client: Client<*> }) => {
 
     const tagCounts = {};
     Object.keys(recipes).forEach((id) => {
-        if (!recipes[id].tags) return;
+        if (recipes[id].trashedDate != null || !recipes[id].tags) return;
         Object.keys(recipes[id].tags).forEach((tid) => {
             tagCounts[tid] = (tagCounts[tid] || 0) + 1;
         });
@@ -145,7 +145,9 @@ const Home = ({ client }: { client: Client<*> }) => {
 
     if (match.params.tagid) {
         const matches = Object.keys(recipes).filter((id) =>
-            recipes[id].tags ? recipes[id].tags[match.params.tagid] != null : false,
+            recipes[id].trashedDate == null && recipes[id].tags
+                ? recipes[id].tags[match.params.tagid] != null
+                : false,
         );
         const selectedTag = tags[match.params.tagid];
         if (!selectedTag) {
