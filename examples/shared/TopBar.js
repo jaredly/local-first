@@ -14,7 +14,7 @@ import type { Client, SyncStatus } from '../../packages/client-bundle';
 import { useSyncStatus } from '../../packages/client-react';
 
 type Props = {
-    client: Client<SyncStatus>,
+    client: Client<*>,
     openMenu: () => void,
     title: string,
     icons?: React.Node,

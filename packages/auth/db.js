@@ -63,12 +63,20 @@ export const createTables = (db: DB) => {
 // };
 
 export type UserInfo = {
+    id: string,
     name: string,
     email: string,
     createdDate: number,
 };
 
-export type UserInput = { info: UserInfo, password: string };
+export type UserInput = {
+    info: {
+        name: string,
+        email: string,
+        createdDate: number,
+    },
+    password: string,
+};
 export type User = { info: UserInfo, passwordHash: string };
 
 export const createUser = (db: DB, { info: { name, email, createdDate }, password }: UserInput) => {
@@ -101,6 +109,7 @@ export const loginUser = (
         return {
             id: result.id,
             info: {
+                id: result.id,
                 name: result.name,
                 email: result.email,
                 createdDate: result.createdDate,
@@ -194,6 +203,7 @@ export const validateSessionToken = (
     return {
         id: session.userId,
         user: {
+            id: session.userId,
             name: user.name,
             email: user.email,
             createdDate: user.createdDate,

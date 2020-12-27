@@ -97,8 +97,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
 
     const pathPrefix = match.path == '/' ? '' : match.path;
 
-    // STOPSHIP: instead of the email, use the userId
-    const actorId = authData ? authData.auth.user.email : 'main';
+    const actorId = authData ? '' + authData.auth.user.id : 'main';
 
     return (
         <div>

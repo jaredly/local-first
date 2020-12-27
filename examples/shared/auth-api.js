@@ -2,7 +2,7 @@
 
 const listeners = [];
 
-export type Data = { user: { name: string, email: string }, token: string };
+export type Data = { user: { name: string, email: string, id: string }, token: string };
 export type Status = false | null | Data;
 
 export const initialStatus = (storageKey: string): Status => {

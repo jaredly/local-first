@@ -83,6 +83,7 @@ export type IngredientT = {
     name: string,
     alternateNames: Array<string>,
     kinds: Array<string>, // like "nut" or "flour" probably. Do I normalize these? maybe not just now.
+    densities: {[variant: string]: number}
 }
 
 export type CommentT = {
