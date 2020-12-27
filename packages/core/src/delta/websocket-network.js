@@ -23,6 +23,9 @@ const reconnectingSocket = (
                     let opened = false;
                     let closed = false;
                     socket.addEventListener('open', () => {
+                        if (state.socket) {
+                            state.socket.close();
+                        }
                         state.socket = socket;
                         setTimeout(() => {
                             if (!closed) {
@@ -34,6 +37,10 @@ const reconnectingSocket = (
                         }, 50);
                     });
                     socket.addEventListener('close', () => {
+                        if (state.socket && state.socket !== socket) {
+                            // Some other socket has superceeded this one
+                            return;
+                        }
                         updateStatus({ status: 'disconnected' });
                         closed = true;
                         if (opened) {

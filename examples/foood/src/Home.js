@@ -44,13 +44,10 @@ const useStyles = makeStyles((theme) => ({
     },
     recipe: {
         position: 'relative',
-        width: 180,
-        height: 100,
+        width: 270,
+        height: 200,
         color: 'inherit',
-        // boxShadow: '0 0 2px white',
-        border: '1px solid #aaa',
-        padding: 16,
-        margin: 2,
+        margin: theme.spacing(1),
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -58,19 +55,25 @@ const useStyles = makeStyles((theme) => ({
         backgroundColor: 'rgb(100,100,100)',
         // borderRadius: 4,
     },
-    recipeWithImage: {
-        position: 'relative',
-        width: 180,
-        height: 100,
-        color: 'inherit',
-        // boxShadow: '0 0 2px white',
-        // border: '1px solid #aaa',
-        margin: 2,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        textDecoration: 'none',
+    approvedRecipe: {
+        outline: `${theme.spacing(0.5)}px solid ${theme.palette.primary.light}`,
+        // border: `${theme.spacing(1)}px solid ${theme.palette.primary.light}`,
     },
+    // recipeWithoutImage: {
+    //     padding: 16,
+    // },
+    // recipeWithImage: {
+    //     // position: 'relative',
+    //     // backgroundColor: 'rgb(100,100,100)',
+    //     // width: 300,
+    //     // height: 200,
+    //     // color: 'inherit',
+    //     // margin: 2,
+    //     // display: 'flex',
+    //     // flexDirection: 'column',
+    //     // justifyContent: 'space-between',
+    //     // textDecoration: 'none',
+    // },
     recipeImage: {
         width: '100%',
         height: '100%',
@@ -83,6 +86,12 @@ const useStyles = makeStyles((theme) => ({
         right: 0,
         backgroundColor: 'rgba(50,50,50,0.7)',
         padding: theme.spacing(1),
+    },
+    approvedRecipeTitle: {
+        // backgroundColor: theme.palette.primary.dark,
+        // color: theme.palette.primary.lighdarkt,
+        // textDecorationColor: theme.palette.primary.light,
+        // textDecoration: 'underline',
     },
     tagRecipes: {
         fontSize: '80%',
@@ -121,7 +130,7 @@ export const useSetTitle = (title: ?string) => {
     }, [title]);
 };
 
-const Home = ({ client }: { client: Client<*> }) => {
+const Home = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
     const match = useRouteMatch();
     const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
     const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
@@ -174,7 +183,7 @@ const Home = ({ client }: { client: Client<*> }) => {
                         //     {/* {recipes[id].contents.totalTime}
                         //     {recipes[id].status} */}
                         // </Link>
-                        <RecipeBlock recipe={recipes[id]} tags={tags} key={id} />
+                        <RecipeBlock actorId={actorId} recipe={recipes[id]} tags={tags} key={id} />
                     ))}
                 </div>
             </div>
@@ -201,10 +210,14 @@ const Home = ({ client }: { client: Client<*> }) => {
     );
 };
 
+const cx = (...args) => args.filter(Boolean).join(' ');
+
 export const RecipeBlock = ({
+    actorId,
     recipe,
     tags,
 }: {
+    actorId: string,
     recipe: RecipeT,
     tags: { [key: string]: TagT },
 }) => {
@@ -212,18 +225,32 @@ export const RecipeBlock = ({
 
     const href = `/recipe/${recipe.id}/title/${escapeTitle(recipe.about.title)}`;
 
+    const status = recipe.statuses[actorId];
+
     if (recipe.about.image) {
         return (
-            <Link to={href} className={styles.recipeWithImage}>
+            <Link
+                to={href}
+                className={cx(styles.recipe, status ? styles[status + 'Recipe'] : null)}
+            >
                 <img src={recipe.about.image} className={styles.recipeImage} />
-                <div className={styles.recipeTitle}>{recipe.about.title}</div>
+                <div
+                    className={cx(
+                        styles.recipeTitle,
+                        status ? styles[status + 'RecipeTitle'] : null,
+                    )}
+                >
+                    {recipe.about.title}
+                </div>
             </Link>
         );
     }
 
     return (
-        <Link to={href} className={styles.recipe}>
-            <div className={styles.recipeTitle}>{recipe.about.title}</div>
+        <Link to={href} className={cx(styles.recipe, status ? styles[status + 'Recipe'] : null)}>
+            <div className={cx(styles.recipeTitle, status ? styles[status + 'RecipeTitle'] : null)}>
+                {recipe.about.title}
+            </div>
         </Link>
     );
 };

@@ -187,25 +187,25 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                         <Search client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/tag/:tagid`}>
-                        <Home client={client} />
+                        <Home actorId={actorId} client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id/title/:title`}>
-                        <RecipeView client={client} />
+                        <RecipeView actorId={actorId} client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id/edit`}>
                         <EditorView actorId={actorId} client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id`}>
-                        <RecipeView client={client} />
+                        <RecipeView actorId={actorId} client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/latest`}>
-                        <Latest client={client} />
+                        <Latest actorId={actorId} client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/debug`}>
                         <Debug client={client} />
                     </Route>
                     <Route path={`${pathPrefix}`}>
-                        <Home client={client} />
+                        <Home actorId={actorId} client={client} />
                     </Route>
                 </RouteSwitch>
             </AppShell>

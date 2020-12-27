@@ -1,6 +1,7 @@
 // @flow
 import * as React from 'react';
-import type { RecipeT, TagT } from '../collections';
+import Button from '@material-ui/core/Button';
+import type { RecipeT, TagT, RecipeStatus } from '../collections';
 import type { Client, Collection } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
 import { Route, Link, useRouteMatch, useParams, useHistory } from 'react-router-dom';
@@ -68,7 +69,9 @@ const useSetTitle = (title) => {
     }, [title]);
 };
 
-const RecipeView = ({ client }: { client: Client<*> }) => {
+const statuses: Array<RecipeStatus> = ['approved', 'rejected'];
+
+const RecipeView = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
     const match = useRouteMatch();
     const { id } = match.params;
     const [col, recipe] = useItem<RecipeT, _>(React, client, 'recipes', id);
@@ -82,6 +85,9 @@ const RecipeView = ({ client }: { client: Client<*> }) => {
     if (!recipe) {
         return <div>Recipe not found</div>;
     }
+
+    const status = recipe.statuses[actorId];
+
     return (
         <div className={styles.container}>
             {recipe.about.image ? (
@@ -121,6 +127,25 @@ const RecipeView = ({ client }: { client: Client<*> }) => {
                 ) : null}
                 {renderSource(recipe.about.source)}
                 {renderAuthor(recipe.about.author)}
+            </div>
+            <div className={styles.status}>
+                {statuses.map((name) => (
+                    <Button
+                        key={name}
+                        variant={status === name ? 'contained' : 'outlined'}
+                        color="primary"
+                        onClick={async () => {
+                            await col.setAttribute(
+                                recipe.id,
+                                ['statuses', actorId],
+                                status === name ? null : name,
+                            );
+                        }}
+                        style={{ marginRight: 8 }}
+                    >
+                        {name}
+                    </Button>
+                ))}
             </div>
             <div className={styles.text}>{renderQuill(recipe.contents.text)}</div>
         </div>

@@ -306,7 +306,13 @@ const RecipeEditor = ({
                                         if (ovenTemp) {
                                             setOvenTemp(ovenTemp);
                                         }
-                                        setText({ ops: contents.concat(text.ops) });
+                                        if (
+                                            !(text.ops.length === 1 && text.ops[0].insert === '\n')
+                                        ) {
+                                            contents.push({ insert: '\n\n----\n\n' });
+                                            contents.push(...text.ops);
+                                        }
+                                        setText({ ops: contents });
                                     },
                                     (err) => console.error(err),
                                 );

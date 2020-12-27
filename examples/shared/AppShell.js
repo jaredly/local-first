@@ -39,7 +39,7 @@ const AppShell = ({
         <React.Fragment>
             <TopBar openMenu={openMenu} client={client} title={title} icons={topIcons} />
             {renderDrawer(menu, () => setMenu(false))}
-            <Container maxWidth={noContainer ? undefined : 'sm'} className={styles.container}>
+            <Container maxWidth={noContainer ? undefined : 'md'} className={styles.container}>
                 {children}
             </Container>
         </React.Fragment>
