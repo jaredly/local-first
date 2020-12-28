@@ -76,6 +76,40 @@ const guessIngredient = (ingredients, quill, selection) => {
     return best;
 };
 
+const expandSelection = (contents, selection) => {
+    let x = 0;
+    let start = null;
+    let end = null;
+    contents.ops.some((delta) => {
+        if (x < selection.index) {
+            if (!delta.attributes || !delta.attributes.ingredientLink) {
+                start = null;
+            } else if (!start || start.ingredient !== delta.attributes.ingredientLink) {
+                start = { x, ingredient: delta.attributes.ingredientLink };
+            }
+        }
+        x += typeof delta.insert === 'string' ? delta.insert.length : 1;
+        if (x > selection.index) {
+            if (!start) {
+                console.log('no ingredient at selection?');
+                return true; // to stop the iteration
+            }
+            if (end == null) {
+                end = start.x;
+            }
+            if (!delta.attributes || delta.attributes.ingredientLink !== start.ingredient) {
+                return true;
+            }
+            end = x;
+        }
+    });
+    console.log('Ok expanded', start, end);
+    if (!start || !end) {
+        return selection;
+    }
+    return { index: start.x, length: end - start.x };
+};
+
 const Tooltip = ({
     quill,
     // data: { selection, formats, bounds, quill },
@@ -154,6 +188,43 @@ const Tooltip = ({
                 // width: bounds.width,
             }}
         >
+            {formats.ingredientLink || formats.ingredient ? (
+                <IngredientAutofill
+                    onClear={() => {
+                        const expandedSelection = expandSelection(quill.getContents(), selection);
+                        // TODO: expand selection to encompass the whole contained thing please
+                        quill.formatText(
+                            expandedSelection.index,
+                            expandedSelection.length,
+                            'ingredientLink',
+                            false,
+                        );
+                    }}
+                    ingredients={ingredients}
+                    ingredientsCol={ingredientsCol}
+                    selectedText={text}
+                    selectedId={formats.ingredientLink}
+                    onSelect={(ingredientId) => {
+                        const expandedSelection = expandSelection(quill.getContents(), selection);
+                        quill.formatText(
+                            expandedSelection.index,
+                            expandedSelection.length,
+                            'ingredientLink',
+                            ingredientId,
+                        );
+                    }}
+                    onCreate={(text) => {
+                        console.log('Not yet implemented sorry');
+                    }}
+                    onBlur={() => {
+                        // ok close out maybe?
+                    }}
+                    onFocus={() => {
+                        // prevent from closing out
+                    }}
+                />
+            ) : null}
+
             {selection.length > 0 ? (
                 <React.Fragment>
                     <button
@@ -244,41 +315,6 @@ const Tooltip = ({
                     ))}
                     <span style={{ display: 'inline-block', width: 4 }} />
                 </React.Fragment>
-            ) : null}
-
-            {formats.ingredientLink || formats.ingredient ? (
-                <IngredientAutofill
-                    onClear={() => {
-                        // TODO: expand selection to encompass the whole contained thing please
-                        quill.formatText(
-                            selection.index,
-                            selection.length,
-                            'ingredientLink',
-                            false,
-                        );
-                    }}
-                    ingredients={ingredients}
-                    ingredientsCol={ingredientsCol}
-                    selectedText={text}
-                    selectedId={formats.ingredientLink}
-                    onSelect={(ingredientId) => {
-                        quill.formatText(
-                            selection.index,
-                            selection.length,
-                            'ingredientLink',
-                            ingredientId,
-                        );
-                    }}
-                    onCreate={(text) => {
-                        console.log('Not yet implemented sorry');
-                    }}
-                    onBlur={() => {
-                        // ok close out maybe?
-                    }}
-                    onFocus={() => {
-                        // prevent from closing out
-                    }}
-                />
             ) : null}
         </div>
     );
