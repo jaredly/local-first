@@ -139,6 +139,8 @@ const Tooltip = ({
         return null;
     }
 
+    console.log('RENDER TEXT', text);
+
     return (
         <div
             className={styles.formatTooltip}
@@ -244,10 +246,8 @@ const Tooltip = ({
                 </React.Fragment>
             ) : null}
 
-            {formats.ingredientLink ? (
-                <IngredientSelected
-                    ingredients={ingredients}
-                    id={formats.ingredientLink}
+            {formats.ingredientLink || formats.ingredient ? (
+                <IngredientAutofill
                     onClear={() => {
                         // TODO: expand selection to encompass the whole contained thing please
                         quill.formatText(
@@ -257,9 +257,6 @@ const Tooltip = ({
                             false,
                         );
                     }}
-                />
-            ) : formats.ingredient ? (
-                <IngredientAutofill
                     ingredients={ingredients}
                     ingredientsCol={ingredientsCol}
                     selectedText={text}
@@ -334,88 +331,102 @@ const IngredientSelected = ({ ingredients, id, onClear }) => {
     );
 };
 
-const IngredientAutofill = ({ ingredients, ingredientsCol, selectedText, onSelect, onCreate }) => {
-    const [text, setText] = React.useState(selectedText);
-    const oldSelectedText = React.useRef(selectedText);
-    React.useEffect(() => {
-        if (selectedText !== oldSelectedText.current) {
-            oldSelectedText.current = selectedText;
-            setText(selectedText);
-        }
-    }, [selectedText]);
+const IngredientAutofill = ({
+    ingredients,
+    ingredientsCol,
+    selectedText,
+    selectedId,
+    onSelect,
+    onCreate,
+    onClear,
+}) => {
+    const inputText =
+        selectedId && ingredients[selectedId] ? ingredients[selectedId].name : selectedText;
+
+    const [text, setText] = React.useState(inputText);
+    const oldSelectedText = React.useRef(inputText);
+    // console.log('RENDER', text, selectedText, oldSelectedText.current);
+    if (oldSelectedText.current !== inputText) {
+        oldSelectedText.current = inputText;
+        setText(inputText);
+    }
 
     return (
-        <Autocomplete
-            id="tags-standard"
-            options={Object.keys(ingredients).map((k) => ingredients[k])}
-            // getOptionLabel={(option) => option.text}
-            selectOnFocus
-            clearOnBlur
-            // onFocus={() => setFocused(true)}
-            // onBlur={() => setFocused(false)}
-            style={{ minWidth: 200 }}
-            handleHomeEndKeys
-            size="small"
-            renderOption={(option) => option.name || 'WAT'}
-            value={
-                null
-                //   guessIngredient(ingredients, quill, selection)
-            }
-            // inputValue={
-            //     formats.ingredientLink ? '' : quill.getText(selection.index, selection.length)
-            // }
-            freeSolo
-            filterOptions={(options, params) => {
-                const filtered = filter(options, params);
+        <div>
+            <Autocomplete
+                options={Object.keys(ingredients).map((k) => ingredients[k])}
+                // getOptionLabel={(option) => option.text}
+                selectOnFocus
+                clearOnBlur
+                // onFocus={() => setFocused(true)}
+                // onBlur={() => setFocused(false)}
+                style={{ minWidth: 200 }}
+                handleHomeEndKeys
+                size="small"
+                renderOption={(option) => option.name || 'WAT'}
+                value={selectedId ? ingredients[selectedId] : null}
+                inputValue={text}
+                onInputChange={(evt, value, reason) => {
+                    if (reason === 'input') {
+                        console.log('I changed I guess', value);
 
-                if (params.inputValue !== '') {
-                    filtered.push({
-                        inputValue: params.inputValue,
-                        name: `Add "${params.inputValue}"`,
-                    });
-                }
+                        setText(value);
+                    }
+                }}
+                freeSolo
+                filterOptions={(options, params) => {
+                    const filtered = filter(options, params);
 
-                return filtered;
-            }}
-            getOptionLabel={(option) => {
-                // e.g value selected with enter, right from the input
-                if (typeof option === 'string') {
-                    return option;
-                }
-                if (option.inputValue) {
-                    return option.inputValue;
-                }
-                return option.name;
-            }}
-            onChange={(event, newValue) => {
-                // console.log('onchange', newValue, selection);
-                if (!newValue) {
-                    return;
-                    // return quill.formatText(
-                    //     selection.index,
-                    //     selection.length,
-                    //     'ingredientLink',
-                    //     false,
-                    // );
-                }
-                if (newValue && (typeof newValue === 'string' || newValue.inputValue)) {
-                    // const text = typeof newValue === 'string' ? newValue : newValue.inputValue;
-                    // setEditTags(newValue.slice(0, -1).concat({ text }));
-                    console.log('need to check with the boss');
-                    return;
-                }
-                onSelect(newValue.id);
-                // quill.formatText(selection.index, selection.length, 'ingredientLink', newValue.id);
-            }}
-            renderInput={(params) => (
-                <TextField
-                    {...params}
-                    variant="outlined"
-                    label="Ingredient"
-                    placeholder="Ingredient"
-                />
-            )}
-        />
+                    if (params.inputValue !== '') {
+                        filtered.push({
+                            inputValue: params.inputValue,
+                            name: `Add "${params.inputValue}"`,
+                        });
+                    }
+
+                    return filtered;
+                }}
+                getOptionLabel={(option) => {
+                    // e.g value selected with enter, right from the input
+                    if (typeof option === 'string') {
+                        return option;
+                    }
+                    if (option.inputValue) {
+                        return option.inputValue;
+                    }
+                    return option.name;
+                }}
+                onChange={(event, newValue) => {
+                    // console.log('onchange', newValue, selection);
+                    if (!newValue) {
+                        onClear();
+                        return;
+                        // return quill.formatText(
+                        //     selection.index,
+                        //     selection.length,
+                        //     'ingredientLink',
+                        //     false,
+                        // );
+                    }
+                    if (newValue && (typeof newValue === 'string' || newValue.inputValue)) {
+                        // const text = typeof newValue === 'string' ? newValue : newValue.inputValue;
+                        // setEditTags(newValue.slice(0, -1).concat({ text }));
+                        console.log('need to check with the boss');
+                        return;
+                    }
+                    onSelect(newValue.id);
+                    // quill.formatText(selection.index, selection.length, 'ingredientLink', newValue.id);
+                }}
+                renderInput={(params) => (
+                    <TextField
+                        {...params}
+                        variant="outlined"
+                        label="Ingredient"
+                        placeholder="Ingredient"
+                    />
+                )}
+            />
+        </div>
     );
 };
 
