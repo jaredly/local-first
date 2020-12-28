@@ -242,9 +242,9 @@ const RecipeEditor = ({
     const [editTags, setEditTags] = React.useState<Array<{ id: string } | { text: string }>>(
         Object.keys(tags).map((id) => ({ id })),
     );
-    const [showTooltip, setShowTooltip] = React.useState(null);
+    // const [showTooltip, setShowTooltip] = React.useState(null);
 
-    const [ingredients, ingredientsCol] = useCollection<IngredientT, _>(
+    const [ingredientsCol, ingredients] = useCollection<IngredientT, _>(
         React,
         client,
         'ingredients',
@@ -258,25 +258,6 @@ const RecipeEditor = ({
     const quillRefGet = React.useCallback((node) => {
         quillRef.current = node;
         window.quill = node;
-        if (node) {
-            node.on('selection-change', (selection) => {
-                if (!selection) {
-                    return setShowTooltip(null);
-                }
-                const formats = node.getFormat(selection.index, selection.length);
-                const bounds = node.getBounds(selection.index, selection.length);
-                setShowTooltip({ selection, formats, bounds, quill: node });
-            });
-            node.on('text-change', () => {
-                const selection = node.getSelection();
-                if (!selection) {
-                    return setShowTooltip(null);
-                }
-                const formats = node.getFormat(selection.index, selection.length);
-                const bounds = node.getBounds(selection.index, selection.length);
-                setShowTooltip({ selection, formats, bounds, quill: node });
-            });
-        }
     }, []);
     return (
         <div className={styles.container}>
@@ -565,13 +546,13 @@ const RecipeEditor = ({
                     innerRef={quillRefGet}
                     config={quillConfig}
                 />
-                {showTooltip ? (
-                    <Tooltip
-                        data={showTooltip}
-                        ingredients={ingredients}
-                        ingredientsCol={ingredientsCol}
-                    />
-                ) : null}
+                {/* {showTooltip ? ( */}
+                <Tooltip
+                    quill={quillRef.current}
+                    ingredients={ingredients}
+                    ingredientsCol={ingredientsCol}
+                />
+                {/* ) : null} */}
             </div>
             {onDelete != null ? <DeleteButton onConfirm={onDelete} /> : null}
             <div className={styles.buttons}>

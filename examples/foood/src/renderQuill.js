@@ -244,7 +244,10 @@ const Header = ({ children, type }) => {
     if (type.header === 3) {
         return <h3>{children}</h3>;
     }
-    return <h4>{children}</h4>;
+    if (type.header === 4) {
+        return <h4>{children}</h4>;
+    }
+    return <h5>{children}</h5>;
 };
 
 const componentForFormat = (format: ?Format) => {

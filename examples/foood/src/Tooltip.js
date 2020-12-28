@@ -31,88 +31,98 @@ const useStyles = makeStyles((theme) => ({
         position: 'absolute',
         borderRadius: 4,
         zIndex: 1000,
-        backgroundColor: 'rgba(255,255,255,0.9)',
-        color: 'black',
+        // backgroundColor: 'rgba(255,255,255,0.9)',
+        backgroundColor: 'black',
+        // color: 'black',
     },
     formatButton: {
         fontSize: 'inherit',
+        color: 'inherit',
         // backgroundColor: '#ddd',
         backgroundColor: 'transparent',
-        border: '1px solid black',
+        border: '1px solid white',
         cursor: 'pointer',
         // border: 'none',
         borderRadius: 4,
     },
     formatButtonSelected: {
-        backgroundColor: 'black',
-        color: 'white',
+        backgroundColor: 'white',
+        color: 'black',
     },
 }));
 
-// <Autocomplete
-//     multiple
-//     id="tags-standard"
-//     options={Object.keys(allTags).map((k) => allTags[k])}
-//     // getOptionLabel={(option) => option.text}
-//     selectOnFocus
-//     clearOnBlur
-//     handleHomeEndKeys
-//     renderOption={(option) => option.text}
-//     value={
-//         editTags
-//             .map((t) => (typeof t.id === 'string' ? allTags[t.id] : t))
-//             .filter(Boolean)
-//         // editTags.filter((t) => !!allTags[t]).map((k) => allTags[k])
-//     }
-//     freeSolo
-//     filterOptions={(options, params) => {
-//         const filtered = filter(options, params);
-
-//         if (params.inputValue !== '') {
-//             filtered.push({
-//                 inputValue: params.inputValue,
-//                 text: `Add "${params.inputValue}"`,
-//             });
-//         }
-
-//         return filtered;
-//     }}
-//     getOptionLabel={(option) => {
-//         // e.g value selected with enter, right from the input
-//         if (typeof option === 'string') {
-//             return option;
-//         }
-//         if (option.inputValue) {
-//             return option.inputValue;
-//         }
-//         return option.text;
-//     }}
-//     onChange={(event, newValue) => {
-//         const added = newValue[newValue.length - 1];
-
-//         if ((added && typeof added === 'string') || added.inputValue) {
-//             const text = typeof added === 'string' ? added : added.inputValue;
-//             setEditTags(newValue.slice(0, -1).concat({ text }));
-//             return;
-//         }
-//         setEditTags(newValue);
-//     }}
-//     renderInput={(params) => (
-//         <TextField {...params} variant="outlined" label="Tags" placeholder="Tags" />
-//     )}
-// />
-
 const cx = (...args) => args.filter(Boolean).join(' ');
 
+const guessIngredient = (ingredients, quill, selection) => {
+    const text = quill.getText(selection.index, selection.length);
+    const needle = text.toLowerCase();
+    let best = null;
+    Object.keys(ingredients).forEach((id) => {
+        if (ingredients[id].name.toLowerCase() === needle) {
+            best = ingredients[id];
+        } else if (
+            ingredients[id].name.toLowerCase().includes(needle) &&
+            (!best || best.name.length > ingredients[id].name.length)
+        ) {
+            best = ingredients[id];
+        }
+    });
+    return best;
+};
+
 const Tooltip = ({
-    data: { selection, formats, bounds, quill },
+    quill,
+    // data: { selection, formats, bounds, quill },
     ingredients,
     ingredientsCol,
 }: *) => {
+    const [selectionData, setSelectionData] = React.useState(null);
+    const [show, setShow] = React.useState(false);
+    const dataRef = React.useRef(null);
+    dataRef.current = selectionData;
+
+    const [focused, setFocused] = React.useState(false);
+
+    React.useEffect(() => {
+        if (quill) {
+            quill.on('selection-change', (selection) => {
+                if (!selection) {
+                    setTimeout(() => {
+                        // TODO if we're not focused, then setShow(false)
+                    }, 10);
+                    return;
+                }
+                const formats = quill.getFormat(selection.index, selection.length);
+                const bounds = quill.getBounds(selection.index, selection.length);
+                setSelectionData({ selection, formats, bounds });
+                setShow(true);
+            });
+            quill.on('text-change', () => {
+                const selection =
+                    quill.getSelection() || (dataRef.current ? dataRef.current.selection : null);
+                if (!selection) {
+                    return;
+                }
+                const formats = quill.getFormat(selection.index, selection.length);
+                const bounds = quill.getBounds(selection.index, selection.length);
+                setSelectionData({ selection, formats, bounds });
+                setShow(true);
+            });
+        }
+    }, [quill]);
+
     const styles = useStyles();
+
+    if (!selectionData) {
+        return null;
+    }
+
+    const { selection, formats, bounds } = selectionData;
+
     if (selection.length === 0 && !formats.link && !formats.ingredientLink) {
         return null;
     }
+
     return (
         <div
             className={styles.formatTooltip}
@@ -193,7 +203,7 @@ const Tooltip = ({
                             style={{ width: '1em', height: '1em', marginBottom: -2 }}
                         />
                     </button>
-                    {[1, 2, 3].map((h) => (
+                    {[4, 3, 2, 1].map((h) => (
                         <React.Fragment key={h}>
                             <span style={{ display: 'inline-block', width: 4 }} />
                             <button
@@ -217,7 +227,84 @@ const Tooltip = ({
                     <span style={{ display: 'inline-block', width: 4 }} />
                 </React.Fragment>
             ) : null}
-            {JSON.stringify(formats)}
+
+            <Autocomplete
+                id="tags-standard"
+                options={Object.keys(ingredients).map((k) => ingredients[k])}
+                // getOptionLabel={(option) => option.text}
+                selectOnFocus
+                clearOnBlur
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                style={{ minWidth: 200 }}
+                handleHomeEndKeys
+                size="small"
+                renderOption={(option) => option.name || 'WAT'}
+                value={
+                    formats.ingredientLink
+                        ? ingredients[formats.ingredientLink]
+                        : // : null
+                          guessIngredient(ingredients, quill, selection)
+                    // null
+                }
+                // inputValue={
+                //     formats.ingredientLink ? '' : quill.getText(selection.index, selection.length)
+                // }
+                freeSolo
+                filterOptions={(options, params) => {
+                    const filtered = filter(options, params);
+
+                    if (params.inputValue !== '') {
+                        filtered.push({
+                            inputValue: params.inputValue,
+                            name: `Add "${params.inputValue}"`,
+                        });
+                    }
+
+                    return filtered;
+                }}
+                getOptionLabel={(option) => {
+                    // e.g value selected with enter, right from the input
+                    if (typeof option === 'string') {
+                        return option;
+                    }
+                    if (option.inputValue) {
+                        return option.inputValue;
+                    }
+                    return option.name;
+                }}
+                onChange={(event, newValue) => {
+                    console.log('onchange', newValue, selection);
+                    if (!newValue) {
+                        return quill.formatText(
+                            selection.index,
+                            selection.length,
+                            'ingredientLink',
+                            false,
+                        );
+                    }
+                    if (newValue && (typeof newValue === 'string' || newValue.inputValue)) {
+                        // const text = typeof newValue === 'string' ? newValue : newValue.inputValue;
+                        // setEditTags(newValue.slice(0, -1).concat({ text }));
+                        console.log('need to check with the boss');
+                        return;
+                    }
+                    quill.formatText(
+                        selection.index,
+                        selection.length,
+                        'ingredientLink',
+                        newValue.id,
+                    );
+                }}
+                renderInput={(params) => (
+                    <TextField
+                        {...params}
+                        variant="outlined"
+                        label="Ingredient"
+                        placeholder="Ingredient"
+                    />
+                )}
+            />
         </div>
     );
 };
