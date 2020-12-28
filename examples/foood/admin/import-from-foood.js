@@ -9,7 +9,8 @@ const toMap = (items) => {
     return res;
 };
 /*::
-import type {RecipeT} from '../collections'
+import type {RecipeT, IngredientT} from '../collections'
+import type { Client, Collection } from '../../../packages/client-bundle';
 */
 
 // $FlowFixMe it's fine
@@ -61,13 +62,13 @@ const findImageFromPage = async (source) => {
     return ''
 }
 
-module.exports = async (client/*: * */, actorId/*: string*/, sync/*: () => Promise<mixed>*/) => {
+module.exports = async (client/*: Client<*> */, actorId/*: string*/, sync/*: () => Promise<mixed>*/) => {
     // ingredients -> get imported as is
     const ingredients = require('./ingredients.json');
     const ingredientsById = {}
     ingredients.forEach(i => ingredientsById[i.id] = i)
 
-    const ingredientCol = client.getCollection('ingredients');
+    const ingredientCol = client.getCollection/*::<IngredientT>*/('ingredients');
 
     console.log('ok tags')
 
@@ -76,16 +77,20 @@ module.exports = async (client/*: * */, actorId/*: string*/, sync/*: () => Promi
         if (i++ % 20 === 0 ) {
             await sync()
         }
-        await ingredientCol.save(ingredient.id, {
-            id: ingredient.id,
-            name: ingredient.name,
-            alternateNames: toMap(ingredient.alternateNames),
-            kinds: {},
-            // TODO auto-import densities
-            densities: {},
-            defaultUnit: ingredient.defaultUnit || '',
-            authorId: ':foood-import',
-        });
+        const current = await ingredientCol.load(ingredient.id)
+        // Don't override if it exists
+        if (!current) {
+            await ingredientCol.save(ingredient.id, {
+                id: ingredient.id,
+                name: ingredient.name,
+                alternateNames: toMap(ingredient.alternateNames),
+                kinds: {},
+                // TODO auto-import densities
+                densities: {},
+                defaultUnit: ingredient.defaultUnit || '',
+                authorId: ':foood-import',
+            });
+        }
     }
 
     await sync()

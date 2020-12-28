@@ -19,6 +19,7 @@ import urlImport from './urlImport';
 import { makeStyles } from '@material-ui/core/styles';
 import { useCollection, useItem } from '../../../packages/client-react';
 import type { Client, Collection } from '../../../packages/client-bundle';
+import Delta from 'quill-delta';
 
 import Grid from '@material-ui/core/Grid';
 import Autocomplete, { createFilterOptions } from '@material-ui/lab/Autocomplete';
@@ -511,6 +512,89 @@ const RecipeEditor = ({
                         style={{ marginRight: 8, display: 'inline-block' }}
                     />
                     Instruction
+                </Button>
+                <Button
+                    onClick={() => {
+                        // const quill = quillRef.current;
+                        // if (!quill || !quill.getSelection()) return;
+                        // const { index, length } = quill.getSelection();
+                        // if (quill.getFormat().instruction === true) {
+                        //     quill.formatLine(index, length, 'instruction', false, 'user');
+                        //     return;
+                        // }
+                        // quill.formatLine(index, length, 'instruction', true, 'user');
+
+                        // STOPSHIP: Here's where to start!
+                        // go by lines.
+                        // For lines that are `ingredient`, go through ingredients to
+                        // see if any match the text
+
+                        // STOPSHIP: NEXT UP:
+                        // - I want my imported ingredients to be better about plurals and alternate names
+                        // - do I do that by hand?
+                        // - also, I can import ingredients from that other place.
+                        //   looks like it uses "keywords" for alternate names (see chickpeas)
+                        // - I probably want to incorporate levenstein distance? maybe? maybe not tho
+                        //   maybe just experiment with removing the final "s" from ingredients? idk.
+                        // - It's times like these I wish my general server included a "just edit the stuff" frontend.
+                        //   Maybe I should make one, that lets you edit the json directly. Doesn't seem like it would
+                        //   be too hard.
+                        //   On the other hand, building an "ingredient" editor would also be simple, and more useful.
+                        //   So, in my ingredient editor, I want to be able to merge ingredients.
+                        //   Hm maybe I should add a "mergedInto" field on ingredient? So that I don't have to
+                        //   go through all recipes and fix them? Yeah that's a good idea.
+
+                        const quill = quillRef.current;
+                        if (!quill) return console.log('no quill');
+                        const contents = quill.getContents().ops;
+                        const updates = [];
+                        let x = 0;
+                        contents.forEach((delta, i) => {
+                            const next = contents[i + 1];
+                            let pos = x;
+                            x += typeof delta.insert === 'string' ? delta.insert.length : 1;
+                            if (
+                                !next ||
+                                typeof delta.insert !== 'string' ||
+                                next.insert !== '\n' ||
+                                !next.attributes.ingredient
+                            ) {
+                                return;
+                            }
+                            const lines = delta.insert.split('\n');
+                            const lastLine = lines[lines.length - 1];
+                            pos = x - lastLine.length;
+                            console.log('inrgedient line', delta);
+                            const haystack = lastLine.toLowerCase();
+                            const matches = [];
+                            Object.keys(ingredients).forEach((id) => {
+                                const ing = ingredients[id];
+                                if (ing.mergedInto != null) {
+                                    return;
+                                }
+                                const idx = haystack.indexOf(ing.name.toLowerCase());
+                                if (idx !== -1) {
+                                    matches.push({ id, ln: ing.name.length, idx });
+                                }
+                            });
+                            matches.sort((a, b) => b.ln - a.ln);
+                            console.log(matches);
+                            if (matches.length) {
+                                quill.updateContents(
+                                    new Delta()
+                                        .retain(pos + matches[0].idx)
+                                        .retain(matches[0].ln, { ingredientLink: matches[0].id }),
+                                    'api',
+                                );
+                            }
+                        });
+                        console.log('Done', contents.length);
+                        // ingredients
+
+                        // quill.getContents()
+                    }}
+                >
+                    Autodetect ingredients
                 </Button>
             </div>
             <div style={{ position: 'relative' }}>

@@ -31,6 +31,7 @@ import Search from './Search';
 import EditorView from './EditorView';
 import Latest from './Latest';
 import Debug from './Debug';
+import Ingredients from './Ingredients';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
@@ -189,6 +190,9 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                             }}
                             recipe={blankRecipe}
                         />
+                    </Route>
+                    <Route path={`${pathPrefix}/ingredients`}>
+                        <Ingredients client={client} actorId={actorId} />
                     </Route>
                     <Route path={`${pathPrefix}/search`}>
                         <Search client={client} actorId={actorId} />

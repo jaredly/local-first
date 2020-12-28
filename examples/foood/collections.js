@@ -59,6 +59,8 @@ const IngredientSchema = {
         densities: { type: 'map', value: 'float' },
         defaultUnit: 'string',
         authorId: 'string',
+        // If this ingredient was merged into another one, here's the forwarding address
+        mergedInto: { type: 'optional', value: 'string' },
     },
 };
 
@@ -86,11 +88,12 @@ export type SettingsT = {
 export type IngredientT = {
     id: string,
     name: string,
-    alternateNames: Array<string>,
-    kinds: Array<string>, // like "nut" or "flour" probably. Do I normalize these? maybe not just now.
+    alternateNames: {[name: string]: number},
+    kinds: {[kind: string]: number}, // like "nut" or "flour" probably. Do I normalize these? maybe not just now.
     densities: {[variant: string]: number},
     defaultUnit: string,
     authorId: string,
+    mergedInto?: ?string,
 }
 
 export type CommentT = {

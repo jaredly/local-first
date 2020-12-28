@@ -74,6 +74,9 @@ const MyDrawer = ({
                     <ListItem button component={Link} to="/">
                         Home
                     </ListItem>
+                    <ListItem button component={Link} to="/ingredients">
+                        Ingredients
+                    </ListItem>
                     <Divider />
                     <ListItem button onClick={() => setDialog('export')}>
                         <ListItemIcon>

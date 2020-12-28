@@ -2,8 +2,6 @@
 
 import * as React from 'react';
 import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
-// import Quill from 'quill';
-// import { type QuillDelta } from '../../../packages/rich-text-crdt/quill-deltas';
 import QuillEditor from './Quill';
 import { parse, detectLists } from './parse';
 import TextField from '@material-ui/core/TextField';
@@ -20,6 +18,7 @@ import urlImport from './urlImport';
 import { makeStyles } from '@material-ui/core/styles';
 import { useCollection, useItem } from '../../../packages/client-react';
 import type { Client, Collection } from '../../../packages/client-bundle';
+import { getIngredient } from './utils';
 
 import InputAdornment from '@material-ui/core/InputAdornment';
 
@@ -33,7 +32,6 @@ const filter = createFilterOptions();
 const useStyles = makeStyles((theme) => ({
     formatTooltip: {
         padding: '4px',
-        // fontSize: 20,
         position: 'absolute',
         borderRadius: 4,
         zIndex: 1000,
@@ -64,6 +62,9 @@ const guessIngredient = (ingredients, quill, selection) => {
     const needle = text.toLowerCase();
     let best = null;
     Object.keys(ingredients).forEach((id) => {
+        if (ingredients[id].mergedInto != null) {
+            return;
+        }
         if (ingredients[id].name.toLowerCase() === needle) {
             best = ingredients[id];
         } else if (
@@ -354,7 +355,7 @@ const IngredientSelected = ({ ingredients, id, onClear }) => {
                     borderRadius: 8,
                 }}
             >
-                {ingredients[id] ? ingredients[id].name : 'Ingredient not found'}
+                {getIngredient(ingredients, id)?.name || 'Ingredient not found'}
             </div>
             <IconButton
                 aria-label="Clear ingredient link"

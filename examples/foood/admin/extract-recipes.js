@@ -7,7 +7,7 @@
 
 /*::
 
-import type {RecipeT} from '../collections'
+import type {RecipeT, IngredientT} from '../collections'
  */
 
 const fs = require('fs');
@@ -29,7 +29,7 @@ const getFirstUrl = (body) => {
     }
 };
 
-const getAllRecipes = async () => {
+const getAllRecipes = async (allIngredients /*: {[key: string]: IngredientT}*/) => {
     const $ = cheerio.load(fs.readFileSync('../.import/Forsyth Recipes.htm'));
 
     const recipes = {};
@@ -52,8 +52,6 @@ const getAllRecipes = async () => {
         return new Date(+match.groups.year, +match.groups.month - 1, +match.groups.day).getTime();
     };
 
-    // STOPSHIP NEXT STEP:
-    // Determine which of these are really "tags", e.g. they have mostly references to other recipes.
     const nodes = [];
     $('div[title]').each((_, item) => {
         nodes.push($(item));
@@ -83,22 +81,28 @@ const getAllRecipes = async () => {
             continue;
         }
         let image = '';
+        let source = 'forsythrecipes';
+
+        // STOPSHIP: enable this again once I've got ingredient parsing down
         const potentialSource = getFirstUrl(body);
         if (potentialSource) {
-            image = await findImageFromPage(potentialSource).catch((err) => '');
-            if (image) {
-                console.log('😍 😍 😍 😍 Got an image!', title);
-            } else {
-                console.log('❌ ❌ ❌ No image for url', potentialSource, title);
-            }
+            source = potentialSource;
+            // image = await findImageFromPage(potentialSource).catch((err) => '');
+            // if (image) {
+            //     console.log('😍 😍 😍 😍 Got an image!', title);
+            //     source = potentialSource;
+            // } else {
+            //     console.log('❌ ❌ ❌ No image for url', potentialSource, title);
+            // }
         }
+
         const recipe /*:RecipeT*/ = {
             id: '',
             about: {
                 title: title,
                 author: node.attr('creator') ? ':' + node.attr('creator') : '',
                 image,
-                source: 'forsythrecipes',
+                source,
             },
             statuses: {},
             // modifier: node.attr('modifier'),

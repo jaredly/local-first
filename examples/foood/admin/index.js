@@ -13,7 +13,7 @@ import {
 } from '../../../packages/client-bundle';
 import fs from 'fs';
 import getForsythRecipes from './extract-recipes';
-import type { RecipeT, TagT } from '../collections';
+import type { RecipeT, TagT, IngredientT } from '../collections';
 import importFooodData from './import-from-foood';
 
 const schemas = require('../collections');
@@ -106,6 +106,7 @@ const main = async () => {
 
     const col = client.getCollection<RecipeT>('recipes');
     const tagsCol = client.getCollection<TagT>('tags');
+    const ingredientsCol = client.getCollection<IngredientT>('ingredients');
 
     await sync(client, url);
 
@@ -125,7 +126,7 @@ const main = async () => {
         (id) => (allRecipesByTitle[allRecipes[id].about.title] = allRecipes[id]),
     );
 
-    const { recipes, tags } = await getForsythRecipes();
+    const { recipes, tags } = await getForsythRecipes(await ingredientsCol.loadAll());
 
     const tagsToAdd = {};
     for (const name of Object.keys(tags)) {
@@ -167,7 +168,14 @@ const main = async () => {
             });
             const id = deterministicIDs ? titleIndex.toString().padStart(10, '0') : genId();
             recipes[title].id = id;
-            await col.save(id, recipes[title]);
+            const current = allRecipes[id];
+            if (current != null) {
+                // If the recipe already exists, just set the title & source
+                await col.setAttribute(id, ['contents'], recipes[title].contents);
+                await col.setAttribute(id, ['about', 'source'], recipes[title].about.source);
+            } else {
+                await col.save(id, recipes[title]);
+            }
             // recipesToAdd[title] = id
         }
     }

@@ -13,6 +13,7 @@ sketchy-null=error
 sketchy-null-bool=off
 
 [options]
+esproposal.optional_chaining=enable
 
 module.name_mapper='@birchill/json-equalish' -> '<PROJECT_ROOT>/node_modules/@birchill/json-equalish'
 module.name_mapper='@material-ui/core/AppBar' -> '<PROJECT_ROOT>/node_modules/@material-ui/core/AppBar'
