@@ -27,15 +27,56 @@ const processRecipe = async (url /*:string*/) => {
     }
 };
 
+const imageUrl = (imageObj) =>
+    typeof imageObj === 'string'
+        ? imageObj
+        : Array.isArray(imageObj)
+        ? imageUrl(imageObj[0])
+        : imageObj != null
+        ? imageObj.contentUrl || imageObj.url
+        : null;
+
 const findImage = (data) => {
-    const image = findOfType(data, 'ImageObject');
+    const recipe = findOfType(data, 'Recipe');
+    if (recipe) {
+        const image = imageUrl(recipe.image);
+        if (image) {
+            return image;
+        }
+    }
+
+    const imageObj = findOfType(data, 'ImageObject');
+    const image = imageUrl(imageObj);
     if (image) {
-        return image.contentUrl || image.url;
+        return image;
+    }
+    if (imageObj) {
+        console.log('Bad imageObject', imageObj);
     }
     const webPage = findOfType(data, 'WebPage');
-    if (webPage && webPage.primaryImageOfPage) {
-        return webPage.primaryImageOfPage.contentUrl || webPage.primaryImageOfPage.url;
+    if (webPage) {
+        const primary = imageUrl(webPage.primaryImageOfPage);
+        if (primary) {
+            return primary;
+        }
+        const image = imageUrl(webPage.image);
+        if (image) {
+            return image;
+        }
+        console.log('## WEBPAGE, but no goodness', webPage);
     }
+    const article = findOfType(data, 'Article');
+    if (article) {
+        const image = imageUrl(article.image);
+        if (image) {
+            return image;
+        }
+        if (Array.isArray(article.images)) {
+            return imageUrl(article.images[0]);
+        }
+        console.log('ARTCIEL, but not image', article);
+    }
+    // console.log('No good?', data)
 };
 
 const findOfType = (data, type) => {

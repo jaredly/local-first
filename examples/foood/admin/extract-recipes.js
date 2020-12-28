@@ -16,9 +16,20 @@ const cheerio = require('cheerio');
 // const ingredientNames = require('../.import/themealdb.com/in.json').map((m) => m[0]);
 const { detectLists, parse, rawToDeltas } = require('../src/parse');
 
+const { findImageFromPage } = require('./import-from-foood');
+
 const tenYearsAgo = Date.now() - 1000 * 60 * 60 * 24 * 365 * 10;
 
-const getAllRecipes = () => {
+const getFirstUrl = (body) => {
+    const rx = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/;
+    const match = body.match(rx);
+    if (match) {
+        // console.log('Found URL!', match[0]);
+        return match[0];
+    }
+};
+
+const getAllRecipes = async () => {
     const $ = cheerio.load(fs.readFileSync('../.import/Forsyth Recipes.htm'));
 
     const recipes = {};
@@ -43,8 +54,12 @@ const getAllRecipes = () => {
 
     // STOPSHIP NEXT STEP:
     // Determine which of these are really "tags", e.g. they have mostly references to other recipes.
+    const nodes = [];
     $('div[title]').each((_, item) => {
-        var node = $(item);
+        nodes.push($(item));
+    });
+
+    for (const node of nodes) {
         const title = node.attr('title');
         if (
             !node.attr('created') ||
@@ -53,7 +68,7 @@ const getAllRecipes = () => {
             title === 'SiteTitle' ||
             title === 'SiteSubtitle'
         ) {
-            return;
+            continue;
         }
         const body = node.text().trim();
         const refs = [...body.matchAll(/\[\[(?<title>[^\]\|]+)\]\]/g)].map(
@@ -65,14 +80,24 @@ const getAllRecipes = () => {
             // console.log(title);
             // console.log(refs);
             tags[title] = { recipes: refs, created: parseDate(node.attr('created')) };
-            return;
+            continue;
+        }
+        let image = '';
+        const potentialSource = getFirstUrl(body);
+        if (potentialSource) {
+            image = await findImageFromPage(potentialSource).catch((err) => '');
+            if (image) {
+                console.log('😍 😍 😍 😍 Got an image!', title);
+            } else {
+                console.log('❌ ❌ ❌ No image for url', potentialSource, title);
+            }
         }
         const recipe /*:RecipeT*/ = {
             id: '',
             about: {
                 title: title,
                 author: node.attr('creator') ? ':' + node.attr('creator') : '',
-                image: '',
+                image,
                 source: 'forsythrecipes',
             },
             statuses: {},
@@ -105,7 +130,7 @@ const getAllRecipes = () => {
         //         matches += 1;
         //     }
         // });
-    });
+    }
 
     const emptyTags = [];
     Object.keys(tags).forEach((name) => {

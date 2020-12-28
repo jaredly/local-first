@@ -109,8 +109,8 @@ const main = async () => {
 
     await sync(client, url);
 
-    const userId = '1';
-    await importFooodData(client, userId, () => sync(client, url));
+    // const userId = '1';
+    // await importFooodData(client, userId, () => sync(client, url));
 
     const allRecipes: { [key: string]: RecipeT } = await col.loadAll();
     const allTags = await tagsCol.loadAll();
@@ -125,7 +125,7 @@ const main = async () => {
         (id) => (allRecipesByTitle[allRecipes[id].about.title] = allRecipes[id]),
     );
 
-    const { recipes, tags } = getForsythRecipes();
+    const { recipes, tags } = await getForsythRecipes();
 
     const tagsToAdd = {};
     for (const name of Object.keys(tags)) {

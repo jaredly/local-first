@@ -164,7 +164,7 @@ const getImage = (image) => {
         return image;
     }
     if (Array.isArray(image)) {
-        return image[0];
+        return getImage(image[0]);
     }
     if (image['@type'] === 'ImageObject') {
         return image.url;

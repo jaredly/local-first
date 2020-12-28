@@ -19,21 +19,45 @@ const {findImage} = require('../src/urlImport')
 
 const findImageFromPage = async (source) => {
     console.log('Fetching', source, 'for image')
-    const contents = await (await fetch(source)).text()
+    const contents = await (await fetch(source, {
+        headers: {
+            'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.67 Safari/537.36'
+        }
+    })).text()
     const $ = cheerio.load(contents)
     const jsons = []
-    $('script[type]').each((_, json) => {
+    console.log(contents.length, contents.slice(0, 100))
+    $('script').each((_, json) => {
         const node = $(json)
+        // console.log(node.attr('type'), node.html())
         if (node.attr('type') === 'application/ld+json') {
-            jsons.push(node.html())
+            const raw = node.html()
+            try {
+                jsons.push(JSON.parse(raw))
+            } catch (err) {
+                const decommented = raw.replace(/^\s+\/\/.+$/mg, '')
+                try {
+                    jsons.push(JSON.parse(decommented))
+                } catch (err) {
+                    // unable to parse json probabl
+                    console.log('Invalid json in a script tag!')
+                }
+            }
         }
     })
-    for (const json of jsons) {
-        const image = findImage(JSON.parse(json))
+    for (const data of jsons) {
+        const image = findImage(data)
         if (image) {
             return image
         }
     }
+    const metas = []
+    $('meta[property="og:image"]').each((_, meta) => metas.push($(meta).attr('content')))
+    if (metas.length) {
+        return metas[0]
+    }
+    console.log('No good?', jsons.length, jsons.map(m => m['@type']))
     return ''
 }
 
