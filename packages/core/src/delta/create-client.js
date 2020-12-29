@@ -256,6 +256,7 @@ export function createManualClient<Delta, Data>(
         messages: Array<ServerMessage<Delta, Data>>,
     ) => Promise<Array<ClientMessage<Delta, Data>>>,
     getCollection<T>(colid: string): Collection<T>,
+    teardown: () => Promise<mixed>,
 |} {
     const state = initialState(persistence.collections);
 
@@ -263,6 +264,7 @@ export function createManualClient<Delta, Data>(
         state,
         persistence,
         clock,
+        teardown: () => Promise.resolve(),
         getMessages(): Promise<Array<ClientMessage<Delta, Data>>> {
             return getMessages(persistence, false);
         },

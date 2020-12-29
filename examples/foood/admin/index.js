@@ -32,8 +32,6 @@ const sync = async (client, url) => {
     await client.receive(await res.json());
 };
 
-console.log('hi here');
-
 const getInput = (prompt) => {
     return new Promise((res, rej) => {
         const readline = require('readline').createInterface({
@@ -91,27 +89,10 @@ const baseUrl = `http://localhost:9090`;
 
 const genId = () => Math.random().toString(36).slice(2);
 
-const main = async () => {
-    const authUrl = `${baseUrl}/auth/login`;
-    const token = fs.existsSync(tokenFile) ? fs.readFileSync(tokenFile, 'utf8') : await login();
-    if (token == null || token === '') {
-        console.log('Authentication failed.');
-        return;
-    }
-    const url = `${baseUrl}/dbs/sync?db=foood/public&token=${token}`;
-
-    const persistence = makeDeltaInMemoryPersistence(Object.keys(schemas));
-    const clock = new PersistentClock(inMemoryClockPersist());
-    const client = createManualDeltaClient(clientCrdtImpl, schemas, clock, persistence);
-
+const importForsythRecipesData = async (client, userId, sync) => {
     const col = client.getCollection<RecipeT>('recipes');
     const tagsCol = client.getCollection<TagT>('tags');
     const ingredientsCol = client.getCollection<IngredientT>('ingredients');
-
-    await sync(client, url);
-
-    // const userId = '1';
-    // await importFooodData(client, userId, () => sync(client, url));
 
     const allRecipes: { [key: string]: RecipeT } = await col.loadAll();
     const allTags = await tagsCol.loadAll();
@@ -143,7 +124,7 @@ const main = async () => {
         }
     }
 
-    await sync(client, url);
+    await sync();
 
     // STOPSHIP: switch back to random id
     const deterministicIDs = true;
@@ -154,7 +135,7 @@ const main = async () => {
         titleIndex += 1;
         if (!allRecipesByTitle[title] || deterministicIDs) {
             if (i++ % 20 == 0) {
-                await sync(client, url);
+                await sync();
             }
             // yay inefficient.
             Object.keys(tags).forEach((name) => {
@@ -179,8 +160,31 @@ const main = async () => {
             // recipesToAdd[title] = id
         }
     }
-    await sync(client, url);
+    await sync();
     console.log('added', i);
+};
+
+const main = async () => {
+    const authUrl = `${baseUrl}/auth/login`;
+    const token = fs.existsSync(tokenFile) ? fs.readFileSync(tokenFile, 'utf8') : await login();
+    if (token == null || token === '') {
+        console.log('Authentication failed.');
+        return;
+    }
+    const url = `${baseUrl}/dbs/sync?db=foood/public&token=${token}`;
+
+    const persistence = makeDeltaInMemoryPersistence(Object.keys(schemas));
+    const clock = new PersistentClock(inMemoryClockPersist());
+    const client = createManualDeltaClient(clientCrdtImpl, schemas, clock, persistence);
+
+    await sync(client, url);
+
+    // NOTE: FOOOD importing is disabled because I've finished it. When I do my fresh start, I'll want to re-enable.
+    // Will I do a fresh start? idk. Maybe I'll "export current as json" and then fresh start.
+    const userId = '1';
+    await importFooodData(client, userId, () => sync(client, url));
+
+    // await importForsythRecipesData(client, userId, () => sync(client, url));
 
     // const fooodStuffs = getFooodStuffs()
     // lists

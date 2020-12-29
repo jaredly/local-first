@@ -2,7 +2,7 @@
 const toMap = (items) => {
     const res = {};
     if (!items) {
-        return res
+        return res;
     }
     const now = Date.now();
     items.forEach((key) => (res[key] = now));
@@ -15,69 +15,80 @@ import type { Client, Collection } from '../../../packages/client-bundle';
 
 // $FlowFixMe it's fine
 const fetch = require('../../planner/server/node_modules/node-fetch');
-const cheerio = require('cheerio')
-const {findImage} = require('../src/urlImport')
+const cheerio = require('cheerio');
+const { findImage } = require('../src/urlImport');
 
 const findImageFromPage = async (source) => {
-    console.log('Fetching', source, 'for image')
-    const contents = await (await fetch(source, {
-        headers: {
-            'User-Agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.67 Safari/537.36'
-        }
-    })).text()
-    const $ = cheerio.load(contents)
-    const jsons = []
-    console.log(contents.length, contents.slice(0, 100))
+    console.log('Fetching', source, 'for image');
+    const contents = await (
+        await fetch(source, {
+            headers: {
+                'User-Agent':
+                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.67 Safari/537.36',
+            },
+        })
+    ).text();
+    const $ = cheerio.load(contents);
+    const jsons = [];
+    console.log(contents.length, contents.slice(0, 100));
     $('script').each((_, json) => {
-        const node = $(json)
+        const node = $(json);
         // console.log(node.attr('type'), node.html())
         if (node.attr('type') === 'application/ld+json') {
-            const raw = node.html()
+            const raw = node.html();
             try {
-                jsons.push(JSON.parse(raw))
+                jsons.push(JSON.parse(raw));
             } catch (err) {
-                const decommented = raw.replace(/^\s+\/\/.+$/mg, '')
+                const decommented = raw.replace(/^\s+\/\/.+$/gm, '');
                 try {
-                    jsons.push(JSON.parse(decommented))
+                    jsons.push(JSON.parse(decommented));
                 } catch (err) {
                     // unable to parse json probabl
-                    console.log('Invalid json in a script tag!')
+                    console.log('Invalid json in a script tag!');
                 }
             }
         }
-    })
+    });
     for (const data of jsons) {
-        const image = findImage(data)
+        const image = findImage(data);
         if (image) {
-            return image
+            return image;
         }
     }
-    const metas = []
-    $('meta[property="og:image"]').each((_, meta) => metas.push($(meta).attr('content')))
+    const metas = [];
+    $('meta[property="og:image"]').each((_, meta) => metas.push($(meta).attr('content')));
     if (metas.length) {
-        return metas[0]
+        return metas[0];
     }
-    console.log('No good?', jsons.length, jsons.map(m => m['@type']))
-    return ''
-}
+    console.log(
+        'No good?',
+        jsons.length,
+        jsons.map((m) => m['@type']),
+    );
+    return '';
+};
 
-module.exports = async (client/*: Client<*> */, actorId/*: string*/, sync/*: () => Promise<mixed>*/) => {
+module.exports = async (
+    client /*: { getCollection<T>(colid: string): Collection<T> } */,
+    actorId /*: string*/,
+    sync /*: () => Promise<mixed>*/,
+) => {
+    console.log('## Importing Foood data');
     // ingredients -> get imported as is
     const ingredients = require('./ingredients.json');
-    const ingredientsById = {}
-    ingredients.forEach(i => ingredientsById[i.id] = i)
+    const ingredientsById = {};
+    ingredients.forEach((i) => (ingredientsById[i.id] = i));
 
-    const ingredientCol = client.getCollection/*::<IngredientT>*/('ingredients');
+    const ingredientCol /*:Collection<IngredientT>*/ = client.getCollection('ingredients');
 
-    console.log('ok tags')
+    console.log('ok tags');
 
-    let i = 0
+    let i = 0;
     for (const ingredient of ingredients) {
-        if (i++ % 20 === 0 ) {
-            await sync()
+        if (i++ % 20 === 0) {
+            await sync();
         }
-        const current = await ingredientCol.load(ingredient.id)
+        const current = await ingredientCol.load(ingredient.id);
         // Don't override if it exists
         if (!current) {
             await ingredientCol.save(ingredient.id, {
@@ -93,36 +104,38 @@ module.exports = async (client/*: Client<*> */, actorId/*: string*/, sync/*: () 
         }
     }
 
-    await sync()
+    await sync();
 
-    console.log('ok lists')
+    console.log('ok lists');
 
     const lists = require('./lists');
     const tagsCol = client.getCollection('tags');
     for (const list of lists) {
-        if (i++ % 20 === 0 ) {
-            await sync()
+        if (i++ % 20 === 0) {
+            await sync();
         }
-        await tagsCol.save(list.id, {
-            id: list.id,
-            text: list.title,
-            created: Date.now(),
-            authorId: ':foood-import',
-            color: null,
-        });
+        if ((await tagsCol.load(list.id)) == null) {
+            await tagsCol.save(list.id, {
+                id: list.id,
+                text: list.title,
+                created: Date.now(),
+                authorId: ':foood-import',
+                color: null,
+            });
+        }
     }
 
-    await sync()
+    await sync();
 
-    console.log('ok recipes')
+    console.log('ok recipes');
 
     const madeIts = require('./madeIts');
 
     const recipes = require('./recipes');
-    const recipesCol = client.getCollection/*:: <RecipeT, _>*/('recipes');
+    const recipesCol /*:Collection<RecipeT>*/ = client.getCollection('recipes');
     for (const recipe of recipes) {
-        if (i++ % 20 === 0 ) {
-            await sync()
+        if (i++ % 20 === 0) {
+            await sync();
         }
         const tags = {};
         lists.forEach((list) => {
@@ -133,47 +146,73 @@ module.exports = async (client/*: Client<*> */, actorId/*: string*/, sync/*: () 
         let haveMadeIt = false;
         let image = '';
 
-        const comments = {}
+        const comments = {};
 
-        if (recipe.source) {
-            image = await findImageFromPage(recipe.source).catch(err => '')
-        }
-
-        await recipesCol.save(recipe.id, {
-            id: recipe.id,
-            about: {
-                title: recipe.title,
-                author: recipe.authorId,
-                source: recipe.source || '',
-                image,
-            },
-            contents: {
-                meta: {
-                    ovenTemp: recipe.meta.ovenTemp,
-                    cookTime: recipe.meta.cookTime,
-                    prepTime: recipe.meta.prepTime,
-                    totalTime: recipe.meta.totalTime,
-                    yield: recipe.meta.yield
-                        ? recipe.meta.yield +
-                          (recipe.meta.yieldUnit ? ' ' + recipe.meta.yieldUnit : '')
-                        : null,
-                },
-                text: { ops: createDeltas(recipe, ingredientsById) },
-                changeLog: [],
-                version: recipe.id,
-            },
-            statuses: { [actorId]: 'approved' },
-            createdDate: recipe.created,
-            updatedDate: recipe.updated,
-            trashedDate: null,
-            comments,
-            tags,
-            variations: null,
-            variationOf: null,
+        const commentImages = [];
+        madeIts.forEach((madeIt) => {
+            if (madeIt.recipeId !== recipe.id) {
+                return;
+            }
+            const images = madeIt.images.map((relative) => 'foood://' + relative);
+            comments[madeIt.id] = {
+                id: madeIt.id,
+                authorId: '1',
+                text: { ops: { insert: madeIt.notes } },
+                date: madeIt.created,
+                happiness: madeIt.rating || 0,
+                images,
+            };
+            commentImages.push(...images);
         });
+
+        const current = await recipesCol.load(recipe.id);
+        if (current != null) {
+            await recipesCol.setAttribute(recipe.id, ['comments'], comments);
+            if (current.about.image == '' && commentImages.length) {
+                console.log('Setting image', current.about.title);
+                await recipesCol.setAttribute(recipe.id, ['about', 'image'], commentImages[0]);
+            }
+            // TODO probably other thinsg?
+        } else {
+            if (recipe.source) {
+                image = await findImageFromPage(recipe.source).catch((err) => '');
+            }
+            await recipesCol.save(recipe.id, {
+                id: recipe.id,
+                about: {
+                    title: recipe.title,
+                    author: recipe.authorId,
+                    source: recipe.source || '',
+                    image,
+                },
+                contents: {
+                    meta: {
+                        ovenTemp: recipe.meta.ovenTemp,
+                        cookTime: recipe.meta.cookTime,
+                        prepTime: recipe.meta.prepTime,
+                        totalTime: recipe.meta.totalTime,
+                        yield: recipe.meta.yield
+                            ? recipe.meta.yield +
+                              (recipe.meta.yieldUnit ? ' ' + recipe.meta.yieldUnit : '')
+                            : null,
+                    },
+                    text: { ops: createDeltas(recipe, ingredientsById) },
+                    changeLog: [],
+                    version: recipe.id,
+                },
+                statuses: { [actorId]: 'approved' },
+                createdDate: recipe.created,
+                updatedDate: recipe.updated,
+                trashedDate: null,
+                comments,
+                tags,
+                variations: null,
+                variationOf: null,
+            });
+        }
     }
 
-    await sync()
+    await sync();
 
     // lists -> become tags (v easy)
     // recipes -> need to convert, add links to ingredients
@@ -182,37 +221,37 @@ module.exports = async (client/*: Client<*> */, actorId/*: string*/, sync/*: () 
 
 const Delta = require('quill-delta');
 
-const formatAmount = amount => {
+const formatAmount = (amount) => {
     for (const k of Object.keys(fractions)) {
         if (fractions[k] - 0.0001 < amount && amount < fractions[k] + 0.0001) {
-            return k
+            return k;
         }
     }
     if (Math.floor(amount * 100) === amount * 100) {
-        return amount.toString()
+        return amount.toString();
     }
-    return amount.toFixed(2)
-}
+    return amount.toFixed(2);
+};
 
 const fractions = {
-    '½': 1/2,
-    '⅓': 1/3,
-    '⅔': 2/3,
-    '¼': 1/4,
-    '¾': 3/4,
-    '⅕': 1/5,
-    '⅖': 2/5,
-    '⅗': 3/5,
-    '⅘': 4/5,
-    '⅙': 1/6,
-    '⅚': 5/6,
-    '⅐': 1/7,
-    '⅛': 1/8,
-    '⅜': 3/8,
-    '⅝': 5/8,
-    '⅞': 7/8,
-    '⅑': 1/9,
-    '⅒': 1/10,
+    '½': 1 / 2,
+    '⅓': 1 / 3,
+    '⅔': 2 / 3,
+    '¼': 1 / 4,
+    '¾': 3 / 4,
+    '⅕': 1 / 5,
+    '⅖': 2 / 5,
+    '⅗': 3 / 5,
+    '⅘': 4 / 5,
+    '⅙': 1 / 6,
+    '⅚': 5 / 6,
+    '⅐': 1 / 7,
+    '⅛': 1 / 8,
+    '⅜': 3 / 8,
+    '⅝': 5 / 8,
+    '⅞': 7 / 8,
+    '⅑': 1 / 9,
+    '⅒': 1 / 10,
 };
 
 const createDeltas = (recipe, ingredientsById) => {
@@ -236,7 +275,12 @@ const createDeltas = (recipe, ingredientsById) => {
                 deltas.push({ insert: ingredient.unit + ' ' });
             }
             if (!ingredientsById[ingredient.ingredient]) {
-                console.log('No ingredient: ', ingredient.ingredient, Object.keys(ingredientsById).slice(0, 5), Object.keys(ingredientsById).length)
+                console.log(
+                    'No ingredient: ',
+                    ingredient.ingredient,
+                    Object.keys(ingredientsById).slice(0, 5),
+                    Object.keys(ingredientsById).length,
+                );
                 deltas.push({
                     insert: 'Unknown ingredient ' + ingredient.ingredient,
                 });
@@ -268,4 +312,4 @@ const createDeltas = (recipe, ingredientsById) => {
     return deltas;
 };
 
-module.exports.findImageFromPage = findImageFromPage
+module.exports.findImageFromPage = findImageFromPage;
