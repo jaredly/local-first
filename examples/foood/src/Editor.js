@@ -610,6 +610,7 @@ const RecipeEditor = ({
                 />
                 {/* {showTooltip ? ( */}
                 <Tooltip
+                    actorId={actorId}
                     quill={quillRef.current}
                     ingredients={ingredients}
                     ingredientsCol={ingredientsCol}

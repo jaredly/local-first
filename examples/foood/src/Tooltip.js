@@ -116,7 +116,13 @@ const Tooltip = ({
     // data: { selection, formats, bounds, quill },
     ingredients,
     ingredientsCol,
-}: *) => {
+    actorId,
+}: {
+    quill: *,
+    ingredients: { [key: string]: IngredientT },
+    ingredientsCol: Collection<IngredientT>,
+    actorId: string,
+}) => {
     const [selectionData, setSelectionData] = React.useState(null);
     const [show, setShow] = React.useState(false);
     const dataRef = React.useRef(null);
@@ -191,6 +197,7 @@ const Tooltip = ({
         >
             {formats.ingredientLink || formats.ingredient ? (
                 <IngredientAutofill
+                    actorId={actorId}
                     onClear={() => {
                         const expandedSelection = expandSelection(quill.getContents(), selection);
                         // TODO: expand selection to encompass the whole contained thing please
@@ -376,6 +383,7 @@ const IngredientAutofill = ({
     onSelect,
     onCreate,
     onClear,
+    actorId,
 }) => {
     const inputText =
         selectedId && ingredients[selectedId] ? ingredients[selectedId].name : selectedText;
@@ -433,7 +441,7 @@ const IngredientAutofill = ({
                     }
                     return option.name;
                 }}
-                onChange={(event, newValue) => {
+                onChange={async (event, newValue) => {
                     // console.log('onchange', newValue, selection);
                     if (!newValue) {
                         onClear();
@@ -448,7 +456,17 @@ const IngredientAutofill = ({
                     if (newValue && (typeof newValue === 'string' || newValue.inputValue)) {
                         // const text = typeof newValue === 'string' ? newValue : newValue.inputValue;
                         // setEditTags(newValue.slice(0, -1).concat({ text }));
-                        console.log('need to check with the boss');
+                        const id = ingredientsCol.genId();
+                        await ingredientsCol.save(id, {
+                            id,
+                            name: newValue.inputValue,
+                            alternateNames: {},
+                            kinds: {},
+                            authorId: actorId,
+                            defaultUnit: '',
+                            densities: {},
+                        });
+                        onSelect(id);
                         return;
                     }
                     onSelect(newValue.id);
