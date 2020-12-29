@@ -133,11 +133,11 @@ const rawToDeltas = (text /*:string*/, allIngredients /*:Ingredients*/) => {
         doc = doc.compose(new Delta().retain(index).delete(length).insert(insert, attributes));
     });
 
-    const updates = detectIngredients(doc, allIngredients);
+    const updates = detectIngredients(doc.ops, allIngredients);
     updates.forEach((update) => {
         doc = doc.compose(update);
     });
-    console.log('updates from ingredients', updates.length);
+    // console.log('updates from ingredients', updates.length, Object.keys(allIngredients).length);
 
     return doc;
 };
@@ -157,6 +157,7 @@ const detectIngredients = (contents /*:Array<Delta>*/, ingredients /*: Ingredien
             !next ||
             typeof delta.insert !== 'string' ||
             next.insert !== '\n' ||
+            !next.attributes ||
             !next.attributes.ingredient
         ) {
             return;
@@ -164,7 +165,6 @@ const detectIngredients = (contents /*:Array<Delta>*/, ingredients /*: Ingredien
         const lines = delta.insert.split('\n');
         const lastLine = lines[lines.length - 1];
         pos = x - lastLine.length;
-        // console.log('inrgedient line', delta);
         const haystack = lastLine.toLowerCase();
         const matches = [];
         Object.keys(ingredients).forEach((id) => {
@@ -184,7 +184,6 @@ const detectIngredients = (contents /*:Array<Delta>*/, ingredients /*: Ingredien
             });
         });
         matches.sort((a, b) => b.ln - a.ln);
-        // console.log(matches);
         if (matches.length) {
             updates.push(
                 new Delta()
@@ -193,7 +192,6 @@ const detectIngredients = (contents /*:Array<Delta>*/, ingredients /*: Ingredien
             );
         }
     });
-    // console.log('Done', contents.length);
     return updates;
 };
 
