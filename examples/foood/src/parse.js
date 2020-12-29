@@ -115,7 +115,7 @@ const detectLinks = (text) => {
 };
 
 const Delta = require('quill-delta');
-const rawToDeltas = (text /*:string*/) => {
+const rawToDeltas = (text /*:string*/, allIngredients /*:Ingredients*/) => {
     let doc = new Delta().insert(text);
     const { ingredients, instructions } = detectLists(text);
     // console.log(ingredients, instructions);
@@ -127,12 +127,74 @@ const rawToDeltas = (text /*:string*/) => {
     });
 
     // NOTE: it's very important that links are listed in reverse order
+    // Because we're modifying the source
     const links = detectLinks(text);
     links.forEach(([index, length, insert, attributes]) => {
         doc = doc.compose(new Delta().retain(index).delete(length).insert(insert, attributes));
     });
 
+    const updates = detectIngredients(doc, allIngredients);
+    updates.forEach((update) => {
+        doc = doc.compose(update);
+    });
+    console.log('updates from ingredients', updates.length);
+
     return doc;
+};
+
+/*::
+type Ingredients = {[key: string]: {name: string, alternateNames: {[key: string]: number}, mergedInto?: ?string}}
+*/
+
+const detectIngredients = (contents /*:Array<Delta>*/, ingredients /*: Ingredients */) => {
+    const updates = [];
+    let x = 0;
+    contents.forEach((delta, i) => {
+        const next = contents[i + 1];
+        let pos = x;
+        x += typeof delta.insert === 'string' ? delta.insert.length : 1;
+        if (
+            !next ||
+            typeof delta.insert !== 'string' ||
+            next.insert !== '\n' ||
+            !next.attributes.ingredient
+        ) {
+            return;
+        }
+        const lines = delta.insert.split('\n');
+        const lastLine = lines[lines.length - 1];
+        pos = x - lastLine.length;
+        // console.log('inrgedient line', delta);
+        const haystack = lastLine.toLowerCase();
+        const matches = [];
+        Object.keys(ingredients).forEach((id) => {
+            const ing = ingredients[id];
+            if (ing.mergedInto != null) {
+                return;
+            }
+            const idx = haystack.indexOf(ing.name.toLowerCase());
+            if (idx !== -1) {
+                matches.push({ id, ln: ing.name.length, idx });
+            }
+            Object.keys(ing.alternateNames).forEach((name) => {
+                const idx = haystack.indexOf(name.toLowerCase());
+                if (idx !== -1) {
+                    matches.push({ id, ln: name.length, idx });
+                }
+            });
+        });
+        matches.sort((a, b) => b.ln - a.ln);
+        // console.log(matches);
+        if (matches.length) {
+            updates.push(
+                new Delta()
+                    .retain(pos + matches[0].idx)
+                    .retain(matches[0].ln, { ingredientLink: matches[0].id }),
+            );
+        }
+    });
+    // console.log('Done', contents.length);
+    return updates;
 };
 
 const detectLists = (text /*:string*/) => {
@@ -180,4 +242,4 @@ const detectLists = (text /*:string*/) => {
     return { ingredients, instructions };
 };
 
-module.exports = { parse, fractions, detectLists, rawToDeltas };
+module.exports = { parse, fractions, detectLists, rawToDeltas, detectIngredients };

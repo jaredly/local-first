@@ -179,12 +179,13 @@ const main = async () => {
 
     await sync(client, url);
 
+    const userId = '1';
+
     // NOTE: FOOOD importing is disabled because I've finished it. When I do my fresh start, I'll want to re-enable.
     // Will I do a fresh start? idk. Maybe I'll "export current as json" and then fresh start.
-    const userId = '1';
-    await importFooodData(client, userId, () => sync(client, url));
+    // await importFooodData(client, userId, () => sync(client, url));
 
-    // await importForsythRecipesData(client, userId, () => sync(client, url));
+    await importForsythRecipesData(client, userId, () => sync(client, url));
 
     // const fooodStuffs = getFooodStuffs()
     // lists

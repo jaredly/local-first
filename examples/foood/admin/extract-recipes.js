@@ -120,7 +120,7 @@ const getAllRecipes = async (allIngredients /*: {[key: string]: IngredientT}*/) 
                     totalTime: null,
                     yield: null,
                 },
-                text: rawToDeltas(body),
+                text: rawToDeltas(body, allIngredients),
             },
         };
         if (recipe.updatedDate == null) {
@@ -148,16 +148,6 @@ const getAllRecipes = async (allIngredients /*: {[key: string]: IngredientT}*/) 
     });
 
     return { recipes, tags };
-
-    // console.log(matches, recipes.length);
-    // // console.log(recipes[200].body);
-    // const recipe = byName['Sweet Rice'];
-    // const body = recipe.body;
-    // console.log(body);
-    // console.log(rawToDeltas(body));
-    // console.log(recipe.created, recipe.modified);
 };
 
 module.exports = getAllRecipes;
-// const { recipes, tags } = getAllRecipes();
-// console.log(Object.keys(recipes).length, Object.keys(tags).length);
