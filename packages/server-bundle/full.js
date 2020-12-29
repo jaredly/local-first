@@ -92,14 +92,15 @@ export const runMulti2 = (
         if (!req.auth) {
             throw new Error(`No auth`);
         }
-        if (!userServers[req.auth.id]) {
-            userServers[req.auth.id] = make<Delta, Data>(
+        const key = req.auth.id + ':' + req.dbName;
+        if (!userServers[key]) {
+            userServers[key] = make<Delta, Data>(
                 crdtImpl,
                 setupPersistence(req.dataPath),
                 makeSchemaCheckers(req.dbConfig),
             );
         }
-        return userServers[req.auth.id];
+        return userServers[key];
     };
 
     const dbMiddleware = (req, res, next) => {

@@ -42,6 +42,7 @@ export type ServerMessage<Delta, Data> =
           serverCursor: CursorType,
           deltas: Array<{ node: string, delta: Delta }>,
       |}
+    | {| type: 'error', message: string |}
     // Indicating that deltas from a client have been received.
     | {| type: 'ack', collection: string, deltaStamp: string |};
 
@@ -160,14 +161,17 @@ export const onMessage = function<Delta, Data>(
         if (!schemaChecker) {
             console.warn(`No schema found for ${message.collection}`);
             // TODO should I surface an error here? Break off the connection?
-            return;
+            return { type: 'error', message: `No schema found for ${message.collection}` };
         }
         for (const delta of message.deltas) {
             const error = schemaChecker(delta.delta);
             if (error != null) {
                 console.error(`Delta on ${delta.node} failed schema check! ${error}`);
                 console.error(delta.delta);
-                return;
+                return {
+                    type: 'error',
+                    message: `Delta on ${delta.node} failed schema check! ${error}`,
+                };
             }
         }
         if (!state.clients[sessionId]) {
