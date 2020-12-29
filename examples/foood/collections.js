@@ -106,7 +106,7 @@ export type CommentT = {
     recipeVersion: string,
 }
 
-export type RecipeStatus = 'approved' | 'rejected';
+export type RecipeStatus = 'to try' | 'approved' | 'rejected';
 
 export type RecipeAbout = {
     title: string,

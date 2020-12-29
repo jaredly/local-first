@@ -174,7 +174,7 @@ const getImage = (image) => {
     return image.url;
 };
 
-const statuses: Array<RecipeStatus> = ['approved', 'rejected'];
+const statuses: Array<RecipeStatus> = ['to try', 'approved', 'rejected'];
 
 // Ok so what is it that we're editing?
 // about: {title, author, source, image}

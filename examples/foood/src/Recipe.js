@@ -70,7 +70,112 @@ const useSetTitle = (title) => {
     }, [title]);
 };
 
-const statuses: Array<RecipeStatus> = ['approved', 'rejected'];
+const statuses: Array<RecipeStatus> = ['to try', 'approved', 'rejected'];
+
+import Autocomplete, { createFilterOptions } from '@material-ui/lab/Autocomplete';
+import TextField from '@material-ui/core/TextField';
+import Check from '@material-ui/icons/Check';
+import Close from '@material-ui/icons/Close';
+const filter = createFilterOptions();
+
+const TagsEditor = ({ client, col, tags, tagsCol, actorId, allTags, onClose, recipeId }) => {
+    const [editTags, setEditTags] = React.useState(Object.keys(tags).map((id) => allTags[id]));
+
+    return (
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Autocomplete
+                style={{ flex: 1 }}
+                multiple
+                id="tags-standard"
+                options={Object.keys(allTags).map((k) => allTags[k])}
+                // getOptionLabel={(option) => option.text}
+                selectOnFocus
+                clearOnBlur
+                handleHomeEndKeys
+                renderOption={(option) => option.text}
+                value={editTags
+                    .map((t) => (typeof t.id === 'string' ? allTags[t.id] : t))
+                    .filter(Boolean)}
+                freeSolo
+                filterOptions={(options, params) => {
+                    const filtered = filter(options, params);
+
+                    if (params.inputValue !== '') {
+                        filtered.push({
+                            inputValue: params.inputValue,
+                            text: `Add "${params.inputValue}"`,
+                        });
+                    }
+
+                    return filtered;
+                }}
+                getOptionLabel={(option) => {
+                    // e.g value selected with enter, right from the input
+                    if (typeof option === 'string') {
+                        return option;
+                    }
+                    if (option.inputValue) {
+                        return option.inputValue;
+                    }
+                    return option.text;
+                }}
+                onChange={(event, newValue) => {
+                    const added = newValue[newValue.length - 1];
+
+                    if ((added && typeof added === 'string') || added.inputValue) {
+                        const text = typeof added === 'string' ? added : added.inputValue;
+                        setEditTags(newValue.slice(0, -1).concat({ text }));
+                        return;
+                    }
+                    setEditTags(newValue);
+                }}
+                renderInput={(params) => (
+                    <TextField {...params} variant="outlined" label="Tags" placeholder="Tags" />
+                )}
+            />
+            <IconButton
+                // edge="start"
+                // style={{ marginRight: 16 }}
+                color="inherit"
+                aria-label="menu"
+                onClick={async () => {
+                    for (const tag of editTags) {
+                        if (tag.id != null) {
+                            if (tags[tag.id] == null) {
+                                await col.setAttribute(recipeId, ['tags', tag.id], Date.now());
+                            }
+                        } else {
+                            const text = tag.text;
+                            const tid = client.getStamp();
+                            await tagsCol.save(tid, {
+                                id: tid,
+                                text,
+                                color: null,
+                                created: Date.now(),
+                                authorId: actorId,
+                            });
+                            await col.setAttribute(recipeId, ['tags', tid], Date.now());
+                        }
+                    }
+                    onClose();
+                }}
+            >
+                <Check />
+            </IconButton>
+            <IconButton
+                // edge="start"
+                // style={{ marginRight: 16 }}
+                color="inherit"
+                aria-label="menu"
+                onClick={() => {
+                    onClose();
+                }}
+            >
+                <Close />
+            </IconButton>
+        </div>
+    );
+};
 
 const RecipeView = ({
     client,
@@ -84,7 +189,8 @@ const RecipeView = ({
     const match = useRouteMatch();
     const { id } = match.params;
     const [col, recipe] = useItem<RecipeT, _>(React, client, 'recipes', id);
-    const [_, tags] = useCollection<TagT, _>(React, client, 'tags');
+    const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
+    const [editingTags, setEditingTags] = React.useState(false);
     const styles = useStyles();
     const history = useHistory();
     useSetTitle(recipe ? `${recipe.about.title} | Foood` : 'Foood');
@@ -122,18 +228,42 @@ const RecipeView = ({
                 </IconButton>
             </div>
             <div className={styles.meta}>
-                {recipe.tags != null && Object.keys(recipe.tags).length > 0 ? (
+                {editingTags ? (
+                    <TagsEditor
+                        tagsCol={tagsCol}
+                        actorId={actorId}
+                        recipeId={recipe.id}
+                        client={client}
+                        tags={recipe.tags}
+                        allTags={tags}
+                        col={col}
+                        onClose={() => setEditingTags(false)}
+                    />
+                ) : (
                     <div className={styles.tags}>
                         <div style={{ marginRight: 8 }}>Tags:</div>
-                        {Object.keys(recipe.tags)
-                            .filter((tid) => !!tags[tid])
-                            .map((tid) => (
-                                <Link to={`/tag/${tid}`} className={styles.tag} key={tid}>
-                                    {tags[tid].text}
-                                </Link>
-                            ))}
+                        {recipe.tags != null && Object.keys(recipe.tags).length > 0
+                            ? Object.keys(recipe.tags)
+                                  .filter((tid) => !!tags[tid])
+                                  .map((tid) => (
+                                      <Link to={`/tag/${tid}`} className={styles.tag} key={tid}>
+                                          {tags[tid].text}
+                                      </Link>
+                                  ))
+                            : null}
+                        <IconButton
+                            edge="start"
+                            style={{ marginRight: 16 }}
+                            color="inherit"
+                            aria-label="menu"
+                            onClick={() => {
+                                setEditingTags(true);
+                            }}
+                        >
+                            <EditIcon />
+                        </IconButton>
                     </div>
-                ) : null}
+                )}
                 {renderSource(recipe.about.source)}
                 {renderAuthor(recipe.about.author)}
                 <span style={{ marginLeft: 16 }}>
