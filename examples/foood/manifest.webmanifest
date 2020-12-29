@@ -24,5 +24,15 @@
     "background_color": "#ff9800",
     "display": "standalone",
     "scope": "/",
-    "theme_color": "#ff9800"
+    "theme_color": "#ff9800",
+    "share_target": {
+        "action": "/recipe/new",
+        "method": "GET",
+        "enctype": "application/x-www-form-urlencoded",
+        "params": {
+            "title": "title",
+            "text": "text",
+            "url": "url"
+        }
+    }
 }

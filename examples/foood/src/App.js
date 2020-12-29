@@ -170,7 +170,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                             about={blankRecipe.about}
                             meta={blankRecipe.contents.meta}
                             text={blankRecipe.contents.text}
-                            status={null}
+                            status={'to try'}
                             onSave={(about, meta, text, status) => {
                                 const id = client.getStamp();
                                 col.save(id, {

@@ -103,9 +103,9 @@ const formatIngredients = (quill, contents, index, length) => {
     // then search those bounds, identifying amounts (incl units) and ingredient names.
 };
 
-const makeRecipeDelta = (recipe) => {
+const makeRecipeDelta = (recipe, allIngredients) => {
     let ovenTemp = null;
-    const deltas = [{ insert: recipe.description + '\n\n' }];
+    let deltas = [{ insert: recipe.description + '\n\n' }];
     recipe.recipeIngredient.forEach((line) => {
         deltas.push({ insert: line }, { insert: '\n', attributes: { ingredient: true } });
     });
@@ -155,6 +155,10 @@ const makeRecipeDelta = (recipe) => {
             }
         });
     }
+    const updates = detectIngredients(deltas, allIngredients);
+    updates.forEach((update) => {
+        deltas = new Delta(deltas).compose(update).ops;
+    });
     return { deltas, ovenTemp };
 };
 
@@ -254,6 +258,72 @@ const RecipeEditor = ({
         'ingredients',
     );
 
+    const doImport = (source) => {
+        urlImport(source).then(
+            async (recipe) => {
+                console.log('Found!');
+                console.log(recipe);
+                if (!recipe) {
+                    return; // failed tho
+                }
+                setTitle(recipe.name);
+                setYield(recipe.recipeYield);
+                const image = getImage(recipe.image);
+                if (image) {
+                    setImage(image);
+                }
+                const parseTime = (time) => {
+                    const [_, sub] = time.split('T');
+                    if (!sub.includes('H')) {
+                        return { hours: 0, minutes: +sub.slice(0, -1) };
+                    }
+                    const [hours, minutes] = sub.split('H');
+                    return {
+                        hours: +hours,
+                        minutes: +minutes.slice(0, -1),
+                    };
+                };
+                const showTime = (time) => {
+                    if (time.hours != 0) {
+                        return `${time.hours} hours, ${time.minutes} min`;
+                    }
+                    return `${time.minutes} min`;
+                };
+                if (recipe.totalTime) {
+                    setTotalTime(showTime(parseTime(recipe.totalTime)));
+                }
+                if (recipe.cookTime) {
+                    setCookTime(showTime(parseTime(recipe.cookTime)));
+                }
+                if (recipe.prepTime) {
+                    setPrepTime(showTime(parseTime(recipe.prepTime)));
+                }
+                const { deltas: contents, ovenTemp } = makeRecipeDelta(
+                    recipe,
+                    await ingredientsCol.loadAll(),
+                );
+                if (ovenTemp) {
+                    setOvenTemp(ovenTemp);
+                }
+                if (!(text.ops.length === 1 && text.ops[0].insert === '\n')) {
+                    contents.push({ insert: '\n\n----\n\n' });
+                    contents.push(...text.ops);
+                }
+                setText({ ops: contents });
+            },
+            (err) => console.error(err),
+        );
+    };
+
+    React.useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const url = params.get('url');
+        if (url != null && url !== '') {
+            setSource(url);
+            doImport(url);
+        }
+    }, []);
+
     const styles = useStyles();
 
     const [tagsCol, allTags] = useCollection<TagT, _>(React, client, 'tags');
@@ -289,61 +359,7 @@ const RecipeEditor = ({
                         />
                         <button
                             onClick={() => {
-                                urlImport(source).then(
-                                    (recipe) => {
-                                        console.log('Found!');
-                                        console.log(recipe);
-                                        if (!recipe) {
-                                            return; // failed tho
-                                        }
-                                        setTitle(recipe.name);
-                                        setYield(recipe.recipeYield);
-                                        const image = getImage(recipe.image);
-                                        if (image) {
-                                            setImage(image);
-                                        }
-                                        const parseTime = (time) => {
-                                            const [_, sub] = time.split('T');
-                                            if (!sub.includes('H')) {
-                                                return { hours: 0, minutes: +sub.slice(0, -1) };
-                                            }
-                                            const [hours, minutes] = sub.split('H');
-                                            return {
-                                                hours: +hours,
-                                                minutes: +minutes.slice(0, -1),
-                                            };
-                                        };
-                                        const showTime = (time) => {
-                                            if (time.hours != 0) {
-                                                return `${time.hours} hours, ${time.minutes} min`;
-                                            }
-                                            return `${time.minutes} min`;
-                                        };
-                                        if (recipe.totalTime) {
-                                            setTotalTime(showTime(parseTime(recipe.totalTime)));
-                                        }
-                                        if (recipe.cookTime) {
-                                            setCookTime(showTime(parseTime(recipe.cookTime)));
-                                        }
-                                        if (recipe.prepTime) {
-                                            setPrepTime(showTime(parseTime(recipe.prepTime)));
-                                        }
-                                        const { deltas: contents, ovenTemp } = makeRecipeDelta(
-                                            recipe,
-                                        );
-                                        if (ovenTemp) {
-                                            setOvenTemp(ovenTemp);
-                                        }
-                                        if (
-                                            !(text.ops.length === 1 && text.ops[0].insert === '\n')
-                                        ) {
-                                            contents.push({ insert: '\n\n----\n\n' });
-                                            contents.push(...text.ops);
-                                        }
-                                        setText({ ops: contents });
-                                    },
-                                    (err) => console.error(err),
-                                );
+                                doImport(source);
                             }}
                         >
                             Import
