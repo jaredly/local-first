@@ -90,6 +90,12 @@ const App = ({ config }: { config: ConnectionConfig }) => {
     const match = useRouteMatch();
     const history = useHistory();
 
+    const url =
+        config.type === 'remote'
+            ? (config.authData.host.startsWith('localhost:') ? 'http://' : 'https://') +
+              config.authData.host
+            : 'no-host://';
+
     const authData = config.type === 'remote' ? config.authData : null;
 
     window.client = client;
@@ -157,6 +163,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                     <Route path={`${pathPrefix}/recipe/new`}>
                         <Editor
                             actorId={actorId}
+                            url={url}
                             client={client}
                             onCancel={() => history.back()}
                             tags={{}}
@@ -195,28 +202,28 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                         <Ingredients client={client} actorId={actorId} />
                     </Route>
                     <Route path={`${pathPrefix}/search`}>
-                        <Search client={client} actorId={actorId} />
+                        <Search url={url} client={client} actorId={actorId} />
                     </Route>
                     <Route path={`${pathPrefix}/tag/:tagid`}>
-                        <Home actorId={actorId} client={client} />
+                        <Home url={url} actorId={actorId} client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id/title/:title`}>
-                        <RecipeView actorId={actorId} client={client} />
+                        <RecipeView url={url} actorId={actorId} client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id/edit`}>
-                        <EditorView actorId={actorId} client={client} />
+                        <EditorView url={url} actorId={actorId} client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id`}>
-                        <RecipeView actorId={actorId} client={client} />
+                        <RecipeView url={url} actorId={actorId} client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/latest`}>
-                        <Latest actorId={actorId} client={client} />
+                        <Latest url={url} actorId={actorId} client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/debug`}>
                         <Debug client={client} />
                     </Route>
                     <Route path={`${pathPrefix}`}>
-                        <Home actorId={actorId} client={client} />
+                        <Home url={url} actorId={actorId} client={client} />
                     </Route>
                 </RouteSwitch>
             </AppShell>

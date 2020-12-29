@@ -99,7 +99,7 @@ export type IngredientT = {
 export type CommentT = {
     id: string,
     authorId: string,
-    text: QuillDelta,
+    text: {ops: Array<QuillDelta>},
     date: number,
     happiness: number,
     images: Array<string>,

@@ -10,6 +10,7 @@ import EditIcon from '@material-ui/icons/Edit';
 import { makeStyles } from '@material-ui/core/styles';
 import deepEqual from '@birchill/json-equalish';
 import renderQuill from './renderQuill';
+import { imageUrl } from './utils';
 
 const useStyles = makeStyles((theme) => ({
     container: {
@@ -71,7 +72,15 @@ const useSetTitle = (title) => {
 
 const statuses: Array<RecipeStatus> = ['approved', 'rejected'];
 
-const RecipeView = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
+const RecipeView = ({
+    client,
+    actorId,
+    url,
+}: {
+    client: Client<*>,
+    actorId: string,
+    url: string,
+}) => {
     const match = useRouteMatch();
     const { id } = match.params;
     const [col, recipe] = useItem<RecipeT, _>(React, client, 'recipes', id);
@@ -91,7 +100,7 @@ const RecipeView = ({ client, actorId }: { client: Client<*>, actorId: string })
     return (
         <div className={styles.container}>
             {recipe.about.image ? (
-                <img src={recipe.about.image} className={styles.headerImage} />
+                <img src={imageUrl(recipe.about.image, url)} className={styles.headerImage} />
             ) : null}
             <div className={styles.title}>
                 {recipe.about.title}

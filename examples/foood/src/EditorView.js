@@ -8,7 +8,15 @@ import Editor from './Editor';
 import { useItem } from '../../../packages/client-react';
 import deepEqual from '@birchill/json-equalish';
 
-const EditorView = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
+const EditorView = ({
+    client,
+    actorId,
+    url,
+}: {
+    client: Client<*>,
+    actorId: string,
+    url: string,
+}) => {
     // const authStatus = useAuthStatus(client)
     const { id } = useParams();
     const history = useHistory();
@@ -23,6 +31,7 @@ const EditorView = ({ client, actorId }: { client: Client<*>, actorId: string })
 
     return (
         <Editor
+            url={url}
             actorId={actorId}
             client={client}
             tags={recipe.tags}

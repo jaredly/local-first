@@ -24,6 +24,7 @@ import Delta from 'quill-delta';
 import Grid from '@material-ui/core/Grid';
 import Autocomplete, { createFilterOptions } from '@material-ui/lab/Autocomplete';
 import Tooltip from './Tooltip';
+import { imageUrl } from './utils';
 
 const filter = createFilterOptions();
 
@@ -218,6 +219,7 @@ const RecipeEditor = ({
     client,
     tags,
     actorId,
+    url,
 }: {
     about: RecipeAbout,
     meta: RecipeMeta,
@@ -229,6 +231,7 @@ const RecipeEditor = ({
     client: Client<*>,
     tags: { [key: string]: number },
     actorId: string,
+    url: string,
 }) => {
     const [ovenTemp, setOvenTemp] = React.useState(meta.ovenTemp ?? '');
     const [cookTime, setCookTime] = React.useState(meta.cookTime ?? '');
@@ -357,7 +360,7 @@ const RecipeEditor = ({
                 </div>
                 {image != '' ? (
                     <img
-                        src={image}
+                        src={imageUrl(image, url)}
                         style={{ width: 100, height: 100, marginLeft: 16, borderRadius: 20 }}
                     />
                 ) : null}

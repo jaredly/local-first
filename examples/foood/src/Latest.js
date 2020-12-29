@@ -22,7 +22,7 @@ const useStyles = makeStyles((theme) => ({
 
 const defaultShowAmount = 15;
 
-const Latest = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
+const Latest = ({ client, actorId, url }: { url: string, client: Client<*>, actorId: string }) => {
     const match = useRouteMatch();
     const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
     const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
@@ -43,7 +43,13 @@ const Latest = ({ client, actorId }: { client: Client<*>, actorId: string }) => 
         <div className={styles.container}>
             <div className={styles.recipes}>
                 {ids.slice(0, showUpTo).map((id) => (
-                    <RecipeBlock actorId={actorId} recipe={recipes[id]} key={id} tags={tags} />
+                    <RecipeBlock
+                        url={url}
+                        actorId={actorId}
+                        recipe={recipes[id]}
+                        key={id}
+                        tags={tags}
+                    />
                 ))}
             </div>
             {ids.length > showUpTo ? (

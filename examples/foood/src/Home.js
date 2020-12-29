@@ -5,6 +5,7 @@ import type { Client, Collection } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
 import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
+import { imageUrl } from './utils';
 
 // TODO: list all *tags*, based on stuff.
 // Include a url for importing if you want to be fast
@@ -159,6 +160,7 @@ const Tag = ({
     recipes,
     matchingRecipes,
     actorId,
+    url,
 }: {
     approvedCount: number,
     tag: TagT,
@@ -166,6 +168,7 @@ const Tag = ({
     recipes: { [key: string]: RecipeT },
     matchingRecipes: Array<string>,
     actorId: string,
+    url: string,
 }) => {
     const styles = useStyles();
 
@@ -191,7 +194,7 @@ const Tag = ({
             <div className={styles.tagImages}>
                 {images.slice(0, 4).map((id) => (
                     <img
-                        src={recipes[id].about.image}
+                        src={imageUrl(recipes[id].about.image, url)}
                         className={
                             images.length === 1
                                 ? styles.tagImage1
@@ -245,7 +248,7 @@ export const sortRecipes = (recipeA: RecipeT, recipeB: RecipeT, actorId: string)
     return recipeB.updatedDate - recipeA.updatedDate;
 };
 
-const Home = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
+const Home = ({ client, actorId, url }: { client: Client<*>, actorId: string, url: string }) => {
     const match = useRouteMatch();
     const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
     const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
@@ -324,7 +327,13 @@ const Home = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
                         //     {/* {recipes[id].contents.totalTime}
                         //     {recipes[id].status} */}
                         // </Link>
-                        <RecipeBlock actorId={actorId} recipe={recipes[id]} tags={tags} key={id} />
+                        <RecipeBlock
+                            url={url}
+                            actorId={actorId}
+                            recipe={recipes[id]}
+                            tags={tags}
+                            key={id}
+                        />
                     ))}
                 </div>
             </div>
@@ -338,6 +347,7 @@ const Home = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
                 {tagIds.length === 0 ? 'No tags defined' : null}
                 {tagIds.map((id) => (
                     <Tag
+                        url={url}
                         actorId={actorId}
                         key={id}
                         approvedCount={approvedTagCounts[id] || 0}
@@ -365,10 +375,12 @@ export const RecipeBlock = ({
     actorId,
     recipe,
     tags,
+    url,
 }: {
     actorId: string,
     recipe: RecipeT,
     tags: { [key: string]: TagT },
+    url: string,
 }) => {
     const styles = useStyles();
 
@@ -382,7 +394,7 @@ export const RecipeBlock = ({
                 to={href}
                 className={cx(styles.recipe, status ? styles[status + 'Recipe'] : null)}
             >
-                <img src={recipe.about.image} className={styles.recipeImage} />
+                <img src={imageUrl(recipe.about.image, url)} className={styles.recipeImage} />
                 <div
                     className={cx(
                         styles.recipeTitle,

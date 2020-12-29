@@ -123,7 +123,7 @@ const useSetTitle = (title) => {
     }, [title]);
 };
 
-const Search = ({ client, actorId }: { client: Client<*>, actorId: string }) => {
+const Search = ({ client, actorId, url }: { url: string, client: Client<*>, actorId: string }) => {
     const match = useRouteMatch();
     const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
     const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
@@ -164,6 +164,7 @@ const Search = ({ client, actorId }: { client: Client<*>, actorId: string }) => 
                         {results[0].slice(0, showUpTo).map((id) => (
                             <RecipeBlock
                                 key={id}
+                                url={url}
                                 actorId={actorId}
                                 recipe={recipes[id]}
                                 tags={tags}
@@ -185,6 +186,7 @@ const Search = ({ client, actorId }: { client: Client<*>, actorId: string }) => 
                                 .map((id) => (
                                     <RecipeBlock
                                         key={id}
+                                        url={url}
                                         actorId={actorId}
                                         recipe={recipes[id]}
                                         tags={tags}
