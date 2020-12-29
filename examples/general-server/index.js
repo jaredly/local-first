@@ -31,3 +31,44 @@ if (process.env.BACKUP_SECRET) {
 if (process.env.BACKUP_DOWNLOAD) {
     result.app.get('/backup/' + process.env.BACKUP_DOWNLOAD, downloadRoute('.data/store'));
 }
+
+if (process.env.UPLOADS_FIREBASE_APP) {
+    console.log('Enabling uploads!');
+    const admin = require('firebase-admin');
+
+    const serviceAccount = JSON.parse(fs.readFileSync(process.env.UPLOADS_FIREBASE_CONFIG, 'utf8'));
+
+    const uploadAccount = admin.initializeApp(
+        {
+            credential: admin.credential.cert(serviceAccount),
+            databaseURL: `https://${process.env.UPLOADS_FIREBASE_APP}.firebaseio.com`,
+            storageBucket: `gs://${process.env.UPLOADS_FIREBASE_APP}.appspot.com/`,
+        },
+        'uploads',
+    );
+
+    result.app.get('/uploads/*', (req, res) => {
+        const requested = req.path.slice('/uploads/'.length);
+        const storage = uploadAccount.storage();
+        const url = storage
+            .bucket()
+            .file(requested)
+            .getSignedUrl({
+                action: 'read',
+                expires: Date.now() + 30 * 1000, // 30 seconds, why not
+            })
+            .then(
+                function([url]) {
+                    res.status(302);
+                    res.header('Location', url);
+                    res.end();
+                },
+                err => {
+                    console.log('Failed to get image url');
+                    console.error(err);
+                    res.status(404);
+                    res.send('Not found');
+                },
+            );
+    });
+}

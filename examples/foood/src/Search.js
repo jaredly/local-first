@@ -157,25 +157,29 @@ const Search = ({ client, actorId, url }: { url: string, client: Client<*>, acto
                 variant="outlined"
                 autoFocus
             />
-            {results == null ? null : results[0].length ? (
+            {results == null ? null : results[0].length || results[1].length ? (
                 <div className={styles.results}>
-                    <div className={styles.sectionTitle}>Title match</div>
-                    <div className={styles.recipes}>
-                        {results[0].slice(0, showUpTo).map((id) => (
-                            <RecipeBlock
-                                key={id}
-                                url={url}
-                                actorId={actorId}
-                                recipe={recipes[id]}
-                                tags={tags}
-                            />
-                            // <div key={id} className={styles.recipe}>
-                            //     <Link to={`/recipe/${id}`} className={styles.recipeTitle}>
-                            //         {recipes[id].title}
-                            //     </Link>
-                            // </div>
-                        ))}
-                    </div>
+                    {results[0].length ? (
+                        <React.Fragment>
+                            <div className={styles.sectionTitle}>Title match</div>
+                            <div className={styles.recipes}>
+                                {results[0].slice(0, showUpTo).map((id) => (
+                                    <RecipeBlock
+                                        key={id}
+                                        url={url}
+                                        actorId={actorId}
+                                        recipe={recipes[id]}
+                                        tags={tags}
+                                    />
+                                    // <div key={id} className={styles.recipe}>
+                                    //     <Link to={`/recipe/${id}`} className={styles.recipeTitle}>
+                                    //         {recipes[id].title}
+                                    //     </Link>
+                                    // </div>
+                                ))}
+                            </div>
+                        </React.Fragment>
+                    ) : null}
                     {showUpTo > results[0].length && results[1].length > 0 ? (
                         <div className={styles.sectionTitle}>Contents match</div>
                     ) : null}

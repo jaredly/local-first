@@ -5,12 +5,14 @@
         "@babel/preset-env": "^7.9.0",
         "@babel/preset-flow": "^7.9.0",
         "@babel/register": "^7.9.0",
+        "dotenv": "^8.2.0",
         "flow-bin": "^0.123.0"
     },
-"scripts": {
-"dev": "env SECRET=shhhh node index.js"
-},
+    "scripts": {
+        "dev": "node -r dotenv/config index.js"
+    },
     "dependencies": {
+        "firebase-admin": "^9.4.2",
         "regenerator-runtime": "^0.13.7"
     },
     "engines": {
