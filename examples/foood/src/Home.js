@@ -38,6 +38,11 @@ const useStyles = makeStyles((theme) => ({
         justifyContent: 'space-between',
         textDecoration: 'none',
         position: 'relative',
+        '@media(max-width: 600px)': {
+            width: '100%',
+            height: '100px',
+            overflow: 'hidden',
+        },
         // borderRadius: 4,
     },
     tagTitle: {
@@ -62,18 +67,30 @@ const useStyles = makeStyles((theme) => ({
         width: 200,
         height: 200,
         objectFit: 'cover',
+        '@media(max-width: 600px)': {
+            width: '100%',
+            height: '100%',
+        },
     },
     tagImage2: {
         margin: 0,
         width: 100,
         height: 200,
         objectFit: 'cover',
+        '@media(max-width: 600px)': {
+            width: '50%',
+            height: '100%',
+        },
     },
     tagImage: {
         margin: 0,
         width: 100,
         height: 100,
         objectFit: 'cover',
+        '@media(max-width: 600px)': {
+            flex: 1,
+            height: '100%',
+        },
     },
     recipes: {
         display: 'flex',

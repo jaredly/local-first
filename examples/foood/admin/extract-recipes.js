@@ -21,7 +21,7 @@ const { findImageFromPage } = require('./import-from-foood');
 const tenYearsAgo = Date.now() - 1000 * 60 * 60 * 24 * 365 * 10;
 
 const getFirstUrl = (body) => {
-    const rx = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/;
+    const rx = /(((https?\/\/)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/;
     const match = body.match(rx);
     if (match) {
         // console.log('Found URL!', match[0]);

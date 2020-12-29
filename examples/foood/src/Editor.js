@@ -322,6 +322,16 @@ const RecipeEditor = ({
             setSource(url);
             doImport(url);
         }
+        const text = params.get('text');
+        if (text == null || text == '') {
+            return;
+        }
+        const rx = /(((https?:\/\/)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/;
+        const foundUrl = text.match(rx);
+        if (foundUrl) {
+            setSource(foundUrl[0]);
+            doImport(foundUrl[0]);
+        }
     }, []);
 
     const styles = useStyles();
