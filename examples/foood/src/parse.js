@@ -143,7 +143,8 @@ const rawToDeltas = (text /*:string*/, allIngredients /*:Ingredients*/) => {
 };
 
 /*::
-type Ingredients = {[key: string]: {name: string, alternateNames: {[key: string]: number}, mergedInto?: ?string}}
+import type {IngredientT} from '../collections'
+type Ingredients = {[key: string]: IngredientT}
 */
 
 const detectIngredients = (contents /*:Array<Delta>*/, ingredients /*: Ingredients */) => {

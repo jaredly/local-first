@@ -554,9 +554,6 @@ const RecipeEditor = ({
                         updates.forEach((delta) => {
                             quill.updateContents(delta, 'api');
                         });
-                        // ingredients
-
-                        // quill.getContents()
                     }}
                 >
                     Autodetect ingredients
