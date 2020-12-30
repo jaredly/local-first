@@ -157,6 +157,11 @@ const TagsEditor = ({ client, col, tags, tagsCol, actorId, allTags, onClose, rec
                             await col.setAttribute(recipeId, ['tags', tid], Date.now());
                         }
                     }
+                    for (const tid of Object.keys(tags)) {
+                        if (!editTags.some((t) => t.id === tid)) {
+                            await col.clearAttribute(recipeId, ['tags', tid]);
+                        }
+                    }
                     onClose();
                 }}
             >

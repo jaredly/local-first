@@ -18,7 +18,8 @@ const darkTheme = createMuiTheme({
 
         primary: { main: '#ff9800' },
         secondary: {
-            main: '#ffea00',
+            // main: '#ffea00',
+            main: '#00e5ff',
         },
     },
 });
@@ -68,7 +69,7 @@ const Top = () => {
                     <Main host={'local-first-server.glitch.me'} prefix={'foood'} />
                 </Route>
                 <Route path="/">
-                    {window.location.hostname === 'localhost' ? (
+                    {window.location.hostname === 'localhost' && false ? (
                         <Main host={'localhost:9090'} prefix={'foood-local'} />
                     ) : (
                         <Main host={'local-first-server.glitch.me'} prefix={'foood'} />

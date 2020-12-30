@@ -250,7 +250,6 @@ const RecipeEditor = ({
     const [editTags, setEditTags] = React.useState<Array<{ id: string } | { text: string }>>(
         Object.keys(tags).map((id) => ({ id })),
     );
-    // const [showTooltip, setShowTooltip] = React.useState(null);
 
     const [ingredientsCol, ingredients] = useCollection<IngredientT, _>(
         React,

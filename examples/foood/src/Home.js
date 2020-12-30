@@ -110,6 +110,9 @@ const useStyles = makeStyles((theme) => ({
         backgroundColor: 'rgb(100,100,100)',
         // borderRadius: 4,
     },
+    'to-tryRecipe': {
+        outline: `${theme.spacing(0.5)}px solid ${theme.palette.secondary.light}`,
+    },
     approvedRecipe: {
         outline: `${theme.spacing(0.5)}px solid ${theme.palette.primary.light}`,
         // border: `${theme.spacing(1)}px solid ${theme.palette.primary.light}`,
@@ -170,6 +173,8 @@ const useStyles = makeStyles((theme) => ({
     // },
 }));
 
+const statusOrder = ['approved', 'to try', undefined, null, 'rejected'];
+
 const Tag = ({
     tag,
     count,
@@ -192,18 +197,12 @@ const Tag = ({
     const images = matchingRecipes
         .filter((id) => !!recipes[id].about.image)
         .sort((a, b) => {
-            const statusA = recipes[a].statuses[actorId];
-            const statusB = recipes[b].statuses[actorId];
+            const statusA = statusOrder.indexOf(recipes[a].statuses[actorId]);
+            const statusB = statusOrder.indexOf(recipes[b].statuses[actorId]);
             if (statusA === statusB) {
                 return recipes[b].updatedDate - recipes[a].updatedDate;
             }
-            if (statusA === 'approved') {
-                return -1;
-            }
-            if (statusB === 'approved') {
-                return 1;
-            }
-            return recipes[b].updatedDate - recipes[a].updatedDate;
+            return statusA - statusB;
         });
 
     return (
@@ -245,24 +244,12 @@ export const useSetTitle = (title: ?string) => {
 };
 
 export const sortRecipes = (recipeA: RecipeT, recipeB: RecipeT, actorId: string) => {
-    const statusA = recipeA.statuses[actorId];
-    const statusB = recipeB.statuses[actorId];
+    const statusA = statusOrder.indexOf(recipeA.statuses[actorId]);
+    const statusB = statusOrder.indexOf(recipeB.statuses[actorId]);
     if (statusA === statusB) {
         return recipeB.updatedDate - recipeA.updatedDate;
     }
-    if (statusA === 'approved') {
-        return -1;
-    }
-    if (statusB === 'approved') {
-        return 1;
-    }
-    if (statusA === 'rejected') {
-        return 1;
-    }
-    if (statusB === 'rejected') {
-        return -1;
-    }
-    return recipeB.updatedDate - recipeA.updatedDate;
+    return statusA - statusB;
 };
 
 const Home = ({ client, actorId, url }: { client: Client<*>, actorId: string, url: string }) => {
@@ -409,13 +396,16 @@ export const RecipeBlock = ({
         return (
             <Link
                 to={href}
-                className={cx(styles.recipe, status ? styles[status + 'Recipe'] : null)}
+                className={cx(
+                    styles.recipe,
+                    status ? styles[status.replace(' ', '-') + 'Recipe'] : null,
+                )}
             >
                 <img src={imageUrl(recipe.about.image, url)} className={styles.recipeImage} />
                 <div
                     className={cx(
                         styles.recipeTitle,
-                        status ? styles[status + 'RecipeTitle'] : null,
+                        status ? styles[status.replace(' ', '-') + 'RecipeTitle'] : null,
                     )}
                 >
                     {recipe.about.title}
@@ -425,8 +415,19 @@ export const RecipeBlock = ({
     }
 
     return (
-        <Link to={href} className={cx(styles.recipe, status ? styles[status + 'Recipe'] : null)}>
-            <div className={cx(styles.recipeTitle, status ? styles[status + 'RecipeTitle'] : null)}>
+        <Link
+            to={href}
+            className={cx(
+                styles.recipe,
+                status ? styles[status.replace(' ', '-') + 'Recipe'] : null,
+            )}
+        >
+            <div
+                className={cx(
+                    styles.recipeTitle,
+                    status ? styles[status.replace(' ', '-') + 'RecipeTitle'] : null,
+                )}
+            >
                 {recipe.about.title}
             </div>
         </Link>

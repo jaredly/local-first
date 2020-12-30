@@ -39,6 +39,22 @@ const Latest = ({ client, actorId, url }: { url: string, client: Client<*>, acto
         .filter((id) => recipes[id].trashedDate == null)
         .sort((a, b) => recipes[b].updatedDate - recipes[a].updatedDate);
 
+    React.useEffect(() => {
+        const listener = () => {
+            if (!document.scrollingElement) {
+                return;
+            }
+            if (
+                document.scrollingElement.scrollTop >=
+                document.scrollingElement.scrollHeight - document.scrollingElement.clientHeight - 50
+            ) {
+                setShowUpTo((current) => current + defaultShowAmount);
+            }
+        };
+        document.addEventListener('scroll', listener);
+        return () => document.removeEventListener('scroll', listener);
+    });
+
     return (
         <div className={styles.container}>
             <div className={styles.recipes}>
