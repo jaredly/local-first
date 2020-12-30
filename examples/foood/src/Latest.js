@@ -8,6 +8,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 
 import { useSetTitle, RecipeBlock } from './Home';
+import Sidebar from './Sidebar';
 
 const useStyles = makeStyles((theme) => ({
     container: {
@@ -32,6 +33,7 @@ const Latest = ({ client, actorId, url }: { url: string, client: Client<*>, acto
     const [showUpTo, setShowUpTo] = React.useState(defaultShowAmount);
 
     const [status, setStatus] = React.useState(null);
+    const [sidebar, setSidebar] = React.useState(null);
 
     useSetTitle(
         match.params.tagid && tags[match.params.tagid]
@@ -66,6 +68,7 @@ const Latest = ({ client, actorId, url }: { url: string, client: Client<*>, acto
     return (
         <div className={styles.container}>
             <div className={styles.status}>
+                Filter by:{' '}
                 {statuses.map((name) => (
                     <Button
                         key={name}
@@ -88,6 +91,7 @@ const Latest = ({ client, actorId, url }: { url: string, client: Client<*>, acto
                         recipe={recipes[id]}
                         key={id}
                         tags={tags}
+                        onClick={() => setSidebar(id)}
                     />
                 ))}
             </div>
@@ -98,6 +102,15 @@ const Latest = ({ client, actorId, url }: { url: string, client: Client<*>, acto
                 >
                     Show more
                 </Button>
+            ) : null}
+            {sidebar != null ? (
+                <Sidebar
+                    onClose={() => setSidebar(null)}
+                    id={sidebar}
+                    client={client}
+                    actorId={actorId}
+                    url={url}
+                />
             ) : null}
         </div>
     );

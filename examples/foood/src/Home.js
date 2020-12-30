@@ -10,37 +10,11 @@ import Close from '@material-ui/icons/Close';
 import LinkIcon from '@material-ui/icons/Link';
 
 import { imageUrl } from './utils';
-import Recipe from './Recipe';
+import Sidebar from './Sidebar';
 
 const useStyles = makeStyles((theme) => ({
     container: {
         paddingTop: theme.spacing(8),
-    },
-
-    popoverBackground: {
-        position: 'fixed',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    popoverCloser: {
-        position: 'fixed',
-        top: 65,
-        right: 700,
-        display: 'flex',
-        flexDirection: 'column',
-    },
-    popover: {
-        position: 'fixed',
-        top: 65,
-        right: 0,
-        bottom: 0,
-        width: 700,
-        overflow: 'auto',
-        padding: theme.spacing(2),
-        backgroundColor: theme.palette.background.paper,
     },
 
     tags: {
@@ -369,42 +343,13 @@ const Home = ({ client, actorId, url }: { client: Client<*>, actorId: string, ur
                     ))}
                 </div>
                 {sidebar != null ? (
-                    <React.Fragment>
-                        <div
-                            className={styles.popoverBackground}
-                            onClick={() => {
-                                setSidebar(null);
-                            }}
-                        />
-                        <div className={styles.popoverCloser}>
-                            <IconButton
-                                color="inherit"
-                                aria-label="close sidebar"
-                                onClick={(evt) => {
-                                    setSidebar(null);
-                                }}
-                            >
-                                <Close />
-                            </IconButton>
-                            <IconButton
-                                color="inherit"
-                                href={`/recipe/${sidebar}/title/${recipes[sidebar].about.title}`}
-                                aria-label="go to recipe permalink"
-                                onClick={(evt) => {
-                                    if (evt.button === 0 && !evt.metaKey && !evt.ctrlKey) {
-                                        history.push(
-                                            `/recipe/${sidebar}/title/${recipes[sidebar].about.title}`,
-                                        );
-                                    }
-                                }}
-                            >
-                                <LinkIcon />
-                            </IconButton>
-                        </div>
-                        <div className={styles.popover}>
-                            <Recipe client={client} actorId={actorId} url={url} id={sidebar} />
-                        </div>
-                    </React.Fragment>
+                    <Sidebar
+                        onClose={() => setSidebar(null)}
+                        id={sidebar}
+                        client={client}
+                        actorId={actorId}
+                        url={url}
+                    />
                 ) : null}
             </div>
         );
