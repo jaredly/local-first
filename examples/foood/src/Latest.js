@@ -1,6 +1,6 @@
 // @flow
 import * as React from 'react';
-import type { RecipeT, TagT } from '../collections';
+import type { RecipeT, TagT, RecipeStatus } from '../collections';
 import type { Client, Collection } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
 import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
@@ -22,12 +22,16 @@ const useStyles = makeStyles((theme) => ({
 
 const defaultShowAmount = 15;
 
+const statuses: Array<RecipeStatus> = ['to try', 'approved', 'rejected'];
+
 const Latest = ({ client, actorId, url }: { url: string, client: Client<*>, actorId: string }) => {
     const match = useRouteMatch();
     const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
     const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
     const styles = useStyles();
     const [showUpTo, setShowUpTo] = React.useState(defaultShowAmount);
+
+    const [status, setStatus] = React.useState(null);
 
     useSetTitle(
         match.params.tagid && tags[match.params.tagid]
@@ -36,7 +40,11 @@ const Latest = ({ client, actorId, url }: { url: string, client: Client<*>, acto
     );
 
     const ids = Object.keys(recipes)
-        .filter((id) => recipes[id].trashedDate == null)
+        .filter(
+            (id) =>
+                recipes[id].trashedDate == null &&
+                (status !== null ? recipes[id].statuses[actorId] === status : true),
+        )
         .sort((a, b) => recipes[b].updatedDate - recipes[a].updatedDate);
 
     React.useEffect(() => {
@@ -57,6 +65,21 @@ const Latest = ({ client, actorId, url }: { url: string, client: Client<*>, acto
 
     return (
         <div className={styles.container}>
+            <div className={styles.status}>
+                {statuses.map((name) => (
+                    <Button
+                        key={name}
+                        variant={status === name ? 'contained' : 'outlined'}
+                        color="primary"
+                        onClick={async () => {
+                            setStatus(status === name ? null : name);
+                        }}
+                        style={{ marginRight: 8 }}
+                    >
+                        {name}
+                    </Button>
+                ))}
+            </div>
             <div className={styles.recipes}>
                 {ids.slice(0, showUpTo).map((id) => (
                     <RecipeBlock
