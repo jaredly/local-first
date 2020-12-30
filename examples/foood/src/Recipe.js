@@ -122,7 +122,7 @@ const TagsEditor = ({ client, col, tags, tagsCol, actorId, allTags, onClose, rec
                 onChange={(event, newValue) => {
                     const added = newValue[newValue.length - 1];
 
-                    if ((added && typeof added === 'string') || added.inputValue) {
+                    if (added && (typeof added === 'string' || added.inputValue)) {
                         const text = typeof added === 'string' ? added : added.inputValue;
                         setEditTags(newValue.slice(0, -1).concat({ text }));
                         return;
@@ -186,13 +186,15 @@ const RecipeView = ({
     client,
     actorId,
     url,
+    id: overrideId,
 }: {
     client: Client<*>,
     actorId: string,
     url: string,
+    id?: string,
 }) => {
     const match = useRouteMatch();
-    const { id } = match.params;
+    const id = overrideId != null ? overrideId : match.params.id;
     const [col, recipe] = useItem<RecipeT, _>(React, client, 'recipes', id);
     const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
     const [editingTags, setEditingTags] = React.useState(false);

@@ -5,7 +5,11 @@ import type { Client, Collection } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
 import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
+import IconButton from '@material-ui/core/IconButton';
+import Close from '@material-ui/icons/Close';
+
 import { imageUrl } from './utils';
+import Recipe from './Recipe';
 
 // TODO: list all *tags*, based on stuff.
 // Include a url for importing if you want to be fast
@@ -19,6 +23,23 @@ const useStyles = makeStyles((theme) => ({
     container: {
         paddingTop: theme.spacing(8),
     },
+
+    popoverCloser: {
+        position: 'fixed',
+        top: 65,
+        right: 700,
+    },
+    popover: {
+        position: 'fixed',
+        top: 65,
+        right: 0,
+        bottom: 0,
+        width: 700,
+        overflow: 'auto',
+        padding: theme.spacing(2),
+        backgroundColor: theme.palette.background.paper,
+    },
+
     tags: {
         display: 'flex',
         flexWrap: 'wrap',
@@ -258,6 +279,8 @@ const Home = ({ client, actorId, url }: { client: Client<*>, actorId: string, ur
     const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
     const styles = useStyles();
 
+    const [sidebar, setSidebar] = React.useState(null);
+
     const recipesByTag = {};
 
     const tagCounts = {};
@@ -337,9 +360,28 @@ const Home = ({ client, actorId, url }: { client: Client<*>, actorId: string, ur
                             recipe={recipes[id]}
                             tags={tags}
                             key={id}
+                            onClick={() => setSidebar(id)}
                         />
                     ))}
                 </div>
+                {sidebar != null ? (
+                    <React.Fragment>
+                        <div className={styles.popoverCloser}>
+                            <IconButton
+                                color="inherit"
+                                aria-label="menu"
+                                onClick={(evt) => {
+                                    setSidebar(null);
+                                }}
+                            >
+                                <Close />
+                            </IconButton>
+                        </div>
+                        <div className={styles.popover}>
+                            <Recipe client={client} actorId={actorId} url={url} id={sidebar} />
+                        </div>
+                    </React.Fragment>
+                ) : null}
             </div>
         );
     }
@@ -375,16 +417,20 @@ const Home = ({ client, actorId, url }: { client: Client<*>, actorId: string, ur
 
 const cx = (...args) => args.filter(Boolean).join(' ');
 
+export const minWidthForSidebar = 800;
+
 export const RecipeBlock = ({
     actorId,
     recipe,
     tags,
     url,
+    onClick,
 }: {
     actorId: string,
     recipe: RecipeT,
     tags: { [key: string]: TagT },
     url: string,
+    onClick?: () => mixed,
 }) => {
     const styles = useStyles();
 
@@ -392,10 +438,20 @@ export const RecipeBlock = ({
 
     const status = recipe.statuses[actorId];
 
+    const onLinkClick = (evt) => {
+        if (onClick && window.innerWidth >= minWidthForSidebar) {
+            evt.preventDefault();
+            onClick();
+        } else {
+            // let it pass
+        }
+    };
+
     if (recipe.about.image) {
         return (
             <Link
                 to={href}
+                onClick={onLinkClick}
                 className={cx(
                     styles.recipe,
                     status ? styles[status.replace(' ', '-') + 'Recipe'] : null,
@@ -417,6 +473,7 @@ export const RecipeBlock = ({
     return (
         <Link
             to={href}
+            onClick={onLinkClick}
             className={cx(
                 styles.recipe,
                 status ? styles[status.replace(' ', '-') + 'Recipe'] : null,
