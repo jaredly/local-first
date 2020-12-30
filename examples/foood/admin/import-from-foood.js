@@ -157,7 +157,7 @@ module.exports = async (
             comments[madeIt.id] = {
                 id: madeIt.id,
                 authorId: '1',
-                text: { ops: { insert: madeIt.notes } },
+                text: { ops: [{ insert: madeIt.notes }] },
                 date: madeIt.created,
                 happiness: madeIt.rating || 0,
                 images,

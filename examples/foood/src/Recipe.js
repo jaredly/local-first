@@ -189,6 +189,33 @@ const RecipeView = ({
                 ))}
             </div>
             <div className={styles.text}>{renderQuill(recipe.contents.text)}</div>
+            <Comments recipe={recipe} col={col} />
+        </div>
+    );
+};
+
+const Comments = ({ recipe, col }) => {
+    return (
+        <div>
+            <h3>Comments</h3>
+            {Object.keys(recipe.comments)
+                .sort((a, b) => recipe.comments[b].date - recipe.comments[a].date)
+                .map((id) => (
+                    <div
+                        key={id}
+                        style={{
+                            borderBottom: '1px solid white',
+                            paddingBottom: 16,
+                            marginBottom: 24,
+                        }}
+                    >
+                        <div style={{ fontSize: '80%' }}>
+                            {new Date(recipe.comments[id].date).toLocaleDateString()}
+                        </div>
+                        {renderQuill(recipe.comments[id].text)}
+                        {/* {JSON.stringify(recipe.comments[id].text)} */}
+                    </div>
+                ))}
         </div>
     );
 };

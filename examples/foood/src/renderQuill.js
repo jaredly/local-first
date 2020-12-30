@@ -69,6 +69,10 @@ const getType = (fmt): ?Format => {
 
 const renderOps = ({ ops }: RecipeText): React.Node => {
     const lines: Array<{ chunks: *, type: ?Format }> = [{ chunks: [], type: null }];
+    // Ugh due to a bad import logic, I've got ops being a single op in some cases
+    if (!Array.isArray(ops)) {
+        ops = [ops];
+    }
     ops.forEach((op) => {
         if (typeof op.insert !== 'string') {
             // STOPSHIP: handle images and such
