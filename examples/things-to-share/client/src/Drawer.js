@@ -16,7 +16,7 @@ import GetApp from '@material-ui/icons/GetApp';
 import Publish from '@material-ui/icons/Publish';
 import * as React from 'react';
 import type { Data } from './auth-api';
-import type { TagT } from '../../shared/types';
+import type { TagT } from './types';
 import {
     type Client,
     type SyncStatus,

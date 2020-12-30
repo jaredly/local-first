@@ -3,10 +3,11 @@ import * as React from 'react';
 import type { RecipeT, TagT } from '../collections';
 import type { Client, Collection } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
-import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
+import { Route, Link, useRouteMatch, useParams, useHistory } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
 import IconButton from '@material-ui/core/IconButton';
 import Close from '@material-ui/icons/Close';
+import LinkIcon from '@material-ui/icons/Link';
 
 import { imageUrl } from './utils';
 import Recipe from './Recipe';
@@ -28,6 +29,8 @@ const useStyles = makeStyles((theme) => ({
         position: 'fixed',
         top: 65,
         right: 700,
+        display: 'flex',
+        flexDirection: 'column',
     },
     popover: {
         position: 'fixed',
@@ -278,6 +281,7 @@ const Home = ({ client, actorId, url }: { client: Client<*>, actorId: string, ur
     const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
     const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
     const styles = useStyles();
+    const history = useHistory();
 
     const [sidebar, setSidebar] = React.useState(null);
 
@@ -369,12 +373,26 @@ const Home = ({ client, actorId, url }: { client: Client<*>, actorId: string, ur
                         <div className={styles.popoverCloser}>
                             <IconButton
                                 color="inherit"
-                                aria-label="menu"
+                                aria-label="close sidebar"
                                 onClick={(evt) => {
                                     setSidebar(null);
                                 }}
                             >
                                 <Close />
+                            </IconButton>
+                            <IconButton
+                                color="inherit"
+                                href={`/recipe/${sidebar}/title/${recipes[sidebar].about.title}`}
+                                aria-label="go to recipe permalink"
+                                onClick={(evt) => {
+                                    if (evt.button === 0 && !evt.metaKey && !evt.ctrlKey) {
+                                        history.push(
+                                            `/recipe/${sidebar}/title/${recipes[sidebar].about.title}`,
+                                        );
+                                    }
+                                }}
+                            >
+                                <LinkIcon />
                             </IconButton>
                         </div>
                         <div className={styles.popover}>

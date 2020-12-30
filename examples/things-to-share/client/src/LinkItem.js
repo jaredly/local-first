@@ -13,7 +13,7 @@ import * as React from 'react';
 import { animated, useSpring } from 'react-spring';
 import useMeasure from 'react-use-measure';
 import OpenGraph, { parseData } from './OpenGraph';
-import type { LinkT, TagT } from '../../shared/types';
+import type { LinkT, TagT } from './types';
 import Chip from '@material-ui/core/Chip';
 import { type Collection } from '../../../../packages/client-bundle';
 import { getData } from './Adder';

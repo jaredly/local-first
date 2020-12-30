@@ -1,6 +1,6 @@
 // @flow
 
-import { TagSchema, LinkSchema } from '../shared/types';
+import { TagSchema, LinkSchema } from '../client/src/types';
 import { validateDelta } from '../../../packages/nested-object-crdt/src/schema';
 
 export const getSchemaChecker = (colid: string) =>

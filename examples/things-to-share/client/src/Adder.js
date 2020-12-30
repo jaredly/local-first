@@ -12,7 +12,7 @@ import * as React from 'react';
 import { animated, useSpring } from 'react-spring';
 import useMeasure from 'react-use-measure';
 import OpenGraph from './OpenGraph';
-import { type TagT } from '../../shared/types';
+import { type TagT } from './types';
 
 const useStyles = makeStyles((theme) => ({
     container: {

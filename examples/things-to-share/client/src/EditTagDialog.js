@@ -12,7 +12,7 @@ import type {
     SyncStatus,
     Collection,
 } from '../../../../packages/client-bundle';
-import type { TagT } from '../../shared/types';
+import type { TagT } from './types';
 
 const genId = () => Math.random().toString(36).slice(2);
 
