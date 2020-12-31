@@ -7,7 +7,8 @@ import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 
-import { useSetTitle, RecipeBlock } from './Home';
+import { useSetTitle } from './Home';
+import RecipeBlock from './RecipeBlock';
 import Sidebar from './Sidebar';
 
 const useStyles = makeStyles((theme) => ({

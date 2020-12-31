@@ -90,6 +90,7 @@ const RecipeView = ({
     const [col, recipe] = useItem<RecipeT, _>(React, client, 'recipes', id);
     const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
     const [editingTags, setEditingTags] = React.useState(false);
+    const [batches, setBatches] = React.useState(1);
     const styles = useStyles();
     const history = useHistory();
     useSetTitle(recipe ? `${recipe.about.title} | Foood` : 'Foood');
@@ -188,7 +189,23 @@ const RecipeView = ({
                     </Button>
                 ))}
             </div>
-            <div className={styles.text}>{renderQuill(recipe.contents.text)}</div>
+            <div style={{ marginTop: 16 }}>
+                Batches:
+                {/* <span style={{ display: 'inline-block', width: 8 }} /> */}
+                {[1, 2, 3].map((num) => (
+                    <Button
+                        key={num}
+                        variant={batches === num ? 'contained' : 'outlined'}
+                        style={{ marginLeft: 16 }}
+                        onClick={() => {
+                            setBatches(num);
+                        }}
+                    >
+                        {num}
+                    </Button>
+                ))}
+            </div>
+            <div className={styles.text}>{renderQuill(recipe.contents.text, batches)}</div>
             <Comments recipe={recipe} col={col} />
         </div>
     );

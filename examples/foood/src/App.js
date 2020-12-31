@@ -57,20 +57,34 @@ const parseRawDoc = (rawDoc) => {
 };
 
 const App = ({ config }: { config: ConnectionConfig }) => {
-    const client = React.useMemo(() => {
+    const [client, privateClient] = React.useMemo(() => {
         if (config.type === 'memory') {
             // return createInMemoryEphemeralClient(schemas);
             throw new Error('hm');
         }
         const url = `${config.authData.host}/dbs/sync?db=foood/public&token=${config.authData.auth.token}`;
-        return createPollingPersistedDeltaClient(
-            config.prefix,
-            schemas,
-            `${config.authData.host.startsWith('localhost:') ? 'http' : 'https'}://${url}`,
-            3,
-            {},
-            30 * 1000,
-        );
+        const privateUrl = `${config.authData.host}/dbs/sync?db=foood-private&token=${config.authData.auth.token}`;
+        return [
+            createPollingPersistedDeltaClient(
+                config.prefix,
+                schemas,
+                `${config.authData.host.startsWith('localhost:') ? 'http' : 'https'}://${url}`,
+                3,
+                {},
+                30 * 1000,
+            ),
+            // createPollingPersistedDeltaClient(
+            //     config.prefix,
+            //     schemas,
+            //     `${
+            //         config.authData.host.startsWith('localhost:') ? 'http' : 'https'
+            //     }://${privateUrl}`,
+            //     3,
+            //     {},
+            //     30 * 1000,
+            // ),
+            null,
+        ];
         // return createPersistedDeltaClient(
         //     config.prefix,
         //     schemas,

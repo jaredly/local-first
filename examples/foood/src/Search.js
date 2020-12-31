@@ -8,7 +8,8 @@ import { useCollection, useItem } from '../../../packages/client-react';
 import { Route, Link, useRouteMatch, useParams, useLocation, useHistory } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
 import Fuse from 'fuse.js';
-import { sortRecipes, RecipeBlock } from './Home';
+import { sortRecipes } from './Home';
+import RecipeBlock from './RecipeBlock';
 
 // TODO: list all *tags*, based on stuff.
 // Include a url for importing if you want to be fast
@@ -58,30 +59,9 @@ const useStyles = makeStyles((theme) => ({
         marginTop: theme.spacing(2),
         marginLeft: 16,
     },
-    recipeTitle: {
-        padding: '8px 16px',
-        display: 'block',
-        color: 'inherit',
-        textDecoration: 'none',
-        '&:hover': {
-            backgroundColor: `rgba(255,255,255,0.1)`,
-        },
-    },
     tagRecipes: {
         fontSize: '80%',
     },
-    // root: {
-    //     backgroundColor: theme.palette.background.paper,
-    //     overflow: 'hidden',
-    // },
-    // body: {
-    //     padding: theme.spacing(2),
-    // },
-    // topBar: {
-    //     padding: theme.spacing(2),
-    //     backgroundColor: theme.palette.primary.light,
-    //     color: theme.palette.primary.contrastText,
-    // },
 }));
 
 const Tag = ({ tag, count }: { tag: TagT, count: number }) => {
@@ -171,11 +151,6 @@ const Search = ({ client, actorId, url }: { url: string, client: Client<*>, acto
                                         recipe={recipes[id]}
                                         tags={tags}
                                     />
-                                    // <div key={id} className={styles.recipe}>
-                                    //     <Link to={`/recipe/${id}`} className={styles.recipeTitle}>
-                                    //         {recipes[id].title}
-                                    //     </Link>
-                                    // </div>
                                 ))}
                             </div>
                         </React.Fragment>
@@ -195,11 +170,6 @@ const Search = ({ client, actorId, url }: { url: string, client: Client<*>, acto
                                         recipe={recipes[id]}
                                         tags={tags}
                                     />
-                                    // <div key={id} className={styles.recipe}>
-                                    //     <Link to={`/recipe/${id}`} className={styles.recipeTitle}>
-                                    //         {recipes[id].title}
-                                    //     </Link>
-                                    // </div>
                                 ))}
                         </div>
                     ) : null}

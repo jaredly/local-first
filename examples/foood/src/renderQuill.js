@@ -9,6 +9,7 @@ import EditIcon from '@material-ui/icons/Edit';
 import { makeStyles } from '@material-ui/core/styles';
 import deepEqual from '@birchill/json-equalish';
 import type { RecipeText } from '../collections';
+import { getNumbers, multiplyNumber } from './parse';
 
 const useStyles = makeStyles((theme) => ({
     instruction: {
@@ -67,7 +68,7 @@ const getType = (fmt): ?Format => {
 //     ? fmt
 //     : null;
 
-const renderOps = ({ ops }: RecipeText): React.Node => {
+const renderOps = ({ ops }: RecipeText, batches?: number): React.Node => {
     const lines: Array<{ chunks: *, type: ?Format }> = [{ chunks: [], type: null }];
     // Ugh due to a bad import logic, I've got ops being a single op in some cases
     if (!Array.isArray(ops)) {
@@ -113,7 +114,12 @@ const renderOps = ({ ops }: RecipeText): React.Node => {
                             key={i}
                             type={type}
                             children={line.chunks.map(
-                                (chunk, i) => showChunk(chunk, i),
+                                (chunk, i) =>
+                                    showChunk(
+                                        chunk,
+                                        i,
+                                        type === 'ingredient' ? batches : undefined,
+                                    ),
                                 // <span>{chunk.text}</span>
                             )}
                         />
@@ -124,14 +130,41 @@ const renderOps = ({ ops }: RecipeText): React.Node => {
     });
 };
 
-const showChunk = (chunk, i) => {
+const replaceNumbers = (text, multiple) => {
+    const numbers = getNumbers(text);
+    if (numbers.length === 0) {
+        console.log('No numbers in', text);
+        return text;
+    }
+    const parts = [];
+    let at = 0;
+    numbers.slice(0, 1).forEach(({ offset, groups, match }) => {
+        if (offset > at) {
+            parts.push(text.slice(at, offset));
+        }
+        parts.push(<strong>{multiplyNumber(groups, multiple)}</strong>);
+        // parts.push(<em>({match})</em>);
+        at = offset + match.length;
+    });
+    if (text.length > at) {
+        parts.push(text.slice(at));
+    }
+    return parts;
+};
+
+const showChunk = (chunk, i, batches?: number) => {
     // STOPSHIP: handle multiple formats
+    let contents = chunk.text;
+    // NOTE: I'm only multiplying if it's the first chunk
+    // of the line (before the ingredient probably)
+    if (i === 0 && batches != null && batches !== 1) {
+        contents = replaceNumbers(contents, batches);
+    }
     if (!chunk.format) {
-        return <span key={i}>{chunk.text}</span>;
+        return <span key={i}>{contents}</span>;
     }
     const format = chunk.format;
     const keys = Object.keys(format);
-    let contents = chunk.text;
     keys.forEach((key) => {
         if (key === 'bold' && format[key]) {
             contents = <strong key={i}>{contents}</strong>;

@@ -221,11 +221,11 @@ const Sidebar = ({
                 </IconButton>
                 <IconButton
                     color="inherit"
-                    href={`/recipe/${id}}`}
+                    href={`/recipe/${id}`}
                     aria-label="go to recipe permalink"
                     onClick={(evt) => {
                         if (evt.button === 0 && !evt.metaKey && !evt.ctrlKey) {
-                            history.push(`/recipe/${id}}`);
+                            history.push(`/recipe/${id}`);
                         }
                     }}
                 >

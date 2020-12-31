@@ -21,6 +21,14 @@ const fractions = {
     '1/10': '⅒',
 };
 
+const fractionsReverse = {};
+Object.keys(fractions).forEach((key) => (fractionsReverse[fractions[key]] = key));
+const fractionValues = {};
+Object.keys(fractions).forEach((key) => {
+    const [num, denom] = key.split('/');
+    fractionValues[key] = +num / +denom;
+});
+
 const allUnicodeFractions = Object.keys(fractions).map((k) => fractions[k]);
 const unicodeFraction = allUnicodeFractions.join('|');
 
@@ -57,18 +65,93 @@ const unitRx = Object.keys(units)
 
 const fullRaw = `(?<number>${totalNumber('')})(\\s*-\\s*(?<range>${totalNumber(
     '_range',
-)}))?(?:\\s*(?<unit>${unitRx}))?`;
+)}))?(?:\\s*(?<unit>${unitRx})\\b)?`;
 // console.log(fullRaw);
 const rx = new RegExp(fullRaw, 'g');
 const rxStart = new RegExp('^\\s*[-*]?\\s*' + fullRaw, 'g');
 const informal = new RegExp('^(shy|heaping|dash|pinch)\b', 'i');
 
-const getNumbers = (text) => {
+const parseFraction = (text) => {
+    text = text.trim();
+    if (!text.includes('/')) {
+        if (!fractionsReverse[text]) {
+            throw new Error(`Unable to reverse lookup unicode fraction: ${text}`);
+        }
+        text = fractionsReverse[text];
+    }
+    const [num, denom] = text.split('/');
+    if (denom == null) {
+        throw new Error(`No / in fraction: ${text}`);
+    }
+    return +num / +denom;
+};
+
+const parseTotalNumber = (groups, suffix) => {
+    if (groups['int' + suffix] != null) {
+        return parseInt(groups['int' + suffix]);
+    }
+    if (groups['fract' + suffix] != null) {
+        return parseFraction(groups['fract' + suffix]);
+    }
+    if (groups['decimal' + suffix] != null) {
+        return parseFloat(groups['decimal' + suffix]);
+    }
+    if (groups['mixed' + suffix] != null) {
+        return (
+            parseInt(groups['mixed_whole' + suffix]) + parseFraction(groups['mixed_fract' + suffix])
+        );
+    }
+    return 0;
+};
+
+// STOPSHIP: special case "15 oz can" and just ignore it?
+// Also ignore "x part". Or maybe only do the first number in the row? That's much easier
+const multiplyNumber = (groups: *, factor: number) => {
+    const first = formatNumber(
+        parseTotalNumber(groups, '') * factor,
+        groups.range ? null : groups['unit'],
+    );
+    if (!groups.range) {
+        return first;
+    }
+    return `${first}-${formatNumber(parseTotalNumber(groups, '_range') * factor, groups['unit'])}`;
+};
+
+const numberToString = (number) => {
+    const whole = parseInt(number);
+    if (whole === number) {
+        return number.toString();
+    }
+    const fract = number - whole;
+    for (const k of Object.keys(fractionValues)) {
+        if (fractionValues[k] - 0.0001 < fract && fractionValues[k] + 0.0001 > fract) {
+            if (whole === 0) {
+                return fractions[k];
+            }
+            return `${whole} ${fractions[k]}`;
+        }
+    }
+    return number.toFixed(2);
+};
+
+// TODO better
+const formatNumber = (number, unit) => {
+    const n = numberToString(number);
+    if (unit) {
+        if (number > 1 && !unit.endsWith('s') && unit.length > 1) {
+            unit += 's';
+        }
+        return n + ' ' + unit;
+    }
+    return n;
+};
+
+const getNumbers = (text: string) => {
     const results = [];
     text.replace(rx, (...args) => {
         const groups = args.pop();
         const whole = args.pop();
-        const offset = args.pop();
+        const offset = +args.pop();
         const match = args[0];
         const populated = {};
         if (typeof groups === 'object') {
@@ -83,6 +166,10 @@ const getNumbers = (text) => {
     });
     return results;
 };
+
+// const replaceNumbers = (text: string, multiple: number) => {
+//     const numbers = getNumbers
+// }
 
 // setTimeout(() => {
 //     const examples = ['1⅘', '1 1/2', '23/3', '⅘', '5'];
@@ -241,4 +328,12 @@ const detectLists = (text /*:string*/) => {
     return { ingredients, instructions };
 };
 
-module.exports = { parse, fractions, detectLists, rawToDeltas, detectIngredients };
+module.exports = {
+    parse,
+    fractions,
+    detectLists,
+    rawToDeltas,
+    detectIngredients,
+    getNumbers,
+    multiplyNumber,
+};
