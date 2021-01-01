@@ -16,7 +16,12 @@ const darkTheme = createMuiTheme({
     palette: {
         type: 'dark',
 
-        primary: { main: '#ff9800' },
+        primary: {
+            main:
+                window.localStorage.useLocalFoood === 'true' && location.hostname === 'localhost'
+                    ? '#673ab7'
+                    : '#ff9800',
+        },
         secondary: {
             // main: '#ffea00',
             main: '#00e5ff',
@@ -56,10 +61,11 @@ const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
 };
 
 const Top = () => {
+    const useLocal = window.localStorage.useLocalFoood === 'true';
     return (
         <Router>
             <Switch>
-                <Route path="/memory">
+                {/* <Route path="/memory">
                     <Main host={null} />
                 </Route>
                 <Route path="/localhost">
@@ -67,9 +73,9 @@ const Top = () => {
                 </Route>
                 <Route path="/prod">
                     <Main host={'local-first-server.glitch.me'} prefix={'foood'} />
-                </Route>
+                </Route> */}
                 <Route path="/">
-                    {window.location.hostname === 'localhost' && false ? (
+                    {window.location.hostname === 'localhost' && useLocal ? (
                         <Main host={'localhost:9090'} prefix={'foood-local'} />
                     ) : (
                         <Main host={'local-first-server.glitch.me'} prefix={'foood'} />

@@ -1,8 +1,4 @@
-// const { run } = require('../../../packages/server-bundle/full.js');
-// const port = process.env.PORT || 9090;
-// const { getSchemaChecker } = require('./getSchema');
-// const result = run(dataPath, getSchemaChecker, port);
-// console.log('listening on ' + port);
+import { schemas as fooodSchemas } from '../foood/collections';
 
 const { runMulti2, run } = require('../../packages/server-bundle/full.js');
 const { validateDelta } = require('../../packages/nested-object-crdt/src/schema.js');
@@ -12,7 +8,6 @@ const dataPath = '.data/store';
 const port = process.env.PORT != null ? parseInt(process.env.PORT) : 9090;
 
 const treeNotesSchemas = require('../tree-notes/collections.js');
-const fooodSchemas = require('../foood/collections.js');
 const result = runMulti2(dataPath, { trees: treeNotesSchemas, foood: fooodSchemas }, port);
 
 console.log('listening on ' + port);

@@ -96,11 +96,19 @@ export const useItem = function<T: {}, SyncStatus>(
     return [col, item];
 };
 
+/*
+
+sharedCollection:
+so that loadAll doesn't hit persistence & create all new objects.
+
+*/
+
 export const useCollection = function<T: {}, SyncStatus>(
     React: *,
     client: Client<SyncStatus>,
     name: string,
 ): [Collection<T>, { [key: string]: T }] {
+    // Hmm maybe collections should be cached?
     const col = React.useMemo(() => client.getCollection<T>(name), []);
     // TODO something to indicate whether we've loaded from the database yet
     // also something to indicate whether we've ever synced with a server.

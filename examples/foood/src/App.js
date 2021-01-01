@@ -20,7 +20,7 @@ import { useCollection, useItem } from '../../../packages/client-react';
 import type { Data } from '../../shared/auth-api';
 import type { AuthData } from '../../shared/Auth';
 
-import schemas, { type RecipeT } from '../collections';
+import { schemas, type RecipeT } from '../collections';
 import AppShell from '../../shared/AppShell';
 import Drawer from './Drawer';
 import UpdateSnackbar from '../../shared/Update';
@@ -126,6 +126,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 title="Foood"
                 renderDrawer={(isOpen, onClose) => (
                     <Drawer
+                        actorId={actorId}
                         pageItems={null}
                         onClose={onClose}
                         open={isOpen}

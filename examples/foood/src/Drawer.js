@@ -22,11 +22,13 @@ import { useCollection } from '../../../packages/client-react';
 // import EditTagDialog from './EditTagDialog';
 // import ExportDialog from './ExportDialog';
 // import ImportDialog from './ImportDialog';
-import { Switch, Route, Link } from 'react-router-dom';
+import { Route, Link } from 'react-router-dom';
+import Switch from '@material-ui/core/Switch';
 // import { showDate, today } from '../utils';
 import type { AuthData } from '../../shared/Auth';
 import ExportDialog from '../../shared/ExportDialog';
 import ImportDialog from '../../shared/ImportDialog';
+import type { TagT, RecipeT } from '../collections';
 
 const MyDrawer = ({
     open,
@@ -36,6 +38,7 @@ const MyDrawer = ({
     // auth,
     // logout,
     pageItems,
+    actorId,
 }: {
     client: Client<*>,
     open: boolean,
@@ -44,10 +47,40 @@ const MyDrawer = ({
     // logout: () => mixed,
     // auth: ?Data,
     pageItems: React.Node,
+    actorId: string,
 }) => {
-    // const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
-    // const [editTag, setEditTag] = React.useState(false);
+    const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
+    const [recipesCol, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
     const [dialog, setDialog] = React.useState(null);
+
+    const tagCounts = {};
+    Object.keys(recipes).forEach((id) => {
+        if (recipes[id].trashedDate != null || !recipes[id].tags) return;
+        Object.keys(recipes[id].tags).forEach((tid) => {
+            tagCounts[tid] = (tagCounts[tid] || 0) + 1;
+        });
+    });
+
+    const approvedTagCounts = {};
+    Object.keys(recipes).forEach((id) => {
+        if (
+            recipes[id].trashedDate != null ||
+            !recipes[id].tags ||
+            recipes[id].statuses[actorId] !== 'approved'
+        )
+            return;
+        Object.keys(recipes[id].tags).forEach((tid) => {
+            approvedTagCounts[tid] = (approvedTagCounts[tid] || 0) + 1;
+        });
+    });
+
+    const tagIds = Object.keys(tags).sort((a, b) =>
+        approvedTagCounts[a] === approvedTagCounts[b]
+            ? (tagCounts[b] || 0) - (tagCounts[a] || 0)
+            : (approvedTagCounts[b] || 0) - (approvedTagCounts[a] || 0),
+    );
+
+    const tagsToShow = tagIds.slice(0, 5);
 
     return (
         <React.Fragment>
@@ -72,10 +105,21 @@ const MyDrawer = ({
                     {pageItems}
                     <Divider />
                     <ListItem button component={Link} to="/">
-                        Home
+                        <ListItemText primary="Home" />
                     </ListItem>
+                    <Divider />
+                    <ListItem button component={Link} to="/latest">
+                        <ListItemText primary="All Recipes" />
+                    </ListItem>
+                    <Divider />
+                    {tagsToShow.map((id) => (
+                        <ListItem key={id} button component={Link} to={`/tag/${id}`}>
+                            <ListItemText primary={tags[id].text} />
+                        </ListItem>
+                    ))}
+                    <Divider />
                     <ListItem button component={Link} to="/ingredients">
-                        Ingredients
+                        <ListItemText primary="Manage Ingredients" />
                     </ListItem>
                     <Divider />
                     <ListItem button onClick={() => setDialog('export')}>
@@ -91,6 +135,27 @@ const MyDrawer = ({
                         <ListItemText primary="Import" />
                     </ListItem>
                     <Divider />
+                    {window.location.hostname === 'localhost' ? (
+                        <ListItem>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={window.localStorage.useLocalFoood === 'true'}
+                                        onChange={() => {
+                                            if (window.localStorage.useLocalFoood === 'true') {
+                                                window.localStorage.useLocalFoood = 'false';
+                                            } else {
+                                                window.localStorage.useLocalFoood = 'true';
+                                            }
+                                            location.reload();
+                                        }}
+                                        color="primary"
+                                    />
+                                }
+                                label="Use Local Foood"
+                            />
+                        </ListItem>
+                    ) : null}
                     {/* {Object.keys(tags).map((k) => (
                         <ListItem button onClick={() => setEditTag(tags[k])} key={k}>
                             <ListItemIcon>

@@ -49,6 +49,20 @@ const CommentSchema = {
     },
 };
 
+export const ingredientKinds = [
+    'vegetable',
+    'leafy green',
+    'nut',
+    'fruit',
+    'spice',
+    'grain',
+    'carb',
+    'dairy',
+    'meat',
+    'protein',
+    'frozen',
+];
+
 const IngredientSchema = {
     type: 'object',
     attributes: {
@@ -191,11 +205,11 @@ const RecipeSchema = {
     },
 };
 
-const schemas = {
+export const schemas = {
     recipes: RecipeSchema,
     ingredients: IngredientSchema,
     tags: TagSchema,
     settings: SettingsSchema,
 };
 
-module.exports = schemas;
+// module.exports = schemas;

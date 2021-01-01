@@ -139,6 +139,7 @@ const Tag = ({
             <div className={styles.tagImages}>
                 {images.slice(0, 4).map((id) => (
                     <img
+                        key={id}
                         src={imageUrl(recipes[id].about.image, url)}
                         className={
                             images.length === 1

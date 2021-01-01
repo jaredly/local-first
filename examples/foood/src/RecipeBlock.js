@@ -1,7 +1,7 @@
 // @flow
 // @flow
 import * as React from 'react';
-import type { RecipeT, TagT } from '../collections';
+import type { RecipeT, TagT, IngredientT } from '../collections';
 import type { Client, Collection } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
 import { Route, Link, useRouteMatch, useParams, useHistory } from 'react-router-dom';
@@ -54,6 +54,23 @@ const useStyles = makeStyles((theme) => ({
     },
     tagRecipes: {
         fontSize: '80%',
+    },
+    ingredientNames: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'auto',
+        padding: 16,
+        textAlign: 'justify',
+        fontSize: 30,
+    },
+    ingredient: {
+        paddingRight: '16px',
+        // display: 'inline-block',
+        fontFamily: 'serif',
+        wordBreak: 'break-word',
     },
 }));
 
@@ -123,6 +140,11 @@ export const RecipeBlock = ({
                 status ? styles[status.replace(' ', '-') + 'Recipe'] : null,
             )}
         >
+            <div className={styles.ingredientNames}>
+                {getIngredients(recipe.contents.text).map((name) => (
+                    <span className={styles.ingredient}>{name.toLowerCase() + ' '}</span>
+                ))}
+            </div>
             <div
                 className={cx(
                     styles.recipeTitle,
@@ -134,5 +156,10 @@ export const RecipeBlock = ({
         </Link>
     );
 };
+
+const getIngredients = ({ ops }) =>
+    ops
+        .filter((op) => op.attributes && op.attributes.ingredientLink != null)
+        .map((op) => (typeof op.insert === 'string' ? op.insert : ''));
 
 export default RecipeBlock;
