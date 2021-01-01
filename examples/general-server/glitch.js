@@ -1,14 +1,22 @@
-import { schemas as fooodSchemas } from '../foood/collections';
+// @flow
+import fs from 'fs';
 
 const { runMulti2, run } = require('../../packages/server-bundle/full.js');
 const { validateDelta } = require('../../packages/nested-object-crdt/src/schema.js');
 require('regenerator-runtime');
-const fs = require('fs');
 const dataPath = '.data/store';
 const port = process.env.PORT != null ? parseInt(process.env.PORT) : 9090;
 
 const treeNotesSchemas = require('../tree-notes/collections.js');
-const result = runMulti2(dataPath, { trees: treeNotesSchemas, foood: fooodSchemas }, port);
+const result = runMulti2(
+    dataPath,
+    {
+        trees: treeNotesSchemas,
+        foood: require('../foood/collections').schemas,
+        'foood-private': require('../foood/private-collections').schemas,
+    },
+    port,
+);
 
 console.log('listening on ' + port);
 result.app.get('/', (req, res) => {

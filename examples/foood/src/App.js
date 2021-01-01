@@ -21,6 +21,7 @@ import type { Data } from '../../shared/auth-api';
 import type { AuthData } from '../../shared/Auth';
 
 import { schemas, type RecipeT } from '../collections';
+import { schemas as privateSchemas } from '../private-collections';
 import AppShell from '../../shared/AppShell';
 import Drawer from './Drawer';
 import UpdateSnackbar from '../../shared/Update';
@@ -73,25 +74,17 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 {},
                 30 * 1000,
             ),
-            // createPollingPersistedDeltaClient(
-            //     config.prefix,
-            //     schemas,
-            //     `${
-            //         config.authData.host.startsWith('localhost:') ? 'http' : 'https'
-            //     }://${privateUrl}`,
-            //     3,
-            //     {},
-            //     30 * 1000,
-            // ),
-            null,
+            createPollingPersistedDeltaClient(
+                config.prefix + '-private',
+                privateSchemas,
+                `${
+                    config.authData.host.startsWith('localhost:') ? 'http' : 'https'
+                }://${privateUrl}`,
+                4,
+                {},
+                30 * 1000,
+            ),
         ];
-        // return createPersistedDeltaClient(
-        //     config.prefix,
-        //     schemas,
-        //     `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
-        //     3,
-        //     {},
-        // );
     }, [config.type === 'remote' ? config.authData : null]);
     React.useEffect(() => {
         if (config.type !== 'remote') {
@@ -114,7 +107,6 @@ const App = ({ config }: { config: ConnectionConfig }) => {
 
     window.client = client;
     const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
-    // const [_, homepage] = useItem<SettingsT, _>(React, client, 'settings', 'home');
 
     const pathPrefix = match.path == '/' ? '' : match.path;
 
@@ -214,7 +206,11 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                         />
                     </Route>
                     <Route path={`${pathPrefix}/ingredients`}>
-                        <Ingredients client={client} actorId={actorId} />
+                        <Ingredients
+                            client={client}
+                            privateClient={privateClient}
+                            actorId={actorId}
+                        />
                     </Route>
                     <Route path={`${pathPrefix}/search`}>
                         <Search url={url} client={client} actorId={actorId} />

@@ -65,15 +65,7 @@ const Top = () => {
     return (
         <Router>
             <Switch>
-                {/* <Route path="/memory">
-                    <Main host={null} />
-                </Route>
-                <Route path="/localhost">
-                    <Main host={'localhost:9090'} prefix={'foood-local'} />
-                </Route>
-                <Route path="/prod">
-                    <Main host={'local-first-server.glitch.me'} prefix={'foood'} />
-                </Route> */}
+                {/* <Main host={null} /> TODO maybe reenable this with a localStorage key? */}
                 <Route path="/">
                     {window.location.hostname === 'localhost' && useLocal ? (
                         <Main host={'localhost:9090'} prefix={'foood-local'} />
