@@ -104,7 +104,7 @@ const LineEdit = ({ label, value, onChange }) => {
     if (editing == null) {
         return (
             <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ width: 200 }}>{value}</div>
+                <div style={{ width: 200, fontSize: 20 }}>{value}</div>
                 <IconButton
                     onClick={() => {
                         setEditing(value);
@@ -147,6 +147,57 @@ const Ingredient = React.memo(({ ingredient, col, pantryIngredient, pantryCol })
     const [altName, setAltName] = React.useState('');
     return (
         <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div>
+                {ingredientAvailabilities.map((name, i) => {
+                    const color =
+                        pantryIngredient != null && pantryIngredient.availability === name
+                            ? 'secondary'
+                            : 'disabled';
+                    return (
+                        <IconButton
+                            key={name}
+                            edge={
+                                i === 0
+                                    ? 'end'
+                                    : i === ingredientAvailabilities.length - 1
+                                    ? 'start'
+                                    : false
+                            }
+                            onClick={async () => {
+                                if (
+                                    pantryIngredient != null &&
+                                    pantryIngredient.availability === name
+                                ) {
+                                    await pantryCol.clearAttribute(ingredient.id, ['availability']);
+                                } else {
+                                    if (pantryIngredient == null) {
+                                        await pantryCol.save(ingredient.id, {
+                                            id: ingredient.id,
+                                            availability: name,
+                                        });
+                                    } else {
+                                        await pantryCol.setAttribute(
+                                            ingredient.id,
+                                            ['availability'],
+                                            name,
+                                        );
+                                    }
+                                }
+                            }}
+                        >
+                            {name === 'always' ? (
+                                <Check color={color} />
+                            ) : name === 'sometimes' ? (
+                                <Help color={color} />
+                            ) : (
+                                <ShoppingCart color={color} />
+                            )}
+                            {/* {name} */}
+                        </IconButton>
+                    );
+                })}
+            </div>
+            <div style={{ width: 16 }} />
             <LineEdit
                 label="Ingredient name"
                 value={ingredient.name}
@@ -203,75 +254,6 @@ const Ingredient = React.memo(({ ingredient, col, pantryIngredient, pantryCol })
                     col.setAttribute(ingredient.id, ['alternateNames', newName], Date.now());
                 }}
             /> */}
-            <div>
-                {ingredientAvailabilities.map((name) => (
-                    <IconButton
-                        key={name}
-                        // variant={
-                        //     pantryIngredient != null && pantryIngredient.availability === name
-                        //         ? 'contained'
-                        //         : 'outlined'
-                        // }
-                        onClick={async () => {
-                            if (
-                                pantryIngredient != null &&
-                                pantryIngredient.availability === name
-                            ) {
-                                await pantryCol.clearAttribute(ingredient.id, ['availability']);
-                            } else {
-                                if (pantryIngredient == null) {
-                                    await pantryCol.save(ingredient.id, {
-                                        id: ingredient.id,
-                                        availability: name,
-                                    });
-                                } else {
-                                    await pantryCol.setAttribute(
-                                        ingredient.id,
-                                        ['availability'],
-                                        name,
-                                    );
-                                }
-                            }
-                            // if (status === name) {
-                            //     await col.clearAttribute(recipe.id, ['statuses', actorId]);
-                            // } else {
-                            //     await col.setAttribute(recipe.id, ['statuses', actorId], name);
-                            // }
-                        }}
-                        style={{ marginRight: 8 }}
-                    >
-                        {name === 'always' ? (
-                            <Check
-                                color={
-                                    pantryIngredient != null &&
-                                    pantryIngredient.availability === name
-                                        ? 'secondary'
-                                        : 'disabled'
-                                }
-                            />
-                        ) : name === 'sometimes' ? (
-                            <Help
-                                color={
-                                    pantryIngredient != null &&
-                                    pantryIngredient.availability === name
-                                        ? 'secondary'
-                                        : 'disabled'
-                                }
-                            />
-                        ) : (
-                            <ShoppingCart
-                                color={
-                                    pantryIngredient != null &&
-                                    pantryIngredient.availability === name
-                                        ? 'secondary'
-                                        : 'disabled'
-                                }
-                            />
-                        )}
-                        {/* {name} */}
-                    </IconButton>
-                ))}
-            </div>
         </div>
     );
 });
