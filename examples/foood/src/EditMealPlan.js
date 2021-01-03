@@ -464,22 +464,37 @@ const getIngredients = ({
     return { used: Object.keys(used), other };
 };
 
+const andList = (items) => {
+    if (items.length === 1) {
+        return items[0];
+    }
+    return items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
+};
+
 const ShoppingList = ({ recipes, selectedRecipes, pantryIngredients, ingredients }) => {
     const allIngredients = {};
     const unknownIngredients = [];
-    selectedRecipes.forEach((id) => {
-        const { used, other } = getIngredients(recipes[id]);
-        used.forEach((id) => (allIngredients[id] = true));
-        unknownIngredients.push(...other);
+    selectedRecipes.forEach((rid) => {
+        const { used, other } = getIngredients(recipes[rid]);
+        used.forEach((id) => {
+            if (!allIngredients[id]) {
+                allIngredients[id] = [rid];
+            } else {
+                allIngredients[id].push(rid);
+            }
+        });
+        unknownIngredients.push({ rid, text: other });
     });
 
-    const always = Object.keys(allIngredients).filter(
+    const all = Object.keys(allIngredients).filter((id) => !!ingredients[id]);
+
+    const always = all.filter(
         (i) => pantryIngredients[i] && pantryIngredients[i].availability === 'always',
     );
-    const sometimes = Object.keys(allIngredients).filter(
+    const sometimes = all.filter(
         (i) => pantryIngredients[i] && pantryIngredients[i].availability === 'sometimes',
     );
-    const need = Object.keys(allIngredients).filter(
+    const need = all.filter(
         (i) => !pantryIngredients[i] || pantryIngredients[i].availability === 'rarely',
     );
 
@@ -487,11 +502,17 @@ const ShoppingList = ({ recipes, selectedRecipes, pantryIngredients, ingredients
         <div>
             <h4>Need to buy</h4>
             {need.map((id) => (
-                <div key={id}>{ingredients[id] && ingredients[id].name}</div>
+                <div key={id}>
+                    {ingredients[id].name} (from{' '}
+                    {andList(allIngredients[id].map((rid) => recipes[rid].about.title))})
+                </div>
             ))}
-            <h4>Need to cbeck</h4>
+            <h4>Need to check</h4>
             {sometimes.map((id) => (
-                <div key={id}>{ingredients[id] && ingredients[id].name}</div>
+                <div key={id}>
+                    {ingredients[id].name} (from{' '}
+                    {andList(allIngredients[id].map((rid) => recipes[rid].about.title))})
+                </div>
             ))}
             <h4>In pantry</h4>
             <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap' }}>
@@ -502,7 +523,7 @@ const ShoppingList = ({ recipes, selectedRecipes, pantryIngredients, ingredients
                 ))}
             </div>
             <h4>Other ingredients, unable to process</h4>
-            {unknownIngredients.map((text, i) => (
+            {unknownIngredients.map(({ rid, text }, i) => (
                 <div key={i}>{text}</div>
             ))}
         </div>
