@@ -344,7 +344,7 @@ const EditMealPlan = ({
                                 onClick={() => setSidebar(id)}
                             />
                             <Checkbox
-                                style={{ position: 'absolute', top: 0, left: 0 }}
+                                style={{ position: 'absolute', top: 8, left: 8 }}
                                 checked={true}
                                 onChange={() => {
                                     mealPlansCol.clearAttribute(plan.id, [
@@ -379,7 +379,7 @@ const EditMealPlan = ({
                             onClick={() => setSidebar(id)}
                         />
                         <Checkbox
-                            style={{ position: 'absolute', top: 0, left: 0 }}
+                            style={{ position: 'absolute', top: 8, left: 8 }}
                             checked={!!plan.uncategorizedRecipes[id]}
                             onChange={() => {
                                 if (plan.uncategorizedRecipes[id]) {
@@ -450,7 +450,7 @@ const ShoppingList = ({ recipes, selectedRecipes, pantryIngredients, ingredients
     const unknownIngredients = [];
     selectedRecipes.forEach((rid) => {
         const { used, other } = getIngredients(recipes[rid]);
-        used.forEach((id) => {
+        Object.keys(used).forEach((id) => {
             if (!allIngredients[id]) {
                 allIngredients[id] = [rid];
             } else {

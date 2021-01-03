@@ -19,7 +19,7 @@ const useStyles = makeStyles((theme) => ({
     recipe: {
         position: 'relative',
         width: 270,
-        height: 200,
+        height: 300,
         color: 'inherit',
         margin: theme.spacing(1),
         display: 'flex',
@@ -27,28 +27,45 @@ const useStyles = makeStyles((theme) => ({
         justifyContent: 'space-between',
         textDecoration: 'none',
         backgroundColor: 'rgb(100,100,100)',
-        // borderRadius: 4,
+        borderRadius: 8,
+        padding: theme.spacing(0.5),
     },
     'to-tryRecipe': {
-        outline: `${theme.spacing(0.5)}px solid ${theme.palette.secondary.light}`,
+        backgroundColor: theme.palette.secondary.light,
+        color: theme.palette.secondary.contrastText,
+        // border: `${theme.spacing(0.5)}px solid ${theme.palette.secondary.light}`,
     },
     approvedRecipe: {
-        outline: `${theme.spacing(0.5)}px solid ${theme.palette.primary.light}`,
+        backgroundColor: theme.palette.primary.light,
+        color: theme.palette.primary.contrastText,
+        // border: `${theme.spacing(0.5)}px solid ${theme.palette.primary.dark}`,
     },
     recipeImage: {
         width: '100%',
-        height: '100%',
+        // height: '100%',
+        minHeight: 0,
+        flex: 1,
         objectFit: 'cover',
+        borderRadius: 4,
     },
     recipeTitle: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: 'rgba(50,50,50,0.7)',
+        // position: 'absolute',
+        // bottom: 0,
+        // left: 0,
+        // right: 0,
+        // backgroundColor: 'rgba(50,50,50,0.7)',
+        // color: theme.gray[50],
+        ...theme.typography.h6,
         padding: theme.spacing(1),
+        borderRadius: 4,
     },
-    approvedRecipeTitle: {},
+    // approvedRecipeTitle: {
+    //     backgroundColor: theme.palette.primary.dark,
+    //     color: theme.palette.primary.contrastText,
+    // },
+    // 'to-tryRecipeTitle': {
+    //     color: theme.palette.secondary.contrastText,
+    // },
     rejectedRecipeTitle: {
         fontStyle: 'italic',
         textDecoration: 'line-through',
@@ -58,15 +75,19 @@ const useStyles = makeStyles((theme) => ({
         fontSize: '80%',
     },
     ingredientNames: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        // position: 'absolute',
+        // top: 0,
+        // left: 0,
+        // right: 0,
+        // bottom: 0,
+        borderRadius: 4,
         overflow: 'hidden',
         padding: 16,
         textAlign: 'justify',
         fontSize: 30,
+        backgroundColor: 'rgb(100,100,100)',
+        color: 'white',
+        flex: 1,
     },
     ingredient: {
         paddingRight: '16px',
@@ -99,6 +120,10 @@ export const RecipeBlock = ({
 }) => {
     const styles = useStyles();
 
+    if (!recipe) {
+        return null;
+    }
+
     const href = `/recipe/${recipe.id}/title/${escapeTitle(recipe.about.title)}`;
 
     const status = recipe.statuses[actorId];
@@ -112,29 +137,28 @@ export const RecipeBlock = ({
         }
     };
 
-    if (recipe.about.image) {
-        return (
-            <Link
-                to={href}
-                onClick={onLinkClick}
-                className={cx(
-                    styles.recipe,
-                    status ? styles[status.replace(' ', '-') + 'Recipe'] : null,
-                )}
-            >
-                <img src={imageUrl(recipe.about.image, url)} className={styles.recipeImage} />
-                <div
-                    className={cx(
-                        styles.recipeTitle,
-                        status ? styles[status.replace(' ', '-') + 'RecipeTitle'] : null,
-                    )}
-                >
-                    {recipe.about.title}
-                </div>
-                <PantryIcon recipe={recipe} pantryIngredients={pantryIngredients} />
-            </Link>
-        );
-    }
+    // if (recipe.about.image) {
+    //     return (
+    //         <Link
+    //             to={href}
+    //             onClick={onLinkClick}
+    //             className={cx(
+    //                 styles.recipe,
+    //                 status ? styles[status.replace(' ', '-') + 'Recipe'] : null,
+    //             )}
+    //         >
+    //             <div
+    //                 className={cx(
+    //                     styles.recipeTitle,
+    //                     status ? styles[status.replace(' ', '-') + 'RecipeTitle'] : null,
+    //                 )}
+    //             >
+    //                 {recipe.about.title}
+    //             </div>
+    //             <PantryIcon recipe={recipe} pantryIngredients={pantryIngredients} />
+    //         </Link>
+    //     );
+    // }
 
     return (
         <Link
@@ -145,11 +169,17 @@ export const RecipeBlock = ({
                 status ? styles[status.replace(' ', '-') + 'Recipe'] : null,
             )}
         >
-            <div className={styles.ingredientNames}>
-                {getIngredientNames(recipe.contents.text).map((name) => (
-                    <span className={styles.ingredient}>{name.toLowerCase() + ' '}</span>
-                ))}
-            </div>
+            {recipe.about.image ? (
+                <img src={imageUrl(recipe.about.image, url)} className={styles.recipeImage} />
+            ) : (
+                <div className={styles.ingredientNames}>
+                    {getIngredientNames(recipe.contents.text).map((name, i) => (
+                        <span key={i} className={styles.ingredient}>
+                            {name.toLowerCase() + ' '}
+                        </span>
+                    ))}
+                </div>
+            )}
             <div
                 className={cx(
                     styles.recipeTitle,
@@ -158,8 +188,55 @@ export const RecipeBlock = ({
             >
                 {recipe.about.title}
             </div>
+            <PantryItems recipe={recipe} pantryIngredients={pantryIngredients} />
             <PantryIcon recipe={recipe} pantryIngredients={pantryIngredients} />
         </Link>
+    );
+};
+
+const PantryItems = ({ recipe, pantryIngredients }) => {
+    if (!pantryIngredients) {
+        return null;
+    }
+    const { used } = getIngredients(recipe);
+
+    const all = Object.keys(used);
+
+    const always = all.filter(
+        (i) => pantryIngredients[i] && pantryIngredients[i].availability === 'always',
+    );
+    const sometimes = all.filter(
+        (i) => pantryIngredients[i] && pantryIngredients[i].availability === 'sometimes',
+    );
+    const need = all.filter(
+        (i) => !pantryIngredients[i] || pantryIngredients[i].availability === 'rarely',
+    );
+
+    const items = need
+        .map((id) => (
+            <div key={id} style={{ display: 'flex', alignItems: 'center' }}>
+                <ShoppingCart style={{ marginRight: 8 }} />
+                {used[id]}
+            </div>
+        ))
+        .concat(
+            sometimes.map((id) => (
+                <div key={id} style={{ display: 'flex', alignItems: 'center' }}>
+                    <Help style={{ marginRight: 8 }} />
+                    {used[id]}
+                </div>
+            )),
+        );
+
+    if (!items.length) {
+        return null;
+    }
+
+    return (
+        <div style={{ padding: 4 }}>
+            {items.slice(0, 2)}
+            {items.length > 2 ? <div style={{ padding: 4 }}>{items.length - 2} more</div> : null}
+        </div>
     );
 };
 
@@ -172,7 +249,7 @@ const PantryIcon = ({ recipe, pantryIngredients }) => {
 
     let contents = [];
 
-    const all = used;
+    const all = Object.keys(used);
 
     const always = all.filter(
         (i) => pantryIngredients[i] && pantryIngredients[i].availability === 'always',
@@ -195,7 +272,7 @@ const PantryIcon = ({ recipe, pantryIngredients }) => {
         contents.push(<Check color="secondary" key={0} />);
     }
 
-    return <div style={{ position: 'absolute', top: 0, right: 0 }}>{contents}</div>;
+    return <div style={{ position: 'absolute', top: 8, right: 8 }}>{contents}</div>;
 };
 import Help from '@material-ui/icons/Help';
 import Check from '@material-ui/icons/Check';
@@ -213,10 +290,13 @@ export const getIngredients = ({
     contents: {
         text: { ops },
     },
-}: RecipeT) => {
+}: RecipeT): { used: { [ingredientId: string]: string }, other: Array<string> } => {
     const used = {};
     const other = [];
     ops.forEach((op, i) => {
+        if (typeof op.insert !== 'string') {
+            return;
+        }
         if (
             isIngredientLine(op) &&
             isIngredientLine(ops[i - 2]) &&
@@ -227,11 +307,11 @@ export const getIngredients = ({
         } else {
             const id = getLink(op);
             if (id) {
-                used[id] = true;
+                used[id] = op.insert;
             }
         }
     });
-    return { used: Object.keys(used), other };
+    return { used, other };
 };
 
 export default RecipeBlock;
