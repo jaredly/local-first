@@ -278,7 +278,7 @@ const EditMealPlan = ({
     const history = useHistory();
     const [_, tags] = useCollection<TagT, _>(React, client, 'tags');
     const [__, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
-    const [___, ingredients] = useCollection<IngredientT, _>(React, client, 'recipes');
+    const [___, ingredients] = useCollection<IngredientT, _>(React, client, 'ingredients');
     const [____, pantryIngredients] = useCollection<PantryIngredient, _>(
         React,
         privateClient,
@@ -329,16 +329,71 @@ const EditMealPlan = ({
     return (
         <div>
             <div>For the week starting {id}</div>
+            <div>
+                <h3>Selected recipes</h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                    {Object.keys(plan.uncategorizedRecipes).map((id) => (
+                        <div key={id} style={{ position: 'relative' }}>
+                            <RecipeBlock
+                                url={url}
+                                actorId={actorId}
+                                recipe={recipes[id]}
+                                tags={tags}
+                                onClick={() => setSidebar(id)}
+                            />
+                            <Checkbox
+                                style={{ position: 'absolute', top: 0, left: 0 }}
+                                checked={true}
+                                onChange={() => {
+                                    mealPlansCol.clearAttribute(plan.id, [
+                                        'uncategorizedRecipes',
+                                        id,
+                                    ]);
+                                }}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
+            <div>
+                <h3>Shopping list</h3>
+                <ShoppingList
+                    ingredients={ingredients}
+                    recipes={recipes}
+                    selectedRecipes={Object.keys(plan.uncategorizedRecipes)}
+                    pantryIngredients={pantryIngredients}
+                />
+            </div>
+            <h3>Suggested recipes</h3>
             <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                 {recipeIds.map((id) => (
-                    <RecipeBlock
-                        url={url}
-                        actorId={actorId}
-                        recipe={recipes[id]}
-                        tags={tags}
-                        key={id}
-                        onClick={() => setSidebar(id)}
-                    />
+                    <div key={id} style={{ position: 'relative' }}>
+                        <RecipeBlock
+                            url={url}
+                            actorId={actorId}
+                            recipe={recipes[id]}
+                            tags={tags}
+                            onClick={() => setSidebar(id)}
+                        />
+                        <Checkbox
+                            style={{ position: 'absolute', top: 0, left: 0 }}
+                            checked={!!plan.uncategorizedRecipes[id]}
+                            onChange={() => {
+                                if (plan.uncategorizedRecipes[id]) {
+                                    mealPlansCol.clearAttribute(plan.id, [
+                                        'uncategorizedRecipes',
+                                        id,
+                                    ]);
+                                } else {
+                                    mealPlansCol.setAttribute(
+                                        plan.id,
+                                        ['uncategorizedRecipes', id],
+                                        Date.now(),
+                                    );
+                                }
+                            }}
+                        />
+                    </div>
                 ))}
             </div>
             {/* 
@@ -376,6 +431,80 @@ const EditMealPlan = ({
                     history.push('/plans');
                 }}
             />
+        </div>
+    );
+};
+
+const isIngredientLine = (op) =>
+    op && op.insert === '\n' && op.attributes && op.attributes.ingredient;
+const getLink = (op) => (op.attributes ? op.attributes.ingredientLink : null);
+
+const getIngredients = ({
+    contents: {
+        text: { ops },
+    },
+}) => {
+    const used = {};
+    const other = [];
+    ops.forEach((op, i) => {
+        if (
+            isIngredientLine(op) &&
+            isIngredientLine(ops[i - 2]) &&
+            typeof ops[i - 1].insert === 'string' &&
+            ops[i - 1].insert.trim() !== '\n'
+        ) {
+            other.push(ops[i - 1].insert);
+        } else {
+            const id = getLink(op);
+            if (id) {
+                used[id] = true;
+            }
+        }
+    });
+    return { used: Object.keys(used), other };
+};
+
+const ShoppingList = ({ recipes, selectedRecipes, pantryIngredients, ingredients }) => {
+    const allIngredients = {};
+    const unknownIngredients = [];
+    selectedRecipes.forEach((id) => {
+        const { used, other } = getIngredients(recipes[id]);
+        used.forEach((id) => (allIngredients[id] = true));
+        unknownIngredients.push(...other);
+    });
+
+    const always = Object.keys(allIngredients).filter(
+        (i) => pantryIngredients[i] && pantryIngredients[i].availability === 'always',
+    );
+    const sometimes = Object.keys(allIngredients).filter(
+        (i) => pantryIngredients[i] && pantryIngredients[i].availability === 'sometimes',
+    );
+    const need = Object.keys(allIngredients).filter(
+        (i) => !pantryIngredients[i] || pantryIngredients[i].availability === 'rarely',
+    );
+
+    return (
+        <div>
+            <h4>Need to buy</h4>
+            {need.map((id) => (
+                <div key={id}>{ingredients[id] && ingredients[id].name}</div>
+            ))}
+            <h4>Need to cbeck</h4>
+            {sometimes.map((id) => (
+                <div key={id}>{ingredients[id] && ingredients[id].name}</div>
+            ))}
+            <h4>In pantry</h4>
+            <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap' }}>
+                {always.map((id) => (
+                    <div style={{ marginRight: 8, marginBottom: 4 }} key={id}>
+                        {ingredients[id] && ingredients[id].name}
+                    </div>
+                ))}
+            </div>
+            <h4>Other ingredients, unable to process</h4>
+            {unknownIngredients.map((text, i) => (
+                <div key={i}>{text}</div>
+            ))}
         </div>
     );
 };
