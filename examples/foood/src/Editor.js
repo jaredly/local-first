@@ -184,7 +184,7 @@ const statuses: Array<RecipeStatus> = ['to try', 'approved', 'rejected'];
 // about: {title, author, source, image}
 // contents: {}
 
-const DeleteButton = ({ onConfirm }) => {
+export const DeleteButton = ({ onConfirm }: { onConfirm: () => mixed }) => {
     const [really, setReally] = React.useState(false);
     if (really) {
         return (

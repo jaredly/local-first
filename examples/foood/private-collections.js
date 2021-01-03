@@ -59,11 +59,44 @@ const PantryIngredientSchema: Schema = {
     },
 };
 
+export type Settings = {
+    id: string,
+    dinnerTags: { [key: string]: number },
+    lunchTags: { [key: string]: number },
+    breakfastTags: { [key: string]: number },
+    snackTags: { [key: string]: number },
+    dessertTags: { [key: string]: number },
+};
+
+const SettingsSchema: Schema = {
+    type: 'object',
+    attributes: {
+        id: 'string',
+        dinnerTags: { type: 'map', value: 'number' },
+        lunchTags: { type: 'map', value: 'number' },
+        breakfastTags: { type: 'map', value: 'number' },
+        snackTags: { type: 'map', value: 'number' },
+        dessertTags: { type: 'map', value: 'number' },
+    },
+};
+
 // a weeklyplan's ID is the m/d/y of the day the week starts.
-export type WeeklyPlan = {
+export type MealPlan = {
+    id: string,
+    ingredientsToUse?: {
+        [key: string]: number,
+    },
+    randomRecipes?: {
+        [key: string]: number,
+    },
+    uncategorizedRecipes: {
+        [key: string]: number, // ooh maybe the number is "batches"? yes.
+    },
     meals: {
         // key is "dayofweek-mealtime"
         // where mealtime is breakfast, lunch, dinner, dessert, or snack
+        // ermmmm what if you want to just add some?
+        // I guess I could have a "unordered meals"
         [key: string]: {
             completed: ?number,
             recipes: { [key: string]: number }, // number is the planned batches
@@ -76,6 +109,12 @@ const WeeklyPlanSchema: Schema = {
     type: 'object',
     attributes: {
         id: 'string',
+        ingredientsToUse: { type: 'optional', value: { type: 'map', value: 'number' } },
+        randomRecipes: { type: 'optional', value: 'object' }, // opaque; we only want to ever replace them all at once
+        uncategorizedRecipes: {
+            type: 'map',
+            value: 'number',
+        },
         meals: {
             type: 'map',
             value: {
@@ -129,4 +168,5 @@ export const schemas = {
     weeklyPlans: WeeklyPlanSchema,
     privateTag: PrivateTagSchema,
     privateIngredientTag: PrivateIngredientTagSchema,
+    settings: SettingsSchema,
 };

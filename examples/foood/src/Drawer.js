@@ -108,6 +108,10 @@ const MyDrawer = ({
                         <ListItemText primary="Home" />
                     </ListItem>
                     <Divider />
+                    <ListItem button component={Link} to="/plans">
+                        <ListItemText primary="Meal Plans" />
+                    </ListItem>
+                    <Divider />
                     <ListItem button component={Link} to="/latest">
                         <ListItemText primary="All Recipes" />
                     </ListItem>

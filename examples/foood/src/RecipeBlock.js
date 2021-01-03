@@ -61,7 +61,7 @@ const useStyles = makeStyles((theme) => ({
         left: 0,
         right: 0,
         bottom: 0,
-        overflow: 'auto',
+        overflow: 'hidden',
         padding: 16,
         textAlign: 'justify',
         fontSize: 30,

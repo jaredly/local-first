@@ -34,6 +34,11 @@ import Latest from './Latest';
 import Debug from './Debug';
 import Ingredients from './Ingredients';
 
+import MealPlans from './MealPlans';
+import Settings from './Settings';
+import EditMealPlan from './EditMealPlan';
+import MealPlan from './MealPlans';
+
 import { Switch as RouteSwitch } from 'react-router-dom';
 
 export type ConnectionConfig =
@@ -80,7 +85,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 `${
                     config.authData.host.startsWith('localhost:') ? 'http' : 'https'
                 }://${privateUrl}`,
-                4,
+                5,
                 {},
                 30 * 1000,
             ),
@@ -207,6 +212,38 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                     </Route>
                     <Route path={`${pathPrefix}/ingredients`}>
                         <Ingredients
+                            client={client}
+                            privateClient={privateClient}
+                            actorId={actorId}
+                        />
+                    </Route>
+                    <Route path={`${pathPrefix}/plans/:id/edit`}>
+                        <EditMealPlan
+                            url={url}
+                            client={client}
+                            privateClient={privateClient}
+                            actorId={actorId}
+                        />
+                    </Route>
+                    <Route path={`${pathPrefix}/plans/:id`}>
+                        <MealPlan
+                            url={url}
+                            client={client}
+                            privateClient={privateClient}
+                            actorId={actorId}
+                        />
+                    </Route>
+                    <Route path={`${pathPrefix}/plans`}>
+                        <MealPlans
+                            url={url}
+                            client={client}
+                            privateClient={privateClient}
+                            actorId={actorId}
+                        />
+                    </Route>
+                    <Route path={`${pathPrefix}/settings`}>
+                        <Settings
+                            url={url}
                             client={client}
                             privateClient={privateClient}
                             actorId={actorId}

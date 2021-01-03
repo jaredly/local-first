@@ -4,10 +4,12 @@
     "version": "1.0.0",
     "dependencies": {
         "@birchill/json-equalish": "^1.1.0",
+        "@date-io/date-fns": "^2.10.6",
         "@emotion/core": "^10.0.28",
         "@material-ui/core": "^4.9.9",
         "@material-ui/icons": "^4.9.1",
         "@material-ui/lab": "^4.0.0-alpha.49",
+        "@material-ui/pickers": "^3.2.10",
         "cheerio": "^1.0.0-rc.3",
         "fuse.js": "^6.4.3",
         "gravatar-url": "^3.1.0",

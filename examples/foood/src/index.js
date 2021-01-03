@@ -19,7 +19,7 @@ const darkTheme = createMuiTheme({
         primary: {
             main:
                 window.localStorage.useLocalFoood === 'true' && location.hostname === 'localhost'
-                    ? '#673ab7'
+                    ? '#8561c5'
                     : '#ff9800',
         },
         secondary: {

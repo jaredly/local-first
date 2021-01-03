@@ -104,7 +104,7 @@ const useStyles = makeStyles((theme) => ({
 
 const statusOrder = ['approved', 'to try', undefined, null, 'rejected'];
 
-const Tag = ({
+export const Tag = ({
     tag,
     count,
     approvedCount,
@@ -112,6 +112,7 @@ const Tag = ({
     matchingRecipes,
     actorId,
     url,
+    onClick,
 }: {
     approvedCount: number,
     tag: TagT,
@@ -120,6 +121,7 @@ const Tag = ({
     matchingRecipes: Array<string>,
     actorId: string,
     url: string,
+    onClick: ?() => void,
 }) => {
     const styles = useStyles();
 
@@ -134,8 +136,8 @@ const Tag = ({
             return statusA - statusB;
         });
 
-    return (
-        <Link to={'/tag/' + tag.id} className={styles.tag}>
+    const body = (
+        <React.Fragment>
             <div className={styles.tagImages}>
                 {images.slice(0, 4).map((id) => (
                     <img
@@ -159,6 +161,19 @@ const Tag = ({
                     {count > approvedCount ? `${count - approvedCount} pending` : ''}
                 </div>
             </div>
+        </React.Fragment>
+    );
+
+    if (onClick) {
+        return (
+            <div onClick={onClick} className={styles.tag}>
+                {body}
+            </div>
+        );
+    }
+    return (
+        <Link to={'/tag/' + tag.id} className={styles.tag}>
+            {body}
         </Link>
     );
 };
