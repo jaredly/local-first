@@ -12,7 +12,7 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
 
 import { useSetTitle } from './Home';
-import RecipeBlock from './RecipeBlock';
+import RecipeBlock, { getIngredients } from './RecipeBlock';
 import Sidebar from './Sidebar';
 import { type MealPlan, type PantryIngredient, type Settings } from '../private-collections';
 import { Tag } from './Home';
@@ -89,7 +89,7 @@ const TagSelector = ({ tags, recipes, actorId, onSelect, url }) => {
     );
 };
 
-const RecipeSelector = ({ tid, tags, recipes, actorId, onSelect, url }) => {
+const RecipeSelector = ({ tid, tags, recipes, actorId, onSelect, url, pantryIngredients }) => {
     const recipesByTag = {};
 
     const recipeIds = Object.keys(recipes).filter(
@@ -107,6 +107,7 @@ const RecipeSelector = ({ tid, tags, recipes, actorId, onSelect, url }) => {
                     url={url}
                     actorId={actorId}
                     recipe={recipes[id]}
+                    pantryIngredients={pantryIngredients}
                     tags={tags}
                     key={id}
                     onClick={() => onSelect(id)}
@@ -338,6 +339,7 @@ const EditMealPlan = ({
                                 url={url}
                                 actorId={actorId}
                                 recipe={recipes[id]}
+                                pantryIngredients={pantryIngredients}
                                 tags={tags}
                                 onClick={() => setSidebar(id)}
                             />
@@ -369,6 +371,7 @@ const EditMealPlan = ({
                 {recipeIds.map((id) => (
                     <div key={id} style={{ position: 'relative' }}>
                         <RecipeBlock
+                            pantryIngredients={pantryIngredients}
                             url={url}
                             actorId={actorId}
                             recipe={recipes[id]}
@@ -433,35 +436,6 @@ const EditMealPlan = ({
             />
         </div>
     );
-};
-
-const isIngredientLine = (op) =>
-    op && op.insert === '\n' && op.attributes && op.attributes.ingredient;
-const getLink = (op) => (op.attributes ? op.attributes.ingredientLink : null);
-
-const getIngredients = ({
-    contents: {
-        text: { ops },
-    },
-}) => {
-    const used = {};
-    const other = [];
-    ops.forEach((op, i) => {
-        if (
-            isIngredientLine(op) &&
-            isIngredientLine(ops[i - 2]) &&
-            typeof ops[i - 1].insert === 'string' &&
-            ops[i - 1].insert.trim() !== '\n'
-        ) {
-            other.push(ops[i - 1].insert);
-        } else {
-            const id = getLink(op);
-            if (id) {
-                used[id] = true;
-            }
-        }
-    });
-    return { used: Object.keys(used), other };
 };
 
 const andList = (items) => {
