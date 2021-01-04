@@ -8,6 +8,7 @@ import type {
     DeltaPersistence,
     FullPersistence,
     NetworkCreator,
+    QueryOp,
 } from './types';
 import {
     type Schema,
@@ -389,7 +390,26 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             state.cache[id] = v;
             return crdt.value(v);
         },
+        async query(key: string, op: QueryOp, value: any) {
+            const results = await persistence.query(colid, key, op, value);
+            const res = [];
+            // Why isn't this being loaded correctly?
+            results.forEach(result => {
+                state.cache[result.value.id] = result.value.value; // TODO is this ok?
+                const v = crdt.value(result.value.value);
+                // STOPSHIP there should be a `crdt.isEmpty` or something
+                // to allow true null values if we want them
+                if (v != null) {
+                    console.log('QUERY', result.key, result.value.value, v);
+                    // TODO also report the id?
+                    res.push({ key: result.key, value: v });
+                }
+            });
+
+            return res;
+        },
         async loadAll() {
+            // OOOH I really need to dedup collections
             const all = await persistence.loadAll(colid);
             const res = {};
             // Why isn't this being loaded correctly?
@@ -403,6 +423,38 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                 }
             });
             return res;
+        },
+
+        /**
+         * onQueryChanges: Listen for changes to a query.
+         *
+         * fn: called with (list of results to add/update, list of results to remove)
+         *
+         * Note that removal isn't yet supported. Neither are indexes
+         */
+        onQueryChanges(
+            key: string,
+            op: QueryOp,
+            value: any,
+            fn: (Array<{ key: string, value: T }>, Array<string>) => mixed,
+        ) {
+            if (key !== 'key' && key !== 'id') {
+                throw new Error('Custom indexes not supported');
+            }
+            return this.onChanges(changes => {
+                const matching = changes.filter(change => matchesQuery(change, key, op, value));
+                const data = matching.map(({ key, value }) => ({
+                    key,
+                    value: crdt.value(value),
+                }));
+                const remove = data
+                    .filter(change => change.value == null)
+                    .map(change => change.key);
+                fn(
+                    data.filter(item => item.value != null),
+                    remove,
+                );
+            });
         },
 
         onChanges(fn: (Array<{ id: string, value: ?T }>) => void) {
@@ -426,6 +478,31 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             };
         },
     };
+};
+
+const matchesQuery = (change, key, op, value) => {
+    if (key !== 'id' && key !== 'key') {
+        // custom index
+        throw new Error('watching custom index not supported');
+    }
+    return opCmp(change.key, op, value);
+};
+
+const opCmp = (one, op: QueryOp, other) => {
+    switch (op) {
+        case '=':
+            return one === other;
+        case '>=':
+            return one >= other;
+        case '>':
+            return one > other;
+        case '<=':
+            return one <= other;
+        case '<':
+            return one < other;
+        default:
+            return false;
+    }
 };
 
 export const onCrossTabChanges = async function<Delta, Data, T>(

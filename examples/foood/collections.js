@@ -120,7 +120,7 @@ export type CommentT = {
     recipeVersion: string,
 }
 
-export type RecipeStatus = 'to try' | 'approved' | 'rejected';
+export type RecipeStatus = 'favorite' | 'to try' | 'approved' | 'rejected';
 
 export type RecipeAbout = {
     title: string,

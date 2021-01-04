@@ -24,7 +24,7 @@ const useStyles = makeStyles((theme) => ({
 
 const defaultShowAmount = 15;
 
-const statuses: Array<RecipeStatus> = ['to try', 'approved', 'rejected'];
+const statuses: Array<RecipeStatus> = ['to try', 'approved', 'favorite', 'rejected'];
 
 const Latest = ({ client, actorId, url }: { url: string, client: Client<*>, actorId: string }) => {
     const match = useRouteMatch();

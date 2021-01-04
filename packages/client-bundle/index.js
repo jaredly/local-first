@@ -12,7 +12,7 @@ export type { Schema };
 
 import type { CRDTImpl } from '../core/src/shared';
 import type { Client, NetworkCreator } from '../core/src/types';
-export type { Client, Collection } from '../core/src/types';
+export type { Client, Collection, QueryOp } from '../core/src/types';
 
 import { default as createBlobClient } from '../core/src/blob/create-client';
 import { default as makeBlobPersistence } from '../idb/src/blob';

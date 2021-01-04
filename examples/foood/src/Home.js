@@ -2,10 +2,11 @@
 import * as React from 'react';
 import type { RecipeT, TagT } from '../collections';
 import type { Client, Collection } from '../../../packages/client-bundle';
-import { useCollection, useItem } from '../../../packages/client-react';
+import { useCollection, useItem, useQuery } from '../../../packages/client-react';
 import { Route, Link, useRouteMatch, useParams, useHistory } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
 import IconButton from '@material-ui/core/IconButton';
+import Typography from '@material-ui/core/Typography';
 import Close from '@material-ui/icons/Close';
 import LinkIcon from '@material-ui/icons/Link';
 
@@ -17,6 +18,10 @@ import RecipeBlock from './RecipeBlock';
 const useStyles = makeStyles((theme) => ({
     container: {
         paddingTop: theme.spacing(8),
+    },
+
+    mealPlan: {
+        padding: 24,
     },
 
     tags: {
@@ -102,7 +107,7 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
-const statusOrder = ['approved', 'to try', undefined, null, 'rejected'];
+const statusOrder = ['favorite', 'approved', 'to try', undefined, null, 'rejected'];
 
 export const Tag = ({
     tag,
@@ -121,7 +126,7 @@ export const Tag = ({
     matchingRecipes: Array<string>,
     actorId: string,
     url: string,
-    onClick: ?() => void,
+    onClick?: ?() => void,
 }) => {
     const styles = useStyles();
 
@@ -197,7 +202,17 @@ export const sortRecipes = (recipeA: RecipeT, recipeB: RecipeT, actorId: string)
     return statusA - statusB;
 };
 
-const Home = ({ client, actorId, url }: { client: Client<*>, actorId: string, url: string }) => {
+const Home = ({
+    client,
+    privateClient,
+    actorId,
+    url,
+}: {
+    client: Client<*>,
+    privateClient: Client<*>,
+    actorId: string,
+    url: string,
+}) => {
     const match = useRouteMatch();
     const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
     const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
@@ -304,7 +319,15 @@ const Home = ({ client, actorId, url }: { client: Client<*>, actorId: string, ur
 
     return (
         <div>
-            <Link to="/latest">Latest Recipes</Link>
+            <CurrentMealPlan
+                url={url}
+                actorId={actorId}
+                tags={tags}
+                setSidebar={setSidebar}
+                privateClient={privateClient}
+                client={client}
+                recipes={recipes}
+            />
             <div className={styles.tags}>
                 {tagIds.length === 0 ? 'No tags defined' : null}
                 {tagIds.map((id) => (
@@ -320,6 +343,15 @@ const Home = ({ client, actorId, url }: { client: Client<*>, actorId: string, ur
                     />
                 ))}
             </div>
+            {sidebar != null ? (
+                <Sidebar
+                    onClose={() => setSidebar(null)}
+                    id={sidebar}
+                    client={client}
+                    actorId={actorId}
+                    url={url}
+                />
+            ) : null}
             {/* {Object.keys(recipes).map((id) => (
                 <div>
                     {recipes[id].title}
@@ -330,5 +362,47 @@ const Home = ({ client, actorId, url }: { client: Client<*>, actorId: string, ur
         </div>
     );
 };
+
+const DAY_MS = 60 * 1000 * 60 * 24;
+
+const twoWeeksAgo = () => {
+    const date = new Date(Date.now() - DAY_MS * 10);
+    return `${date.getFullYear()}-${(date.getMonth() + 1)
+        .toString()
+        .padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+};
+
+const CurrentMealPlan = ({ recipes, client, privateClient, url, actorId, tags, setSidebar }) => {
+    const [col, results] = useQuery(React, privateClient, 'weeklyPlans', 'id', '>', twoWeeksAgo());
+    const styles = useStyles();
+    if (!results.length) {
+        return null;
+    }
+    results.sort((a, b) => cmp(b.key, a.key));
+    const plan = results[0].value;
+    return (
+        <div className={styles.mealPlan}>
+            <Link to={`/plans/${plan.id}/edit`}>
+                <Typography style={{ textAlign: 'center' }} variant="h4">
+                    Meal plan for {plan.id}
+                </Typography>
+            </Link>
+            <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                {Object.keys(plan.uncategorizedRecipes).map((key) => (
+                    <RecipeBlock
+                        key={key}
+                        url={url}
+                        actorId={actorId}
+                        recipe={recipes[key]}
+                        tags={tags}
+                        onClick={() => setSidebar(key)}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
 export default Home;

@@ -6,6 +6,11 @@ export type Store<T> = {
     put<T>(T, ?string): Promise<void>,
     count(): Promise<number>,
     openCursor: IDBKeyRange => Promise<Cursor>,
+    index<T>(): Index<T>,
+};
+
+export type Index<T> = {
+    openCursor: IDBKeyRange => Promise<Cursor>,
 };
 
 export type Cursor = {
@@ -23,5 +28,5 @@ export type DB = {
     get<T>(string, string): Promise<?T>,
     getAll<T>(string): Promise<Array<{ id: string, value: T }>>,
     count(string): Promise<number>,
-    transaction(string | Array<string>, 'readonly' | 'readwrite'): Transaction<any>,
+    transaction<T>(string | Array<string>, 'readonly' | 'readwrite'): Transaction<T>,
 };

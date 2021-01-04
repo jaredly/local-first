@@ -1,7 +1,7 @@
 // @flow
 // import React from '../../examples/whiteboard/node_modules/react';
 
-import { type Client, type Collection } from '../client-bundle';
+import { type Client, type Collection, type QueryOp } from '../client-bundle';
 
 export const useSyncStatus = function<SyncStatus>(React: *, client: Client<SyncStatus>) {
     const [status, setStatus] = React.useState(client.getSyncStatus());
@@ -132,4 +132,32 @@ export const useCollection = function<T: {}, SyncStatus>(
         });
     }, []);
     return [col, data];
+};
+
+export const useQuery = function<T: {}, SyncStatus>(
+    React: *,
+    client: Client<SyncStatus>,
+    name: string,
+    key: string,
+    op: QueryOp,
+    value: any,
+): [Collection<T>, Array<{ key: string, value: T }>] {
+    // Hmm maybe collections should be cached?
+    const col = React.useMemo(() => client.getCollection<T>(name), []);
+    // TODO something to indicate whether we've loaded from the database yet
+    // also something to indicate whether we've ever synced with a server.
+    const [results, setResults] = React.useState([]);
+    React.useEffect(() => {
+        col.query(key, op, value).then(results => {
+            setResults(results);
+            col.onQueryChanges(key, op, value, (added, removed) => {
+                setResults(results => {
+                    results = results.filter(res => !removed.includes(res.key));
+                    // STOPSHIP: Do I care about ordering here?
+                    return results.concat(added);
+                });
+            });
+        });
+    }, []);
+    return [col, results];
 };

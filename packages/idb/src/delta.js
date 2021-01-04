@@ -180,6 +180,31 @@ const makePersistence = (
             items.forEach(item => (res[item.id] = item.value));
             return res;
         },
+        // STOPSHP: Test this a bunch
+        // Also, how should I memoize this??
+        async query<T>(
+            collection: string,
+            key: string,
+            op: '=' | '>=' | '<=' | '<' | '>',
+            value: any,
+        ): Promise<Array<{ key: string, value: T }>> {
+            let base;
+            if (key === 'key' || key === 'id') {
+                // $FlowFixMe
+                base = (await db).transaction(collection + ':nodes', 'readonly').store;
+            } else {
+                // $FlowFixMe
+                base = (await db).transaction(collection + ':nodes', 'readonly').store.index(key);
+            }
+            let cursor = await base.openCursor(makeKeyRange(op, value));
+            const values = [];
+
+            while (cursor) {
+                values.push({ key: cursor.key, value: cursor.value });
+                cursor = await cursor.continue();
+            }
+            return values;
+        },
         async fullExport<Data>(): Promise<Export<Data>> {
             console.log('dumping all');
             const dump = {};
@@ -206,6 +231,26 @@ const makePersistence = (
             return applyDeltas(db, collection, deltas, serverCursor, apply, serverCursor == null);
         },
     };
+};
+
+const makeKeyRange = (op: '=' | '>=' | '<=' | '<' | '>', value: any) => {
+    switch (op) {
+        case '=':
+            // $FlowFixMe
+            return IDBKeyRange.only(value);
+        case '>=':
+            // $FlowFixMe
+            return IDBKeyRange.lowerBound(value);
+        case '>':
+            // $FlowFixMe
+            return IDBKeyRange.lowerBound(value, true);
+        case '<=':
+            // $FlowFixMe
+            return IDBKeyRange.upperBound(value);
+        case '<':
+            // $FlowFixMe
+            return IDBKeyRange.upperBound(value, true);
+    }
 };
 
 export default makePersistence;

@@ -253,7 +253,12 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                         <Search url={url} client={client} actorId={actorId} />
                     </Route>
                     <Route path={`${pathPrefix}/tag/:tagid`}>
-                        <Home url={url} actorId={actorId} client={client} />
+                        <Home
+                            privateClient={privateClient}
+                            url={url}
+                            actorId={actorId}
+                            client={client}
+                        />
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id/title/:title`}>
                         <RecipeView url={url} actorId={actorId} client={client} />
@@ -271,7 +276,12 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                         <Debug client={client} />
                     </Route>
                     <Route path={`${pathPrefix}`}>
-                        <Home url={url} actorId={actorId} client={client} />
+                        <Home
+                            privateClient={privateClient}
+                            url={url}
+                            actorId={actorId}
+                            client={client}
+                        />
                     </Route>
                 </RouteSwitch>
             </AppShell>

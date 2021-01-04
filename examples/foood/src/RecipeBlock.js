@@ -30,6 +30,10 @@ const useStyles = makeStyles((theme) => ({
         borderRadius: 8,
         padding: theme.spacing(0.5),
     },
+    recipeSmall: {
+        height: 200,
+        width: 200,
+    },
     'to-tryRecipe': {
         backgroundColor: theme.palette.secondary.light,
         color: theme.palette.secondary.contrastText,
@@ -166,6 +170,7 @@ export const RecipeBlock = ({
             onClick={onLinkClick}
             className={cx(
                 styles.recipe,
+                pantryIngredients ? null : styles.recipeSmall,
                 status ? styles[status.replace(' ', '-') + 'Recipe'] : null,
             )}
         >

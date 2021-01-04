@@ -216,6 +216,7 @@ const CreateSettings = ({ settingsCol, tags, recipes, url, client, actorId }) =>
         <div>
             <h2>What tags should be used when planning for {name}?</h2>
             <Button
+                variant="contained"
                 onClick={() => {
                     const data = {};
                     Object.keys(selectedTags).forEach((t) => {

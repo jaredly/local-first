@@ -72,7 +72,7 @@ const useSetTitle = (title) => {
     }, [title]);
 };
 
-const statuses: Array<RecipeStatus> = ['to try', 'approved', 'rejected'];
+const statuses: Array<RecipeStatus> = ['to try', 'approved', 'favorite', 'rejected'];
 
 const RecipeView = ({
     client,

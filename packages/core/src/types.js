@@ -63,6 +63,8 @@ export type Collection<T> = {
     onItemChange: (id: string, (value: ?T) => void) => () => void,
 };
 
+export type QueryOp = '=' | '>=' | '<=' | '>' | '<';
+
 // Ok, so this is the min required for the `getCollection` thing to work, I believe.
 export type Persistence = {
     collections: Array<string>,
@@ -78,6 +80,12 @@ export type Persistence = {
     fullExport<Data>(): Promise<Export<Data>>,
     load<T>(colid: string, id: string): Promise<?T>,
     loadAll<T>(colid: string): Promise<{ [key: string]: T }>,
+    query<T>(
+        colid: string,
+        key: string,
+        op: QueryOp,
+        value: any,
+    ): Promise<Array<{ key: string, value: T }>>,
     tabIsolated: boolean,
     teardown(): Promise<void>,
     // delete(colid: string, id: string): Promise<void>,
