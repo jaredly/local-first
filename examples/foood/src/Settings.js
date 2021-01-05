@@ -152,7 +152,8 @@ export const TagsChooser = ({
         if (
             recipes[id].trashedDate != null ||
             !recipes[id].tags ||
-            recipes[id].statuses[actorId] !== 'approved'
+            (recipes[id].statuses[actorId] !== 'approved' &&
+                recipes[id].statuses[actorId] !== 'favorite')
         )
             return;
         Object.keys(recipes[id].tags).forEach((tid) => {

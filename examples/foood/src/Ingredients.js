@@ -247,6 +247,7 @@ const Ingredient = React.memo(({ ingredient, col, pantryIngredient, pantryCol })
                     </React.Fragment>
                 ) : null}
             </div>
+            <Kinds kinds={ingredientKinds} ingredient={ingredient} col={col} />
             {/* <LineEdit
                 label="Add alternate name"
                 value={'Add alternate name'}
@@ -258,11 +259,35 @@ const Ingredient = React.memo(({ ingredient, col, pantryIngredient, pantryCol })
     );
 });
 
-const Kinds = ({ kinds }) => {
+const Kinds = ({ kinds, ingredient, col }) => {
+    const [current, setCurrent] = React.useState(null);
+
+    if (!current) {
+        return (
+            <div>
+                {Object.keys(ingredient.kinds).map((kind) => (
+                    <span id={kind}>{kind}</span>
+                ))}
+                {Object.keys(ingredient.kinds).length === 0 ? 'Kinds' : null}
+                <IconButton
+                    // edge="start"
+                    // style={{ marginRight: 16 }}
+                    color="inherit"
+                    aria-label="menu"
+                    onClick={() => {
+                        setCurrent(Object.keys(ingredient.kinds));
+                    }}
+                >
+                    <Edit />
+                </IconButton>
+            </div>
+        );
+    }
+
     return (
-        <div>
+        <div style={{ display: 'flex' }}>
             <Autocomplete
-                style={{ flex: 1 }}
+                // style={{ flex: 1 }}
                 multiple
                 id="tags-standard"
                 options={ingredientKinds}
@@ -271,42 +296,12 @@ const Kinds = ({ kinds }) => {
                 clearOnBlur
                 handleHomeEndKeys
                 renderOption={(option) => option}
-                value={Object.keys(ingredient.kinds)}
-                freeSolo
-                filterOptions={(options, params) => {
-                    const filtered = filter(options, params);
-
-                    if (params.inputValue !== '') {
-                        filtered.push({
-                            inputValue: params.inputValue,
-                            text: `Add "${params.inputValue}"`,
-                        });
-                    }
-
-                    return filtered;
-                }}
-                getOptionLabel={(option) => {
-                    // e.g value selected with enter, right from the input
-                    if (typeof option === 'string') {
-                        return option;
-                    }
-                    if (option.inputValue) {
-                        return option.inputValue;
-                    }
-                    return option.text;
-                }}
+                value={current}
                 onChange={(event, newValue) => {
-                    const added = newValue[newValue.length - 1];
-
-                    // if (added && (typeof added === 'string' || added.inputValue)) {
-                    //     const text = typeof added === 'string' ? added : added.inputValue;
-                    //     setEditTags(newValue.slice(0, -1).concat({ text }));
-                    //     return;
-                    // }
-                    // setEditTags(newValue);
+                    setCurrent(newValue);
                 }}
                 renderInput={(params) => (
-                    <TextField {...params} variant="outlined" label="Tags" placeholder="Tags" />
+                    <TextField {...params} variant="outlined" label="Kinds" placeholder="Kinds" />
                 )}
             />
             <IconButton
@@ -315,30 +310,17 @@ const Kinds = ({ kinds }) => {
                 color="inherit"
                 aria-label="menu"
                 onClick={async () => {
-                    // for (const tag of editTags) {
-                    //     if (tag.id != null) {
-                    //         if (tags[tag.id] == null) {
-                    //             await col.setAttribute(recipeId, ['tags', tag.id], Date.now());
-                    //         }
-                    //     } else {
-                    //         const text = tag.text;
-                    //         const tid = client.getStamp();
-                    //         await tagsCol.save(tid, {
-                    //             id: tid,
-                    //             text,
-                    //             color: null,
-                    //             created: Date.now(),
-                    //             authorId: actorId,
-                    //         });
-                    //         await col.setAttribute(recipeId, ['tags', tid], Date.now());
-                    //     }
-                    // }
-                    // for (const tid of Object.keys(tags)) {
-                    //     if (!editTags.some((t) => t.id === tid)) {
-                    //         await col.clearAttribute(recipeId, ['tags', tid]);
-                    //     }
-                    // }
-                    // onClose();
+                    for (const kind of Object.keys(ingredient.kinds)) {
+                        if (!current.includes(kind)) {
+                            await col.clearAttribute(ingredient.id, ['kinds', kind]);
+                        }
+                    }
+                    for (const kind of current) {
+                        if (ingredient.kinds[kind] == null) {
+                            await col.setAttribute(ingredient.id, ['kinds', kind], Date.now());
+                        }
+                    }
+                    setCurrent(null);
                 }}
             >
                 <Check />
@@ -349,7 +331,7 @@ const Kinds = ({ kinds }) => {
                 color="inherit"
                 aria-label="menu"
                 onClick={() => {
-                    // onClose();
+                    setCurrent(null);
                 }}
             >
                 <Close />

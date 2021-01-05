@@ -39,6 +39,11 @@ const useStyles = makeStyles((theme) => ({
         color: theme.palette.secondary.contrastText,
         // border: `${theme.spacing(0.5)}px solid ${theme.palette.secondary.light}`,
     },
+    favoriteRecipe: {
+        backgroundColor: theme.palette.primary.light,
+        color: theme.palette.primary.contrastText,
+        // border: `${theme.spacing(0.5)}px solid ${theme.palette.primary.dark}`,
+    },
     approvedRecipe: {
         backgroundColor: theme.palette.primary.light,
         color: theme.palette.primary.contrastText,
@@ -291,6 +296,8 @@ const isIngredientLine = (op) =>
     op && op.insert === '\n' && op.attributes && op.attributes.ingredient;
 const getLink = (op) => (op.attributes ? op.attributes.ingredientLink : null);
 
+const opInsert = (op): string => (typeof op.insert !== 'string' ? '' : op.insert);
+
 export const getIngredients = ({
     contents: {
         text: { ops },
@@ -299,20 +306,17 @@ export const getIngredients = ({
     const used = {};
     const other = [];
     ops.forEach((op, i) => {
-        if (typeof op.insert !== 'string') {
-            return;
-        }
         if (
             isIngredientLine(op) &&
             isIngredientLine(ops[i - 2]) &&
             typeof ops[i - 1].insert === 'string' &&
-            ops[i - 1].insert.trim() !== '\n'
+            opInsert(ops[i - 1]).trim() !== '\n'
         ) {
-            other.push(ops[i - 1].insert);
+            other.push(opInsert(ops[i - 1]));
         } else {
             const id = getLink(op);
             if (id) {
-                used[id] = op.insert;
+                used[id] = opInsert(op);
             }
         }
     });

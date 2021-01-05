@@ -61,6 +61,7 @@ export const ingredientKinds = [
     'meat',
     'protein',
     'frozen',
+    'legume',
 ];
 
 const IngredientSchema = {

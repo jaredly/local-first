@@ -96,7 +96,7 @@ const RecipeSelector = ({ tid, tags, recipes, actorId, onSelect, url, pantryIngr
         (id) =>
             recipes[id].tags &&
             recipes[id].tags[tid] != null &&
-            ['to try', 'approved'].includes(recipes[id].statuses[actorId]),
+            ['to try', 'approved', 'favorite'].includes(recipes[id].statuses[actorId]),
     );
 
     return (
@@ -196,7 +196,8 @@ const CreateSettings = ({ settingsCol, tags, recipes, url, client, actorId }) =>
         if (
             recipes[id].trashedDate != null ||
             !recipes[id].tags ||
-            recipes[id].statuses[actorId] !== 'approved'
+            (recipes[id].statuses[actorId] !== 'approved' &&
+                recipes[id].statuses[actorId] !== 'favorite')
         )
             return;
         Object.keys(recipes[id].tags).forEach((tid) => {
