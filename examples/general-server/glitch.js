@@ -75,4 +75,42 @@ if (process.env.UPLOADS_FIREBASE_APP) {
                 },
             );
     });
+
+    result.app.post('/uploads/*', (req, res) => {
+        const requested = req.path.slice('/uploads/'.length);
+        const storage = uploadAccount.storage();
+        req.pipe(
+            storage
+                .bucket()
+                .file(requested)
+                .createWriteString({ gzip: true }),
+        )
+            .on('error', err => {
+                console.error('failed to upload');
+                console.error(err);
+                res.status(500);
+                res.send('Failed to upload');
+            })
+            .on('finish', () => {
+                res.status(204);
+                res.end();
+            });
+        // .getSignedUrl({
+        //     action: 'read',
+        //     expires: Date.now() + 30 * 1000, // 30 seconds, why not
+        // })
+        // .then(
+        //     function([url]) {
+        //         res.status(302);
+        //         res.header('Location', url);
+        //         res.end();
+        //     },
+        //     err => {
+        //         console.log('Failed to get image url');
+        //         console.error(err);
+        //         res.status(404);
+        //         res.send('Not found');
+        //     },
+        // );
+    });
 }

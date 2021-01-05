@@ -386,7 +386,13 @@ const RecipeEditor = ({
                 {image != '' ? (
                     <img
                         src={imageUrl(image, url)}
-                        style={{ width: 100, height: 100, marginLeft: 16, borderRadius: 20 }}
+                        style={{
+                            objectFit: 'cover',
+                            width: 100,
+                            height: 100,
+                            marginLeft: 16,
+                            borderRadius: 20,
+                        }}
                     />
                 ) : null}
             </div>

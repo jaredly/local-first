@@ -7,7 +7,10 @@ import { useCollection, useItem } from '../../../packages/client-react';
 
 import { Route, Link, useRouteMatch, useParams, useHistory } from 'react-router-dom';
 import IconButton from '@material-ui/core/IconButton';
+import TextField from '@material-ui/core/TextField';
 import EditIcon from '@material-ui/icons/Edit';
+import Star from '@material-ui/icons/Star';
+import StarOutline from '@material-ui/icons/StarOutline';
 import { makeStyles } from '@material-ui/core/styles';
 import deepEqual from '@birchill/json-equalish';
 import renderQuill from './renderQuill';
@@ -20,6 +23,7 @@ const useStyles = makeStyles((theme) => ({
         fontSize: 20,
         lineHeight: 1.8,
         fontWeight: 300,
+        marginBottom: theme.spacing(10),
     },
     headerImage: {
         width: '100%',
@@ -206,15 +210,99 @@ const RecipeView = ({
                 ))}
             </div>
             <div className={styles.text}>{renderQuill(recipe.contents.text, batches)}</div>
-            <Comments recipe={recipe} col={col} />
+            <Comments recipe={recipe} col={col} actorId={actorId} />
         </div>
     );
 };
 
-const Comments = ({ recipe, col }) => {
+const Stars = ({ value, onChange }) => {
+    const res = [];
+    const nums = [1, 2, 3, 4, 5];
+    for (let i = 0; i < 5; i++) {
+        res.push();
+    }
+    return (
+        <div>
+            {[1, 2, 3, 4, 5].map((num) =>
+                num <= value ? (
+                    <Star
+                        key={num}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => onChange(num === value ? null : num)}
+                    />
+                ) : (
+                    <StarOutline
+                        key={num}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => onChange(num)}
+                    />
+                ),
+            )}
+        </div>
+    );
+};
+
+const NewComment = ({ recipe, col, actorId }) => {
+    const [text, setText] = React.useState(null);
+    const [loading, setLoading] = React.useState(false);
+    const [happiness, setHappiness] = React.useState(0);
+
+    if (text == null) {
+        return <Button onClick={() => setText('')}>Add comment</Button>;
+    }
+
+    return (
+        <div style={{ padding: 8 }}>
+            <Stars
+                value={happiness}
+                onChange={(value) => {
+                    setHappiness(value == null ? 0 : value);
+                }}
+            />
+            <div style={{ height: 16 }} />
+            <TextField
+                multiline
+                fullWidth
+                variant="outlined"
+                label="Comment"
+                placeholder="Write your comment"
+                value={text}
+                onChange={(evt) => setText(evt.target.value)}
+            />
+            <div style={{ height: 16 }} />
+            <Button
+                variant="contained"
+                disabled={loading}
+                style={{ marginRight: 16 }}
+                onClick={async () => {
+                    setLoading(true);
+                    const id = col.genId();
+                    await col.setAttribute(recipe.id, ['comments', id], {
+                        id,
+                        authorId: actorId,
+                        text: { ops: [{ insert: text + '\n' }] },
+                        date: Date.now(),
+                        happiness,
+                        images: [],
+                    });
+                    setText(null);
+                    setHappiness(0);
+                    setLoading(false);
+                }}
+            >
+                Save
+            </Button>
+            <Button onClick={() => setText(null)}>Cancel</Button>
+        </div>
+    );
+};
+
+const Comments = ({ recipe, col, actorId }) => {
     return (
         <div>
             <h3>Comments</h3>
+            <NewComment actorId={actorId} recipe={recipe} col={col} />
+            <div style={{ height: 36 }} />
             {Object.keys(recipe.comments)
                 .sort((a, b) => recipe.comments[b].date - recipe.comments[a].date)
                 .map((id) => (

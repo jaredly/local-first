@@ -41,6 +41,9 @@ import MealPlan from './MealPlans';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
+const usingLocalHost =
+    window.localStorage.useLocalFoood === 'true' && location.hostname === 'localhost';
+
 export type ConnectionConfig =
     | {
           type: 'memory',
@@ -120,7 +123,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
     return (
         <div>
             <AppShell
-                title="Foood"
+                title={usingLocalHost ? 'Foood - localhost' : 'Foood'}
                 renderDrawer={(isOpen, onClose) => (
                     <Drawer
                         actorId={actorId}
