@@ -55,6 +55,7 @@ export const ingredientKinds = [
     'nut',
     'fruit',
     'spice',
+    'herb',
     'grain',
     'carb',
     'dairy',
@@ -62,6 +63,7 @@ export const ingredientKinds = [
     'protein',
     'frozen',
     'legume',
+    'fat',
 ];
 
 const IngredientSchema = {

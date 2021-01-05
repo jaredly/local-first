@@ -108,54 +108,54 @@ const Ingredients = ({
                     {bulkEdit ? 'Stop bulk editing' : 'Bulk edit'}
                 </Button>
             </div>
-            {bulkEdit ? (
-                <div>
-                    {/* <Autocomplete
-                multiple
-                options={ingredientKinds}
-                selectOnFocus
-                clearOnBlur
-                handleHomeEndKeys
-                renderOption={(option) => option}
-                value={bulkTags}
-                onChange={(event, newValue) => {
-                    setCurrent(newValue);
-                }}
-                renderInput={(params) => (
-                    <TextField {...params} variant="outlined" label="Kinds" placeholder="Kinds" />
-                )}
-            /> */}
-                    {ingredientKinds.map((kind) => (
-                        <Button
-                            key={kind}
-                            onClick={async () => {
-                                for (const key of Object.keys(bulkEdit)) {
-                                    if (bulkEdit[key] && ingredients[key].kinds[kind] == null) {
-                                        await ingredientsCol.setAttribute(
-                                            key,
-                                            ['kinds', kind],
-                                            Date.now(),
-                                        );
-                                    }
-                                }
-                            }}
-                        >
-                            {kind}
-                        </Button>
-                    ))}
-                </div>
-            ) : null}
-            {results.map((key) => (
-                <Ingredient
-                    key={key}
-                    selected={bulkEdit ? !!bulkEdit[key] : null}
-                    onSelect={onSelect}
-                    pantryIngredient={pantryIngredients[key]}
-                    pantryCol={pantryIngredientsCol}
-                    ingredient={ingredients[key]}
-                    col={ingredientsCol}
-                />
-            ))}
+            {results.map((key) => {
+                const ing = (
+                    <Ingredient
+                        key={key}
+                        pantryIngredient={pantryIngredients[key]}
+                        pantryCol={pantryIngredientsCol}
+                        ingredient={ingredients[key]}
+                        col={ingredientsCol}
+                    />
+                );
+                if (bulkEdit) {
+                    return (
+                        <React.Fragment key={key}>
+                            {ing}
+                            <div>
+                                {ingredientKinds.map((kind) => (
+                                    <Button
+                                        key={kind}
+                                        size="small"
+                                        variant={
+                                            ingredients[key].kinds[kind] == null
+                                                ? 'text'
+                                                : 'contained'
+                                        }
+                                        onClick={async () => {
+                                            if (ingredients[key].kinds[kind] == null) {
+                                                await ingredientsCol.setAttribute(
+                                                    key,
+                                                    ['kinds', kind],
+                                                    Date.now(),
+                                                );
+                                            } else {
+                                                await ingredientsCol.clearAttribute(key, [
+                                                    'kinds',
+                                                    kind,
+                                                ]);
+                                            }
+                                        }}
+                                    >
+                                        {kind}
+                                    </Button>
+                                ))}
+                            </div>
+                        </React.Fragment>
+                    );
+                }
+                return ing;
+            })}
         </div>
     );
 };
@@ -206,131 +206,121 @@ const LineEdit = ({ label, value, onChange }) => {
 };
 
 import Checkbox from '@material-ui/core/Checkbox';
-const Ingredient = React.memo(
-    ({ ingredient, col, pantryIngredient, pantryCol, selected, onSelect }) => {
-        const [altName, setAltName] = React.useState('');
-        return (
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-                {selected == null ? null : (
-                    <Checkbox
-                        checked={selected}
-                        onChange={() => onSelect(ingredient.id, !selected)}
-                    />
-                )}
-                <div>
-                    {ingredientAvailabilities.map((name, i) => {
-                        const color =
-                            pantryIngredient != null && pantryIngredient.availability === name
-                                ? 'secondary'
-                                : 'disabled';
-                        return (
-                            <IconButton
-                                key={name}
-                                edge={
-                                    i === 0
-                                        ? 'end'
-                                        : i === ingredientAvailabilities.length - 1
-                                        ? 'start'
-                                        : false
-                                }
-                                onClick={async () => {
-                                    if (
-                                        pantryIngredient != null &&
-                                        pantryIngredient.availability === name
-                                    ) {
-                                        await pantryCol.clearAttribute(ingredient.id, [
-                                            'availability',
-                                        ]);
+const Ingredient = React.memo(({ ingredient, col, pantryIngredient, pantryCol }) => {
+    const [altName, setAltName] = React.useState('');
+    return (
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div>
+                {ingredientAvailabilities.map((name, i) => {
+                    const color =
+                        pantryIngredient != null && pantryIngredient.availability === name
+                            ? 'secondary'
+                            : 'disabled';
+                    return (
+                        <IconButton
+                            key={name}
+                            edge={
+                                i === 0
+                                    ? 'end'
+                                    : i === ingredientAvailabilities.length - 1
+                                    ? 'start'
+                                    : false
+                            }
+                            onClick={async () => {
+                                if (
+                                    pantryIngredient != null &&
+                                    pantryIngredient.availability === name
+                                ) {
+                                    await pantryCol.clearAttribute(ingredient.id, ['availability']);
+                                } else {
+                                    if (pantryIngredient == null) {
+                                        await pantryCol.save(ingredient.id, {
+                                            id: ingredient.id,
+                                            availability: name,
+                                        });
                                     } else {
-                                        if (pantryIngredient == null) {
-                                            await pantryCol.save(ingredient.id, {
-                                                id: ingredient.id,
-                                                availability: name,
-                                            });
-                                        } else {
-                                            await pantryCol.setAttribute(
-                                                ingredient.id,
-                                                ['availability'],
-                                                name,
-                                            );
-                                        }
+                                        await pantryCol.setAttribute(
+                                            ingredient.id,
+                                            ['availability'],
+                                            name,
+                                        );
                                     }
-                                }}
-                            >
-                                {name === 'always' ? (
-                                    <Check color={color} />
-                                ) : name === 'sometimes' ? (
-                                    <Help color={color} />
-                                ) : (
-                                    <ShoppingCart color={color} />
-                                )}
-                                {/* {name} */}
-                            </IconButton>
-                        );
-                    })}
-                </div>
-                <div style={{ width: 16 }} />
-                <LineEdit
-                    label="Ingredient name"
-                    value={ingredient.name}
-                    onChange={(newName) => {
-                        col.setAttribute(ingredient.id, ['name'], newName);
-                    }}
+                                }
+                            }}
+                        >
+                            {name === 'always' ? (
+                                <Check color={color} />
+                            ) : name === 'sometimes' ? (
+                                <Help color={color} />
+                            ) : (
+                                <ShoppingCart color={color} />
+                            )}
+                            {/* {name} */}
+                        </IconButton>
+                    );
+                })}
+            </div>
+            <div style={{ width: 16 }} />
+            <LineEdit
+                label="Ingredient name"
+                value={ingredient.name}
+                onChange={(newName) => {
+                    col.setAttribute(ingredient.id, ['name'], newName);
+                }}
+            />
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                {Object.keys(ingredient.alternateNames).map((name) => (
+                    <div key={name}>
+                        {name}
+                        <IconButton
+                            onClick={() => {
+                                col.clearAttribute(ingredient.id, ['alternateNames', name]);
+                            }}
+                        >
+                            <Close />
+                        </IconButton>
+                    </div>
+                ))}
+                <TextField
+                    value={altName}
+                    onChange={(evt) => setAltName(evt.target.value)}
+                    placeholder="Add alternate name"
                 />
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                    {Object.keys(ingredient.alternateNames).map((name) => (
-                        <div key={name}>
-                            {name}
-                            <IconButton
-                                onClick={() => {
-                                    col.clearAttribute(ingredient.id, ['alternateNames', name]);
-                                }}
-                            >
-                                <Close />
-                            </IconButton>
-                        </div>
-                    ))}
-                    <TextField
-                        value={altName}
-                        onChange={(evt) => setAltName(evt.target.value)}
-                        placeholder="Add alternate name"
-                    />
-                    {altName.trim() != '' ? (
-                        <React.Fragment>
-                            <IconButton
-                                onClick={() => {
-                                    col.setAttribute(
-                                        ingredient.id,
-                                        ['alternateNames', altName],
-                                        Date.now(),
-                                    );
-                                    setAltName('');
-                                }}
-                            >
-                                <Check />
-                            </IconButton>
-                            <IconButton
-                                onClick={() => {
-                                    setAltName('');
-                                }}
-                            >
-                                <Close />
-                            </IconButton>
-                        </React.Fragment>
-                    ) : null}
-                </div>
-                <Kinds kinds={ingredientKinds} ingredient={ingredient} col={col} />
-                {/* <LineEdit
+                {altName.trim() != '' ? (
+                    <React.Fragment>
+                        <IconButton
+                            onClick={() => {
+                                col.setAttribute(
+                                    ingredient.id,
+                                    ['alternateNames', altName],
+                                    Date.now(),
+                                );
+                                setAltName('');
+                            }}
+                        >
+                            <Check />
+                        </IconButton>
+                        <IconButton
+                            onClick={() => {
+                                setAltName('');
+                            }}
+                        >
+                            <Close />
+                        </IconButton>
+                    </React.Fragment>
+                ) : null}
+            </div>
+            <Kinds kinds={ingredientKinds} ingredient={ingredient} col={col} />
+            {/* <LineEdit
                 label="Add alternate name"
                 value={'Add alternate name'}
                 onChange={(newName) => {
                     col.setAttribute(ingredient.id, ['alternateNames', newName], Date.now());
                 }}
             /> */}
-            </div>
-        );
-    },
-);
+        </div>
+    );
+});
 
 const Kinds = ({ kinds, ingredient, col }) => {
     const [current, setCurrent] = React.useState(null);
