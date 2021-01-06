@@ -215,12 +215,15 @@ const RecipeView = ({
     );
 };
 
+const renderStars = (value) => (
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+        {[1, 2, 3, 4, 5].map((num) =>
+            num <= value ? <Star key={num} /> : <StarOutline key={num} />,
+        )}
+    </div>
+);
+
 const Stars = ({ value, onChange }) => {
-    const res = [];
-    const nums = [1, 2, 3, 4, 5];
-    for (let i = 0; i < 5; i++) {
-        res.push();
-    }
     return (
         <div>
             {[1, 2, 3, 4, 5].map((num) =>
@@ -238,6 +241,46 @@ const Stars = ({ value, onChange }) => {
                     />
                 ),
             )}
+        </div>
+    );
+};
+
+const deltasToString = (ops) =>
+    ops.map((op) => (typeof op.insert === 'string' ? op.insert : '')).join('');
+
+const EditComment = ({ comment, onSave, onCancel }) => {
+    const [text, setText] = React.useState(deltasToString(comment.text.ops).trim());
+    const [happiness, setHappiness] = React.useState(comment.happiness);
+
+    return (
+        <div style={{ padding: 8 }}>
+            <Stars
+                value={happiness}
+                onChange={(value) => {
+                    setHappiness(value == null ? 0 : value);
+                }}
+            />
+            <div style={{ height: 16 }} />
+            <TextField
+                multiline
+                fullWidth
+                variant="outlined"
+                label="Comment"
+                placeholder="Write your comment"
+                value={text}
+                onChange={(evt) => setText(evt.target.value)}
+            />
+            <div style={{ height: 16 }} />
+            <Button
+                variant="contained"
+                style={{ marginRight: 16 }}
+                onClick={async () => {
+                    onSave({ ops: [{ insert: text.trim() + '\n' }] }, happiness, []);
+                }}
+            >
+                Save
+            </Button>
+            <Button onClick={() => onCancel()}>Cancel</Button>
         </div>
     );
 };
@@ -280,7 +323,7 @@ const NewComment = ({ recipe, col, actorId }) => {
                     await col.setAttribute(recipe.id, ['comments', id], {
                         id,
                         authorId: actorId,
-                        text: { ops: [{ insert: text + '\n' }] },
+                        text: { ops: [{ insert: text.trim() + '\n' }] },
                         date: Date.now(),
                         happiness,
                         images: [],
@@ -297,6 +340,67 @@ const NewComment = ({ recipe, col, actorId }) => {
     );
 };
 
+const Comment = ({ recipe, col, actorId, comment }) => {
+    const [editing, setEditing] = React.useState(false);
+    return (
+        <div
+            style={{
+                borderBottom: '1px solid white',
+                paddingBottom: 16,
+                marginBottom: 24,
+            }}
+        >
+            <div style={{ fontSize: '80%', display: 'flex', alignItems: 'center' }}>
+                {new Date(comment.date).toLocaleDateString()}
+                {editing ? null : (
+                    <React.Fragment>
+                        <div style={{ width: 16 }} />
+                        {renderStars(comment.happiness)}
+                        <div style={{ width: 16 }} />
+                        {comment.authorId === actorId ? (
+                            <IconButton
+                                edge="start"
+                                color="inherit"
+                                onClick={(evt) => {
+                                    setEditing(true);
+                                }}
+                            >
+                                <EditIcon />
+                            </IconButton>
+                        ) : null}
+                    </React.Fragment>
+                )}
+            </div>
+            {editing ? (
+                <EditComment
+                    comment={comment}
+                    onCancel={() => setEditing(false)}
+                    onSave={async (text, happiness, images) => {
+                        if (!deepEqual(text, comment.text)) {
+                            await col.setAttribute(
+                                recipe.id,
+                                ['comments', comment.id, 'text'],
+                                text,
+                            );
+                        }
+                        if (happiness !== comment.happiness) {
+                            await col.setAttribute(
+                                recipe.id,
+                                ['comments', comment.id, 'happiness'],
+                                happiness,
+                            );
+                        }
+                        // TODO images
+                        setEditing(false);
+                    }}
+                />
+            ) : (
+                renderQuill(comment.text)
+            )}
+        </div>
+    );
+};
+
 const Comments = ({ recipe, col, actorId }) => {
     return (
         <div>
@@ -306,20 +410,13 @@ const Comments = ({ recipe, col, actorId }) => {
             {Object.keys(recipe.comments)
                 .sort((a, b) => recipe.comments[b].date - recipe.comments[a].date)
                 .map((id) => (
-                    <div
+                    <Comment
                         key={id}
-                        style={{
-                            borderBottom: '1px solid white',
-                            paddingBottom: 16,
-                            marginBottom: 24,
-                        }}
-                    >
-                        <div style={{ fontSize: '80%' }}>
-                            {new Date(recipe.comments[id].date).toLocaleDateString()}
-                        </div>
-                        {renderQuill(recipe.comments[id].text)}
-                        {/* {JSON.stringify(recipe.comments[id].text)} */}
-                    </div>
+                        comment={recipe.comments[id]}
+                        recipe={recipe}
+                        col={col}
+                        actorId={actorId}
+                    />
                 ))}
         </div>
     );
