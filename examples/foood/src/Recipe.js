@@ -8,6 +8,8 @@ import { useCollection, useItem } from '../../../packages/client-react';
 import { Route, Link, useRouteMatch, useParams, useHistory } from 'react-router-dom';
 import IconButton from '@material-ui/core/IconButton';
 import TextField from '@material-ui/core/TextField';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
 import EditIcon from '@material-ui/icons/Edit';
 import Star from '@material-ui/icons/Star';
 import StarOutline from '@material-ui/icons/StarOutline';
@@ -17,6 +19,7 @@ import renderQuill from './renderQuill';
 import { imageUrl } from './utils';
 import TagsEditor from './TagsEditor';
 import { NewComment, EditComment } from './EditComment';
+import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 
 const useStyles = makeStyles((theme) => ({
     container: {
@@ -98,6 +101,7 @@ const RecipeView = ({
     const styles = useStyles();
     const history = useHistory();
     useSetTitle(recipe ? `${recipe.about.title} | Foood` : 'Foood');
+
     if (recipe === false) {
         return <div />; // wait on it
     }
@@ -225,6 +229,9 @@ const renderStars = (value) => (
 
 const Comment = ({ recipe, col, actorId, comment, url }) => {
     const [editing, setEditing] = React.useState(false);
+
+    const [anchor, setAnchor] = React.useState(null);
+
     return (
         <div
             style={{
@@ -281,26 +288,60 @@ const Comment = ({ recipe, col, actorId, comment, url }) => {
                                 images,
                             );
                         }
-                        // TODO images
                         setEditing(false);
                     }}
                 />
             ) : (
                 <div>
                     {renderQuill(comment.text)}
-                    {comment.images.map((image, i) => (
-                        <img
-                            src={imageUrl(image, url)}
-                            style={{
-                                width: 200,
-                                height: 200,
-                                objectFit: 'cover',
-                            }}
-                            key={i}
-                        />
-                    ))}
+                    <div style={{ display: 'flex' }}>
+                        {comment.images.map((image, i) => (
+                            <div
+                                style={{
+                                    marginBottom: 16,
+                                    marginRight: 16,
+                                    position: 'relative',
+                                }}
+                            >
+                                <img
+                                    src={imageUrl(image, url)}
+                                    style={{
+                                        width: 200,
+                                        height: 200,
+                                        objectFit: 'cover',
+                                    }}
+                                    key={i}
+                                />
+                                <IconButton
+                                    style={{ position: 'absolute', top: 0, right: 0 }}
+                                    color="inherit"
+                                    onClick={(evt) => {
+                                        setAnchor({ el: evt.currentTarget, src: image });
+                                    }}
+                                >
+                                    <MoreHorizIcon />
+                                </IconButton>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
+            <Menu
+                anchorEl={anchor ? anchor.el : null}
+                open={Boolean(anchor)}
+                onClose={() => setAnchor(null)}
+            >
+                <MenuItem
+                    onClick={() => {
+                        if (anchor) {
+                            col.setAttribute(recipe.id, ['about', 'image'], anchor.src);
+                            setAnchor(null);
+                        }
+                    }}
+                >
+                    Use as recipe image
+                </MenuItem>
+            </Menu>
         </div>
     );
 };
@@ -309,7 +350,7 @@ const Comments = ({ recipe, col, actorId, url }) => {
     return (
         <div>
             <h3>Comments</h3>
-            <NewComment actorId={actorId} recipe={recipe} col={col} />
+            <NewComment actorId={actorId} url={url} recipe={recipe} col={col} />
             <div style={{ height: 36 }} />
             {Object.keys(recipe.comments)
                 .sort((a, b) => recipe.comments[b].date - recipe.comments[a].date)

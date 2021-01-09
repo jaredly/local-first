@@ -180,14 +180,16 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                             actorId={actorId}
                             url={url}
                             client={client}
-                            onCancel={() => history.back()}
+                            onCancel={() => history.goBack()}
                             tags={{}}
                             about={blankRecipe.about}
                             meta={blankRecipe.contents.meta}
                             text={blankRecipe.contents.text}
                             status={'to try'}
-                            onSave={(about, meta, text, status) => {
+                            onSave={(about, meta, text, status, tags) => {
                                 const id = client.getStamp();
+                                const tagObj = {};
+                                tags.forEach((tag) => (tagObj[tag] = Date.now()));
                                 col.save(id, {
                                     id,
                                     about,
@@ -201,7 +203,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                                         version: id,
                                     },
                                     comments: {},
-                                    tags: {},
+                                    tags: tagObj,
                                 })
                                     .catch((err) => {
                                         console.error('error', err);

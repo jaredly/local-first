@@ -88,18 +88,6 @@ const EditorView = ({
                 }
 
                 history.push(`/recipe/${recipe.id}`);
-
-                // col.updateAttributes(recipe.id, ['about'], about)
-                // col.updateAttributes(recipe.id, ['contents'], about)
-                // const keys = ['title', 'image', 'source', 'contents'];
-                // console.log('saving', recipe);
-                // col.save(recipe.id, recipe)
-                //     .catch((err) => {
-                //         console.error('error', err);
-                //     })
-                //     .then(() => {
-                //         history.push(`/recipe/${id}`);
-                //     });
             }}
         />
     );

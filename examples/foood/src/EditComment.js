@@ -47,14 +47,17 @@ export const NewComment = ({
     recipe,
     col,
     actorId,
+    url,
 }: {
     recipe: RecipeT,
     col: Collection<RecipeT>,
     actorId: string,
+    url: string,
 }) => {
     const [text, setText] = React.useState(null);
     const [loading, setLoading] = React.useState(false);
     const [happiness, setHappiness] = React.useState(0);
+    const [images, setImages] = React.useState<Array<string | Blob>>([]);
 
     if (text == null) {
         return <Button onClick={() => setText('')}>Add comment</Button>;
@@ -78,6 +81,7 @@ export const NewComment = ({
                 value={text}
                 onChange={(evt) => setText(evt.target.value)}
             />
+            <ImageUploader url={url} value={images} onChange={setImages} />
             <div style={{ height: 16 }} />
             <Button
                 variant="contained"
@@ -86,13 +90,20 @@ export const NewComment = ({
                 onClick={async () => {
                     setLoading(true);
                     const id = col.genId();
+
+                    const uploadedImages = await Promise.all(
+                        images.map((image) => uploadImage(url, id, image)),
+                    );
+                    // $FlowFixMe sadface
+                    const successfulImages: Array<string> = uploadedImages.filter(Boolean);
+
                     await col.setAttribute(recipe.id, ['comments', id], {
                         id,
                         authorId: actorId,
                         text: { ops: [{ insert: text.trim() + '\n' }] },
                         date: Date.now(),
                         happiness,
-                        images: [],
+                        images: successfulImages,
                     });
                     setText(null);
                     setHappiness(0);
@@ -148,44 +159,11 @@ export const EditComment = ({
                 style={{ marginRight: 16 }}
                 onClick={async () => {
                     const uploadedImages = await Promise.all(
-                        images.map(async (image) => {
-                            if (typeof image === 'string') {
-                                return image;
-                            }
-                            const path = `images/${comment.id}/${genId()}.jpg`;
-                            const res = await fetch(`${url}/uploads/${path}`, {
-                                method: 'POST',
-                                body: image,
-                            });
-                            if (res.status >= 300 || res.status < 200) {
-                                console.log(new Error(`Failed to upload!`));
-                                console.log(res.status);
-                                console.log(await res.text());
-                                return null;
-                            }
-                            // let id = BaseUtils.uuid();
-                            //   let path = "images/" ++ recipeId ++ "/" ++ uid ++ "/" ++ madeItId ++ "/" ++ id ++ ".jpg";
-                            //   Js.log3("Uploading", path, blob);
-                            //   Firebase.Storage.get(Firebase.app(fb))
-                            //   |> Firebase.Storage.ref
-                            //   |> Firebase.Storage.child(path)
-                            //   |> reff => withTimeout(Firebase.Storage.put(blob, reff), 30000)
-                            //   |> Js.Promise.then_(snap => {
-                            //     Js.log2("Uploaded!", path);
-                            //     Js.Promise.resolve(Some(path))
-                            //   })
-                            //   |> Js.Promise.catch(err => {
-                            //     Js.log3("error uploading image", path, err);
-                            //     Js.Promise.resolve(None)
-                            //   })
-                            return `foood://${path}`;
-                        }),
+                        images.map((image) => uploadImage(url, comment.id, image)),
                     );
-                    onSave(
-                        { ops: [{ insert: text.trim() + '\n' }] },
-                        happiness,
-                        uploadedImages.filter((x) => x != null),
-                    );
+                    // $FlowFixMe sadface
+                    const successfulImages: Array<string> = uploadedImages.filter(Boolean);
+                    onSave({ ops: [{ insert: text.trim() + '\n' }] }, happiness, successfulImages);
                 }}
             >
                 Save
@@ -193,6 +171,24 @@ export const EditComment = ({
             <Button onClick={() => onCancel()}>Cancel</Button>
         </div>
     );
+};
+
+const uploadImage = async (url, commentId, image) => {
+    if (typeof image === 'string') {
+        return image;
+    }
+    const path = `images/${commentId}/${genId()}.jpg`;
+    const res = await fetch(`${url}/uploads/${path}`, {
+        method: 'POST',
+        body: image,
+    });
+    if (res.status >= 300 || res.status < 200) {
+        console.log(new Error(`Failed to upload!`));
+        console.log(res.status);
+        console.log(await res.text());
+        return null;
+    }
+    return `foood://${path}`;
 };
 
 const deltasToString = (ops) =>
@@ -316,36 +312,4 @@ const ImageUploader = ({ url, value, onChange }) => {
             </Button>
         </div>
     );
-
-    //   <input
-    //     type_="file"
-    //     style=(ReactDOMRe.Style.make(~visibility="hidden", ()))
-    //     onChange=(evt => {
-    //       let obj = ReactEvent.Form.target(evt) ;
-    //       let files = obj##files;
-    //       Js.log2("files", files);
-    //       onChange(Array.append(images, Array.map(file => NotUploaded(file), files)));
-    //       /* reduce(() => SetFiles(
-    //         Array.append(state.objectUrls, Array.map(file => createObjectURL(file), files))
-    //       ))(); */
-    //       /* send( SetStatus(Preview)); */
-
-    //     })
-    //     multiple=true
-    //     ref=?(state.triggerInput === None
-    //     ? Some(ReactDOMRe.Ref.callbackDomRef((node) =>
-    //          Js.Nullable.toOption(node)
-    //         |> BaseUtils.optFold(
-    //              (node) => send(SetTrigger(() => clickDom(node))),
-    //              ()
-    //            )))
-    //     : None
-    //     )
-    //   />
-    //   <button
-    //     onClick=?{state.triggerInput |> BaseUtils.optMap(Utils.ignoreArg)}
-    //     disabled=(state.triggerInput === None)
-    //   >
-    //     (str("Add Images"))
-    //   </button>
 };
