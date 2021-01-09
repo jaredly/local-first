@@ -16,6 +16,7 @@ import deepEqual from '@birchill/json-equalish';
 import renderQuill from './renderQuill';
 import { imageUrl } from './utils';
 import TagsEditor from './TagsEditor';
+import { NewComment, EditComment } from './EditComment';
 
 const useStyles = makeStyles((theme) => ({
     container: {
@@ -222,123 +223,6 @@ const renderStars = (value) => (
         )}
     </div>
 );
-
-const Stars = ({ value, onChange }) => {
-    return (
-        <div>
-            {[1, 2, 3, 4, 5].map((num) =>
-                num <= value ? (
-                    <Star
-                        key={num}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => onChange(num === value ? null : num)}
-                    />
-                ) : (
-                    <StarOutline
-                        key={num}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => onChange(num)}
-                    />
-                ),
-            )}
-        </div>
-    );
-};
-
-const deltasToString = (ops) =>
-    ops.map((op) => (typeof op.insert === 'string' ? op.insert : '')).join('');
-
-const EditComment = ({ comment, onSave, onCancel }) => {
-    const [text, setText] = React.useState(deltasToString(comment.text.ops).trim());
-    const [happiness, setHappiness] = React.useState(comment.happiness);
-
-    return (
-        <div style={{ padding: 8 }}>
-            <Stars
-                value={happiness}
-                onChange={(value) => {
-                    setHappiness(value == null ? 0 : value);
-                }}
-            />
-            <div style={{ height: 16 }} />
-            <TextField
-                multiline
-                fullWidth
-                variant="outlined"
-                label="Comment"
-                placeholder="Write your comment"
-                value={text}
-                onChange={(evt) => setText(evt.target.value)}
-            />
-            <div style={{ height: 16 }} />
-            <Button
-                variant="contained"
-                style={{ marginRight: 16 }}
-                onClick={async () => {
-                    onSave({ ops: [{ insert: text.trim() + '\n' }] }, happiness, []);
-                }}
-            >
-                Save
-            </Button>
-            <Button onClick={() => onCancel()}>Cancel</Button>
-        </div>
-    );
-};
-
-const NewComment = ({ recipe, col, actorId }) => {
-    const [text, setText] = React.useState(null);
-    const [loading, setLoading] = React.useState(false);
-    const [happiness, setHappiness] = React.useState(0);
-
-    if (text == null) {
-        return <Button onClick={() => setText('')}>Add comment</Button>;
-    }
-
-    return (
-        <div style={{ padding: 8 }}>
-            <Stars
-                value={happiness}
-                onChange={(value) => {
-                    setHappiness(value == null ? 0 : value);
-                }}
-            />
-            <div style={{ height: 16 }} />
-            <TextField
-                multiline
-                fullWidth
-                variant="outlined"
-                label="Comment"
-                placeholder="Write your comment"
-                value={text}
-                onChange={(evt) => setText(evt.target.value)}
-            />
-            <div style={{ height: 16 }} />
-            <Button
-                variant="contained"
-                disabled={loading}
-                style={{ marginRight: 16 }}
-                onClick={async () => {
-                    setLoading(true);
-                    const id = col.genId();
-                    await col.setAttribute(recipe.id, ['comments', id], {
-                        id,
-                        authorId: actorId,
-                        text: { ops: [{ insert: text.trim() + '\n' }] },
-                        date: Date.now(),
-                        happiness,
-                        images: [],
-                    });
-                    setText(null);
-                    setHappiness(0);
-                    setLoading(false);
-                }}
-            >
-                Save
-            </Button>
-            <Button onClick={() => setText(null)}>Cancel</Button>
-        </div>
-    );
-};
 
 const Comment = ({ recipe, col, actorId, comment }) => {
     const [editing, setEditing] = React.useState(false);

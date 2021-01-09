@@ -189,6 +189,7 @@ const showChunk = (chunk, i, batches?: number) => {
         if (key === 'ingredientLink') {
             contents = (
                 <span
+                    key={i}
                     style={{
                         display: 'inline-block',
                         padding: '0 8px',
