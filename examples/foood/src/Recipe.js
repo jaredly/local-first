@@ -20,7 +20,6 @@ import { NewComment, EditComment } from './EditComment';
 
 const useStyles = makeStyles((theme) => ({
     container: {
-        // paddingTop: theme.spacing(8),
         fontSize: 20,
         lineHeight: 1.8,
         fontWeight: 300,
@@ -211,7 +210,7 @@ const RecipeView = ({
                 ))}
             </div>
             <div className={styles.text}>{renderQuill(recipe.contents.text, batches)}</div>
-            <Comments recipe={recipe} col={col} actorId={actorId} />
+            <Comments url={url} recipe={recipe} col={col} actorId={actorId} />
         </div>
     );
 };
@@ -224,7 +223,7 @@ const renderStars = (value) => (
     </div>
 );
 
-const Comment = ({ recipe, col, actorId, comment }) => {
+const Comment = ({ recipe, col, actorId, comment, url }) => {
     const [editing, setEditing] = React.useState(false);
     return (
         <div
@@ -257,6 +256,7 @@ const Comment = ({ recipe, col, actorId, comment }) => {
             </div>
             {editing ? (
                 <EditComment
+                    url={url}
                     comment={comment}
                     onCancel={() => setEditing(false)}
                     onSave={async (text, happiness, images) => {
@@ -274,18 +274,38 @@ const Comment = ({ recipe, col, actorId, comment }) => {
                                 happiness,
                             );
                         }
+                        if (!deepEqual(images, comment.images)) {
+                            await col.setAttribute(
+                                recipe.id,
+                                ['comments', comment.id, 'images'],
+                                images,
+                            );
+                        }
                         // TODO images
                         setEditing(false);
                     }}
                 />
             ) : (
-                renderQuill(comment.text)
+                <div>
+                    {renderQuill(comment.text)}
+                    {comment.images.map((image, i) => (
+                        <img
+                            src={imageUrl(image, url)}
+                            style={{
+                                width: 200,
+                                height: 200,
+                                objectFit: 'cover',
+                            }}
+                            key={i}
+                        />
+                    ))}
+                </div>
             )}
         </div>
     );
 };
 
-const Comments = ({ recipe, col, actorId }) => {
+const Comments = ({ recipe, col, actorId, url }) => {
     return (
         <div>
             <h3>Comments</h3>
@@ -297,6 +317,7 @@ const Comments = ({ recipe, col, actorId }) => {
                     <Comment
                         key={id}
                         comment={recipe.comments[id]}
+                        url={url}
                         recipe={recipe}
                         col={col}
                         actorId={actorId}

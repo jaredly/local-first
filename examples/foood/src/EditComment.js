@@ -10,6 +10,7 @@ import IconButton from '@material-ui/core/IconButton';
 import TextField from '@material-ui/core/TextField';
 import EditIcon from '@material-ui/icons/Edit';
 import Star from '@material-ui/icons/Star';
+import Close from '@material-ui/icons/Close';
 import StarOutline from '@material-ui/icons/StarOutline';
 import { makeStyles } from '@material-ui/core/styles';
 import deepEqual from '@birchill/json-equalish';
@@ -18,23 +19,26 @@ import { imageUrl } from './utils';
 import TagsEditor from './TagsEditor';
 
 const Stars = ({ value, onChange }) => {
+    const [hover, setHover] = React.useState(null);
     return (
-        <div>
-            {[1, 2, 3, 4, 5].map((num) =>
-                num <= value ? (
-                    <Star
-                        key={num}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => onChange(num === value ? null : num)}
-                    />
-                ) : (
-                    <StarOutline
-                        key={num}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => onChange(num)}
-                    />
-                ),
-            )}
+        <div style={{ display: 'flex' }}>
+            {[1, 2, 3, 4, 5].map((num) => (
+                <div
+                    onMouseEnter={() => setHover(num)}
+                    style={{ cursor: 'pointer' }}
+                    onMouseLeave={() =>
+                        setTimeout(() => setHover((at) => (at === num ? null : at)), 50)
+                    }
+                    key={num}
+                    onClick={() => onChange(num === value ? null : num)}
+                >
+                    {(hover != null ? num <= hover : num <= value) ? (
+                        <Star color={hover != null ? 'primary' : undefined} />
+                    ) : (
+                        <StarOutline />
+                    )}
+                </div>
+            ))}
         </div>
     );
 };
@@ -102,14 +106,18 @@ export const NewComment = ({
     );
 };
 
+const genId = () => Math.random().toString(36).slice(2);
+
 export const EditComment = ({
     comment,
     onSave,
     onCancel,
+    url,
 }: {
     comment: CommentT,
     onSave: (RecipeText, number, Array<string>) => mixed,
     onCancel: () => mixed,
+    url: string,
 }) => {
     const [text, setText] = React.useState(deltasToString(comment.text.ops).trim());
     const [happiness, setHappiness] = React.useState(comment.happiness);
@@ -133,13 +141,51 @@ export const EditComment = ({
                 value={text}
                 onChange={(evt) => setText(evt.target.value)}
             />
-            <ImageUploader value={images} onChange={setImages} />
+            <ImageUploader url={url} value={images} onChange={setImages} />
             <div style={{ height: 16 }} />
             <Button
                 variant="contained"
                 style={{ marginRight: 16 }}
                 onClick={async () => {
-                    onSave({ ops: [{ insert: text.trim() + '\n' }] }, happiness, []);
+                    const uploadedImages = await Promise.all(
+                        images.map(async (image) => {
+                            if (typeof image === 'string') {
+                                return image;
+                            }
+                            const path = `images/${comment.id}/${genId()}.jpg`;
+                            const res = await fetch(`${url}/uploads/${path}`, {
+                                method: 'POST',
+                                body: image,
+                            });
+                            if (res.status >= 300 || res.status < 200) {
+                                console.log(new Error(`Failed to upload!`));
+                                console.log(res.status);
+                                console.log(await res.text());
+                                return null;
+                            }
+                            // let id = BaseUtils.uuid();
+                            //   let path = "images/" ++ recipeId ++ "/" ++ uid ++ "/" ++ madeItId ++ "/" ++ id ++ ".jpg";
+                            //   Js.log3("Uploading", path, blob);
+                            //   Firebase.Storage.get(Firebase.app(fb))
+                            //   |> Firebase.Storage.ref
+                            //   |> Firebase.Storage.child(path)
+                            //   |> reff => withTimeout(Firebase.Storage.put(blob, reff), 30000)
+                            //   |> Js.Promise.then_(snap => {
+                            //     Js.log2("Uploaded!", path);
+                            //     Js.Promise.resolve(Some(path))
+                            //   })
+                            //   |> Js.Promise.catch(err => {
+                            //     Js.log3("error uploading image", path, err);
+                            //     Js.Promise.resolve(None)
+                            //   })
+                            return `foood://${path}`;
+                        }),
+                    );
+                    onSave(
+                        { ops: [{ insert: text.trim() + '\n' }] },
+                        happiness,
+                        uploadedImages.filter((x) => x != null),
+                    );
                 }}
             >
                 Save
@@ -192,14 +238,14 @@ const shrinkImage = (blob: Blob) => {
     });
 };
 
-const BlobImg = ({ src, ...props }) => {
-    const url = React.useMemo(() => {
+const BlobImg = ({ src, url, ...props }) => {
+    const srcUrl = React.useMemo(() => {
         if (typeof src === 'string') {
-            return src;
+            return imageUrl(src, url);
         }
         return URL.createObjectURL(src);
     }, [src]);
-    return <img {...props} src={url} />;
+    return <img {...props} src={srcUrl} />;
 };
 
 const oneMeg = 1024 * 1024;
@@ -212,24 +258,46 @@ const ensureSmallEnough = (blob) => {
     }
 };
 
-const ImageUploader = ({ value, onChange }) => {
+const ImageUploader = ({ url, value, onChange }) => {
+    const targetRef = React.useRef(null);
     return (
-        <div>
-            {value.map((item, i) => (
-                <BlobImg
-                    key={i}
-                    src={item}
-                    style={{
-                        padding: 16,
-                        width: 200,
-                        objectFit: 'cover',
-                        height: 200,
-                    }}
-                />
-            ))}
+        <div style={{ marginTop: 16, marginBottom: 16 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                {value.map((item, i) => (
+                    <div
+                        key={i}
+                        style={{
+                            marginRight: 16,
+                            marginBottom: 16,
+                            position: 'relative',
+                        }}
+                    >
+                        <BlobImg
+                            src={item}
+                            url={url}
+                            style={{
+                                width: 200,
+                                objectFit: 'cover',
+                                height: 200,
+                            }}
+                        />
+                        <IconButton
+                            style={{ position: 'absolute', top: 8, right: 8 }}
+                            color="inherit"
+                            onClick={() => {
+                                onChange(value.filter((v) => v !== item));
+                            }}
+                        >
+                            <Close />
+                        </IconButton>
+                    </div>
+                ))}
+            </div>
             <input
                 type="file"
                 multiple
+                style={{ display: 'none' }}
+                ref={(node) => (targetRef.current = node)}
                 onChange={async (evt) => {
                     console.log(evt.target.files);
                     const images = await Promise.all(
@@ -238,6 +306,14 @@ const ImageUploader = ({ value, onChange }) => {
                     onChange(value.concat(images));
                 }}
             />
+            <Button
+                variant="outlined"
+                onClick={() => {
+                    targetRef.current?.click();
+                }}
+            >
+                Add Images
+            </Button>
         </div>
     );
 

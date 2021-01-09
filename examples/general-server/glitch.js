@@ -83,7 +83,7 @@ if (process.env.UPLOADS_FIREBASE_APP) {
             storage
                 .bucket()
                 .file(requested)
-                .createWriteString({ gzip: true }),
+                .createWriteStream({ gzip: true }),
         )
             .on('error', err => {
                 console.error('failed to upload');
