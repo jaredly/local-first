@@ -9,6 +9,7 @@ const createInvitesTableQuery = `
         id integer PRIMARY KEY,
         stringId text UNIQUE NOT NULL,
         createdDate integer NOT NULL,
+        creatorId integer NOT NULL,
         -- the date it was fulfilled
         fulfilledDate integer
     )
@@ -49,6 +50,11 @@ export const createTables = (db: DB) => {
     run(db, createUsersTableQuery);
     run(db, createSessionsTableQuery);
     run(db, createInvitesTableQuery);
+    try {
+        run(db, `ALTER TABLE invites ADD COLUMN creatorId integer NOT NULL DEFAULT 1`);
+    } catch {
+        // ignore
+    }
 };
 
 // export const findUserByEmail = (db: DB, email: string) => {
@@ -79,6 +85,27 @@ export type UserInput = {
 };
 export type User = { info: UserInfo, passwordHash: string };
 
+export const listUsers = (db: DB) => {
+    const results = db.prepare(`SELECT * from users`);
+    return results.all();
+};
+
+export const listInvites = (db: DB) => {
+    const results = db.prepare(`SELECT * from invites`);
+    return results.all();
+};
+
+export const setUserRole = (db: DB, email: string, role: number) => {
+    const stmt = db.prepare(`UPDATE users
+    SET role = @role
+    WHERE email = @email`);
+    const info = stmt.run({ email, role });
+    if (info.changes !== 1) {
+        return false;
+    }
+    return true;
+};
+
 export const createUser = (db: DB, { info: { name, email, createdDate }, password }: UserInput) => {
     const passwordHash = bcrypt.hashSync(password);
     const stmt = db.prepare(`INSERT INTO users
@@ -89,6 +116,40 @@ export const createUser = (db: DB, { info: { name, email, createdDate }, passwor
         throw new Error(`Unexpected sqlite response: ${info.changes} should be '1'`);
     }
     return info.lastInsertRowid;
+};
+
+const genId = () =>
+    Math.random()
+        .toString(36)
+        .slice(2);
+
+export const createInvite = (db: DB, createdDate: number) => {
+    const stringId = genId() + genId();
+    const stmt = db.prepare(`INSERT INTO invites
+    (stringId, createdDate)
+    VALUES (@stringId, @createdDate)`);
+    const info = stmt.run({ stringId, createdDate });
+    if (info.changes !== 1) {
+        throw new Error(`Unexpected sqlite response: ${info.changes} should be '1'`);
+    }
+    return stringId;
+};
+
+export const fulfillInvite = (db: DB, stringId: string) => {
+    const stmt = db.prepare(`UPDATE invites
+    SET fulfilledDate = @fulfilledDate
+    WHERE stringId = @stringId and fulfilledDate is null`);
+    const info = stmt.run({ fulfilledDate: Date.now(), stringId });
+    if (info.changes !== 1) {
+        const stmt = db.prepare(`SELECT * FROM invites WHERE stringId = @stringId`);
+        const info = stmt.get({ fulfilledDate: Date.now(), stringId });
+        if (info) {
+            return false;
+        }
+
+        return null;
+    }
+    return true;
 };
 
 export const checkUserExists = (db: DB, email: string) => {
@@ -113,6 +174,7 @@ export const loginUser = (
                 name: result.name,
                 email: result.email,
                 createdDate: result.createdDate,
+                role: result.role,
             },
         };
     } else {

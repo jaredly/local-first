@@ -13,7 +13,7 @@ const packages = [
     },
     {
         name: 'general-server',
-        entry: 'examples/general-server/glitch.js',
+        entry: ['examples/general-server/glitch.js', 'examples/general-server/glitch-admin.js'],
         dest: 'public/general-server',
         start: true,
     },

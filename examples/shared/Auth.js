@@ -76,14 +76,27 @@ in to a syncing server later.
 
 */
 
+const getDefaultValues = () => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('invite')) {
+        return { invite: params.get('invite') };
+    }
+    return {};
+};
+
 const SignUpIn = ({ storageKey, host }: { storageKey: string, host: string }) => {
     const styles = useStyles();
+
+    const defaultValues = getDefaultValues();
+
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
     const [name, setName] = React.useState('');
+    const [inviteCode, setInviteCode] = React.useState(defaultValues.invite);
 
-    const [state, setState] = React.useState('initial');
+    const [state, setState] = React.useState(defaultValues.invite != null ? 'register' : 'initial');
     const [loading, setLoading] = React.useState(false);
+    const [inviteRequired, setInviteRequired] = React.useState(defaultValues.invite != null);
 
     const [error, setError] = React.useState(null);
 
@@ -96,7 +109,16 @@ const SignUpIn = ({ storageKey, host }: { storageKey: string, host: string }) =>
         checkEmail(host, email)
             .then(
                 isRegistered => {
-                    setState(isRegistered ? 'login' : 'register');
+                    if (isRegistered === true) {
+                        setState('login');
+                    } else {
+                        console.log(isRegistered);
+                        if (isRegistered.inviteRequired) {
+                            setInviteRequired(true);
+                        }
+                        setState('register');
+                    }
+                    // setState(isRegistered ? 'login' : 'register');
                 },
                 // um handle failure
                 err => {
@@ -125,7 +147,7 @@ const SignUpIn = ({ storageKey, host }: { storageKey: string, host: string }) =>
     const doSignup = () => {
         setLoading(true);
         setError(null);
-        signup(storageKey, host, email, password, name).then(
+        signup(storageKey, host, email, password, name, inviteCode).then(
             () => {
                 // setLoading(false);
                 // Someone should notice that we've logged in at this point
@@ -170,7 +192,7 @@ const SignUpIn = ({ storageKey, host }: { storageKey: string, host: string }) =>
                                     variant="outlined"
                                     autoFocus={state === 'initial'}
                                     fullWidth
-                                    disabled={loading || state !== 'initial'}
+                                    disabled={loading}
                                 />
                             </Grid>
                             {state === 'register' ? (
@@ -181,6 +203,20 @@ const SignUpIn = ({ storageKey, host }: { storageKey: string, host: string }) =>
                                         autoFocus
                                         type="text"
                                         label="Display Name"
+                                        variant="outlined"
+                                        fullWidth
+                                        disabled={loading}
+                                    />
+                                </Grid>
+                            ) : null}
+                            {state === 'register' && inviteRequired ? (
+                                <Grid item>
+                                    <TextField
+                                        value={inviteCode}
+                                        onChange={evt => setInviteCode(evt.target.value)}
+                                        autoFocus
+                                        type="text"
+                                        label="Invite code"
                                         variant="outlined"
                                         fullWidth
                                         disabled={loading}

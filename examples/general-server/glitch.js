@@ -16,6 +16,8 @@ const result = runMulti2(
         'foood-private': require('../foood/private-collections').schemas,
     },
     port,
+    // require invites
+    true,
 );
 
 console.log('listening on ' + port);

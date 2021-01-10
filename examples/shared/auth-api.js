@@ -38,7 +38,11 @@ export const checkEmail = async (host: string, email: string) => {
     const res = await fetch(
         `${window.location.protocol}//${host}/api/check-login?email=${encodeURIComponent(email)}`,
     );
-    return res.status >= 200 && res.status < 300;
+    if (res.status === 204) {
+        return true;
+    }
+    const data = await res.json();
+    return data;
 };
 
 const clearLoginInfo = (storageKey: string) => {

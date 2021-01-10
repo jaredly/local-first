@@ -158,7 +158,9 @@ const collectPackageJsons = files => {
 module.exports = config => {
     // files[x] = output
     const files = {};
-    const toProcess = [path.resolve(config.entry)];
+    const entry = Array.isArray(config.entry) ? config.entry[0] : config.entry;
+    const entries = Array.isArray(config.entry) ? config.entry : [config.entry];
+    const toProcess = entries.map(entry => path.resolve(entry));
     mkdirp(config.dest);
 
     while (toProcess.length) {
@@ -180,7 +182,7 @@ module.exports = config => {
     console.log('base', base);
 
     const packageJsons = collectPackageJsons(files);
-    const main = packageJsonsFor(config.entry)[0];
+    const main = packageJsonsFor(entry)[0];
     const packageJson = require(path.resolve(main));
     if (!packageJson.dependencies) {
         packageJson.dependencies = {};
@@ -216,7 +218,7 @@ module.exports = config => {
         fs.writeFileSync(full, files[file].es5, 'utf8');
         fs.writeFileSync(full + '.flow', files[file].flow, 'utf8');
     });
-    packageJson.main = path.relative(base, config.entry);
+    packageJson.main = path.relative(base, entry);
     if (config.start) {
         packageJson.scripts = {
             ...packageJson.scripts,

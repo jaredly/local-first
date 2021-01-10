@@ -2,6 +2,7 @@
 
 import {
     createUser,
+    fulfillInvite,
     validateSessionToken,
     loginUser,
     createUserSession,
@@ -18,6 +19,7 @@ export const setupAuth = (
     db: DB,
     app: express,
     secret: string,
+    requireInvite: boolean,
     prefix: string = '/api',
     paths: { [key: string]: string } = {},
 ) => {
@@ -28,7 +30,10 @@ export const setupAuth = (
         if (checkUserExists(db, req.query.email)) {
             return res.status(204).end();
         } else {
-            return res.status(404).end();
+            return res
+                .status(404)
+                .json({ inviteRequired: requireInvite })
+                .end();
         }
     });
     app.post(prefix + (paths.login || '/login'), (req, res) => {
@@ -56,7 +61,20 @@ export const setupAuth = (
         if (!req.body || !req.body.email || !req.body.password || !req.body.name) {
             return res.status(400).send('required fields: email, password, name');
         }
-        const { email, password, name } = req.body;
+        const { email, password, name, invite } = req.body;
+
+        if (requireInvite) {
+            if (!req.body.invite) {
+                return res.status(400).send('invite required');
+            }
+            const result = fulfillInvite(db, req.body.invite);
+            if (result === null) {
+                return res.status(400).send('Invalid invite');
+            } else if (result === false) {
+                return res.status(400).send('Invite has already been used');
+            }
+        }
+
         const createdDate = Date.now();
         const userId = createUser(db, {
             password,
@@ -65,8 +83,8 @@ export const setupAuth = (
         const token = createUserSession(db, secret, userId, req.ip);
         res.cookie('token', token, {
             // httpOnly: true,
-            // 30 days
-            maxAge: 30 * 24 * 3600 * 1000,
+            // 90 days
+            maxAge: 90 * 24 * 3600 * 1000,
         });
         res.set('X-Session', token);
         res.status(200).json({ id: userId, info: { email, name, createdDate, id: userId } });

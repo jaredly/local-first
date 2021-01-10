@@ -55,6 +55,13 @@ export const serverForUser = (
 const makeSchemaCheckers = schemas => colid =>
     schemas[colid] ? delta => validateDelta(schemas[colid], delta) : null;
 
+export const getAuthDb = (dataPath: string) => {
+    const sqlite3 = require('better-sqlite3');
+    const authDb = sqlite3(path.join(dataPath, 'users.db'));
+    auth.createTables(authDb);
+    return authDb;
+};
+
 /**
  * Directory layout of this server:
  * - [dataPath]/
@@ -72,6 +79,7 @@ export const runMulti2 = (
         [name: string]: { [collection: string]: Schema },
     },
     port: number = 9090,
+    requireInvite: boolean = false,
 ) => {
     const { SECRET: secret } = process.env;
     if (secret == null) {
@@ -81,9 +89,7 @@ export const runMulti2 = (
         fs.mkdirSync(dataPath);
     }
 
-    const sqlite3 = require('better-sqlite3');
-    const authDb = sqlite3(path.join(dataPath, 'users.db'));
-    auth.createTables(authDb);
+    const authDb = getAuthDb(dataPath);
 
     const { app } = setupExpress();
     const userServers = {};
@@ -176,7 +182,7 @@ export const runMulti2 = (
         }
     });
 
-    auth.setupAuth(authDb, app, secret);
+    auth.setupAuth(authDb, app, secret, requireInvite);
     app.listen(port);
 
     return { app };
@@ -238,7 +244,7 @@ export const runMulti = (
         setupWebsocket(state.app, getServer, middleware, `/dbs/${name}/sync`);
     });
 
-    auth.setupAuth(authDb, state.app, secret);
+    auth.setupAuth(authDb, state.app, secret, false);
     state.app.listen(port);
     return state;
 };
@@ -278,7 +284,7 @@ export const run = (
             [auth.middleware(authDb, secret)],
         );
 
-        auth.setupAuth(authDb, state.app, secret);
+        auth.setupAuth(authDb, state.app, secret, false);
         state.app.listen(port);
         return state;
     } else {
