@@ -8,10 +8,7 @@ import {
     stateToQuillContents,
     type QuillDelta,
 } from '../../packages/rich-text-crdt/quill-deltas';
-import {
-    testSerialize,
-    justContents,
-} from '../../packages/rich-text-crdt/debug';
+import { testSerialize, justContents } from '../../packages/rich-text-crdt/debug';
 import QuillCursors from 'quill-cursors/dist/index.js';
 
 const toolbarOptions = [
@@ -55,13 +52,13 @@ const altUi = new Quill(addDiv(), {
     // modules: { cursors: true, toolbar: toolbarOptions },
 });
 
-let state = crdt.init('a');
+let state = crdt.init();
 const initialText = 'Hello\n';
-const initialDelta = crdt.insert(state, 0, initialText);
+const initialDelta = crdt.insert(state, 'a', 0, initialText);
 state = crdt.apply(state, initialDelta);
 ui.setText(initialText);
 
-let altState = crdt.init('b');
+let altState = crdt.init();
 altState = crdt.apply(altState, initialDelta);
 altUi.setText(initialText);
 
@@ -109,9 +106,7 @@ const toDom = (div, state) => {
         if (node.content.type === 'text') {
             d.textContent = JSON.stringify(node.content.text);
         } else if (node.content.type === 'open') {
-            d.textContent = `${node.content.key}=${JSON.stringify(
-                node.content.value,
-            )}`;
+            d.textContent = `${node.content.key}=${JSON.stringify(node.content.value)}`;
             d.style.fontSize = '80%';
             d.style.display = 'inline-block';
             d.style.padding = '4px';
@@ -162,11 +157,7 @@ ui.on('text-change', (delta: Array<QuillDelta>, oldDelta, source: string) => {
         allDeltas,
     )},\n  quillResult: ${JSON.stringify(ui.getContents())}\n}`;
 
-    const { state: newState, deltas } = quillDeltasToDeltas(
-        state,
-        delta,
-        genStamp,
-    );
+    const { state: newState, deltas } = quillDeltasToDeltas(state, 'site', delta, genStamp);
     allCRDTDeltas.push(deltas);
     cdeltas.innerHTML = '';
     cdeltas.appendChild(renderCRDTDeltas(allCRDTDeltas));
@@ -178,10 +169,8 @@ ui.on('text-change', (delta: Array<QuillDelta>, oldDelta, source: string) => {
     toDom(output, state);
     backToQuill.value = JSON.stringify(stateToQuillContents(state));
 
-    const { state: newState2, quillDeltas } = deltasToQuillDeltas(
-        altState,
-        deltas,
-    );
+    // $FlowFixMe what
+    const { state: newState2, quillDeltas } = deltasToQuillDeltas(altState, deltas);
     console.log('transformed deltas', deltas, quillDeltas);
     window.altState = altState = newState2;
     quillDeltas.forEach(delta => {
@@ -194,7 +183,7 @@ altUi.on('text-change', (delta, _, source) => {
     if (source === 'crdt') {
         return;
     }
-    const { state, deltas } = quillDeltasToDeltas(altState, delta, genStamp);
+    const { state, deltas } = quillDeltasToDeltas(altState, 'site', delta, genStamp);
     console.log('alt', deltas);
     window.altState = altState = state;
     toDom(altOutput, altState);

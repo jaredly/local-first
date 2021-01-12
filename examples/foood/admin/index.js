@@ -16,7 +16,7 @@ import getForsythRecipes from './extract-recipes';
 import type { RecipeT, TagT, IngredientT } from '../collections';
 import importFooodData from './import-from-foood';
 
-const schemas = require('../collections');
+const { schemas } = require('../collections');
 
 const addParams = (url, params) => url + (url.includes('?') ? '&' : '?') + params;
 const sync = async (client, url) => {

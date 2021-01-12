@@ -26,7 +26,7 @@ import Items from './Items';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
-type ConnectionConfig =
+export type ConnectionConfig =
     | {
           type: 'memory',
       }
@@ -50,7 +50,8 @@ const parseRawDoc = (rawDoc) => {
 const App = ({ config }: { config: ConnectionConfig }) => {
     const { doc: docId } = useParams();
     // const [docId, itemId] = parseRawDoc(rawDoc);
-    const dbName = config.prefix + (docId ? '/' + docId : '');
+    const dbName =
+        config.type === 'remote' ? config.prefix + (docId ? '/' + docId : '') : 'memory-' + docId;
     const client = React.useMemo(() => {
         if (config.type === 'memory') {
             return createInMemoryEphemeralClient(schemas);
@@ -65,12 +66,14 @@ const App = ({ config }: { config: ConnectionConfig }) => {
             3,
             {},
         );
-    }, [config.authData, docId]);
+    }, [config.type === 'remote' ? config.authData : null, docId]);
     React.useEffect(() => {
         if (config.type !== 'remote') {
             return;
         }
-        return config.authData.onLogout(() => client.teardown());
+        return config.authData.onLogout(() => {
+            client.teardown();
+        });
     }, [client, config.type === 'remote' ? config.authData : null]);
     const match = useRouteMatch();
     const local = React.useMemo(() => new LocalClient(dbName), []);
@@ -94,13 +97,13 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                         pageItems={null}
                         onClose={onClose}
                         open={isOpen}
-                        authData={config.authData}
+                        authData={config.type === 'remote' ? config.authData : null}
                         client={client}
                     />
                 )}
                 Drawer={Drawer}
                 drawerItems={null}
-                authData={config.authData}
+                authData={config.type === 'remote' ? config.authData : null}
                 client={client}
             >
                 {/* <Items client={client} local={local} col={col} id={itemId} /> */}

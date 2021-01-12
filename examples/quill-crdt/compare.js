@@ -2,6 +2,7 @@
 import { node, div, span, addDiv } from './node';
 import Quill from 'quill';
 import QuillCursors from 'quill-cursors/dist/index.js';
+// $FlowFixMe
 import * as Y from 'yjs';
 Quill.register('modules/cursors', QuillCursors);
 import { QuillBinding } from 'y-quill';
@@ -92,10 +93,7 @@ const createQuillFormat = getStamp => (quillFormat, preFormat, postFormat) => {
 
 const matchesFormat = (format, quill) => {
     return !Object.keys(quill).some(key => {
-        return (
-            !format.map[key] ||
-            !deepEqual(ncrdt.value(format.map[key]), quill[key])
-        );
+        return !format.map[key] || !deepEqual(ncrdt.value(format.map[key]), quill[key]);
     });
 };
 
@@ -110,7 +108,7 @@ import {
 all.push(
     make('Mine (new)', {
         init: id => {
-            let state = crdt.init(id);
+            let state = crdt.init();
             state = crdt.apply(state, initialQuillDelta);
             let clock = hlc.init(id, Date.now());
             const getStamp = () => {
@@ -128,6 +126,7 @@ all.push(
                 }
                 const { state: nw, deltas: changes } = quillDeltasToDeltas(
                     state.state,
+                    'site',
                     delta,
                     state.getStamp,
                 );
@@ -140,10 +139,7 @@ all.push(
             });
         },
         applyChanges: (changes, doc, quill) => {
-            const { state, quillDeltas } = deltasToQuillDeltas(
-                doc.state,
-                changes,
-            );
+            const { state, quillDeltas } = deltasToQuillDeltas(doc.state, changes);
             quillDeltas.forEach(delta => {
                 quill.updateContents(delta, 'crdt');
             });
@@ -187,9 +183,7 @@ all.push(
         },
         applyChanges: (changes, doc, quill) => {
             [].concat(...changes).forEach(change => {
-                const deltas = changeToDelta(doc.state, change, format =>
-                    ncrdt.value(format),
-                );
+                const deltas = changeToDelta(doc.state, change, format => ncrdt.value(format));
                 ocrdt.apply(doc.state, change, mergeFormats);
                 quill.updateContents(deltas, 'crdt');
             });
