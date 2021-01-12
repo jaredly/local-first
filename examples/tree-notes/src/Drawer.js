@@ -7,6 +7,7 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
+import Switch from '@material-ui/core/Switch';
 import ListItemText from '@material-ui/core/ListItemText';
 import AccountCircle from '@material-ui/icons/AccountCircle';
 import ExitToApp from '@material-ui/icons/ExitToApp';
@@ -22,7 +23,7 @@ import { useCollection } from '../../../packages/client-react';
 // import EditTagDialog from './EditTagDialog';
 // import ExportDialog from './ExportDialog';
 // import ImportDialog from './ImportDialog';
-import { Switch, Route, Link } from 'react-router-dom';
+import { Route, Link } from 'react-router-dom';
 // import { showDate, today } from '../utils';
 import type { AuthData } from '../../shared/Auth';
 import ExportDialog from '../../shared/ExportDialog';
@@ -88,6 +89,27 @@ const MyDrawer = ({
                         <ListItemText primary="Import" />
                     </ListItem>
                     <Divider />
+                    {window.location.hostname === 'localhost' ? (
+                        <ListItem>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={window.localStorage.inMemoryTreeNotes === 'true'}
+                                        onChange={() => {
+                                            if (window.localStorage.inMemoryTreeNotes === 'true') {
+                                                window.localStorage.inMemoryTreeNotes = 'false';
+                                            } else {
+                                                window.localStorage.inMemoryTreeNotes = 'true';
+                                            }
+                                            location.reload();
+                                        }}
+                                        color="primary"
+                                    />
+                                }
+                                label="Use in-memory db (no persistence)"
+                            />
+                        </ListItem>
+                    ) : null}
                     {/* {Object.keys(tags).map((k) => (
                         <ListItem button onClick={() => setEditTag(tags[k])} key={k}>
                             <ListItemIcon>

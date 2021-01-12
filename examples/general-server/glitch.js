@@ -44,7 +44,7 @@ if (process.env.BACKUP_DOWNLOAD) {
 }
 
 if (process.env.UPLOADS_FIREBASE_APP) {
-    console.log('Enabling uploads!');
+    console.log('Enabling uploads! (STOPSHIP authenticate)');
     const admin = require('firebase-admin');
 
     const serviceAccount = JSON.parse(fs.readFileSync(process.env.UPLOADS_FIREBASE_CONFIG, 'utf8'));
@@ -84,6 +84,7 @@ if (process.env.UPLOADS_FIREBASE_APP) {
     });
 
     result.app.post('/uploads/*', (req, res) => {
+        // STOPSHIP: authenticate these!!! yall
         const requested = req.path.slice('/uploads/'.length);
         const storage = uploadAccount.storage();
         req.pipe(
@@ -102,22 +103,5 @@ if (process.env.UPLOADS_FIREBASE_APP) {
                 res.status(204);
                 res.end();
             });
-        // .getSignedUrl({
-        //     action: 'read',
-        //     expires: Date.now() + 30 * 1000, // 30 seconds, why not
-        // })
-        // .then(
-        //     function([url]) {
-        //         res.status(302);
-        //         res.header('Location', url);
-        //         res.end();
-        //     },
-        //     err => {
-        //         console.log('Failed to get image url');
-        //         console.error(err);
-        //         res.status(404);
-        //         res.send('Not found');
-        //     },
-        // );
     });
 }

@@ -23,6 +23,7 @@ import AppShell from '../../shared/AppShell';
 import Drawer from './Drawer';
 import UpdateSnackbar from '../../shared/Update';
 import Items from './Items';
+import { blankItem } from './types';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
@@ -47,6 +48,51 @@ const parseRawDoc = (rawDoc) => {
     return [parts[0], parts[1]];
 };
 
+const populateWithInitialData = (client) => {
+    const col = client.getCollection('items');
+    const makeNode = (node) => {
+        const id = col.genId();
+        if (typeof node === 'string') {
+            col.save(id, {
+                ...blankItem(node),
+                id,
+            });
+        } else {
+            const children = node.children.map(makeNode);
+            col.save(id, {
+                ...blankItem(node.text),
+                id,
+                children,
+            });
+        }
+        return id;
+    };
+
+    const initialData = [
+        'Hello',
+        'My good folks',
+        'Here we are',
+        'Is it not grand',
+        { text: 'A parent', children: ['Child one', 'Child two'] },
+    ];
+    // const children = [];
+    // initialData.forEach
+    //     const id = col.genId();
+    //     col.save(id, {
+    //         ...blankItem(`Child ${i}`),
+    //         id,
+    //     });
+    //     children.push(id);
+    // }
+
+    col.save('root', {
+        ...blankItem('Hello world'),
+        id: 'root',
+        children: initialData.map(makeNode),
+    });
+    return client;
+};
+
 const App = ({ config }: { config: ConnectionConfig }) => {
     const { doc: docId } = useParams();
     // const [docId, itemId] = parseRawDoc(rawDoc);
@@ -54,7 +100,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
         config.type === 'remote' ? config.prefix + (docId ? '/' + docId : '') : 'memory-' + docId;
     const client = React.useMemo(() => {
         if (config.type === 'memory') {
-            return createInMemoryEphemeralClient(schemas);
+            return populateWithInitialData(createInMemoryEphemeralClient(schemas));
         }
         const url = `${config.authData.host}/dbs/sync?db=trees/${docId || 'home'}&token=${
             config.authData.auth.token

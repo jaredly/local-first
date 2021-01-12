@@ -24,6 +24,13 @@ const darkTheme = createMuiTheme({
 });
 
 const Top = () => {
+    if (window.localStorage.inMemoryTreeNotes === 'true') {
+        return (
+            <Router>
+                <Main host={null} />{' '}
+            </Router>
+        );
+    }
     return (
         <Router>
             <Switch>

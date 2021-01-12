@@ -9,7 +9,10 @@ import querystring from 'querystring';
 import ListItem from '@material-ui/core/ListItem';
 import Switch from '@material-ui/core/Switch';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
 import * as React from 'react';
+
 import {
     createPersistedBlobClient,
     createPersistedDeltaClient,
@@ -40,7 +43,8 @@ type Dest =
     | {
           type: 'after',
           path: Array<string>,
-      };
+      }
+    | { type: 'self' };
 export type DragTarget = DropTarget<Dest>;
 
 const useDragging = (onDrop) => {
@@ -116,6 +120,9 @@ const Items = ({
             return;
         }
         console.log('drop it here', path, dest);
+        if (dest.type === 'self') {
+            return;
+        }
         col.removeId(pid, ['children'], id);
         if (dest.type === 'after' || dest.type === 'before') {
             const npid = dest.path[dest.path.length - 2];
@@ -134,6 +141,7 @@ const Items = ({
     }, []);
     const { registerDragTargets, onDragStart, dragger } = useDragging(onDrop);
     const { id } = useParams();
+    const [menu, setMenu] = React.useState(null);
 
     return (
         <React.Fragment>
@@ -144,6 +152,9 @@ const Items = ({
                 local={local}
                 registerDragTargets={registerDragTargets}
                 onDragStart={onDragStart}
+                onMenuShow={(item, handle) => {
+                    setMenu({ item, handle });
+                }}
             />
             {dragger != null && dragger.dims != null && dragger.dest != null ? (
                 <div
@@ -165,8 +176,30 @@ const Items = ({
                     }}
                 ></div>
             ) : null}
+            {menu ? (
+                <Menu anchorEl={menu.handle} open={Boolean(menu)} onClose={() => setMenu(null)}>
+                    {itemMenuItems(col, menu.item, () => setMenu(null))}
+                </Menu>
+            ) : null}
         </React.Fragment>
     );
+};
+
+const itemMenuItems = (col, item, onClose) => {
+    const items = [];
+    ['header', 'todo'].map((style) => {
+        items.push(
+            <MenuItem
+                key={style}
+                onClick={() => {
+                    col.setAttribute(item.id, ['style'], style);
+                    onClose();
+                }}
+            >
+                {style}
+            </MenuItem>,
+        );
+    });
 };
 
 export default Items;

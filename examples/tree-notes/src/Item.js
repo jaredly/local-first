@@ -108,21 +108,33 @@ const dragHandler = ({ node, childPath, bodyRef, col, id, local }) => (currentPa
     if (childPath.length === 1) {
         return [];
     }
-    if (arrayStartsWith(currentPath, childPath)) {
-        return [];
-    }
     const body = bodyRef.current;
     if (!body) {
         return [];
     }
-    const bodyBox = body.getBoundingClientRect();
-    const box = node.getBoundingClientRect();
-    const current = col.getCached(id);
-    if (!current) {
-        return [];
-    }
     const parent = node.offsetParent;
     if (!parent) {
+        return [];
+    }
+    const box = node.getBoundingClientRect();
+    if (arrayStartsWith(currentPath, childPath)) {
+        if (currentPath.length === childPath.length) {
+            return [
+                {
+                    parent,
+                    top: box.top,
+                    height: box.bottom - box.top,
+                    left: box.left,
+                    width: box.width,
+                    dest: { type: 'self' },
+                },
+            ];
+        }
+        return [];
+    }
+    const bodyBox = body.getBoundingClientRect();
+    const current = col.getCached(id);
+    if (!current) {
         return [];
     }
     const pTop = parent.getBoundingClientRect().top;
@@ -193,9 +205,10 @@ type Props = {
     local: LocalClient,
     onDragStart: (MouseEvent, Array<string>) => void,
     registerDragTargets: (string, ?(Array<string>) => Array<DragTarget>) => void,
+    onMenuShow: (item: ItemT, handle: HTMLElement) => mixed,
 };
 
-const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Props) => {
+const Item = ({ path, id, client, local, registerDragTargets, onDragStart, onMenuShow }: Props) => {
     const [col, item] = useItem<ItemT, *>(React, client, 'items', id);
     const childPath = React.useMemo(() => path.concat([id]), [path, id]);
     const bodyRef = React.useRef(null);
@@ -255,8 +268,26 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
                 }}
                 ref={(node) => (bodyRef.current = node)}
             >
+                {path.length != 0 ? (
+                    <div
+                        className="drag-handle"
+                        css={{
+                            width: 10,
+                            top: 0,
+                            bottom: 0,
+                            background: '#aaa',
+                            visibility: 'hidden',
+                            cursor: 'move',
+                        }}
+                        onMouseDown={(evt) => onDragStart(evt, childPath)}
+                    />
+                ) : null}
                 <div
+                    onContextMenu={(evt) => onMenuShow(item, evt.currentTarget)}
                     onClick={
+                        // evt => {
+                        //     if (evt.ctrlKey || evt.metaKey || evt.button !== 0)
+                        // }
                         collapsible
                             ? () => {
                                   local.setExpanded(id, collapsed);
@@ -305,20 +336,6 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
                     }}
                     siteId={client.sessionId}
                 />
-                {path.length != 0 ? (
-                    <div
-                        className="drag-handle"
-                        css={{
-                            width: 10,
-                            top: 0,
-                            bottom: 0,
-                            background: '#aaa',
-                            visibility: 'hidden',
-                            cursor: 'move',
-                        }}
-                        onMouseDown={(evt) => onDragStart(evt, childPath)}
-                    />
-                ) : null}
             </div>
             <div
                 style={{
@@ -337,6 +354,7 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
                               local={local}
                               onDragStart={onDragStart}
                               registerDragTargets={registerDragTargets}
+                              onMenuShow={onMenuShow}
                           />
                       ))
                     : null}
