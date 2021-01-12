@@ -177,20 +177,20 @@ export const quillDeltasToDeltas = (
             result.push(...changes);
             at += txt.length;
         }
-        if (typeof quillDelta.retain === 'string') {
-            const txt = quillDelta.retain;
+        if (typeof quillDelta.retain === 'number') {
+            const ln = quillDelta.retain;
             // TODO need to be able to delete formatting
             // Or actually quill does this by setting it to null
             // so I think we're fine.
             if (quillDelta.attributes) {
                 const attrs = quillDelta.attributes;
                 Object.keys(attrs).forEach(key => {
-                    const change = format(state, site, at, txt, key, attrs[key], genStamp());
+                    const change = format(state, site, at, ln, key, attrs[key], genStamp());
                     state = apply(state, change);
                     result.push(...change);
                 });
             }
-            at += quillDelta.retain;
+            at += ln;
         }
         if (quillDelta.delete != null) {
             const change = del(state, at, quillDelta.delete);

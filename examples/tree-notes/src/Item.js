@@ -99,6 +99,8 @@ const itemActions = ({ client, col, path, id, local }) => ({
     },
 });
 
+const TARGET_HEIGHT = 5;
+
 const dragHandler = ({ node, childPath, bodyRef, col, id, local }) => (currentPath) => {
     // TODO need to be able to escape a parent. So if you are a descendent of a thing
     // that should not prevent you from going above or below the thing.
@@ -128,24 +130,24 @@ const dragHandler = ({ node, childPath, bodyRef, col, id, local }) => (currentPa
         return [
             {
                 parent,
-                top: bodyBox.top,
-                height: bodyBox.height / 2,
+                top: bodyBox.top - TARGET_HEIGHT / 2,
+                height: TARGET_HEIGHT,
                 left: bodyBox.left,
                 width: bodyBox.width,
                 dest: { type: 'before', path: childPath },
             },
             {
                 parent,
-                top: bodyBox.top + bodyBox.height / 2,
-                height: bodyBox.height / 2,
-                left: bodyBox.left,
+                top: bodyBox.bottom - TARGET_HEIGHT / 2,
+                height: TARGET_HEIGHT,
+                left: bodyBox.left + 30,
                 width: bodyBox.width,
                 dest: { type: 'child', path: childPath },
             },
             {
                 parent,
-                top: box.bottom, //  - 10,
-                height: bodyBox.height / 2,
+                top: box.bottom - TARGET_HEIGHT / 2,
+                height: TARGET_HEIGHT,
                 left: bodyBox.left,
                 width: bodyBox.width,
                 dest: { type: 'after', path: childPath },
@@ -159,8 +161,8 @@ const dragHandler = ({ node, childPath, bodyRef, col, id, local }) => (currentPa
             // above
             {
                 parent,
-                top: bodyBox.top,
-                height: bodyBox.height / 2,
+                top: bodyBox.top - TARGET_HEIGHT / 2,
+                height: TARGET_HEIGHT,
                 left: bodyBox.left,
                 width: bodyBox.width,
                 dest: { type: 'before', path: childPath },
@@ -168,8 +170,8 @@ const dragHandler = ({ node, childPath, bodyRef, col, id, local }) => (currentPa
             // below
             {
                 parent,
-                top: bodyBox.top + bodyBox.height / 2,
-                height: bodyBox.height / 2,
+                top: bodyBox.bottom - TARGET_HEIGHT / 2,
+                height: TARGET_HEIGHT,
                 left: bodyBox.left,
                 width: bodyBox.width,
                 dest: { type: 'after', path: childPath },
@@ -247,11 +249,13 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
                 css={{
                     display: 'flex',
                     flexDirection: 'row',
+                    '&:hover .drag-handle': {
+                        visibility: 'visible',
+                    },
                 }}
                 ref={(node) => (bodyRef.current = node)}
             >
                 <div
-                    onMouseDown={(evt) => onDragStart(evt, childPath)}
                     onClick={
                         collapsible
                             ? () => {
@@ -301,6 +305,20 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart }: Pro
                     }}
                     siteId={client.sessionId}
                 />
+                {path.length != 0 ? (
+                    <div
+                        className="drag-handle"
+                        css={{
+                            width: 10,
+                            top: 0,
+                            bottom: 0,
+                            background: '#aaa',
+                            visibility: 'hidden',
+                            cursor: 'move',
+                        }}
+                        onMouseDown={(evt) => onDragStart(evt, childPath)}
+                    />
+                ) : null}
             </div>
             <div
                 style={{

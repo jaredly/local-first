@@ -63,7 +63,7 @@ const QuillEditor = ({
             if (source === 'crdt') {
                 return;
             }
-            // console.log(delta);
+            // console.log(crdt.text)
 
             const { state: newState, deltas } = quillDeltasToDeltas(
                 valueRef.current,
