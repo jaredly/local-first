@@ -41,8 +41,7 @@ export const useUpgrade = () => {
     return [showUpgrade, acceptUpgrade, hideUpgrade];
 };
 
-const UpdateSnackbar = () => {
-    console.log('app hello');
+const UpdateSnackbar = React.memo<{}>(() => {
     const [upgradeAvailable, acceptUpgrade, hideUpgradeAvaialble] = useUpgrade();
 
     return (
@@ -72,6 +71,6 @@ const UpdateSnackbar = () => {
             }
         />
     );
-};
+});
 
 export default UpdateSnackbar;

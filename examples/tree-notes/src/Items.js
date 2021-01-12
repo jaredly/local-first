@@ -1,7 +1,8 @@
 // @flow
-import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
+import { useHistory, Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 
 import Button from '@material-ui/core/Button';
+import ButtonGroup from '@material-ui/core/ButtonGroup';
 import IconButton from '@material-ui/core/IconButton';
 import Snackbar from '@material-ui/core/Snackbar';
 import CloseIcon from '@material-ui/icons/Close';
@@ -12,6 +13,7 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import * as React from 'react';
+import Checkbox from '@material-ui/core/Checkbox';
 
 import {
     createPersistedBlobClient,
@@ -152,9 +154,7 @@ const Items = ({
                 local={local}
                 registerDragTargets={registerDragTargets}
                 onDragStart={onDragStart}
-                onMenuShow={(item, handle) => {
-                    setMenu({ item, handle });
-                }}
+                onMenuShow={setMenu}
             />
             {dragger != null && dragger.dims != null && dragger.dest != null ? (
                 <div
@@ -177,29 +177,123 @@ const Items = ({
                 ></div>
             ) : null}
             {menu ? (
-                <Menu anchorEl={menu.handle} open={Boolean(menu)} onClose={() => setMenu(null)}>
-                    {itemMenuItems(col, menu.item, () => setMenu(null))}
+                <Menu
+                    anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'left',
+                    }}
+                    anchorEl={menu.handle}
+                    getContentAnchorEl={null}
+                    open={Boolean(menu)}
+                    onClose={() => setMenu(null)}
+                >
+                    <ItemMenuItems
+                        col={col}
+                        client={client}
+                        id={menu.item.id}
+                        onClose={() => setMenu(null)}
+                    />
                 </Menu>
             ) : null}
         </React.Fragment>
     );
 };
 
-const itemMenuItems = (col, item, onClose) => {
-    const items = [];
-    ['header', 'todo'].map((style) => {
-        items.push(
-            <MenuItem
-                key={style}
-                onClick={() => {
-                    col.setAttribute(item.id, ['style'], style);
-                    onClose();
-                }}
-            >
-                {style}
-            </MenuItem>,
-        );
-    });
-};
+const ItemMenuItems = React.forwardRef(({ col, id, onClose, client }) => {
+    const history = useHistory();
+    const [_, item] = useItem(React, client, 'items', id);
+    if (!item) {
+        return null;
+    }
+    const items = [
+        <MenuItem
+            key="zoom"
+            onClick={() => {
+                history.push(`/item/${id}`);
+                onClose();
+            }}
+        >
+            Zoom to here
+        </MenuItem>,
+    ];
+    items.push(
+        <MenuItem
+            key="completed"
+            onClick={() => {
+                col.setAttribute(
+                    item.id,
+                    ['completed'],
+                    item.completed == null ? Date.now() : null,
+                );
+                onClose();
+            }}
+        >
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={item.completed != null}
+                        onChange={() => {
+                            col.setAttribute(
+                                item.id,
+                                ['completed'],
+                                item.completed == null ? Date.now() : null,
+                            );
+                            onClose();
+                        }}
+                    />
+                }
+                label={'Completed'}
+            />
+        </MenuItem>,
+    );
+    items.push(
+        <MenuItem key="style">
+            Style:
+            <ButtonGroup>
+                {['header', 'todo'].map((style) => (
+                    <Button
+                        key={style}
+                        size="small"
+                        variant={item.style === style ? 'contained' : 'text'}
+                        onClick={() => {
+                            col.setAttribute(item.id, ['style'], style);
+                        }}
+                    >
+                        {style}
+                    </Button>
+                ))}
+            </ButtonGroup>
+        </MenuItem>,
+    );
+    items.push(
+        <MenuItem key="numbering">
+            Numbering:
+            <ButtonGroup>
+                {['numbers', 'letters', 'roman', 'checkbox'].map((style) => (
+                    <Button
+                        key={style}
+                        size="small"
+                        variant={
+                            item.numbering != null && item.numbering.style === style
+                                ? 'contained'
+                                : 'text'
+                        }
+                        onClick={() => {
+                            col.setAttribute(
+                                item.id,
+                                ['numbering'],
+                                item.numbering?.style === style ? null : { style },
+                            );
+                            // onClose();
+                        }}
+                    >
+                        {style}
+                    </Button>
+                ))}
+            </ButtonGroup>
+        </MenuItem>,
+    );
+    return items;
+});
 
 export default Items;

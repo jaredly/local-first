@@ -12,6 +12,7 @@ import { type DragTarget } from './Items';
 import { length } from '../../../packages/rich-text-crdt/utils';
 import * as rich from '../../../packages/rich-text-crdt/';
 import { blankItem } from './types';
+import Checkbox from '@material-ui/core/Checkbox';
 
 const arrayStartsWith = (needle, haystack) => {
     if (haystack.length < needle.length) {
@@ -78,7 +79,7 @@ const itemActions = ({ client, col, path, id, local }) => ({
         // console.log('enter');
         const current = col.getCached(id);
         if (!current) return;
-        if (current.children.length || !path.length) {
+        if ((current.children.length && local.isExpanded(id)) || !path.length) {
             const nid = navigation.createChild(client, col, path, id);
             local.setFocus(nid);
         } else {
@@ -205,10 +206,20 @@ type Props = {
     local: LocalClient,
     onDragStart: (MouseEvent, Array<string>) => void,
     registerDragTargets: (string, ?(Array<string>) => Array<DragTarget>) => void,
-    onMenuShow: (item: ItemT, handle: HTMLElement) => mixed,
+    onMenuShow: ({ item: ItemT, handle: HTMLElement }) => mixed,
+    numbering?: ?{ style: string, startWith?: number },
 };
 
-const Item = ({ path, id, client, local, registerDragTargets, onDragStart, onMenuShow }: Props) => {
+const Item = ({
+    path,
+    id,
+    client,
+    local,
+    registerDragTargets,
+    onDragStart,
+    onMenuShow,
+    numbering,
+}: Props) => {
     const [col, item] = useItem<ItemT, *>(React, client, 'items', id);
     const childPath = React.useMemo(() => path.concat([id]), [path, id]);
     const bodyRef = React.useRef(null);
@@ -267,6 +278,10 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart, onMen
                     },
                 }}
                 ref={(node) => (bodyRef.current = node)}
+                onContextMenu={(evt) => {
+                    evt.preventDefault();
+                    onMenuShow({ item, handle: evt.currentTarget });
+                }}
             >
                 {path.length != 0 ? (
                     <div
@@ -283,7 +298,11 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart, onMen
                     />
                 ) : null}
                 <div
-                    onContextMenu={(evt) => onMenuShow(item, evt.currentTarget)}
+                    onContextMenu={(evt) => {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        onMenuShow({ item, handle: evt.currentTarget });
+                    }}
                     onClick={
                         // evt => {
                         //     if (evt.ctrlKey || evt.metaKey || evt.button !== 0)
@@ -320,11 +339,41 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart, onMen
                         />
                     )}
                 </div>
+                {numbering?.style === 'checkbox' ? (
+                    // <Checkbox
+                    //     checked={item.completed != null}
+                    //     onChange={() => {
+                    //         col.setAttribute(
+                    //             item.id,
+                    //             ['completed'],
+                    //             item.completed == null ? Date.now() : null,
+                    //         );
+                    //     }}
+                    // />
+                    <input
+                        type="checkbox"
+                        checked={item.completed != null}
+                        onChange={() => {
+                            col.setAttribute(
+                                item.id,
+                                ['completed'],
+                                item.completed == null ? Date.now() : null,
+                            );
+                        }}
+                    />
+                ) : null}
                 <QuillEditor
                     css={{
                         flex: 1,
                         border: '1px dashed transparent',
                         ...(length(item.body) <= 1 ? { borderBottomColor: 'currentColor' } : null),
+                        ...(item.style === 'header'
+                            ? { fontSize: '1.2em', fontWeight: 'bold' }
+                            : null),
+                        // textDecoration: item.completed != null ? 'line-through' : null,
+                        opacity: item.completed != null ? 0.8 : null,
+                        fontStyle: item.completed != null ? 'italic' : null,
+                        // textDecorationColor: '#aaa',
                     }}
                     innerRef={(node) => local.register(id, node)}
                     value={item.body}
@@ -355,6 +404,7 @@ const Item = ({ path, id, client, local, registerDragTargets, onDragStart, onMen
                               onDragStart={onDragStart}
                               registerDragTargets={registerDragTargets}
                               onMenuShow={onMenuShow}
+                              numbering={item.numbering}
                           />
                       ))
                     : null}
