@@ -38,7 +38,7 @@ export const crdtImpl = {
     deltas: {
         stamp: delta => crdt.deltas.stamp(delta, () => null),
     },
-    value: (d: *) => d.value,
+    value: (d: { value: * }) => d.value,
 };
 
 export const serverForUser = (
@@ -218,6 +218,9 @@ export const runMulti2 = (
             null,
         );
 
+        if (data == null) {
+            return res.status(500).json({ error: 'Delta reduce produced null' });
+        }
         res.json(crdtImpl.value(data));
     });
 

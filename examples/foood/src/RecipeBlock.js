@@ -1,5 +1,4 @@
 // @flow
-// @flow
 import * as React from 'react';
 import type { RecipeT, TagT, IngredientT, RecipeText } from '../collections';
 import type { Client, Collection } from '../../../packages/client-bundle';

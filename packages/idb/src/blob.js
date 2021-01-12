@@ -77,6 +77,10 @@ export const makePersistence = function(
                 }
             }
         },
+
+        query(collection: string, key: string, op: any, value: any) {
+            throw new Error('Not implemented');
+        },
         async getFull<Data>() {
             const tx = (await db).transaction(allStores, 'readonly');
             const dirty = await tx.objectStore('meta').get('dirty');

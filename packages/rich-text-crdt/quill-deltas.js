@@ -154,9 +154,6 @@ export const deltaToQuillDeltas = (state: CRDT, delta: Delta): Array<QuillDelta>
     }
     throw new Error(`Unexpected delta type ${delta.type}`);
 };
-/* flowlint
- *   sketchy-null:off
- */
 export const quillDeltasToDeltas = (
     state: CRDT,
     site: string,
@@ -166,7 +163,8 @@ export const quillDeltasToDeltas = (
     const result = [];
     let at = 0;
     quillDeltas.forEach(quillDelta => {
-        if (quillDelta.insert) {
+        if (typeof quillDelta.insert === 'string') {
+            const txt = quillDelta.insert;
             const changes = insert(
                 state,
                 site,
@@ -177,24 +175,17 @@ export const quillDeltasToDeltas = (
             );
             state = apply(state, changes);
             result.push(...changes);
-            at += quillDelta.insert.length;
+            at += txt.length;
         }
-        if (quillDelta.retain) {
+        if (typeof quillDelta.retain === 'string') {
+            const txt = quillDelta.retain;
             // TODO need to be able to delete formatting
             // Or actually quill does this by setting it to null
             // so I think we're fine.
             if (quillDelta.attributes) {
                 const attrs = quillDelta.attributes;
                 Object.keys(attrs).forEach(key => {
-                    const change = format(
-                        state,
-                        site,
-                        at,
-                        quillDelta.retain,
-                        key,
-                        attrs[key],
-                        genStamp(),
-                    );
+                    const change = format(state, site, at, txt, key, attrs[key], genStamp());
                     state = apply(state, change);
                     result.push(...change);
                 });

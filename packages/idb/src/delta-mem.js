@@ -138,6 +138,10 @@ const makePersistence = (collections: Array<string>): DeltaPersistence => {
             return map[id];
         },
 
+        query(collection: string, key: string, op: any, value: any) {
+            throw new Error('Not implemented');
+        },
+
         async load<T>(collection: string, id: string): Promise<?T> {
             const data = db.get(collection + ':nodes', id);
             return data ? data.value : null;
