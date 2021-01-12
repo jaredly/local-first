@@ -38,6 +38,7 @@ export const crdtImpl = {
     deltas: {
         stamp: delta => crdt.deltas.stamp(delta, () => null),
     },
+    value: (d: *) => d.value,
 };
 
 export const serverForUser = (
@@ -164,6 +165,60 @@ export const runMulti2 = (
             throw new Error('No sessionId');
         }
         res.json(post(req.server, req.query.sessionId, req.body));
+    });
+
+    // NOTE: This is a kindof wasteuful, although at the data sizes we're thinking of,
+    // it's probably actually not a big deal?
+    // But glitch's startup time is maybe a big deal, so it would be cool to cache it
+    // with cloudflare anyway.
+    app.get('/latest/', (req, res) => {
+        const { db, collection, id } = req.query;
+        if (!db || !collection || !id) {
+            return res.status(400).json({ error: 'required: db, id, collection' });
+        }
+        const parts = db.split('/');
+        const config = configs[parts[0]];
+        if (!config) {
+            return res.status(404).json({ error: 'no collection' });
+        }
+        const subPath = parts.slice(1);
+        let userId = null;
+        if (subPath[0] !== 'public') {
+            const authData = auth.getAuth(authDb, secret, req);
+            if (typeof authData === 'string') {
+                return res.status(401).send(authData);
+            }
+            userId = authData.user.id;
+        }
+        const dbPath =
+            userId == null
+                ? path.join(dataPath, parts[0], subPath.join('/'))
+                : path.join(dataPath, parts[0], '@' + userId, subPath.join('/'));
+        if (!fs.existsSync(dbPath)) {
+            return res.status(404).json({ error: 'No such database' });
+        }
+
+        const persistence = setupPersistence(dbPath);
+        const schemaCheckers = makeSchemaCheckers(config);
+
+        const result = persistence.deltasSince(collection, null, 'server');
+        if (!result) {
+            return res.status(404).json({ error: 'no data' });
+        }
+        const relevantDeltas = result.deltas
+            .filter(delta => delta.node === id)
+            .map(change => change.delta);
+
+        if (!relevantDeltas.length) {
+            return res.status(404).json({ error: 'node not found' });
+        }
+
+        const data = relevantDeltas.reduce(
+            (current, next) => crdtImpl.applyDelta(current, next),
+            null,
+        );
+
+        res.json(crdtImpl.value(data));
     });
 
     const clients = {};

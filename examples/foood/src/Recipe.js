@@ -81,35 +81,72 @@ const useSetTitle = (title) => {
 
 const statuses: Array<RecipeStatus> = ['to try', 'approved', 'favorite', 'rejected'];
 
-const RecipeView = ({
-    client,
-    actorId,
-    url,
-    id: overrideId,
-}: {
-    client: Client<*>,
-    actorId: string,
-    url: string,
-    id?: string,
-}) => {
-    const match = useRouteMatch();
-    const id = overrideId != null ? overrideId : match.params.id;
-    const [col, recipe] = useItem<RecipeT, _>(React, client, 'recipes', id);
-    const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
-    const [editingTags, setEditingTags] = React.useState(false);
-    const [batches, setBatches] = React.useState(1);
+const ShowTags = ({ recipe, col, client, actorId }) => {
     const styles = useStyles();
+    const [editingTags, setEditingTags] = React.useState(false);
+    const [tagsCol, allTags] = useCollection<TagT, _>(React, client, 'tags');
+
+    if (editingTags) {
+        return (
+            <TagsEditor
+                tagsCol={tagsCol}
+                actorId={actorId}
+                recipeId={recipe.id}
+                client={client}
+                tags={recipe.tags}
+                allTags={allTags}
+                col={col}
+                onClose={() => setEditingTags(false)}
+            />
+        );
+    } else {
+        return (
+            <div className={styles.tags}>
+                <div style={{ marginRight: 8 }}>Tags:</div>
+                {recipe.tags != null && Object.keys(recipe.tags).length > 0
+                    ? Object.keys(recipe.tags)
+                          .filter((tid) => !!allTags[tid])
+                          .map((tid) => (
+                              <Link to={`/tag/${tid}`} className={styles.tag} key={tid}>
+                                  {allTags[tid].text}
+                              </Link>
+                          ))
+                    : null}
+                <IconButton
+                    edge="start"
+                    style={{ marginRight: 16 }}
+                    color="inherit"
+                    aria-label="menu"
+                    onClick={() => {
+                        setEditingTags(true);
+                    }}
+                >
+                    <EditIcon />
+                </IconButton>
+            </div>
+        );
+    }
+};
+
+export const RecipeInner = ({
+    recipe,
+    url,
+    editorData,
+}: // actorId,
+// client,
+{
+    recipe: RecipeT,
+    url: string,
+    editorData: ?{
+        actorId: string,
+        client: Client<*>,
+        col: Collection<RecipeT>,
+    },
+}) => {
+    const styles = useStyles();
+    const status = editorData ? recipe.statuses[editorData.actorId] : null;
     const history = useHistory();
-    useSetTitle(recipe ? `${recipe.about.title} | Foood` : 'Foood');
-
-    if (recipe === false) {
-        return <div />; // wait on it
-    }
-    if (!recipe) {
-        return <div>Recipe not found</div>;
-    }
-
-    const status = recipe.statuses[actorId];
+    const [batches, setBatches] = React.useState(1);
 
     return (
         <div className={styles.container}>
@@ -118,85 +155,68 @@ const RecipeView = ({
             ) : null}
             <div className={styles.title}>
                 {recipe.about.title}
-                <IconButton
-                    edge="start"
-                    style={{ marginRight: 16 }}
-                    color="inherit"
-                    aria-label="menu"
-                    href={`/recipe/${recipe.id}/edit`}
-                    onClick={(evt) => {
-                        if (evt.button == 0 && !evt.ctrlKey && !evt.metaKey) {
-                            history.push(`/recipe/${recipe.id}/edit`);
-                            evt.preventDefault();
-                            evt.stopPropagation();
-                        }
-                    }}
-                >
-                    <EditIcon />
-                </IconButton>
+                {editorData ? (
+                    <IconButton
+                        edge="start"
+                        style={{ marginRight: 16 }}
+                        color="inherit"
+                        aria-label="menu"
+                        href={`/recipe/${recipe.id}/edit`}
+                        onClick={(evt) => {
+                            if (evt.button == 0 && !evt.ctrlKey && !evt.metaKey) {
+                                history.push(`/recipe/${recipe.id}/edit`);
+                                evt.preventDefault();
+                                evt.stopPropagation();
+                            }
+                        }}
+                    >
+                        <EditIcon />
+                    </IconButton>
+                ) : null}
             </div>
             <div className={styles.meta}>
-                {editingTags ? (
-                    <TagsEditor
-                        tagsCol={tagsCol}
-                        actorId={actorId}
-                        recipeId={recipe.id}
-                        client={client}
-                        tags={recipe.tags}
-                        allTags={tags}
-                        col={col}
-                        onClose={() => setEditingTags(false)}
+                {editorData ? (
+                    <ShowTags
+                        actorId={editorData.actorId}
+                        col={editorData.col}
+                        recipe={recipe}
+                        client={editorData.client}
                     />
-                ) : (
-                    <div className={styles.tags}>
-                        <div style={{ marginRight: 8 }}>Tags:</div>
-                        {recipe.tags != null && Object.keys(recipe.tags).length > 0
-                            ? Object.keys(recipe.tags)
-                                  .filter((tid) => !!tags[tid])
-                                  .map((tid) => (
-                                      <Link to={`/tag/${tid}`} className={styles.tag} key={tid}>
-                                          {tags[tid].text}
-                                      </Link>
-                                  ))
-                            : null}
-                        <IconButton
-                            edge="start"
-                            style={{ marginRight: 16 }}
-                            color="inherit"
-                            aria-label="menu"
-                            onClick={() => {
-                                setEditingTags(true);
-                            }}
-                        >
-                            <EditIcon />
-                        </IconButton>
-                    </div>
-                )}
+                ) : null}
                 {renderSource(recipe.about.source)}
                 {renderAuthor(recipe.about.author)}
                 <span style={{ marginLeft: 16 }}>
                     Updated {new Date(recipe.updatedDate).toLocaleDateString()}
                 </span>
             </div>
-            <div className={styles.status}>
-                {statuses.map((name) => (
-                    <Button
-                        key={name}
-                        variant={status === name ? 'contained' : 'outlined'}
-                        color="primary"
-                        onClick={async () => {
-                            if (status === name) {
-                                await col.clearAttribute(recipe.id, ['statuses', actorId]);
-                            } else {
-                                await col.setAttribute(recipe.id, ['statuses', actorId], name);
-                            }
-                        }}
-                        style={{ marginRight: 8 }}
-                    >
-                        {name}
-                    </Button>
-                ))}
-            </div>
+            {editorData ? (
+                <div className={styles.status}>
+                    {statuses.map((name) => (
+                        <Button
+                            key={name}
+                            variant={status === name ? 'contained' : 'outlined'}
+                            color="primary"
+                            onClick={async () => {
+                                if (status === name) {
+                                    await editorData.col.clearAttribute(recipe.id, [
+                                        'statuses',
+                                        editorData.actorId,
+                                    ]);
+                                } else {
+                                    await editorData.col.setAttribute(
+                                        recipe.id,
+                                        ['statuses', editorData.actorId],
+                                        name,
+                                    );
+                                }
+                            }}
+                            style={{ marginRight: 8 }}
+                        >
+                            {name}
+                        </Button>
+                    ))}
+                </div>
+            ) : null}
             <div style={{ marginTop: 16 }}>
                 Batches:
                 {/* <span style={{ display: 'inline-block', width: 8 }} /> */}
@@ -214,9 +234,35 @@ const RecipeView = ({
                 ))}
             </div>
             <div className={styles.text}>{renderQuill(recipe.contents.text, batches)}</div>
-            <Comments url={url} recipe={recipe} col={col} actorId={actorId} />
+            <Comments url={url} recipe={recipe} editorData={editorData} />
         </div>
     );
+};
+
+const RecipeView = ({
+    client,
+    actorId,
+    url,
+    id: overrideId,
+}: {
+    client: Client<*>,
+    actorId: string,
+    url: string,
+    id?: string,
+}) => {
+    const match = useRouteMatch();
+    const id = overrideId != null ? overrideId : match.params.id;
+    const [col, recipe] = useItem<RecipeT, _>(React, client, 'recipes', id);
+    useSetTitle(recipe ? `${recipe.about.title} | Foood` : 'Foood');
+
+    if (recipe === false) {
+        return <div />; // wait on it
+    }
+    if (!recipe) {
+        return <div>Recipe not found</div>;
+    }
+
+    return <RecipeInner editorData={{ col, actorId, client }} url={url} recipe={recipe} />;
 };
 
 const renderStars = (value) => (
@@ -227,7 +273,7 @@ const renderStars = (value) => (
     </div>
 );
 
-const Comment = ({ recipe, col, actorId, comment, url }) => {
+const Comment = ({ recipe, editorData, comment, url }) => {
     const [editing, setEditing] = React.useState(false);
 
     const [anchor, setAnchor] = React.useState(null);
@@ -242,12 +288,12 @@ const Comment = ({ recipe, col, actorId, comment, url }) => {
         >
             <div style={{ fontSize: '80%', display: 'flex', alignItems: 'center' }}>
                 {new Date(comment.date).toLocaleDateString()}
-                {editing ? null : (
+                {!editorData || editing ? null : (
                     <React.Fragment>
                         <div style={{ width: 16 }} />
                         {renderStars(comment.happiness)}
                         <div style={{ width: 16 }} />
-                        {comment.authorId === actorId ? (
+                        {comment.authorId === editorData.actorId ? (
                             <IconButton
                                 edge="start"
                                 color="inherit"
@@ -261,28 +307,28 @@ const Comment = ({ recipe, col, actorId, comment, url }) => {
                     </React.Fragment>
                 )}
             </div>
-            {editing ? (
+            {editorData && editing ? (
                 <EditComment
                     url={url}
                     comment={comment}
                     onCancel={() => setEditing(false)}
                     onSave={async (text, happiness, images) => {
                         if (!deepEqual(text, comment.text)) {
-                            await col.setAttribute(
+                            await editorData.col.setAttribute(
                                 recipe.id,
                                 ['comments', comment.id, 'text'],
                                 text,
                             );
                         }
                         if (happiness !== comment.happiness) {
-                            await col.setAttribute(
+                            await editorData.col.setAttribute(
                                 recipe.id,
                                 ['comments', comment.id, 'happiness'],
                                 happiness,
                             );
                         }
                         if (!deepEqual(images, comment.images)) {
-                            await col.setAttribute(
+                            await editorData.col.setAttribute(
                                 recipe.id,
                                 ['comments', comment.id, 'images'],
                                 images,
@@ -326,31 +372,44 @@ const Comment = ({ recipe, col, actorId, comment, url }) => {
                     </div>
                 </div>
             )}
-            <Menu
-                anchorEl={anchor ? anchor.el : null}
-                open={Boolean(anchor)}
-                onClose={() => setAnchor(null)}
-            >
-                <MenuItem
-                    onClick={() => {
-                        if (anchor) {
-                            col.setAttribute(recipe.id, ['about', 'image'], anchor.src);
-                            setAnchor(null);
-                        }
-                    }}
+            {editorData ? (
+                <Menu
+                    anchorEl={anchor ? anchor.el : null}
+                    open={Boolean(anchor)}
+                    onClose={() => setAnchor(null)}
                 >
-                    Use as recipe image
-                </MenuItem>
-            </Menu>
+                    <MenuItem
+                        onClick={() => {
+                            if (anchor) {
+                                editorData.col.setAttribute(
+                                    recipe.id,
+                                    ['about', 'image'],
+                                    anchor.src,
+                                );
+                                setAnchor(null);
+                            }
+                        }}
+                    >
+                        Use as recipe image
+                    </MenuItem>
+                </Menu>
+            ) : null}
         </div>
     );
 };
 
-const Comments = ({ recipe, col, actorId, url }) => {
+const Comments = ({ recipe, editorData, url }) => {
     return (
         <div>
             <h3>Comments</h3>
-            <NewComment actorId={actorId} url={url} recipe={recipe} col={col} />
+            {editorData ? (
+                <NewComment
+                    actorId={editorData.actorId}
+                    url={url}
+                    recipe={recipe}
+                    col={editorData.col}
+                />
+            ) : null}
             <div style={{ height: 36 }} />
             {Object.keys(recipe.comments)
                 .sort((a, b) => recipe.comments[b].date - recipe.comments[a].date)
@@ -360,8 +419,7 @@ const Comments = ({ recipe, col, actorId, url }) => {
                         comment={recipe.comments[id]}
                         url={url}
                         recipe={recipe}
-                        col={col}
-                        actorId={actorId}
+                        editorData={editorData}
                     />
                 ))}
         </div>

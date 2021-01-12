@@ -125,7 +125,7 @@ export const setupAuth = (
     // https://www.npmjs.com/package/juice might be useful
 };
 
-export const middleware = (db: DB, secret: string) => (req: *, res: *, next: *) => {
+export const getAuth = (db: DB, secret: string, req: *) => {
     if (req.query.token) {
         // TODO validateSessionToken should ... issue a new token?
         // if we're getting close to the end...
@@ -135,35 +135,36 @@ export const middleware = (db: DB, secret: string) => (req: *, res: *, next: *) 
         // res.set('X-Session', token) could work.
         const auth = validateSessionToken(db, secret, req.query.token);
         if (auth == null) {
-            res.status(401);
-            console.log('invalid query token');
-            return res.send('Invalid or expired token (from query)');
+            return 'Invalid or expired token (from query)';
         }
-        req.auth = auth;
-        return next();
+        return auth;
     }
     const authHeader = req.get('authorization');
     if (authHeader && authHeader.match(/^Bearer: /i)) {
         const token = authHeader.slice('Bearer: '.length);
         const auth = validateSessionToken(db, secret, token);
         if (auth == null) {
-            res.status(401);
-            console.log('invalid header token');
-            return res.send('Invalid or expired token (from header)');
+            return 'Invalid or expired token (from header)';
         }
-        req.auth = auth;
-        return next();
+        return auth;
     }
     if (req.cookies && req.cookies.session) {
         const auth = validateSessionToken(db, secret, req.cookies.token);
         if (auth == null) {
-            res.status(401);
-            console.log('invalid cookie token');
-            return res.send('Invalid or expired token (from cookie)');
+            return 'Invalid or expired token (from cookie)';
         }
-        req.auth = auth;
-        return next();
+        return auth;
     }
-    res.status(401);
-    return res.send('No token given (query param or header or cookie)');
+    return 'No token given (query param or header or cookie)';
+};
+
+export const middleware = (db: DB, secret: string) => (req: *, res: *, next: *) => {
+    const auth = getAuth(db, secret, req);
+    if (typeof auth === 'string') {
+        console.log(auth);
+        res.status(401);
+        return res.send(auth);
+    }
+    req.auth = auth;
+    next();
 };

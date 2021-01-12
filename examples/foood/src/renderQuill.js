@@ -138,11 +138,11 @@ const replaceNumbers = (text, multiple) => {
     }
     const parts = [];
     let at = 0;
-    numbers.slice(0, 1).forEach(({ offset, groups, match }) => {
+    numbers.slice(0, 1).forEach(({ offset, groups, match }, i) => {
         if (offset > at) {
             parts.push(text.slice(at, offset));
         }
-        parts.push(<strong>{multiplyNumber(groups, multiple)}</strong>);
+        parts.push(<strong key={i}>{multiplyNumber(groups, multiple)}</strong>);
         // parts.push(<em>({match})</em>);
         at = offset + match.length;
     });

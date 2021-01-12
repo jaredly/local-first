@@ -11,6 +11,7 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 
 import Auth from '../../shared/Auth';
 import App, { type ConnectionConfig } from './App';
+import PublicRecipe from './PublicRecipe';
 
 const darkTheme = createMuiTheme({
     palette: {
@@ -32,7 +33,7 @@ const darkTheme = createMuiTheme({
 
 const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
     console.log('main render?', host);
-    const match = useRouteMatch();
+    // const match = useRouteMatch();
     if (host == null || prefix == null) {
         return (
             <ThemeProvider theme={darkTheme}>
@@ -44,38 +45,39 @@ const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
     return (
         <ThemeProvider theme={darkTheme}>
             <CssBaseline />
-            <Auth
-                storageKey={prefix + '/auth'}
-                host={host}
-                render={(authData) => (
-                    <App
-                        config={{
-                            type: 'remote',
-                            prefix,
-                            authData,
-                        }}
-                    />
-                )}
-            />
+            <Router>
+                <Switch>
+                    {/* <Main host={null} /> TODO maybe reenable this with a localStorage key? */}
+                    <Route path="/public/recipe/:id">
+                        <PublicRecipe host={host} />
+                    </Route>
+                    <Route path="/">
+                        <Auth
+                            storageKey={prefix + '/auth'}
+                            host={host}
+                            render={(authData) => (
+                                <App
+                                    config={{
+                                        type: 'remote',
+                                        prefix,
+                                        authData,
+                                    }}
+                                />
+                            )}
+                        />
+                    </Route>
+                </Switch>
+            </Router>
         </ThemeProvider>
     );
 };
 
 const Top = () => {
     const useLocal = window.localStorage.useLocalFoood === 'true';
-    return (
-        <Router>
-            <Switch>
-                {/* <Main host={null} /> TODO maybe reenable this with a localStorage key? */}
-                <Route path="/">
-                    {window.location.hostname === 'localhost' && useLocal ? (
-                        <Main host={'localhost:9090'} prefix={'foood-local'} />
-                    ) : (
-                        <Main host={'local-first-server.glitch.me'} prefix={'foood'} />
-                    )}
-                </Route>
-            </Switch>
-        </Router>
+    return window.location.hostname === 'localhost' && useLocal ? (
+        <Main host={'localhost:9090'} prefix={'foood-local'} />
+    ) : (
+        <Main host={'local-first-server.glitch.me'} prefix={'foood'} />
     );
 };
 

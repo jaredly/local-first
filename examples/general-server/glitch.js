@@ -26,6 +26,11 @@ result.app.get('/', (req, res) => {
     res.end();
 });
 
+// result.app.get('/foood/:id', (req, res) => {
+//     res.json(req.params.id);
+//     res.end();
+// });
+
 if (process.env.BACKUP_SECRET) {
     const backupRoute = require('../../packages/server-backup');
     result.app.get(
