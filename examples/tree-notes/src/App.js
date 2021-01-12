@@ -99,6 +99,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
     const dbName =
         config.type === 'remote' ? config.prefix + (docId ? '/' + docId : '') : 'memory-' + docId;
     const client = React.useMemo(() => {
+        console.log('🔥 Creating the client');
         if (config.type === 'memory') {
             return populateWithInitialData(createInMemoryEphemeralClient(schemas));
         }

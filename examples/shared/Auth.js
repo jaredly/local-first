@@ -390,13 +390,18 @@ const Auth = ({
         listeners.forEach(fn => fn());
     }, [storageKey, host, status]);
 
-    if (status === false) {
+    const authData = React.useMemo(
+        () => (!!status ? { host, auth: status, logout: doLogout, onLogout } : status),
+        [host, status, doLogout, onLogout],
+    );
+
+    if (authData === false) {
         return <SignUpIn storageKey={storageKey} host={host} />;
     }
-    if (status == null) {
+    if (authData == null) {
         return <div />;
     }
-    return render({ host, auth: status, logout: doLogout, onLogout });
+    return render(authData);
 };
 
 export default Auth;

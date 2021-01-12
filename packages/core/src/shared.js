@@ -115,6 +115,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
     schema: Schema,
     undoManager?: UndoManager,
 ): Collection<T> {
+    console.log('setting up a collection', colid);
     const applyDelta = async (id: string, delta: Delta, sendNew?: boolean, skipUndo) => {
         let plain = null;
 
