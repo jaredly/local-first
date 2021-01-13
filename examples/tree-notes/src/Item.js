@@ -276,6 +276,7 @@ const Item = ({
                     '&:hover .drag-handle': {
                         visibility: 'visible',
                     },
+                    userSelect: 'none',
                 }}
                 ref={(node) => (bodyRef.current = node)}
                 onContextMenu={(evt) => {
