@@ -35,12 +35,14 @@ export default class LocalClient {
     refs: { [key: string]: React.ElementRef<*> } = {};
     focusNext: ?string = null;
     id: string;
+    inMemory: boolean;
     _saveTimeout: ?TimeoutID;
     _listeners: { [key: string]: Array<(boolean) => void> };
 
-    constructor(id: string) {
+    constructor(id: string, inMemory: boolean) {
         this.id = id;
-        this.expanded = loadJson(expandKey(id)) || {};
+        this.inMemory = true;
+        this.expanded = inMemory ? {} : loadJson(expandKey(id)) || {};
         this._listeners = {};
     }
 
@@ -49,7 +51,6 @@ export default class LocalClient {
     }
 
     listen(id: string, fn: (boolean) => void): () => void {
-        // const listener =
         if (!this._listeners[id]) {
             this._listeners[id] = [fn];
         } else {
@@ -96,7 +97,9 @@ export default class LocalClient {
     }
 
     _save = () => {
-        saveJson(expandKey(this.id), this.expanded);
+        if (!this.inMemory) {
+            saveJson(expandKey(this.id), this.expanded);
+        }
     };
 
     register(id: string, node: ?Node) {

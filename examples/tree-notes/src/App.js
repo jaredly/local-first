@@ -73,7 +73,14 @@ const populateWithInitialData = (client) => {
         'My good folks',
         'Here we are',
         'Is it not grand',
-        { text: 'A parent', children: ['Child one', 'Child two'] },
+        {
+            text: 'A parent',
+            children: [
+                'Child one',
+                'Child two',
+                'A very long thing that has a number of words going on here.',
+            ],
+        },
     ];
     // const children = [];
     // initialData.forEach
@@ -123,9 +130,18 @@ const App = ({ config }: { config: ConnectionConfig }) => {
         });
     }, [client, config.type === 'remote' ? config.authData : null]);
     const match = useRouteMatch();
-    const local = React.useMemo(() => new LocalClient(dbName), []);
+    const local = React.useMemo(() => new LocalClient(dbName, config.type === 'memory'), [
+        config.type,
+    ]);
     React.useEffect(() => {
         if (config.type !== 'remote') {
+            // lets expand all the things!
+            client
+                .getCollection('items')
+                .loadAll()
+                .then((all) => {
+                    Object.keys(all).forEach((id) => local.setExpanded(id, true));
+                });
             return;
         }
         return config.authData.onLogout(() => local.teardown());
@@ -155,7 +171,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
             >
                 {/* <Items client={client} local={local} col={col} id={itemId} /> */}
                 <RouteSwitch>
-                    <Route path={`${match.path == '/' ? '' : match.path}/item/:id`}>
+                    <Route path={`${match.path == '/' ? '' : match.path}/item/:path`}>
                         <Items client={client} local={local} col={col} />
                     </Route>
                     <Route path={`${match.path == '/' ? '' : match.path}`}>

@@ -206,7 +206,7 @@ type Props = {
     local: LocalClient,
     onDragStart: (MouseEvent, Array<string>) => void,
     registerDragTargets: (string, ?(Array<string>) => Array<DragTarget>) => void,
-    onMenuShow: ({ item: ItemT, handle: HTMLElement }) => mixed,
+    onMenuShow: ({ path: Array<string>, handle: HTMLElement }) => mixed,
     numbering?: ?{ style: string, startWith?: number },
 };
 
@@ -281,7 +281,7 @@ const Item = ({
                 ref={(node) => (bodyRef.current = node)}
                 onContextMenu={(evt) => {
                     evt.preventDefault();
-                    onMenuShow({ item, handle: evt.currentTarget });
+                    onMenuShow({ path: childPath, handle: evt.currentTarget });
                 }}
             >
                 {path.length != 0 ? (
@@ -302,7 +302,7 @@ const Item = ({
                     onContextMenu={(evt) => {
                         evt.preventDefault();
                         evt.stopPropagation();
-                        onMenuShow({ item, handle: evt.currentTarget });
+                        onMenuShow({ path: childPath, handle: evt.currentTarget });
                     }}
                     onClick={
                         // evt => {

@@ -61,6 +61,7 @@ const getPosition = function <Dest>(
     const offsetParent = boxes[0].parent;
     const offset = offsetParent ? offsetParent.getBoundingClientRect().top : 0;
     const matchingBoxes = limitX ? boxes.filter((box) => inside(pos.x, box)) : boxes;
+    matchingBoxes.sort((a, b) => (a.top === b.top ? b.left - a.left : a.top - b.top));
     for (let i = 0; i < matchingBoxes.length; i++) {
         // if we're closer to the current than the next one, go with it
         const d0 = Math.abs(pos.y - (matchingBoxes[i].top + matchingBoxes[i].height / 2));

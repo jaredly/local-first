@@ -142,14 +142,16 @@ const Items = ({
         local.setFocus(id);
     }, []);
     const { registerDragTargets, onDragStart, dragger } = useDragging(onDrop);
-    const { id } = useParams();
+    let { path } = useParams();
+    path = path ? path.split(':-:') : ['root'];
+    const id = path[path.length - 1];
     const [menu, setMenu] = React.useState(null);
 
     return (
         <React.Fragment>
             <Item
-                path={emptyPath}
-                id={id || 'root'}
+                path={path.slice(0, -1)}
+                id={id}
                 client={client}
                 local={local}
                 registerDragTargets={registerDragTargets}
@@ -190,7 +192,7 @@ const Items = ({
                     <ItemMenuItems
                         col={col}
                         client={client}
-                        id={menu.item.id}
+                        path={menu.path}
                         onClose={() => setMenu(null)}
                     />
                 </Menu>
@@ -199,9 +201,9 @@ const Items = ({
     );
 };
 
-const ItemMenuItems = React.forwardRef(({ col, id, onClose, client }) => {
+const ItemMenuItems = React.forwardRef(({ col, path, onClose, client }) => {
     const history = useHistory();
-    const [_, item] = useItem(React, client, 'items', id);
+    const [_, item] = useItem(React, client, 'items', path[path.length - 1]);
     if (!item) {
         return null;
     }
@@ -209,7 +211,7 @@ const ItemMenuItems = React.forwardRef(({ col, id, onClose, client }) => {
         <MenuItem
             key="zoom"
             onClick={() => {
-                history.push(`/item/${id}`);
+                history.push(`/item/${path.join(':-:')}`);
                 onClose();
             }}
         >
