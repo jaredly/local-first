@@ -1,6 +1,6 @@
 // @flow
 import * as React from 'react';
-import Quill from 'quill';
+import Quill from 'quill/dist/quill.prod.js';
 import {
     type QuillDelta,
     stateToQuillContents,

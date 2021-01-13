@@ -14,7 +14,7 @@
         "pako": "^1.0.11",
         "parse-color": "^1.0.0",
         "querystring": "^0.2.0",
-        "quill": "jaredly/quill#cd51fd73f72dd04c5181131eec7108d867aaaada",
+        "quill": "jaredly/quill#97d8d21bc48eed1a427db1a9211c8bdaa0d49d90",
         "quill-cursors": "^3.0.1",
         "react": "^16.8.0",
         "react-dom": "^16.8.0",
