@@ -107,14 +107,16 @@ const emptyPath = [];
 const Items = ({
     client,
     local,
-    col,
-}: // id,
+}: // col,
+// id,
 {
     client: Client<SyncStatus>,
     local: LocalClient,
-    col: Collection<ItemT>,
+    // col: Collection<ItemT>,
     // id: ?string,
 }) => {
+    const col = React.useMemo(() => client.getCollection('items'), [client]);
+
     const onDrop = React.useCallback(({ path }, dest) => {
         const id = path[path.length - 1];
         const pid = path[path.length - 2];
@@ -142,15 +144,18 @@ const Items = ({
         local.setFocus(id);
     }, []);
     const { registerDragTargets, onDragStart, dragger } = useDragging(onDrop);
-    let { path } = useParams();
-    path = path ? path.split(':-:') : ['root'];
-    const id = path[path.length - 1];
+    let { path: rawPath } = useParams();
+    const [id, path] = React.useMemo(() => {
+        const path = rawPath ? rawPath.split(':-:') : ['root'];
+        const id = path[path.length - 1];
+        return [id, path.slice(0, -1)];
+    }, [rawPath]);
     const [menu, setMenu] = React.useState(null);
 
     return (
         <React.Fragment>
             <Item
-                path={path.slice(0, -1)}
+                path={path}
                 id={id}
                 client={client}
                 local={local}
@@ -160,7 +165,6 @@ const Items = ({
             />
             {dragger != null && dragger.dims != null && dragger.dest != null ? (
                 <div
-                    // className={styles.dragIndicator}
                     style={{
                         position: 'absolute',
                         // height: 2,

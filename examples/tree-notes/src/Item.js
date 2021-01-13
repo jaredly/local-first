@@ -367,7 +367,7 @@ const Item = ({
                     css={{
                         flex: 1,
                         border: '1px dashed transparent',
-                        ...(length(item.body) <= 1 ? { borderBottomColor: 'currentColor' } : null),
+                        borderBottomColor: length(item.body) <= 1 ? 'currentColor' : null,
                         ...(item.style === 'header'
                             ? { fontSize: '1.2em', fontWeight: 'bold' }
                             : null),

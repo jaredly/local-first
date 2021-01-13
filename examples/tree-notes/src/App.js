@@ -82,6 +82,9 @@ const populateWithInitialData = (client) => {
             ],
         },
     ];
+    for (let i = 0; i < 100; i++) {
+        initialData.push(`Long child ${i}`);
+    }
     // const children = [];
     // initialData.forEach
     //     const id = col.genId();
@@ -148,8 +151,6 @@ const App = ({ config }: { config: ConnectionConfig }) => {
     }, [local, config.type === 'remote' ? config.authData : null]);
 
     window.client = client;
-    const [col, items] = useCollection(React, client, 'items');
-    const [_, item] = useItem(React, client, 'items', 'root');
 
     return (
         <div>
@@ -169,13 +170,12 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 authData={config.type === 'remote' ? config.authData : null}
                 client={client}
             >
-                {/* <Items client={client} local={local} col={col} id={itemId} /> */}
                 <RouteSwitch>
                     <Route path={`${match.path == '/' ? '' : match.path}/item/:path`}>
-                        <Items client={client} local={local} col={col} />
+                        <Items client={client} local={local} />
                     </Route>
                     <Route path={`${match.path == '/' ? '' : match.path}`}>
-                        <Items client={client} local={local} col={col} />
+                        <Items client={client} local={local} />
                     </Route>
                 </RouteSwitch>
             </AppShell>
