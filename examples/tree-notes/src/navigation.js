@@ -33,7 +33,7 @@ export const lastChild = (col: Collection<*>, id: string) => {
     return lastChild(col, node.children[node.children.length - 1]);
 };
 
-export const goUp = (col: Collection<*>, path: Array<string>, id: string) => {
+export const goUp = (col: Collection<*>, path: Array<string>, id: string): ?string => {
     if (!path.length) {
         return;
     }
@@ -88,6 +88,23 @@ export const dedent = (
     col.insertIdRelative(gpid, ['children'], id, pid, false);
 
     return true;
+};
+
+export const deleteNode = (col: Collection<*>, path: Array<string>, id: string) => {
+    if (!path.length) {
+        return;
+    }
+    const pid = path[path.length - 1];
+    col.removeId(pid, ['children'], id);
+    col.delete(id);
+};
+
+export const removeFromParent = (col: Collection<*>, path: Array<string>, id: string) => {
+    if (!path.length) {
+        return;
+    }
+    const pid = path[path.length - 1];
+    return col.removeId(pid, ['children'], id);
 };
 
 export const indent = (

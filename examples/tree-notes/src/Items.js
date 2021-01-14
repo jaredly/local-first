@@ -1,4 +1,6 @@
 // @flow
+/** @jsx jsx */
+import { jsx } from '@emotion/core';
 import { useHistory, Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 
 import Button from '@material-ui/core/Button';
@@ -32,6 +34,9 @@ import Item from './Item';
 import { type DropTarget } from './dragging';
 import { setupDragListeners, type DragInit, type DragState } from './dragging';
 import type { ItemT } from '../collections';
+
+import ItemMenuItems from './ContextMenu';
+import BottomBar from './BottomBar';
 
 type Dest =
     | {
@@ -102,6 +107,51 @@ const useDragging = (onDrop) => {
     return { onDragStart, registerDragTargets, dragger };
 };
 
+import * as textCrdt from '../../../packages/rich-text-crdt/';
+
+const Breadcrumb = ({ id, client }) => {
+    const [col, item] = useItem(React, client, 'items', id);
+    if (item == null) {
+        return null;
+    }
+    if (item === false) {
+        return '[not found]';
+    }
+    console.log(item.body);
+    // if (!item.body.ops) {
+    //     throw new Error('no');
+    // }
+    let text = textCrdt.toString(item.body);
+    if (text.length > 50) {
+        text = text.slice(0, 47) + '...';
+    }
+    return (
+        <Link to={`/item/${id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+            <div
+                css={{
+                    color: 'inherit',
+                    padding: '4px 8px',
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(0,0,0,0.2)',
+                }}
+            >
+                {text}
+            </div>
+        </Link>
+    );
+};
+// const toText = ({ ops }) => ops.map((op) => op.insert).join('');
+
+const Breadcrumbs = ({ path, client }) => {
+    return (
+        <div css={{ display: 'flex', marginBottom: 16 }}>
+            {path.map((id) => (
+                <Breadcrumb key={id} id={id} client={client} />
+            ))}
+        </div>
+    );
+};
+
 const emptyPath = [];
 
 const Items = ({
@@ -154,9 +204,11 @@ const Items = ({
 
     return (
         <React.Fragment>
+            {path.length > 0 ? <Breadcrumbs path={path} client={client} /> : null}
             <Item
                 path={path}
                 id={id}
+                root
                 client={client}
                 local={local}
                 registerDragTargets={registerDragTargets}
@@ -189,6 +241,7 @@ const Items = ({
                         horizontal: 'left',
                     }}
                     anchorEl={menu.handle}
+                    transitionDuration={50}
                     getContentAnchorEl={null}
                     open={Boolean(menu)}
                     onClose={() => setMenu(null)}
@@ -201,105 +254,9 @@ const Items = ({
                     />
                 </Menu>
             ) : null}
+            <BottomBar client={client} id={id} path={path} col={col} local={local} />
         </React.Fragment>
     );
 };
-
-const ItemMenuItems = React.forwardRef(({ col, path, onClose, client }) => {
-    const history = useHistory();
-    const [_, item] = useItem(React, client, 'items', path[path.length - 1]);
-    if (!item) {
-        return null;
-    }
-    const items = [
-        <MenuItem
-            key="zoom"
-            onClick={() => {
-                history.push(`/item/${path.join(':-:')}`);
-                onClose();
-            }}
-        >
-            Zoom to here
-        </MenuItem>,
-    ];
-    items.push(
-        <MenuItem
-            key="completed"
-            onClick={() => {
-                col.setAttribute(
-                    item.id,
-                    ['completed'],
-                    item.completed == null ? Date.now() : null,
-                );
-                onClose();
-            }}
-        >
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        checked={item.completed != null}
-                        onChange={() => {
-                            col.setAttribute(
-                                item.id,
-                                ['completed'],
-                                item.completed == null ? Date.now() : null,
-                            );
-                            onClose();
-                        }}
-                    />
-                }
-                label={'Completed'}
-            />
-        </MenuItem>,
-    );
-    items.push(
-        <MenuItem key="style">
-            Style:
-            <ButtonGroup>
-                {['header', 'todo'].map((style) => (
-                    <Button
-                        key={style}
-                        size="small"
-                        variant={item.style === style ? 'contained' : 'text'}
-                        onClick={() => {
-                            col.setAttribute(item.id, ['style'], style);
-                        }}
-                    >
-                        {style}
-                    </Button>
-                ))}
-            </ButtonGroup>
-        </MenuItem>,
-    );
-    items.push(
-        <MenuItem key="numbering">
-            Numbering:
-            <ButtonGroup>
-                {['numbers', 'letters', 'roman', 'checkbox'].map((style) => (
-                    <Button
-                        key={style}
-                        size="small"
-                        variant={
-                            item.numbering != null && item.numbering.style === style
-                                ? 'contained'
-                                : 'text'
-                        }
-                        onClick={() => {
-                            col.setAttribute(
-                                item.id,
-                                ['numbering'],
-                                item.numbering?.style === style ? null : { style },
-                            );
-                            // onClose();
-                        }}
-                    >
-                        {style}
-                    </Button>
-                ))}
-            </ButtonGroup>
-        </MenuItem>,
-    );
-    return items;
-});
 
 export default Items;

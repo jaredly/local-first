@@ -20,7 +20,9 @@ const QuillEditor = ({
     innerRef,
     actions,
     className,
-}: {
+    onBlur,
+    onFocus,
+}: {|
     value: CRDT,
     innerRef: (node: ?{ focus: () => void }) => void,
     onChange: (Array<Delta>) => mixed,
@@ -28,7 +30,10 @@ const QuillEditor = ({
     siteId: string,
     actions: *,
     className?: string,
-}) => {
+    onBlur: () => mixed,
+    onFocus: () => mixed,
+    css: any,
+|}) => {
     const ref = React.useRef(null);
     const ui = React.useRef(null);
 
@@ -58,6 +63,14 @@ const QuillEditor = ({
         // I just want to prefill the selection to here, so that when it's "focus()"ed,
         // it doesn't select at the start. Might need to hack on quill to fix.
         // quill.setSelection(quill.getLength(), 0);
+
+        quill.on('selection-change', (range, oldRange) => {
+            if (!oldRange) {
+                onFocus();
+            } else if (!range) {
+                onBlur();
+            }
+        });
 
         quill.on('text-change', (delta: { ops: Array<QuillDelta> }, _oldDelta, source: string) => {
             if (source === 'crdt') {

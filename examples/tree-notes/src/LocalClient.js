@@ -30,6 +30,18 @@ export const useExpanded = (local: LocalClient, id: string) => {
     return expanded;
 };
 
+const deepEqual = (a, b) => {
+    if (a.length !== b.length) {
+        return false;
+    }
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) {
+            return false;
+        }
+    }
+    return true;
+};
+
 export default class LocalClient {
     expanded: { [key: string]: boolean } = {};
     refs: { [key: string]: React.ElementRef<*> } = {};
@@ -38,12 +50,16 @@ export default class LocalClient {
     inMemory: boolean;
     _saveTimeout: ?TimeoutID;
     _listeners: { [key: string]: Array<(boolean) => void> };
+    _focusListeners: Array<(?[string, Array<string>]) => mixed>;
+    _focused: ?[string, Array<string>];
 
     constructor(id: string, inMemory: boolean) {
         this.id = id;
         this.inMemory = true;
         this.expanded = inMemory ? {} : loadJson(expandKey(id)) || {};
         this._listeners = {};
+        this._focusListeners = [];
+        this._focused = null;
     }
 
     teardown() {
@@ -58,6 +74,25 @@ export default class LocalClient {
         }
         return () => {
             this._listeners[id] = this._listeners[id].filter((f) => f !== fn);
+        };
+    }
+
+    onFocus(id: string, path: Array<string>) {
+        this._focused = [id, path];
+        this._focusListeners.forEach((f) => f(this._focused));
+    }
+
+    onBlur(id: string, path: Array<string>) {
+        if (this._focused && this._focused[0] === id && deepEqual(path, this._focused[1])) {
+            this._focused = null;
+            this._focusListeners.forEach((f) => f(null));
+        }
+    }
+
+    onFocusChange(fn: (?[string, Array<string>]) => mixed): () => void {
+        this._focusListeners.push(fn);
+        return () => {
+            this._focusListeners = this._focusListeners.filter((f) => f !== fn);
         };
     }
 

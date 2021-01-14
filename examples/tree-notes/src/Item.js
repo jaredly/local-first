@@ -3,7 +3,7 @@
 import { jsx } from '@emotion/core';
 import * as React from 'react';
 import { useCollection, useItem } from '../../../packages/client-react';
-import { type Client } from '../../../packages/client-bundle';
+import { type Client, type Collection } from '../../../packages/client-bundle';
 import QuillEditor from './QuillEditor';
 import type { ItemT } from '../collections';
 import * as navigation from './navigation';
@@ -26,7 +26,19 @@ const arrayStartsWith = (needle, haystack) => {
     return true;
 };
 
-const itemActions = ({ client, col, path, id, local }) => ({
+export const itemActions = ({
+    client,
+    col,
+    path,
+    id,
+    local,
+}: {
+    client: Client<*>,
+    col: Collection<ItemT>,
+    path: Array<string>,
+    id: string,
+    local: LocalClient,
+}) => ({
     onUp() {
         const up = navigation.goUp(col, path, id);
         if (up != null) {
@@ -50,8 +62,15 @@ const itemActions = ({ client, col, path, id, local }) => ({
         }
         return false;
     },
-    onBackspace(contents: string) {
+    onBackspace(contents: ?string) {
         if (contents == null) {
+            console.log('deelting I think');
+            const up = navigation.goUp(col, path, id);
+            navigation.deleteNode(col, path, id);
+            if (up != null) {
+                local.setFocus(up);
+            }
+            return true;
         }
     },
     onDown() {
@@ -208,11 +227,13 @@ type Props = {
     registerDragTargets: (string, ?(Array<string>) => Array<DragTarget>) => void,
     onMenuShow: ({ path: Array<string>, handle: HTMLElement }) => mixed,
     numbering?: ?{ style: string, startWith?: number },
+    root?: boolean,
 };
 
 const Item = ({
     path,
     id,
+    root,
     client,
     local,
     registerDragTargets,
@@ -247,7 +268,7 @@ const Item = ({
         }
         return 'Item does not exist';
     }
-    const collapsible = path.length > 0 && item.children.length > 0;
+    const collapsible = !root && item.children.length > 0;
     const collapsed = collapsible && !isExpanded; // !local.isExpanded(id);
     return (
         <div
@@ -284,7 +305,7 @@ const Item = ({
                     onMenuShow({ path: childPath, handle: evt.currentTarget });
                 }}
             >
-                {path.length != 0 ? (
+                {!root ? (
                     <div
                         className="drag-handle"
                         css={{
@@ -376,13 +397,25 @@ const Item = ({
                         fontStyle: item.completed != null ? 'italic' : null,
                         // textDecorationColor: '#aaa',
                     }}
-                    innerRef={(node) => local.register(id, node)}
+                    innerRef={(node) => {
+                        local.register(id, node);
+                        if (!node) {
+                            local.onBlur(id, path);
+                        }
+                    }}
                     value={item.body}
                     actions={itemActions({ client, col, path, id, local })}
                     getStamp={client.getStamp}
                     onChange={(deltas) => {
                         // console.log('Ok', delta);
                         col.applyRichTextDelta(id, ['body'], deltas);
+                    }}
+                    onFocus={() => {
+                        local.onFocus(id, path);
+                    }}
+                    onBlur={() => {
+                        console.log('Blor!', id, path);
+                        local.onBlur(id, path);
                     }}
                     siteId={client.sessionId}
                 />
@@ -394,7 +427,7 @@ const Item = ({
                     borderLeft: '1px solid ' + blingColor,
                 }}
             >
-                {isExpanded || path.length === 0
+                {isExpanded || root
                     ? item.children.map((id) => (
                           <MemoItem
                               path={childPath}
