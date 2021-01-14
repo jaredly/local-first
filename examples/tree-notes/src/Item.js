@@ -64,7 +64,6 @@ export const itemActions = ({
     },
     onBackspace(contents: ?string) {
         if (contents == null) {
-            console.log('deelting I think');
             const up = navigation.goUp(col, path, id);
             navigation.deleteNode(col, path, id);
             if (up != null) {
@@ -95,7 +94,6 @@ export const itemActions = ({
         }
     },
     onEnter() {
-        // console.log('enter');
         const current = col.getCached(id);
         if (!current) return;
         if ((current.children.length && local.isExpanded(id)) || !path.length) {
@@ -414,7 +412,6 @@ const Item = ({
                         local.onFocus(id, path);
                     }}
                     onBlur={() => {
-                        console.log('Blor!', id, path);
                         local.onBlur(id, path);
                     }}
                     siteId={client.sessionId}
