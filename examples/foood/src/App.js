@@ -31,7 +31,7 @@ import RecipeView from './Recipe';
 import Search from './Search';
 import EditorView from './EditorView';
 import Latest from './Latest';
-import Debug from './Debug';
+import Debug from '../../shared/Debug';
 import Ingredients from './Ingredients';
 
 import MealPlans from './MealPlans';

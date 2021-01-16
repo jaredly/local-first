@@ -26,8 +26,6 @@ import { useCollection } from '../../../packages/client-react';
 import { Route, Link } from 'react-router-dom';
 // import { showDate, today } from '../utils';
 import type { AuthData } from '../../shared/Auth';
-import ExportDialog from '../../shared/ExportDialog';
-import ImportDialog from '../../shared/ImportDialog';
 
 const MyDrawer = ({
     open,
@@ -73,20 +71,7 @@ const MyDrawer = ({
                     {pageItems}
                     <Divider />
                     <ListItem button component={Link} to="/">
-                        Home
-                    </ListItem>
-                    <Divider />
-                    <ListItem button onClick={() => setDialog('export')}>
-                        <ListItemIcon>
-                            <GetApp />
-                        </ListItemIcon>
-                        <ListItemText primary="Export all data" />
-                    </ListItem>
-                    <ListItem button onClick={() => setDialog('import')}>
-                        <ListItemIcon>
-                            <Publish />
-                        </ListItemIcon>
-                        <ListItemText primary="Import" />
+                        <ListItemText primary="Home" />
                     </ListItem>
                     <Divider />
                     {window.location.hostname === 'localhost' ? (
@@ -110,20 +95,6 @@ const MyDrawer = ({
                             />
                         </ListItem>
                     ) : null}
-                    {/* {Object.keys(tags).map((k) => (
-                        <ListItem button onClick={() => setEditTag(tags[k])} key={k}>
-                            <ListItemIcon>
-                                <Label />
-                            </ListItemIcon>
-                            <ListItemText primary={tags[k].title} />
-                        </ListItem>
-                    ))}
-                    <ListItem button onClick={() => setEditTag(null)}>
-                        <ListItemIcon>
-                            <LabelOutlined />
-                        </ListItemIcon>
-                        <ListItemText primary="New Tag" />
-                    </ListItem> */}
                     <Divider />
                     {authData ? (
                         <ListItem button onClick={authData.logout}>
@@ -133,7 +104,7 @@ const MyDrawer = ({
                             <ListItemText primary="Sign out" />
                         </ListItem>
                     ) : null}
-                    <ListItem>
+                    <ListItem component={Link} to="/debug" style={{ color: 'inherit' }}>
                         <ListItemText
                             primary={`Version: ${
                                 process.env.VERSION != null
@@ -145,24 +116,6 @@ const MyDrawer = ({
                 </List>
                 <Divider />
             </Drawer>
-            <ExportDialog
-                open={dialog === 'export'}
-                client={client}
-                onClose={() => setDialog(null)}
-            />
-            <ImportDialog
-                open={dialog === 'import'}
-                client={client}
-                onClose={() => setDialog(null)}
-            />
-            {/* {editTag !== false ? (
-                <EditTagDialog
-                    client={client}
-                    tagsCol={tagsCol}
-                    tag={editTag}
-                    onClose={() => setEditTag(false)}
-                />
-            ) : null} */}
         </React.Fragment>
     );
 };

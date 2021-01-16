@@ -12,6 +12,7 @@ const result = runMulti2(
     dataPath,
     {
         trees: treeNotesSchemas,
+        'trees-index': require('../tree-notes/index-collections.js').schemas,
         foood: require('../foood/collections').schemas,
         'foood-private': require('../foood/private-collections').schemas,
     },
@@ -25,11 +26,6 @@ result.app.get('/', (req, res) => {
     res.send('ok');
     res.end();
 });
-
-// result.app.get('/foood/:id', (req, res) => {
-//     res.json(req.params.id);
-//     res.end();
-// });
 
 if (process.env.BACKUP_SECRET) {
     const backupRoute = require('../../packages/server-backup');

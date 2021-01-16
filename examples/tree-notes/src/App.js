@@ -24,6 +24,7 @@ import Drawer from './Drawer';
 import UpdateSnackbar from '../../shared/Update';
 import Items from './Items';
 import { blankItem } from './types';
+import Debug from '../../shared/Debug';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
@@ -108,6 +109,26 @@ const App = ({ config }: { config: ConnectionConfig }) => {
     // const [docId, itemId] = parseRawDoc(rawDoc);
     const dbName =
         config.type === 'remote' ? config.prefix + (docId ? '/' + docId : '') : 'memory-' + docId;
+
+    // STOPSHIP: Use the index-collections, and make it so we can be multi-file!!
+    // So good.
+    // I think this means that I don't need a "default file" anymore?
+    // I can just show the index. Yeah I like that.
+    // const docClient = React.useMemo(() => {
+    //     console.log('🔥 Creating the client');
+    //     if (config.type === 'memory') {
+    //         return populateWithInitialData(createInMemoryEphemeralClient(schemas));
+    //     }
+    //     const url = `${config.authData.host}/dbs/sync?db=trees-index&token=${config.authData.auth.token}`;
+    //     return createPersistedDeltaClient(
+    //         dbName,
+    //         schemas,
+    //         `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
+    //         3,
+    //         {},
+    //     );
+    // }, [config.type === 'remote' ? config.authData : null]);
+
     const client = React.useMemo(() => {
         console.log('🔥 Creating the client');
         if (config.type === 'memory') {
@@ -171,6 +192,9 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 client={client}
             >
                 <RouteSwitch>
+                    <Route path={`/debug`}>
+                        <Debug client={client} />
+                    </Route>
                     <Route path={`${match.path == '/' ? '' : match.path}/item/:path`}>
                         <Items client={client} local={local} />
                     </Route>
