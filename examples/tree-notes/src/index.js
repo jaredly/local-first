@@ -24,70 +24,58 @@ const darkTheme = createMuiTheme({
 });
 
 const Top = () => {
-    if (window.localStorage.inMemoryTreeNotes === 'true') {
-        return (
-            <Router>
-                <Main host={null} />{' '}
-            </Router>
-        );
+    switch (window.localStorage.treeNotesLocal) {
+        case 'memory':
+            return <Main host={null} />;
+        case 'local':
+            return <Main host={'localhost:9090'} prefix={'tree-notes-local'} />;
+        default:
+            return <Main host={'local-first-server.glitch.me'} prefix={'tree-notes'} />;
     }
-    return (
-        <Router>
-            <Switch>
-                <Route path="/memory">
-                    <Main host={null} />
-                </Route>
-                <Route path="/localhost">
-                    <Main host={'localhost:9090'} prefix={'tree-notes-local'} />
-                </Route>
-                <Route path="/">
-                    <Main host={'local-first-server.glitch.me'} prefix={'tree-notes'} />
-                </Route>
-            </Switch>
-        </Router>
-    );
 };
 
 const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
-    console.log('main render?');
-    const match = useRouteMatch();
     if (host == null || prefix == null) {
         return (
             <ThemeProvider theme={darkTheme}>
                 <CssBaseline />
-                <App config={{ type: 'memory' }} />
+                <Router>
+                    <App config={{ type: 'memory' }} />
+                </Router>
             </ThemeProvider>
         );
     }
     return (
         <ThemeProvider theme={darkTheme}>
             <CssBaseline />
-            <Auth
-                storageKey={prefix + '/auth'}
-                host={host}
-                render={(authData) => (
-                    <Switch>
-                        <Route path="/doc/:doc">
-                            <App
-                                config={{
-                                    type: 'remote',
-                                    prefix,
-                                    authData,
-                                }}
-                            />
-                        </Route>
-                        <Route path="/">
-                            <App
-                                config={{
-                                    type: 'remote',
-                                    prefix,
-                                    authData,
-                                }}
-                            />
-                        </Route>
-                    </Switch>
-                )}
-            />
+            <Router>
+                <Auth
+                    storageKey={prefix + '/auth'}
+                    host={host}
+                    render={(authData) => (
+                        <Switch>
+                            <Route path="/doc/:doc">
+                                <App
+                                    config={{
+                                        type: 'remote',
+                                        prefix,
+                                        authData,
+                                    }}
+                                />
+                            </Route>
+                            <Route path="/">
+                                <App
+                                    config={{
+                                        type: 'remote',
+                                        prefix,
+                                        authData,
+                                    }}
+                                />
+                            </Route>
+                        </Switch>
+                    )}
+                />
+            </Router>
         </ThemeProvider>
     );
 };

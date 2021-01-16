@@ -3,6 +3,7 @@
 import Divider from '@material-ui/core/Divider';
 import Drawer from '@material-ui/core/Drawer';
 import Button from '@material-ui/core/Button';
+import ButtonGroup from '@material-ui/core/ButtonGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
@@ -76,7 +77,8 @@ const MyDrawer = ({
                     <Divider />
                     {window.location.hostname === 'localhost' ? (
                         <ListItem>
-                            <FormControlLabel
+                            <LocalButtons />
+                            {/* <FormControlLabel
                                 control={
                                     <Switch
                                         checked={window.localStorage.inMemoryTreeNotes === 'true'}
@@ -92,7 +94,7 @@ const MyDrawer = ({
                                     />
                                 }
                                 label="Use in-memory db (no persistence)"
-                            />
+                            /> */}
                         </ListItem>
                     ) : null}
                     <Divider />
@@ -117,6 +119,41 @@ const MyDrawer = ({
                 <Divider />
             </Drawer>
         </React.Fragment>
+    );
+};
+
+const LocalButtons = () => {
+    const current = window.localStorage.treeNotesLocal;
+    return (
+        <ButtonGroup>
+            <Button
+                variant={current === 'memory' ? 'contained' : 'text'}
+                onClick={() => {
+                    window.localStorage.treeNotesLocal = 'memory';
+                    location.reload();
+                }}
+            >
+                Memory
+            </Button>
+            <Button
+                variant={current === 'local' ? 'contained' : 'text'}
+                onClick={() => {
+                    window.localStorage.treeNotesLocal = 'local';
+                    location.reload();
+                }}
+            >
+                Localhost
+            </Button>
+            <Button
+                variant={current !== 'local' && current !== 'memory' ? 'contained' : 'text'}
+                onClick={() => {
+                    window.localStorage.treeNotesLocal = '';
+                    location.reload();
+                }}
+            >
+                Remote
+            </Button>
+        </ButtonGroup>
     );
 };
 
