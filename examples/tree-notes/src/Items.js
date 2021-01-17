@@ -158,11 +158,13 @@ const emptyPath = [];
 const Items = ({
     client,
     local,
+    url,
 }: // col,
 // id,
 {
     client: Client<SyncStatus>,
     local: LocalClient,
+    url: string,
     // col: Collection<ItemT>,
     // id: ?string,
 }) => {
@@ -263,6 +265,7 @@ const Items = ({
                     col={col}
                     onClose={() => setDialog(null)}
                     id={dialog}
+                    url={url}
                     client={client}
                 />
             ) : null}

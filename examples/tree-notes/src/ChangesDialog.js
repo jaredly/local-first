@@ -49,7 +49,7 @@ const useChanges = (url, id, count) => {
             return;
         }
         fetch(
-            `http://localhost:9090/changes?count=${count}&db=trees/${params.doc}&collection=items&id=${id}&token=${authData.auth.token}`,
+            `https://${url}/changes?count=${count}&db=trees/${params.doc}&collection=items&id=${id}&token=${authData.auth.token}`,
         )
             .then((res) => res.json())
             .then((data) => {

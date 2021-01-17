@@ -106,9 +106,49 @@ const populateWithInitialData = (client) => {
     return client;
 };
 
+const MetaData = ({ client, docClient, docId }) => {
+    const [docCol, file] = useItem<File, _>(React, docClient, 'files', docId || 'home');
+
+    // React.useEffect(() => {
+    //     const id = docId || 'home';
+    //     const files = docClient.getCollection('files');
+    //     files.setAttribute(id, ['lastOpened'], Date.now());
+    // }, [docClient, docId]);
+
+    React.useEffect(() => {
+        if (file === false || file == null) {
+            return;
+        }
+        docCol.setAttribute(file.id, ['lastOpened'], Date.now());
+    }, [docClient, docId, file !== false && file != null]);
+
+    const [_, rootItem] = useItem<ItemT, _>(React, client, 'items', 'root');
+    React.useEffect(() => {
+        // console.log('EFFFFECT');
+        if (!rootItem) {
+            return;
+        }
+        let text = richTextToString(rootItem.body);
+        if (text.length > 50) {
+            text = text.slice(0, 47) + '...';
+        }
+        if (file != null && file !== false && file.title !== text) {
+            docCol.setAttribute(file.id, ['title'], text);
+        }
+        // // Load up all the items at the start
+        // client.getCollection('items').loadAll().then(data => {
+        //     const keys = Object.keys(data)
+        // });
+    }, [
+        rootItem != null && rootItem !== false ? rootItem.body : null,
+        file != null && file !== false ? file.title : null,
+    ]);
+
+    return null;
+};
+
 const App = ({ config }: { config: ConnectionConfig }) => {
     const { doc: docId } = useParams();
-    // const [docId, itemId] = parseRawDoc(rawDoc);
     const dbName =
         config.type === 'remote' ? config.prefix + '/' + (docId || 'home') : 'memory-' + docId;
 
@@ -131,6 +171,8 @@ const App = ({ config }: { config: ConnectionConfig }) => {
         );
     }, [config.type === 'remote' ? config.authData : null]);
 
+    const url = config.type === 'remote' ? config.authData.host : '';
+
     const client = React.useMemo(() => {
         console.log('🔥 Creating the client');
         if (config.type === 'memory') {
@@ -147,21 +189,6 @@ const App = ({ config }: { config: ConnectionConfig }) => {
             {},
         );
     }, [config.type === 'remote' ? config.authData : null, docId]);
-
-    const [docCol, file] = useItem<File, _>(React, docClient, 'files', docId || 'home');
-
-    // React.useEffect(() => {
-    //     const id = docId || 'home';
-    //     const files = docClient.getCollection('files');
-    //     files.setAttribute(id, ['lastOpened'], Date.now());
-    // }, [docClient, docId]);
-
-    React.useEffect(() => {
-        if (file === false || file == null) {
-            return;
-        }
-        docCol.setAttribute(file.id, ['lastOpened'], Date.now());
-    }, [docClient, docId, file !== false && file != null]);
 
     React.useEffect(() => {
         if (config.type !== 'remote') {
@@ -188,27 +215,10 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                     Object.keys(all).forEach((id) => local.setExpanded(id, true));
                 });
             return;
+        } else {
         }
         return config.authData.onLogout(() => local.teardown());
     }, [local, config.type === 'remote' ? config.authData : null]);
-
-    const [_, rootItem] = useItem<ItemT, _>(React, client, 'items', 'root');
-    React.useEffect(() => {
-        // console.log('EFFFFECT');
-        if (!rootItem) {
-            return;
-        }
-        let text = richTextToString(rootItem.body);
-        if (text.length > 50) {
-            text = text.slice(0, 47) + '...';
-        }
-        if (file != null && file !== false && file.title !== text) {
-            docCol.setAttribute(file.id, ['title'], text);
-        }
-    }, [
-        rootItem != null && rootItem !== false ? rootItem.body : null,
-        file != null && file !== false ? file.title : null,
-    ]);
 
     // STOPSHIP: For nodeCount, I want collection `onChanges` to cache stuff,
     // so that `useCollection` can all have the same object.
@@ -221,6 +231,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
 
     return (
         <div>
+            <MetaData client={client} docClient={docClient} docId={docId} />
             <AppShell
                 title="Tree notes"
                 renderDrawer={(isOpen, onClose) => (
@@ -242,10 +253,10 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                         <Debug client={client} />
                     </Route>
                     <Route path={`${match.path == '/' ? '' : match.path}/item/:path`}>
-                        <Items client={client} local={local} />
+                        <Items url={url} client={client} local={local} />
                     </Route>
                     <Route path={`${match.path == '/' ? '' : match.path}`}>
-                        <Items client={client} local={local} />
+                        <Items url={url} client={client} local={local} />
                     </Route>
                 </RouteSwitch>
             </AppShell>

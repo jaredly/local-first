@@ -425,19 +425,21 @@ const Item = ({
                 }}
             >
                 {isExpanded || root
-                    ? item.children.map((id) => (
-                          <MemoItem
-                              path={childPath}
-                              id={id}
-                              key={id}
-                              client={client}
-                              local={local}
-                              onDragStart={onDragStart}
-                              registerDragTargets={registerDragTargets}
-                              onMenuShow={onMenuShow}
-                              numbering={item.numbering}
-                          />
-                      ))
+                    ? item.children
+                          .filter(Boolean)
+                          .map((id) => (
+                              <MemoItem
+                                  path={childPath}
+                                  id={id}
+                                  key={id}
+                                  client={client}
+                                  local={local}
+                                  onDragStart={onDragStart}
+                                  registerDragTargets={registerDragTargets}
+                                  onMenuShow={onMenuShow}
+                                  numbering={item.numbering}
+                              />
+                          ))
                     : null}
             </div>
         </div>

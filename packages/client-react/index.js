@@ -33,7 +33,7 @@ export const useItems = function<T: {}, SyncStatus>(
         return found || ids.length === 0 ? items : null;
     });
     React.useEffect(() => {
-        const listeners = ids.map(id => {
+        const listeners = ids.filter(Boolean).map(id => {
             if (!items || !items[id]) {
                 col.load(id).then(
                     data => {
