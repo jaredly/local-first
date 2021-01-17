@@ -37,6 +37,7 @@ import type { ItemT } from '../collections';
 
 import ItemMenuItems from './ContextMenu';
 import BottomBar from './BottomBar';
+import ChangesDialog from './ChangesDialog';
 
 type Dest =
     | {
@@ -140,7 +141,6 @@ const Breadcrumb = ({ id, client, doc }) => {
         </Link>
     );
 };
-// const toText = ({ ops }) => ops.map((op) => op.insert).join('');
 
 const Breadcrumbs = ({ path, client }) => {
     const match = useRouteMatch();
@@ -167,6 +167,7 @@ const Items = ({
     // id: ?string,
 }) => {
     const col = React.useMemo(() => client.getCollection('items'), [client]);
+    const [dialog, setDialog] = React.useState(null);
 
     const onDrop = React.useCallback(({ path }, dest) => {
         const id = path[path.length - 1];
@@ -252,10 +253,14 @@ const Items = ({
                         client={client}
                         path={menu.path}
                         onClose={() => setMenu(null)}
+                        setDialog={setDialog}
                     />
                 </Menu>
             ) : null}
             <BottomBar client={client} id={id} path={path} col={col} local={local} />
+            {dialog != null ? (
+                <ChangesDialog onClose={() => setDialog(null)} id={dialog} client={client} />
+            ) : null}
         </React.Fragment>
     );
 };

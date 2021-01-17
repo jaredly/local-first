@@ -326,7 +326,7 @@ const SignUpIn = ({ storageKey, host }: { storageKey: string, host: string }) =>
     );
 };
 
-export const useAuthStatus = (storageKey: string, host: string) => {
+export const useAuthStatus = (storageKey: string, host: string): Status => {
     const [status, setStatus] = React.useState<Status | false>(() => initialStatus(storageKey));
     const statusRef = React.useRef(status);
     statusRef.current = status;
@@ -358,6 +358,8 @@ export const useAuthStatus = (storageKey: string, host: string) => {
 
     return status;
 };
+
+export const AuthContext = React.createContext<?AuthData>(null);
 
 const Auth = ({
     storageKey,
@@ -401,7 +403,7 @@ const Auth = ({
     if (authData == null) {
         return <div />;
     }
-    return render(authData);
+    return <AuthContext.Provider value={authData}>{render(authData)}</AuthContext.Provider>;
 };
 
 export default Auth;

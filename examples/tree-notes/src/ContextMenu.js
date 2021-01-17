@@ -41,9 +41,10 @@ type Props = {
     path: Array<string>,
     onClose: () => mixed,
     client: Client<*>,
+    setDialog: (string) => mixed,
 };
 
-const ItemMenuItems = ({ col, path, onClose, client }: Props) => {
+const ItemMenuItems = ({ col, path, onClose, client, setDialog }: Props) => {
     const history = useHistory();
     const match = useRouteMatch();
     const [_, item] = useItem(React, client, 'items', path[path.length - 1]);
@@ -150,6 +151,16 @@ const ItemMenuItems = ({ col, path, onClose, client }: Props) => {
             }}
         >
             Remove
+        </MenuItem>,
+    );
+    items.push(
+        <MenuItem
+            key="changes"
+            onClick={() => {
+                setDialog(path[path.length - 1]);
+            }}
+        >
+            Show Change History
         </MenuItem>,
     );
     return items;
