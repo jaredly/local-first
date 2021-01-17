@@ -111,6 +111,24 @@ const cx = (...args) => args.filter(Boolean).join(' ');
 
 const escapeTitle = (title) => title.replace(/[^a-zA-Z0-9_-]+/g, '-');
 
+export const LoadRecipeBlock = ({
+    actorId,
+    url,
+    client,
+    id,
+}: {
+    actorId: string,
+    id: string,
+    client: Client<*>,
+    url: string,
+}) => {
+    const [col, recipe] = useItem<RecipeT, _>(React, client, 'recipes', id);
+    if (recipe == null || recipe === false) {
+        return null;
+    }
+    return <RecipeBlock actorId={actorId} recipe={recipe} tags={{}} url={url} />;
+};
+
 export const RecipeBlock = ({
     actorId,
     recipe,

@@ -199,12 +199,14 @@ const useStyles = makeStyles((theme) => ({
 
 const Sidebar = ({
     client,
+    privateClient,
     id,
     actorId,
     url,
     onClose,
 }: {
     client: Client<*>,
+    privateClient: Client<*>,
     id: string,
     actorId: string,
     url: string,
@@ -233,7 +235,13 @@ const Sidebar = ({
                 </IconButton>
             </div>
             <div className={styles.popover}>
-                <Recipe client={client} actorId={actorId} url={url} id={id} />
+                <Recipe
+                    privateClient={privateClient}
+                    client={client}
+                    actorId={actorId}
+                    url={url}
+                    id={id}
+                />
             </div>
         </React.Fragment>
     );

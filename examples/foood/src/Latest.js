@@ -26,7 +26,17 @@ const defaultShowAmount = 15;
 
 const statuses: Array<RecipeStatus> = ['to try', 'approved', 'favorite', 'rejected'];
 
-const Latest = ({ client, actorId, url }: { url: string, client: Client<*>, actorId: string }) => {
+const Latest = ({
+    client,
+    actorId,
+    url,
+    privateClient,
+}: {
+    url: string,
+    client: Client<*>,
+    actorId: string,
+    privateClient: Client<*>,
+}) => {
     const match = useRouteMatch();
     const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
     const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
@@ -109,6 +119,7 @@ const Latest = ({ client, actorId, url }: { url: string, client: Client<*>, acto
                     onClose={() => setSidebar(null)}
                     id={sidebar}
                     client={client}
+                    privateClient={privateClient}
                     actorId={actorId}
                     url={url}
                 />

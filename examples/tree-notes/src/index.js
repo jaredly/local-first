@@ -11,6 +11,7 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 
 import Auth from '../../shared/Auth';
 import App, { type ConnectionConfig } from './App';
+import Docs from './Docs';
 
 const darkTheme = createMuiTheme({
     palette: {
@@ -64,13 +65,7 @@ const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
                                 />
                             </Route>
                             <Route path="/">
-                                <App
-                                    config={{
-                                        type: 'remote',
-                                        prefix,
-                                        authData,
-                                    }}
-                                />
+                                <Docs prefix={prefix} authData={authData} />
                             </Route>
                         </Switch>
                     )}

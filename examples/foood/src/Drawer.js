@@ -26,8 +26,6 @@ import { Route, Link } from 'react-router-dom';
 import Switch from '@material-ui/core/Switch';
 // import { showDate, today } from '../utils';
 import type { AuthData } from '../../shared/Auth';
-import ExportDialog from '../../shared/ExportDialog';
-import ImportDialog from '../../shared/ImportDialog';
 import type { TagT, RecipeT } from '../collections';
 
 const MyDrawer = ({
@@ -111,6 +109,9 @@ const MyDrawer = ({
                     <ListItem button component={Link} to="/plans">
                         <ListItemText primary="Meal Plans" />
                     </ListItem>
+                    <ListItem button component={Link} to="/queue">
+                        <ListItemText primary="Recipe queue" />
+                    </ListItem>
                     <Divider />
                     <ListItem button component={Link} to="/latest">
                         <ListItemText primary="All Recipes" />
@@ -124,19 +125,6 @@ const MyDrawer = ({
                     <Divider />
                     <ListItem button component={Link} to="/ingredients">
                         <ListItemText primary="Manage Ingredients" />
-                    </ListItem>
-                    <Divider />
-                    <ListItem button onClick={() => setDialog('export')}>
-                        <ListItemIcon>
-                            <GetApp />
-                        </ListItemIcon>
-                        <ListItemText primary="Export all data" />
-                    </ListItem>
-                    <ListItem button onClick={() => setDialog('import')}>
-                        <ListItemIcon>
-                            <Publish />
-                        </ListItemIcon>
-                        <ListItemText primary="Import" />
                     </ListItem>
                     <Divider />
                     {window.location.hostname === 'localhost' ? (
@@ -195,24 +183,6 @@ const MyDrawer = ({
                 </List>
                 <Divider />
             </Drawer>
-            <ExportDialog
-                open={dialog === 'export'}
-                client={client}
-                onClose={() => setDialog(null)}
-            />
-            <ImportDialog
-                open={dialog === 'import'}
-                client={client}
-                onClose={() => setDialog(null)}
-            />
-            {/* {editTag !== false ? (
-                <EditTagDialog
-                    client={client}
-                    tagsCol={tagsCol}
-                    tag={editTag}
-                    onClose={() => setEditTag(false)}
-                />
-            ) : null} */}
         </React.Fragment>
     );
 };

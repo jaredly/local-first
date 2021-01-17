@@ -424,6 +424,7 @@ const EditMealPlan = ({
             {sidebar != null ? (
                 <Sidebar
                     onClose={() => setSidebar(null)}
+                    privateClient={privateClient}
                     id={sidebar}
                     client={client}
                     actorId={actorId}

@@ -310,6 +310,7 @@ const Home = ({
                         onClose={() => setSidebar(null)}
                         id={sidebar}
                         client={client}
+                        privateClient={privateClient}
                         actorId={actorId}
                         url={url}
                     />
@@ -347,6 +348,7 @@ const Home = ({
             {sidebar != null ? (
                 <Sidebar
                     onClose={() => setSidebar(null)}
+                    privateClient={privateClient}
                     id={sidebar}
                     client={client}
                     actorId={actorId}

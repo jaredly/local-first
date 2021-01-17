@@ -18,6 +18,7 @@ import type { Data } from '../../shared/auth-api';
 import type { AuthData } from '../../shared/Auth';
 
 import schemas from '../collections';
+import { schemas as indexSchemas } from '../index-collections';
 import LocalClient from './LocalClient';
 import AppShell from '../../shared/AppShell';
 import Drawer from './Drawer';
@@ -108,26 +109,26 @@ const App = ({ config }: { config: ConnectionConfig }) => {
     const { doc: docId } = useParams();
     // const [docId, itemId] = parseRawDoc(rawDoc);
     const dbName =
-        config.type === 'remote' ? config.prefix + (docId ? '/' + docId : '') : 'memory-' + docId;
+        config.type === 'remote' ? config.prefix + '/' + (docId || 'home') : 'memory-' + docId;
 
     // STOPSHIP: Use the index-collections, and make it so we can be multi-file!!
     // So good.
     // I think this means that I don't need a "default file" anymore?
     // I can just show the index. Yeah I like that.
-    // const docClient = React.useMemo(() => {
-    //     console.log('🔥 Creating the client');
-    //     if (config.type === 'memory') {
-    //         return populateWithInitialData(createInMemoryEphemeralClient(schemas));
-    //     }
-    //     const url = `${config.authData.host}/dbs/sync?db=trees-index&token=${config.authData.auth.token}`;
-    //     return createPersistedDeltaClient(
-    //         dbName,
-    //         schemas,
-    //         `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
-    //         3,
-    //         {},
-    //     );
-    // }, [config.type === 'remote' ? config.authData : null]);
+    const docClient = React.useMemo(() => {
+        console.log('🔥 Creating the index client');
+        if (config.type === 'memory') {
+            return populateWithInitialData(createInMemoryEphemeralClient(schemas));
+        }
+        const url = `${config.authData.host}/dbs/sync?db=trees-index&token=${config.authData.auth.token}`;
+        return createPersistedDeltaClient(
+            config.prefix + '-index',
+            indexSchemas,
+            `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
+            3,
+            {},
+        );
+    }, [config.type === 'remote' ? config.authData : null]);
 
     const client = React.useMemo(() => {
         console.log('🔥 Creating the client');
@@ -145,18 +146,28 @@ const App = ({ config }: { config: ConnectionConfig }) => {
             {},
         );
     }, [config.type === 'remote' ? config.authData : null, docId]);
+
+    React.useEffect(() => {
+        const id = docId || 'home';
+        const files = docClient.getCollection('files');
+        files.setAttribute(id, ['lastOpened'], Date.now());
+    }, [docClient, docId]);
+
     React.useEffect(() => {
         if (config.type !== 'remote') {
             return;
         }
         return config.authData.onLogout(() => {
             client.teardown();
+            docClient.teardown();
         });
-    }, [client, config.type === 'remote' ? config.authData : null]);
+    }, [docClient, client, config.type === 'remote' ? config.authData : null]);
+
     const match = useRouteMatch();
     const local = React.useMemo(() => new LocalClient(dbName, config.type === 'memory'), [
         config.type,
     ]);
+
     React.useEffect(() => {
         if (config.type !== 'remote') {
             // lets expand all the things!
@@ -192,7 +203,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                 client={client}
             >
                 <RouteSwitch>
-                    <Route path={`/debug`}>
+                    <Route path={`${match.path == '/' ? '' : match.path}/debug`}>
                         <Debug client={client} />
                     </Route>
                     <Route path={`${match.path == '/' ? '' : match.path}/item/:path`}>

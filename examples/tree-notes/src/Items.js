@@ -109,7 +109,7 @@ const useDragging = (onDrop) => {
 
 import * as textCrdt from '../../../packages/rich-text-crdt/';
 
-const Breadcrumb = ({ id, client }) => {
+const Breadcrumb = ({ id, client, doc }) => {
     const [col, item] = useItem(React, client, 'items', id);
     if (item == null) {
         return null;
@@ -126,7 +126,7 @@ const Breadcrumb = ({ id, client }) => {
         text = text.slice(0, 47) + '...';
     }
     return (
-        <Link to={`/item/${id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+        <Link to={`/doc/${doc}/item/${id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
             <div
                 css={{
                     color: 'inherit',
@@ -143,10 +143,11 @@ const Breadcrumb = ({ id, client }) => {
 // const toText = ({ ops }) => ops.map((op) => op.insert).join('');
 
 const Breadcrumbs = ({ path, client }) => {
+    const match = useRouteMatch();
     return (
         <div css={{ display: 'flex', marginBottom: 16 }}>
             {path.map((id) => (
-                <Breadcrumb key={id} id={id} client={client} />
+                <Breadcrumb doc={match.params.doc} key={id} id={id} client={client} />
             ))}
         </div>
     );

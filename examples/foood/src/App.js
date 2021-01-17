@@ -38,6 +38,7 @@ import MealPlans from './MealPlans';
 import Settings from './Settings';
 import EditMealPlan from './EditMealPlan';
 import MealPlan from './MealPlans';
+import Queue from './Queue';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
@@ -246,6 +247,14 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                             actorId={actorId}
                         />
                     </Route>
+                    <Route path={`${pathPrefix}/queue`}>
+                        <Queue
+                            url={url}
+                            client={client}
+                            privateClient={privateClient}
+                            actorId={actorId}
+                        />
+                    </Route>
                     <Route path={`${pathPrefix}/settings`}>
                         <Settings
                             url={url}
@@ -266,16 +275,36 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                         />
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id/title/:title`}>
-                        <RecipeView url={url} actorId={actorId} client={client} />
+                        <RecipeView
+                            url={url}
+                            actorId={actorId}
+                            client={client}
+                            privateClient={privateClient}
+                        />
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id/edit`}>
-                        <EditorView url={url} actorId={actorId} client={client} />
+                        <EditorView
+                            url={url}
+                            actorId={actorId}
+                            client={client}
+                            privateClient={privateClient}
+                        />
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id`}>
-                        <RecipeView url={url} actorId={actorId} client={client} />
+                        <RecipeView
+                            url={url}
+                            actorId={actorId}
+                            client={client}
+                            privateClient={privateClient}
+                        />
                     </Route>
                     <Route path={`${pathPrefix}/latest`}>
-                        <Latest url={url} actorId={actorId} client={client} />
+                        <Latest
+                            url={url}
+                            actorId={actorId}
+                            client={client}
+                            privateClient={privateClient}
+                        />
                     </Route>
                     <Route path={`${pathPrefix}/debug`}>
                         <Debug client={client} />

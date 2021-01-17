@@ -45,6 +45,7 @@ type Props = {
 
 const ItemMenuItems = ({ col, path, onClose, client }: Props) => {
     const history = useHistory();
+    const match = useRouteMatch();
     const [_, item] = useItem(React, client, 'items', path[path.length - 1]);
     if (!item) {
         return null;
@@ -52,8 +53,11 @@ const ItemMenuItems = ({ col, path, onClose, client }: Props) => {
     const items = [
         <MenuItem
             key="zoom"
+            component={Link}
+            to={`/doc/${match.params.doc}/item/${path.join(':-:')}`}
             onClick={() => {
-                history.push(`/item/${path.join(':-:')}`);
+                console.log(match);
+                history.push(`/doc/${match.params.doc}/item/${path.join(':-:')}`);
                 onClose();
             }}
         >
