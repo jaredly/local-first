@@ -24,7 +24,7 @@ import { useCollection } from '../../../packages/client-react';
 // import EditTagDialog from './EditTagDialog';
 // import ExportDialog from './ExportDialog';
 // import ImportDialog from './ImportDialog';
-import { Route, Link } from 'react-router-dom';
+import { Route, Link, useParams } from 'react-router-dom';
 // import { showDate, today } from '../utils';
 import type { AuthData } from '../../shared/Auth';
 
@@ -48,6 +48,7 @@ const MyDrawer = ({
     // const [tagsCol, tags] = useCollection(React, client, 'tags');
     // const [editTag, setEditTag] = React.useState(false);
     const [dialog, setDialog] = React.useState(null);
+    const params = useParams();
 
     return (
         <React.Fragment>
@@ -78,23 +79,6 @@ const MyDrawer = ({
                     {window.location.hostname === 'localhost' ? (
                         <ListItem>
                             <LocalButtons />
-                            {/* <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={window.localStorage.inMemoryTreeNotes === 'true'}
-                                        onChange={() => {
-                                            if (window.localStorage.inMemoryTreeNotes === 'true') {
-                                                window.localStorage.inMemoryTreeNotes = 'false';
-                                            } else {
-                                                window.localStorage.inMemoryTreeNotes = 'true';
-                                            }
-                                            location.reload();
-                                        }}
-                                        color="primary"
-                                    />
-                                }
-                                label="Use in-memory db (no persistence)"
-                            /> */}
                         </ListItem>
                     ) : null}
                     <Divider />
@@ -106,7 +90,11 @@ const MyDrawer = ({
                             <ListItemText primary="Sign out" />
                         </ListItem>
                     ) : null}
-                    <ListItem component={Link} to="/debug" style={{ color: 'inherit' }}>
+                    <ListItem
+                        component={Link}
+                        to={params.doc ? `/doc/${params.doc}/debug` : '/debug'}
+                        style={{ color: 'inherit' }}
+                    >
                         <ListItemText
                             primary={`Version: ${
                                 process.env.VERSION != null

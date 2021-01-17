@@ -1,6 +1,7 @@
 // @flow
 import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 
+import { toString as richTextToString } from '../../../packages/rich-text-crdt';
 import querystring from 'querystring';
 import ListItem from '@material-ui/core/ListItem';
 import Switch from '@material-ui/core/Switch';
@@ -17,8 +18,8 @@ import { useCollection, useItem } from '../../../packages/client-react';
 import type { Data } from '../../shared/auth-api';
 import type { AuthData } from '../../shared/Auth';
 
-import schemas from '../collections';
-import { schemas as indexSchemas } from '../index-collections';
+import schemas, { type ItemT } from '../collections';
+import { schemas as indexSchemas, type File } from '../index-collections';
 import LocalClient from './LocalClient';
 import AppShell from '../../shared/AppShell';
 import Drawer from './Drawer';
@@ -147,11 +148,20 @@ const App = ({ config }: { config: ConnectionConfig }) => {
         );
     }, [config.type === 'remote' ? config.authData : null, docId]);
 
+    const [docCol, file] = useItem<File, _>(React, docClient, 'files', docId || 'home');
+
+    // React.useEffect(() => {
+    //     const id = docId || 'home';
+    //     const files = docClient.getCollection('files');
+    //     files.setAttribute(id, ['lastOpened'], Date.now());
+    // }, [docClient, docId]);
+
     React.useEffect(() => {
-        const id = docId || 'home';
-        const files = docClient.getCollection('files');
-        files.setAttribute(id, ['lastOpened'], Date.now());
-    }, [docClient, docId]);
+        if (file === false || file == null) {
+            return;
+        }
+        docCol.setAttribute(file.id, ['lastOpened'], Date.now());
+    }, [docClient, docId, file]);
 
     React.useEffect(() => {
         if (config.type !== 'remote') {
@@ -181,6 +191,20 @@ const App = ({ config }: { config: ConnectionConfig }) => {
         }
         return config.authData.onLogout(() => local.teardown());
     }, [local, config.type === 'remote' ? config.authData : null]);
+
+    const [_, rootItem] = useItem<ItemT, _>(React, client, 'items', 'root');
+    React.useEffect(() => {
+        if (!rootItem) {
+            return;
+        }
+        let text = richTextToString(rootItem.body);
+        if (text.length > 50) {
+            text = text.slice(0, 47) + '...';
+        }
+        if (file != null && file !== false && file.title !== text) {
+            docCol.setAttribute(file.id, ['title'], text);
+        }
+    }, [rootItem, file]);
 
     window.client = client;
 
