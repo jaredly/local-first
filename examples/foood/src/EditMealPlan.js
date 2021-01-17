@@ -14,7 +14,12 @@ import Checkbox from '@material-ui/core/Checkbox';
 import { useSetTitle } from './Home';
 import RecipeBlock, { getIngredients } from './RecipeBlock';
 import Sidebar from './Sidebar';
-import { type MealPlan, type PantryIngredient, type Settings } from '../private-collections';
+import {
+    type MealPlan,
+    type PantryIngredient,
+    type Settings,
+    type Homepage,
+} from '../private-collections';
 import { Tag } from './Home';
 import { DeleteButton } from './Editor';
 import { TagsChooser } from './Settings';
@@ -295,6 +300,13 @@ const EditMealPlan = ({
         'default',
     );
 
+    const [homepageCol, homepage] = useItem<Homepage, _>(
+        React,
+        privateClient,
+        'homepage',
+        'default',
+    );
+
     const { id } = useParams();
 
     const [belowState, setBelowState] = React.useState(null);
@@ -368,6 +380,45 @@ const EditMealPlan = ({
                     pantryIngredients={pantryIngredients}
                 />
             </div>
+            {homepage != null &&
+            homepage !== false &&
+            Object.keys(homepage.recipeQueue).length > 0 ? (
+                <React.Fragment>
+                    <h3>Recipe Queue</h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                        {Object.keys(homepage.recipeQueue).map((id) => (
+                            <div key={id} style={{ position: 'relative' }}>
+                                <RecipeBlock
+                                    pantryIngredients={pantryIngredients}
+                                    url={url}
+                                    actorId={actorId}
+                                    recipe={recipes[id]}
+                                    tags={tags}
+                                    onClick={() => setSidebar(id)}
+                                />
+                                <Checkbox
+                                    style={{ position: 'absolute', top: 8, left: 8 }}
+                                    checked={!!plan.uncategorizedRecipes[id]}
+                                    onChange={() => {
+                                        if (plan.uncategorizedRecipes[id]) {
+                                            mealPlansCol.clearAttribute(plan.id, [
+                                                'uncategorizedRecipes',
+                                                id,
+                                            ]);
+                                        } else {
+                                            mealPlansCol.setAttribute(
+                                                plan.id,
+                                                ['uncategorizedRecipes', id],
+                                                Date.now(),
+                                            );
+                                        }
+                                    }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </React.Fragment>
+            ) : null}
             <h3>Suggested recipes</h3>
             <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                 {recipeIds.map((id) => (
