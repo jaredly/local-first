@@ -34,7 +34,7 @@ export type Collection<T> = {
     insertIdRelative: (
         id: string,
         path: Array<string | number>,
-        id: string,
+        childId: string,
         relativeTo: string,
         before: boolean,
     ) => Promise<void>,

@@ -259,7 +259,12 @@ const Items = ({
             ) : null}
             <BottomBar client={client} id={id} path={path} col={col} local={local} />
             {dialog != null ? (
-                <ChangesDialog onClose={() => setDialog(null)} id={dialog} client={client} />
+                <ChangesDialog
+                    col={col}
+                    onClose={() => setDialog(null)}
+                    id={dialog}
+                    client={client}
+                />
             ) : null}
         </React.Fragment>
     );
