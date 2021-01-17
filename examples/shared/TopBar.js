@@ -63,6 +63,9 @@ const useStyles = makeStyles(theme => ({
     disconnected: {
         color: theme.palette.text.disabled,
     },
+    loading: {
+        color: theme.palette.primary.dark,
+    },
     title: {
         // flexGrow: 1,
         marginRight: theme.spacing(2),

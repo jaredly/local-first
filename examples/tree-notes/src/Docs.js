@@ -93,11 +93,11 @@ const Docs = ({ prefix, authData }: { prefix: string, authData: AuthData }) => {
                     Files
                     <Button
                         onClick={() => {
-                            const id = col.genId();
+                            const id = col.genId().replace(/:/g, '_');
                             col.save(id, {
                                 id,
                                 source: {
-                                    url: `${authData.host}/dbs/sync?db=trees/home`,
+                                    url: `${authData.host}/dbs/sync?db=trees/${id}`,
                                     type: 'delta',
                                 },
                                 title: 'New Document',

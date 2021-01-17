@@ -207,7 +207,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
         }
     }, [
         rootItem != null && rootItem !== false ? rootItem.body : null,
-        file != null && file !== false,
+        file != null && file !== false ? file.title : null,
     ]);
 
     window.client = client;
