@@ -194,7 +194,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
 
     const [_, rootItem] = useItem<ItemT, _>(React, client, 'items', 'root');
     React.useEffect(() => {
-        console.log('EFFFFECT');
+        // console.log('EFFFFECT');
         if (!rootItem) {
             return;
         }

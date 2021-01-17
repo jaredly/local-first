@@ -29,7 +29,7 @@ import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 
-// import schemas from '../collections';
+import schemas from '../collections';
 import { schemas as indexSchemas, type File } from '../index-collections';
 import LocalClient from './LocalClient';
 import AppShell from '../../shared/AppShell';
@@ -105,6 +105,22 @@ const Docs = ({ prefix, authData }: { prefix: string, authData: AuthData }) => {
                                 lastModified: Date.now(),
                                 nodeCount: 0,
                             });
+
+                            const dbName = prefix + '/' + id;
+                            const url = `${authData.host}/dbs/sync?db=trees/${
+                                docId || 'home'
+                            }&token=${authData.auth.token}`;
+                            const newClient = createPersistedDeltaClient(
+                                dbName,
+                                schemas,
+                                `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
+                                3,
+                                {},
+                            );
+                            newClient.getCollection('items').save('root', {
+                                ...blankItem('New Document'),
+                                id: 'root',
+                            });
                             // STOPSHIP:
                             // Create now document, connect to a client,
                             // and create a root node folks.
@@ -123,25 +139,27 @@ const Docs = ({ prefix, authData }: { prefix: string, authData: AuthData }) => {
                                 <TableCell>Node count</TableCell>
                             </TableRow>
                         </TableHead>
-                        {Object.keys(files).map((fileid) => (
-                            <TableRow key={fileid}>
-                                <TableCell>
-                                    {/* <ListItem
+                        {Object.keys(files)
+                            .sort((a, b) => files[b].lastOpened - files[a].lastOpened)
+                            .map((fileid) => (
+                                <TableRow key={fileid}>
+                                    <TableCell>
+                                        {/* <ListItem
                                     key={fileid}
                                     component={Link}
                                 > */}
-                                    <Link style={{ color: 'inherit' }} to={`/doc/${fileid}`}>
-                                        <ListItemText primary={files[fileid].title} />
-                                    </Link>
-                                    {/* {JSON.stringify(files[fileid])} */}
-                                    {/* </ListItem> */}
-                                </TableCell>
-                                <TableCell>
-                                    {new Date(files[fileid].lastOpened).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell>{files[fileid].nodeCount}</TableCell>
-                            </TableRow>
-                        ))}
+                                        <Link style={{ color: 'inherit' }} to={`/doc/${fileid}`}>
+                                            <ListItemText primary={files[fileid].title} />
+                                        </Link>
+                                        {/* {JSON.stringify(files[fileid])} */}
+                                        {/* </ListItem> */}
+                                    </TableCell>
+                                    <TableCell>
+                                        {new Date(files[fileid].lastOpened).toLocaleDateString()}
+                                    </TableCell>
+                                    <TableCell>{files[fileid].nodeCount}</TableCell>
+                                </TableRow>
+                            ))}
                     </Table>
                 </TableContainer>
                 {Object.keys(files).length === 0 ? (
