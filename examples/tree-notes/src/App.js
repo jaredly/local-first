@@ -161,7 +161,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
             return;
         }
         docCol.setAttribute(file.id, ['lastOpened'], Date.now());
-    }, [docClient, docId, file]);
+    }, [docClient, docId, file !== false && file != null]);
 
     React.useEffect(() => {
         if (config.type !== 'remote') {
@@ -194,6 +194,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
 
     const [_, rootItem] = useItem<ItemT, _>(React, client, 'items', 'root');
     React.useEffect(() => {
+        console.log('EFFFFECT');
         if (!rootItem) {
             return;
         }
@@ -204,7 +205,10 @@ const App = ({ config }: { config: ConnectionConfig }) => {
         if (file != null && file !== false && file.title !== text) {
             docCol.setAttribute(file.id, ['title'], text);
         }
-    }, [rootItem, file]);
+    }, [
+        rootItem != null && rootItem !== false ? rootItem.body : null,
+        file != null && file !== false,
+    ]);
 
     window.client = client;
 
