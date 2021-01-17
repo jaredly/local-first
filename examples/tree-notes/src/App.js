@@ -210,6 +210,13 @@ const App = ({ config }: { config: ConnectionConfig }) => {
         file != null && file !== false ? file.title : null,
     ]);
 
+    // STOPSHIP: For nodeCount, I want collection `onChanges` to cache stuff,
+    // so that `useCollection` can all have the same object.
+    // And then I can do `onAll()` and write it in.
+    // React.useEffect(() => {
+    //     client.getCollection('items').onChanges
+    // }, [])
+
     window.client = client;
 
     return (

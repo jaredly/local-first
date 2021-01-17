@@ -13,14 +13,14 @@ export const useUpgrade = () => {
 
     React.useEffect(() => {
         if (window.upgradeAvailable) {
-            console.log('listeneing');
+            // console.log('listeneing');
             const listener = () => {
-                console.log('listenered!');
+                // console.log('listenered!');
                 setShowUpgrade(true);
             };
             window.upgradeAvailable.listeners.push(listener);
             return () => {
-                console.log('unlistenerd');
+                // console.log('unlistenerd');
                 window.upgradeAvailable.listeners = window.upgradeAvailable.listeners.filter(
                     f => f !== listener,
                 );

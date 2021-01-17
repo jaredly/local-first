@@ -132,6 +132,23 @@ const setupPersistence = function<Delta, Data>(baseDir: string): Persistence<Del
                 changes: JSON.stringify(deltas),
             });
         },
+        allDeltas(collection: string) {
+            setupDb(collection);
+            const transaction = db.transaction(() => {
+                const rows = queryAll(db, `SELECT changes from ${escapedTableName(collection)}`);
+                const deltas = [].concat(...rows.map(({ changes }) => JSON.parse(changes)));
+                const cursor = queryGet(
+                    db,
+                    `SELECT max(id) as maxId from ${escapedTableName(collection)}`,
+                    [],
+                );
+                if (!cursor) {
+                    return null;
+                }
+                return { deltas, cursor: cursor.maxId };
+            });
+            return transaction();
+        },
         deltasSince(collection: string, lastSeen: ?CursorType, sessionId: string) {
             setupDb(collection);
             const transaction = db.transaction((lastSeen, sessionId) => {

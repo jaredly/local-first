@@ -60,6 +60,12 @@ export type CRDTImpl<Delta, Data> = {
 export type CursorType = number;
 
 export type Persistence<Delta, Data> = {
+    allDeltas(
+        collection: string,
+    ): ?{
+        deltas: Array<{ node: string, delta: Delta }>,
+        cursor: CursorType,
+    },
     deltasSince(
         collection: string,
         lastSeen: ?CursorType,

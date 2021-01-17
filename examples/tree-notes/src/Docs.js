@@ -67,6 +67,8 @@ const Docs = ({ prefix, authData }: { prefix: string, authData: AuthData }) => {
         });
     }, [docClient, authData]);
 
+    window.docClient = docClient;
+
     // const match = useRouteMatch();
 
     const [col, files] = useCollection<File, _>(React, docClient, 'files');
@@ -144,15 +146,11 @@ const Docs = ({ prefix, authData }: { prefix: string, authData: AuthData }) => {
                             .map((fileid) => (
                                 <TableRow key={fileid}>
                                     <TableCell>
-                                        {/* <ListItem
-                                    key={fileid}
-                                    component={Link}
-                                > */}
                                         <Link style={{ color: 'inherit' }} to={`/doc/${fileid}`}>
-                                            <ListItemText primary={files[fileid].title} />
+                                            <ListItemText
+                                                primary={files[fileid].title.trim() || 'Untitled'}
+                                            />
                                         </Link>
-                                        {/* {JSON.stringify(files[fileid])} */}
-                                        {/* </ListItem> */}
                                     </TableCell>
                                     <TableCell>
                                         {new Date(files[fileid].lastOpened).toLocaleDateString()}

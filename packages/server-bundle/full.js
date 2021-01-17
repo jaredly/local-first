@@ -167,26 +167,20 @@ export const runMulti2 = (
         res.json(post(req.server, req.query.sessionId, req.body));
     });
 
-    // NOTE: This is a kindof wasteuful, although at the data sizes we're thinking of,
-    // it's probably actually not a big deal?
-    // But glitch's startup time is maybe a big deal, so it would be cool to cache it
-    // with cloudflare anyway.
-    app.get('/latest/', (req, res) => {
-        const { db, collection, id } = req.query;
-        if (!db || !collection || !id) {
-            return res.status(400).json({ error: 'required: db, id, collection' });
-        }
+    const getDb = (db, req, res) => {
         const parts = db.split('/');
         const config = configs[parts[0]];
         if (!config) {
-            return res.status(404).json({ error: 'no collection' });
+            res.status(404).json({ error: 'no collection' });
+            return null;
         }
         const subPath = parts.slice(1);
         let userId = null;
         if (subPath[0] !== 'public') {
             const authData = auth.getAuth(authDb, secret, req);
             if (typeof authData === 'string') {
-                return res.status(401).send(authData);
+                res.status(401).send(authData);
+                return null;
             }
             userId = authData.user.id;
         }
@@ -195,23 +189,111 @@ export const runMulti2 = (
                 ? path.join(dataPath, parts[0], subPath.join('/'))
                 : path.join(dataPath, parts[0], '@' + userId, subPath.join('/'));
         if (!fs.existsSync(dbPath)) {
-            return res.status(404).json({ error: 'No such database' });
+            res.status(404).json({ error: 'No such database' });
+            return null;
         }
 
-        const persistence = setupPersistence(dbPath);
-        const schemaCheckers = makeSchemaCheckers(config);
+        return setupPersistence(dbPath);
+    };
 
-        const result = persistence.deltasSince(collection, null, 'server');
+    const getDeltasForNode = (req, res) => {
+        const { db, collection, id } = req.query;
+        if (!db || !collection || !id) {
+            return res.status(400).json({ error: 'required: db, id, collection' });
+        }
+        const persistence = getDb(db, req, res);
+        if (!persistence) {
+            return;
+        }
+        // const schemaCheckers = makeSchemaCheckers(config);
+
+        const result = persistence.allDeltas(collection);
         if (!result) {
             return res.status(404).json({ error: 'no data' });
         }
         const relevantDeltas = result.deltas
             .filter(delta => delta.node === id)
             .map(change => change.delta);
+        return relevantDeltas;
+    };
+
+    // TODO allow you to specify how many you want
+    app.get('/dump/', (req, res) => {
+        const { db, collection } = req.query;
+        if (!db || !collection) {
+            return res.status(400).json({ error: 'required: db, collection' });
+        }
+        const persistence = getDb(db, req, res);
+        if (!persistence) {
+            return;
+        }
+        const result = persistence.allDeltas(collection);
+        if (!result) {
+            return res.status(404).json({ error: 'no data' });
+        }
+        const nodes = {};
+        const failed = {};
+        result.deltas.forEach(delta => {
+            if (failed[delta.node]) {
+                return;
+            }
+            const current = nodes[delta.node] || null;
+            try {
+                const node = crdtImpl.applyDelta(current, delta.delta);
+                nodes[delta.node] = node;
+            } catch (err) {
+                failed[delta.node] = { delta, message: err.message };
+            }
+            // if (!nodes[delta.node]) {
+            //     nodes[delta.node] = [delta]
+            // } else {
+            //     nodes[delta.node].push(delta)
+            // }
+        });
+
+        return res.json([nodes, failed]);
+    });
+
+    // So one way to do this would be:
+    // - get the past 1000 changes, and show me every 100.
+    // - then I can dial in.
+
+    // Can I get changes just for a specific keypath?
+    // Like, I want to see the changes just for "children"
+    app.get('/changes/', (req, res) => {
+        const relevantDeltas = getDeltasForNode(req, res);
+        if (!Array.isArray(relevantDeltas)) {
+            return;
+        }
+
+        const count = +(req.query.count || 100);
+
+        const baseDeltas = relevantDeltas.slice(0, -count);
+        const changes = relevantDeltas.slice(-count);
+
+        const node = baseDeltas.reduce((current, next) => crdtImpl.applyDelta(current, next), null);
+
+        return res.json({
+            node,
+            changes,
+        });
+    });
+
+    // NOTE: This is a kindof wasteuful, although at the data sizes we're thinking of,
+    // it's probably actually not a big deal?
+    // But glitch's startup time is maybe a big deal, so it would be cool to cache it
+    // with cloudflare anyway.
+    app.get('/latest/', (req, res) => {
+        const relevantDeltas = getDeltasForNode(req, res);
+        if (!Array.isArray(relevantDeltas)) {
+            return;
+        }
 
         if (!relevantDeltas.length) {
             return res.status(404).json({ error: 'node not found' });
         }
+
+        console.log(relevantDeltas[0]);
 
         const data = relevantDeltas.reduce(
             (current, next) => crdtImpl.applyDelta(current, next),
