@@ -10,6 +10,7 @@ import 'typeface-roboto';
 import CssBaseline from '@material-ui/core/CssBaseline';
 
 import Auth from '../../shared/Auth';
+import SignUpIn from '../../shared/SignUpIn';
 import App, { type ConnectionConfig } from './App';
 import PublicRecipe from './PublicRecipe';
 
@@ -47,23 +48,34 @@ const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
             <CssBaseline />
             <Router>
                 <Switch>
-                    {/* <Main host={null} /> TODO maybe reenable this with a localStorage key? */}
                     <Route path="/public/recipe/:id">
                         <PublicRecipe host={host} />
                     </Route>
                     <Route path="/">
                         <Auth
                             storageKey={prefix + '/auth'}
+                            allowLoggedOut={true}
                             host={host}
-                            render={(authData) => (
-                                <App
-                                    config={{
-                                        type: 'remote',
-                                        prefix,
-                                        authData,
-                                    }}
-                                />
-                            )}
+                            render={(authData) =>
+                                authData ? (
+                                    <App
+                                        config={{
+                                            type: 'remote',
+                                            prefix,
+                                            authData,
+                                        }}
+                                    />
+                                ) : (
+                                    <Switch>
+                                        <Route path="/recipe/:id">
+                                            <PublicRecipe host={host} />
+                                        </Route>
+                                        <Route path="/">
+                                            <SignUpIn host={host} storageKey={prefix + '/auth'} />
+                                        </Route>
+                                    </Switch>
+                                )
+                            }
                         />
                     </Route>
                 </Switch>

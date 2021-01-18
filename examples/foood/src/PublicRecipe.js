@@ -5,6 +5,7 @@ import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 import { BrowserRouter as Router, Switch, Route, Link, useParams } from 'react-router-dom';
 
 import Container from '@material-ui/core/Container';
+import Button from '@material-ui/core/Button';
 import AppBar from '@material-ui/core/AppBar';
 import IconButton from '@material-ui/core/IconButton';
 import { makeStyles } from '@material-ui/core/styles';
@@ -62,12 +63,11 @@ const PublicRecipe = ({ host }: { host: string }) => {
                 >
                     <MenuIcon />
                 </IconButton> */}
-                    <Typography variant="h6">
-                        {/* <Link style={{ color: 'inherit', textDecoration: 'none' }} to="/"> */}
-                        Foood (public)
-                        {/* </Link> */}
-                    </Typography>
+                    <Typography variant="h6">Foood</Typography>
                     <div style={{ flex: 1 }} />
+                    <Button variant="contained" component={Link} to="/">
+                        Login
+                    </Button>
                 </Toolbar>
             </AppBar>
             <Container maxWidth={'md'} className={styles.container}>

@@ -15,6 +15,8 @@ import FormControl from '@material-ui/core/FormControl';
 import type { Data, Status } from './auth-api';
 import { checkEmail, login, signup, logout, initialStatus, listen, getUser } from './auth-api';
 
+import SignUpIn from './SignUpIn';
+
 export type AuthData = {
     host: string,
     auth: Data,
@@ -76,256 +78,6 @@ in to a syncing server later.
 
 */
 
-const getDefaultValues = () => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('invite')) {
-        return { invite: params.get('invite') };
-    }
-    return {};
-};
-
-const SignUpIn = ({ storageKey, host }: { storageKey: string, host: string }) => {
-    const styles = useStyles();
-
-    const defaultValues = getDefaultValues();
-
-    const [email, setEmail] = React.useState('');
-    const [password, setPassword] = React.useState('');
-    const [name, setName] = React.useState('');
-    const [inviteCode, setInviteCode] = React.useState(defaultValues.invite);
-
-    const [state, setState] = React.useState(defaultValues.invite != null ? 'register' : 'initial');
-    const [loading, setLoading] = React.useState(false);
-    const [inviteRequired, setInviteRequired] = React.useState(defaultValues.invite != null);
-
-    const [error, setError] = React.useState(null);
-
-    const checkUsername = () => {
-        if (!email.length) {
-            return;
-        }
-        setLoading(true);
-        setError(null);
-        checkEmail(host, email)
-            .then(
-                isRegistered => {
-                    if (isRegistered === true) {
-                        setState('login');
-                    } else {
-                        console.log(isRegistered);
-                        if (isRegistered.inviteRequired) {
-                            setInviteRequired(true);
-                        }
-                        setState('register');
-                    }
-                    // setState(isRegistered ? 'login' : 'register');
-                },
-                // um handle failure
-                err => {
-                    setError(err.message);
-                },
-            )
-            .then(() => setLoading(false));
-    };
-    const doLogin = () => {
-        setLoading(true);
-        setError(null);
-        if (!password.length || !email.length) {
-            return;
-        }
-        login(storageKey, host, email, password).then(
-            () => {
-                // setLoading(false);
-                // Someone should notice that we've logged in at this point
-            },
-            err => {
-                setLoading(false);
-                setError(err.message);
-            },
-        );
-    };
-    const doSignup = () => {
-        setLoading(true);
-        setError(null);
-        signup(storageKey, host, email, password, name, inviteCode).then(
-            () => {
-                // setLoading(false);
-                // Someone should notice that we've logged in at this point
-            },
-            err => {
-                setError(err.message);
-                setLoading(false);
-            },
-        );
-    };
-
-    return (
-        <Container maxWidth="sm" className={styles.container}>
-            <Paper className={styles.root}>
-                <div className={styles.topBar}>
-                    <Typography variant="h4">
-                        {state === 'register' ? 'Register' : 'Login'} to {host}
-                    </Typography>
-                </div>
-                <form
-                    className={styles.body}
-                    onSubmit={evt => {
-                        console.log('on submit', state);
-                        evt.preventDefault();
-                        if (state === 'initial') {
-                            checkUsername();
-                        } else if (state === 'login') {
-                            doLogin();
-                        } else if (state === 'register') {
-                            doSignup();
-                        }
-                    }}
-                >
-                    <FormControl component="fieldset" error={error}>
-                        <Grid container direction="column" spacing={2}>
-                            <Grid item>
-                                <TextField
-                                    value={email}
-                                    onChange={evt => setEmail(evt.target.value)}
-                                    type="email"
-                                    label="Email Address"
-                                    variant="outlined"
-                                    autoFocus={state === 'initial'}
-                                    fullWidth
-                                    disabled={loading}
-                                />
-                            </Grid>
-                            {state === 'register' ? (
-                                <Grid item>
-                                    <TextField
-                                        value={name}
-                                        onChange={evt => setName(evt.target.value)}
-                                        autoFocus
-                                        type="text"
-                                        label="Display Name"
-                                        variant="outlined"
-                                        fullWidth
-                                        disabled={loading}
-                                    />
-                                </Grid>
-                            ) : null}
-                            {state === 'register' && inviteRequired ? (
-                                <Grid item>
-                                    <TextField
-                                        value={inviteCode}
-                                        onChange={evt => setInviteCode(evt.target.value)}
-                                        autoFocus
-                                        type="text"
-                                        label="Invite code"
-                                        variant="outlined"
-                                        fullWidth
-                                        disabled={loading}
-                                    />
-                                </Grid>
-                            ) : null}
-                            {state !== 'initial' ? (
-                                <Grid item>
-                                    <TextField
-                                        value={password}
-                                        onChange={evt => setPassword(evt.target.value)}
-                                        type="password"
-                                        // autoFocus={state === 'login'}
-                                        label={
-                                            state === 'register' ? 'Create password' : 'Password'
-                                        }
-                                        autoFocus
-                                        variant="outlined"
-                                        fullWidth
-                                        disabled={loading}
-                                        inputProps={{
-                                            onKeyPress: evt => {
-                                                if (evt.key === 'Enter') {
-                                                    evt.preventDefault();
-                                                    evt.stopPropagation();
-                                                    doLogin();
-                                                }
-                                            },
-                                        }}
-                                    />
-                                </Grid>
-                            ) : null}
-                            {state === 'initial' ? (
-                                <Grid item>
-                                    <Button
-                                        color="primary"
-                                        variant="contained"
-                                        disabled={loading || !email.trim()}
-                                        onClick={() => {
-                                            checkUsername();
-                                        }}
-                                    >
-                                        Continue
-                                    </Button>
-                                </Grid>
-                            ) : null}
-                            {state === 'login' ? (
-                                <Grid item direction="row" container spacing={2}>
-                                    <Grid item>
-                                        <Button
-                                            color="primary"
-                                            variant="contained"
-                                            disabled={loading}
-                                            onClick={() => {
-                                                doLogin();
-                                            }}
-                                        >
-                                            Login
-                                        </Button>
-                                    </Grid>
-                                    <Grid item>
-                                        <Button
-                                            variant="contained"
-                                            disabled={loading}
-                                            onClick={() => {
-                                                setState('initial');
-                                            }}
-                                        >
-                                            Cancel
-                                        </Button>
-                                    </Grid>
-                                </Grid>
-                            ) : null}
-                            <FormHelperText>{error}</FormHelperText>
-                            {state === 'register' ? (
-                                <Grid item direction="row" container spacing={2}>
-                                    <Grid item>
-                                        <Button
-                                            color="primary"
-                                            variant="contained"
-                                            disabled={loading || !password.trim() || !name.trim()}
-                                            onClick={() => {
-                                                doSignup();
-                                            }}
-                                        >
-                                            Register
-                                        </Button>
-                                    </Grid>
-                                    <Grid item>
-                                        <Button
-                                            variant="contained"
-                                            disabled={loading}
-                                            onClick={() => {
-                                                setState('initial');
-                                            }}
-                                        >
-                                            Cancel
-                                        </Button>
-                                    </Grid>
-                                </Grid>
-                            ) : null}
-                        </Grid>
-                    </FormControl>
-                </form>
-            </Paper>
-        </Container>
-    );
-};
-
 export const useAuthStatus = (storageKey: string, host: string): Status => {
     const [status, setStatus] = React.useState<Status | false>(() => initialStatus(storageKey));
     const statusRef = React.useRef(status);
@@ -365,10 +117,12 @@ const Auth = ({
     storageKey,
     host,
     render,
+    allowLoggedOut,
 }: {
     storageKey: string,
     host: string,
-    render: (authData: AuthData) => React.Node,
+    render: (authData: ?AuthData) => React.Node,
+    allowLoggedOut?: boolean,
 }) => {
     const status = useAuthStatus(storageKey, host);
     console.log('aith render?', status);
@@ -397,13 +151,18 @@ const Auth = ({
         [host, status, doLogout, onLogout],
     );
 
-    if (authData === false) {
+    if (authData === false && !allowLoggedOut) {
+        // TODO maybe make storageKey the same as host?
         return <SignUpIn storageKey={storageKey} host={host} />;
     }
     if (authData == null) {
         return <div />;
     }
-    return <AuthContext.Provider value={authData}>{render(authData)}</AuthContext.Provider>;
+    return (
+        <AuthContext.Provider value={authData === false ? null : authData}>
+            {render(authData === false ? null : authData)}
+        </AuthContext.Provider>
+    );
 };
 
 export default Auth;
