@@ -68,10 +68,12 @@ const fullRaw = `(?<number>${totalNumber('')})(\\s*-\\s*(?<range>${totalNumber(
 )}))?(?:\\s*(?<unit>${unitRx})\\b)?`;
 // console.log(fullRaw);
 const rx = new RegExp(fullRaw, 'g');
+const singleNumber = new RegExp('^\\s*' + totalNumber('') + '\\s*$');
+
 const rxStart = new RegExp('^\\s*[-*]?\\s*' + fullRaw, 'g');
 const informal = new RegExp('^(shy|heaping|dash|pinch)\b', 'i');
 
-const parseFraction = (text) => {
+const parseFraction = (text: string) => {
     text = text.trim();
     if (!text.includes('/')) {
         if (!fractionsReverse[text]) {
@@ -117,7 +119,7 @@ const multiplyNumber = (groups: *, factor: number) => {
     return `${first}-${formatNumber(parseTotalNumber(groups, '_range') * factor, groups['unit'])}`;
 };
 
-const numberToString = (number) => {
+const numberToString = (number: number) => {
     const whole = parseInt(number);
     if (whole === number) {
         return number.toString();
@@ -144,6 +146,16 @@ const formatNumber = (number, unit) => {
         return n + ' ' + unit;
     }
     return n;
+};
+
+const parseSingleNumber = (text: string) => {
+    const match = text.match(singleNumber);
+    console.log(text, singleNumber);
+    console.log(match ? match.groups : 'no match');
+    if (!match || !match.groups) {
+        return null;
+    }
+    return parseTotalNumber(match.groups, '');
 };
 
 const getNumbers = (text: string) => {
@@ -336,4 +348,7 @@ module.exports = {
     detectIngredients,
     getNumbers,
     multiplyNumber,
+    parseFraction,
+    numberToString,
+    parseSingleNumber,
 };

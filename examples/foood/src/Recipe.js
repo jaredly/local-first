@@ -236,10 +236,41 @@ export const RecipeInner = ({
                         {num}
                     </Button>
                 ))}
+                <CustomBatches batches={batches} setBatches={setBatches} />
             </div>
             <div className={styles.text}>{renderQuill(recipe.contents.text, batches)}</div>
             <Comments url={url} recipe={recipe} editorData={editorData} />
         </div>
+    );
+};
+
+import { fractions, numberToString, parseSingleNumber } from './parse';
+
+const CustomBatches = ({ batches, setBatches }) => {
+    const [text, setText] = React.useState(null);
+    return (
+        <TextField
+            value={text == null ? numberToString(batches) : text}
+            style={{
+                width: 60,
+                marginLeft: 16,
+            }}
+            inputProps={{
+                style: {
+                    textAlign: 'center',
+                },
+            }}
+            onChange={(evt) => {
+                setText(evt.target.value);
+                const num = parseSingleNumber(evt.target.value);
+                if (num != null) {
+                    setBatches(num);
+                }
+            }}
+            onBlur={() => {
+                setText(null);
+            }}
+        />
     );
 };
 
