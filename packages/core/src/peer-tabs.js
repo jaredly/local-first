@@ -66,6 +66,9 @@ export const peerTabAwareNetworks = function<SyncStatus>(
         sendCrossTabChanges(peerChange) {
             sendCrossTabChange(peerChange);
         },
+        close() {
+            console.log('Not closing peer tabs sync?');
+        },
     };
 };
 
@@ -105,6 +108,9 @@ export const peerTabAwareNetwork = function<SyncStatus>(
         },
         sendCrossTabChanges(peerChange) {
             sendCrossTabChange(peerChange);
+        },
+        close() {
+            console.log('Not closing peer tabs?');
         },
     };
 };

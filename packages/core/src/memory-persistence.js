@@ -15,6 +15,7 @@ class FakeDb {
     }
     transaction(fn) {
         return function(...args) {
+            // $FlowFixMe
             return fn(...args);
         };
     }
@@ -29,7 +30,7 @@ class FakeDb {
             if (minId != null && minId >= i) {
                 return;
             }
-            if (item.sessionId === sessionId) {
+            if (sessionId != null && item.sessionId === sessionId) {
                 return;
             }
             return true;
@@ -73,6 +74,30 @@ const setupPersistence = function<Delta, Data>(): Persistence<Delta, Data> {
                 date: Date.now(),
                 changes: JSON.stringify(deltas),
             });
+        },
+        allDeltas(
+            collection: string,
+        ): {
+            deltas: Array<{ node: string, delta: Delta }>,
+            cursor: CursorType,
+        } {
+            setupDb(collection);
+            const transaction = db.transaction(() => {
+                const rows = db.getAllSince(collection);
+                const deltas: Array<any> = [].concat(
+                    ...rows.map(({ changes }) => JSON.parse(changes)),
+                );
+                const cursor = db.maxId(collection);
+                if (cursor == -1) {
+                    if (rows.length) {
+                        throw new Error(`No maxId, but deltas returned! ${rows.length}`);
+                    }
+                    return null;
+                }
+                return { deltas, cursor: cursor };
+            });
+            // $FlowFixMe
+            return transaction();
         },
         deltasSince(
             collection: string,

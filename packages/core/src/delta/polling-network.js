@@ -71,6 +71,7 @@ const createPollingNetwork = <Delta, Data>(
     getMessages,
     handleMessages,
 ): Network<SyncStatus> => {
+    let closed = false;
     return {
         initial: { status: 'disconnected' },
         createSync: (sendCrossTabChange, updateStatus) => {
@@ -81,6 +82,10 @@ const createPollingNetwork = <Delta, Data>(
                 () =>
                     new Promise(res => {
                         backOff(() => {
+                            if (closed) {
+                                res();
+                                return Promise.resolve(true);
+                            }
                             return doSync(url, sessionId, getMessages, handle).then(success => {
                                 if (success) {
                                     updateStatus({ status: 'connected' });
@@ -98,6 +103,9 @@ const createPollingNetwork = <Delta, Data>(
             // start polling
             poll();
             return debounce(poll);
+        },
+        close: () => {
+            closed = true;
         },
     };
 };

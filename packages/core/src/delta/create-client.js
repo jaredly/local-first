@@ -239,6 +239,9 @@ const tabIsolatedNetwork = function<SyncStatus>(
             return currentSyncStatus;
         },
         sendCrossTabChanges(peerChange) {},
+        close: () => {
+            network.close();
+        },
     };
 };
 
@@ -341,7 +344,11 @@ function createClient<Delta, Data, SyncStatus>(
         teardown: async () => {
             console.log('tearing down folks');
             clock.teardown();
+            network.close();
             await persistence.teardown();
+        },
+        close: () => {
+            network.close();
         },
         async importDump<Data>(dump) {
             await Promise.all(

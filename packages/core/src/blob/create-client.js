@@ -133,6 +133,7 @@ function createClient<Delta, Data, SyncStatus>(
         undo: undoManager.undo,
         teardown: async () => {
             clock.teardown();
+            network.close();
             await persistence.teardown();
         },
         fullExport<Data>(): Promise<Export<Data>> {
@@ -162,6 +163,9 @@ function createClient<Delta, Data, SyncStatus>(
         },
         getSyncStatus() {
             return network.getSyncStatus();
+        },
+        close() {
+            network.close();
         },
     };
 }

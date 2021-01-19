@@ -10,11 +10,15 @@ const reconnectingSocket = (
     onMessage: (string, (string) => void) => mixed,
     updateStatus: SyncStatus => mixed,
 ) => {
-    const state: { socket: ?WebSocket } = {
+    const state: { socket: ?WebSocket, closed: boolean } = {
         socket: null,
+        closed: false,
     };
     const reconnect = () => {
         state.socket = null;
+        if (state.closed) {
+            return;
+        }
         updateStatus({ status: 'pending' });
         backOff(
             () =>
@@ -75,11 +79,13 @@ const createWebSocketNetwork = <Delta, Data>(
     getMessages,
     handleMessages,
 ): Network<SyncStatus> => {
+    let outerState = null;
+    let closed = false;
     return {
         initial: { status: 'pending' },
         createSync: (sendCrossTabChange, updateStatus, softResync) => {
             console.log('Im the leader (websocket)');
-            const state = reconnectingSocket(
+            const state = (outerState = reconnectingSocket(
                 addParams(url, `siteId=${sessionId}`),
                 () => sync(false),
                 async (msg, respond) => {
@@ -96,7 +102,7 @@ const createWebSocketNetwork = <Delta, Data>(
                     }
                 },
                 updateStatus,
-            );
+            ));
 
             const sync = (softSync: boolean) => {
                 if (state.socket) {
@@ -119,6 +125,13 @@ const createWebSocketNetwork = <Delta, Data>(
                 }
             };
             return sync;
+        },
+        close: () => {
+            closed = true;
+            if (outerState != null && outerState.socket != null) {
+                outerState.socket.close();
+                console.log('CLOSING WEBSOCKET');
+            }
         },
     };
 };

@@ -49,7 +49,11 @@ const useChanges = (url, id, count) => {
             return;
         }
         fetch(
-            `https://${url}/changes?count=${count}&db=trees/${params.doc}&collection=items&id=${id}&token=${authData.auth.token}`,
+            `${
+                url.startsWith('localhost:') ? 'http' : 'https'
+            }://${url}/changes?count=${count}&db=trees/${
+                params.doc
+            }&collection=items&id=${id}&token=${authData.auth.token}`,
         )
             .then((res) => res.json())
             .then((data) => {
@@ -208,7 +212,7 @@ const addAllChildren = async (col, id, children) => {
 };
 
 const ChangesDialog = ({ client, id, col, url, onClose }: *) => {
-    const data = useChanges(url, id, 1000);
+    const data = useChanges(url, id, 5000);
     return (
         <Dialog open={true} onClose={onClose}>
             <DialogTitle>Changes History</DialogTitle>

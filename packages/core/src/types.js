@@ -11,6 +11,7 @@ export type OldNetwork<SyncStatus> = {
     getSyncStatus(): SyncStatus,
     sendCrossTabChanges(PeerChange): void,
     setDirty: () => void,
+    close: () => void,
 };
 
 export type Export<Data> = { [colId: string]: { [nodeId: string]: Data } };
@@ -26,6 +27,7 @@ export type Client<SyncStatus> = {
     getSyncStatus(): SyncStatus,
     setDirty(): void,
     teardown(): Promise<void>,
+    close(): void,
 };
 
 export type Collection<T> = {
@@ -189,6 +191,7 @@ export type Network<SyncStatus> = {
         (SyncStatus) => void,
         softResync: () => void,
     ) => (softResync: boolean) => void,
+    close: () => void,
 };
 
 export type BlobNetworkCreator<Data, SyncStatus> = (

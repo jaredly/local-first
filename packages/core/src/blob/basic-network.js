@@ -257,6 +257,10 @@ const createNetwork = <Delta, Data>(url: string): BlobNetworkCreator<Data, SyncS
                 softResync,
             );
         },
+        close() {
+            // its fine
+            console.warn('not closing');
+        },
     };
 };
 

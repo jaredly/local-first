@@ -288,6 +288,9 @@ function createClient<Delta, Data, SyncStatus>(
         getSyncStatus() {
             return network.getSyncStatus();
         },
+        close() {
+            console.warn('CLOSE NOT IMPLEMENTED');
+        },
     };
 }
 

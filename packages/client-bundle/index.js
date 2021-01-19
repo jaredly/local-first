@@ -106,11 +106,13 @@ export const clientCrdtImpl: CRDTImpl<Delta, Data> = {
 const nullNetwork: NetworkCreator<any, any, any> = (_, __, ___) => ({
     initial: { status: 'disconnected' },
     createSync: (_, __, ___) => () => {},
+    close() {},
 });
 
 const blobNullNetwork = (_, __, ___) => ({
     initial: { status: 'disconnected' },
     createSync: (_, __, ___) => () => {},
+    close() {},
 });
 
 export const createPersistedBlobClient = (
