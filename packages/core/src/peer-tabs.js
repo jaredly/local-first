@@ -22,7 +22,7 @@ export const peerTabAwareNetworks = function<SyncStatus>(
     let currentSyncStatus = {};
     Object.keys(networks).forEach(key => (currentSyncStatus[key] = networks[key].initial));
 
-    const { sendCrossTabChange, sync } = peerTabAwareSync(
+    const { sendCrossTabChange, sync, close } = peerTabAwareSync(
         name,
         status => {
             // STOPSHIP: this status tracking is *broken*, we need to track which network it was
@@ -67,7 +67,7 @@ export const peerTabAwareNetworks = function<SyncStatus>(
             sendCrossTabChange(peerChange);
         },
         close() {
-            console.log('Not closing peer tabs sync?');
+            close();
         },
     };
 };
@@ -80,7 +80,7 @@ export const peerTabAwareNetwork = function<SyncStatus>(
     const connectionListeners = [];
     let currentSyncStatus = network.initial;
 
-    const { sendCrossTabChange, sync } = peerTabAwareSync(
+    const { sendCrossTabChange, sync, close } = peerTabAwareSync(
         name,
         status => {
             currentSyncStatus = status;
@@ -110,7 +110,9 @@ export const peerTabAwareNetwork = function<SyncStatus>(
             sendCrossTabChange(peerChange);
         },
         close() {
-            console.log('Not closing peer tabs?');
+            // console.log('Not closing peer tabs?');
+            network.close();
+            close();
         },
     };
 };
@@ -178,6 +180,9 @@ export const peerTabAwareSync = function<SyncStatus>(
                 syncTimer = null;
                 sync();
             }, 0);
+        },
+        close() {
+            channel.close();
         },
     };
 };

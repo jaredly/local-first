@@ -147,6 +147,57 @@ const MetaData = ({ client, docClient, docId }) => {
     return null;
 };
 
+const shallowEqual = (a, b) => (a.length !== b.length ? false : !a.some((k, i) => k !== b[i]));
+
+export const memoWithTeardown = function <T>(
+    memo: () => T,
+    teardown: (T) => mixed,
+    changes: Array<any>,
+): T {
+    const result = React.useRef(null);
+    let current = result.current;
+    if (current === null) {
+        console.log('## INTIAIL MEMOO');
+        current = result.current = memo();
+    }
+    const holder = React.useRef(changes);
+    if (!shallowEqual(changes, holder.current)) {
+        if (result.current != null) {
+            teardown(result.current);
+        }
+        console.log('## SUBSEQUENT MEMO');
+        current = result.current = memo();
+    }
+    React.useEffect(() => {
+        return () => {
+            result.current != null ? teardown(result.current) : null;
+        };
+    }, []);
+    return current;
+
+    // const ref = React.useRef(null)
+    // if (ref.current === null) {
+    //     ref.current = memo()
+    // }
+    // React.useEffect(() => {
+    //     const current = ref.current
+    //     return () => teardown(current)
+    // }, changes)
+
+    // let justCreated = React.useRef(false)
+    // justCreated.current = false
+    // const initial = React.useMemo(() => {
+    //     justCreated.current = true
+    //     return {contents: memo()}
+    // }, [])
+    // React.useEffect(() => {
+    //     if (!justCreated.current) {
+    //         teardown(initial.contents)
+    //     }
+    //     initial.contents = memo()
+    // }, changes)
+};
+
 const App = ({ config }: { config: ConnectionConfig }) => {
     const { doc: docId } = useParams();
     const dbName =
@@ -156,39 +207,47 @@ const App = ({ config }: { config: ConnectionConfig }) => {
     // So good.
     // I think this means that I don't need a "default file" anymore?
     // I can just show the index. Yeah I like that.
-    const docClient = React.useMemo(() => {
-        console.log('🔥 Creating the index client');
-        if (config.type === 'memory') {
-            return populateWithInitialData(createInMemoryEphemeralClient(schemas));
-        }
-        const url = `${config.authData.host}/dbs/sync?db=trees-index&token=${config.authData.auth.token}`;
-        return createPersistedDeltaClient(
-            config.prefix + '-index',
-            indexSchemas,
-            `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
-            3,
-            {},
-        );
-    }, [config.type === 'remote' ? config.authData : null]);
+    const docClient = memoWithTeardown(
+        () => {
+            console.log('🔥 Creating the index client');
+            if (config.type === 'memory') {
+                return populateWithInitialData(createInMemoryEphemeralClient(schemas));
+            }
+            const url = `${config.authData.host}/dbs/sync?db=trees-index&token=${config.authData.auth.token}`;
+            return createPersistedDeltaClient(
+                config.prefix + '-index',
+                indexSchemas,
+                `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
+                3,
+                {},
+            );
+        },
+        (client) => client.close(),
+        [config.type === 'remote' ? config.authData : null],
+    );
 
     const url = config.type === 'remote' ? config.authData.host : '';
 
-    const client = React.useMemo(() => {
-        console.log('🔥 Creating the client');
-        if (config.type === 'memory') {
-            return populateWithInitialData(createInMemoryEphemeralClient(schemas));
-        }
-        const url = `${config.authData.host}/dbs/sync?db=trees/${docId || 'home'}&token=${
-            config.authData.auth.token
-        }`;
-        return createPersistedDeltaClient(
-            dbName,
-            schemas,
-            `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
-            3,
-            {},
-        );
-    }, [config.type === 'remote' ? config.authData : null, docId]);
+    const client = memoWithTeardown(
+        () => {
+            console.log('🔥 Creating the client');
+            if (config.type === 'memory') {
+                return populateWithInitialData(createInMemoryEphemeralClient(schemas));
+            }
+            const url = `${config.authData.host}/dbs/sync?db=trees/${docId || 'home'}&token=${
+                config.authData.auth.token
+            }`;
+            return createPersistedDeltaClient(
+                dbName,
+                schemas,
+                `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
+                3,
+                {},
+            );
+        },
+        (client) => client.close(),
+        [config.type === 'remote' ? config.authData : null, docId],
+    );
 
     React.useEffect(() => {
         if (config.type !== 'remote') {

@@ -7,7 +7,7 @@ export const useSyncStatus = function<SyncStatus>(React: *, client: Client<SyncS
     const [status, setStatus] = React.useState(client.getSyncStatus());
     React.useEffect(() => {
         return client.onSyncStatus(status => {
-            console.log('status', status);
+            // console.log('status', status);
             setStatus(status);
         });
     }, []);

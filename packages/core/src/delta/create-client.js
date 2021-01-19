@@ -348,6 +348,7 @@ function createClient<Delta, Data, SyncStatus>(
             await persistence.teardown();
         },
         close: () => {
+            console.log('CLOSING CLIENT');
             network.close();
         },
         async importDump<Data>(dump) {

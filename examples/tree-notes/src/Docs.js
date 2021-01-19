@@ -40,7 +40,7 @@ import { blankItem } from './types';
 import Debug from '../../shared/Debug';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
-import { type ConnectionConfig } from './App';
+import { type ConnectionConfig, memoWithTeardown } from './App';
 
 const Docs = ({ prefix, authData }: { prefix: string, authData: AuthData }) => {
     const { doc: docId } = useParams();
@@ -49,17 +49,21 @@ const Docs = ({ prefix, authData }: { prefix: string, authData: AuthData }) => {
     // So good.
     // I think this means that I don't need a "default file" anymore?
     // I can just show the index. Yeah I like that.
-    const docClient = React.useMemo(() => {
-        console.log('🔥 Creating the index client');
-        const url = `${authData.host}/dbs/sync?db=trees-index&token=${authData.auth.token}`;
-        return createPersistedDeltaClient(
-            prefix + '-index',
-            indexSchemas,
-            `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
-            3,
-            {},
-        );
-    }, [authData]);
+    const docClient = memoWithTeardown(
+        () => {
+            console.log('🔥 Creating the index client');
+            const url = `${authData.host}/dbs/sync?db=trees-index&token=${authData.auth.token}`;
+            return createPersistedDeltaClient(
+                prefix + '-index',
+                indexSchemas,
+                `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
+                3,
+                {},
+            );
+        },
+        (client) => client.close(),
+        [authData],
+    );
 
     React.useEffect(() => {
         return authData.onLogout(() => {
@@ -141,23 +145,32 @@ const Docs = ({ prefix, authData }: { prefix: string, authData: AuthData }) => {
                                 <TableCell>Node count</TableCell>
                             </TableRow>
                         </TableHead>
-                        {Object.keys(files)
-                            .sort((a, b) => files[b].lastOpened - files[a].lastOpened)
-                            .map((fileid) => (
-                                <TableRow key={fileid}>
-                                    <TableCell>
-                                        <Link style={{ color: 'inherit' }} to={`/doc/${fileid}`}>
-                                            <ListItemText
-                                                primary={files[fileid].title.trim() || 'Untitled'}
-                                            />
-                                        </Link>
-                                    </TableCell>
-                                    <TableCell>
-                                        {new Date(files[fileid].lastOpened).toLocaleDateString()}
-                                    </TableCell>
-                                    <TableCell>{files[fileid].nodeCount}</TableCell>
-                                </TableRow>
-                            ))}
+                        <TableBody>
+                            {Object.keys(files)
+                                .sort((a, b) => files[b].lastOpened - files[a].lastOpened)
+                                .map((fileid) => (
+                                    <TableRow key={fileid}>
+                                        <TableCell>
+                                            <Link
+                                                style={{ color: 'inherit' }}
+                                                to={`/doc/${fileid}`}
+                                            >
+                                                <ListItemText
+                                                    primary={
+                                                        files[fileid].title.trim() || 'Untitled'
+                                                    }
+                                                />
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell>
+                                            {new Date(
+                                                files[fileid].lastOpened,
+                                            ).toLocaleDateString()}
+                                        </TableCell>
+                                        <TableCell>{files[fileid].nodeCount}</TableCell>
+                                    </TableRow>
+                                ))}
+                        </TableBody>
                     </Table>
                 </TableContainer>
                 {Object.keys(files).length === 0 ? (

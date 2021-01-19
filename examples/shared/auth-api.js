@@ -13,7 +13,7 @@ export const initialStatus = (storageKey: string): Status => {
             if (!user || !token) {
                 throw new Error(`Unexpected data`);
             }
-            console.log('initial loaded status', user, token, storageKey);
+            // console.log('initial loaded status', user, token, storageKey);
             return { user, token };
         } catch {
             return false;

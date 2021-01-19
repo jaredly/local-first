@@ -23,6 +23,7 @@ const reconnectingSocket = (
         backOff(
             () =>
                 new Promise((res, rej) => {
+                    console.log('OPENING WEBSCOKET', url);
                     const socket = new WebSocket(url);
                     let opened = false;
                     let closed = false;
@@ -80,7 +81,7 @@ const createWebSocketNetwork = <Delta, Data>(
     handleMessages,
 ): Network<SyncStatus> => {
     let outerState = null;
-    let closed = false;
+    // let closed = false;
     return {
         initial: { status: 'pending' },
         createSync: (sendCrossTabChange, updateStatus, softResync) => {
@@ -127,7 +128,9 @@ const createWebSocketNetwork = <Delta, Data>(
             return sync;
         },
         close: () => {
-            closed = true;
+            if (outerState != null) {
+                outerState.closed = true;
+            }
             if (outerState != null && outerState.socket != null) {
                 outerState.socket.close();
                 console.log('CLOSING WEBSOCKET');

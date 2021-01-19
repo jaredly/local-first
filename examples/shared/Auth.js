@@ -88,9 +88,9 @@ export const useAuthStatus = (storageKey: string, host: string): Status => {
             getUser(storageKey, host, status.token).then(
                 // in case user info or token changed
                 (data: ?Status) => {
-                    console.log('got a new status', data);
+                    // console.log('got a new status', data);
                     if (data && (!statusRef.current || data.token !== statusRef.current.token)) {
-                        console.log('updating the status');
+                        // console.log('updating the status');
                         setStatus(data);
                     }
                 },
@@ -125,7 +125,7 @@ const Auth = ({
     allowLoggedOut?: boolean,
 }) => {
     const status = useAuthStatus(storageKey, host);
-    console.log('aith render?', status);
+    // console.log('aith render?', status);
     // load auth
     const listeners = React.useMemo(() => [], []);
     const onLogout = React.useCallback(fn => {
@@ -142,7 +142,7 @@ const Auth = ({
             return;
         }
         logout(storageKey, host, status.token);
-        console.log('calling listeners', listeners);
+        // console.log('calling listeners', listeners);
         listeners.forEach(fn => fn());
     }, [storageKey, host, status]);
 

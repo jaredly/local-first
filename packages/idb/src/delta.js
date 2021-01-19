@@ -107,7 +107,6 @@ const makePersistence = (
             throw err;
         },
     );
-    console.log('um');
 
     return {
         collections,
