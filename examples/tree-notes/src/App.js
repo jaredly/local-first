@@ -262,6 +262,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
     const match = useRouteMatch();
     const local = React.useMemo(() => new LocalClient(dbName, config.type === 'memory'), [
         config.type,
+        dbName,
     ]);
 
     React.useEffect(() => {

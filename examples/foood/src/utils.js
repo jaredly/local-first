@@ -14,5 +14,8 @@ export const imageUrl = (image: string, serverUrl: string) => {
     if (image.startsWith('foood://')) {
         return serverUrl + '/uploads/' + image.slice('foood://'.length);
     }
+    if (image.startsWith('http://') && window.location.protocol === 'https:') {
+        return `https://${image.slice('http://'.length)}`;
+    }
     return image;
 };

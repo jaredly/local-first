@@ -269,6 +269,7 @@ const Items = ({
                     client={client}
                 />
             ) : null}
+            <div style={{ height: 400 }} />
         </React.Fragment>
     );
 };

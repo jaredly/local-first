@@ -55,7 +55,7 @@ export default class LocalClient {
 
     constructor(id: string, inMemory: boolean) {
         this.id = id;
-        this.inMemory = true;
+        this.inMemory = inMemory;
         this.expanded = inMemory ? {} : loadJson(expandKey(id)) || {};
         this._listeners = {};
         this._focusListeners = [];

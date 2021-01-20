@@ -1,3 +1,4 @@
+require('regenerator-runtime');
 const { run } = require('../../../packages/server-bundle/full.js');
 const { addProxy } = require('./');
 const dataPath = '.data';
