@@ -81,7 +81,7 @@ export const useItem = function<T: {}, SyncStatus>(
                     return col.onItemChange(id, setItem);
                 } else {
                     // loading state
-                    console.log('switch! reloading', id, item.id);
+                    // console.log('switch! reloading', id, item.id);
                     setItem(false);
                 }
             }
@@ -91,7 +91,7 @@ export const useItem = function<T: {}, SyncStatus>(
                 },
                 /* istanbul ignore next */
                 err => {
-                    console.error('Unable to load item!', id);
+                    // console.error('Unable to load item!', id);
                     console.error(err);
                 },
             );
@@ -125,13 +125,22 @@ export const useCollection = function<T: {}, SyncStatus>(
     // also something to indicate whether we've ever synced with a server.
     const [data, setData] = React.useState(
         () => {
-            return {};
+            const all = col.getAllCached();
+            // TODO: return null here, so we can know that things just haven't loaded
+            // if (Object.keys(all).length === 0) {
+            //     return null;
+            // }
+            return all;
+            // return {};
         },
         // ({}: { [key: string]: T })
     );
     React.useEffect(() => {
         col.loadAll().then(data => {
+            // TODO: if there aren't any changes, then don't mess with it.
             setData(a => ({ ...a, ...data }));
+            // OH NO, there's a race!!! It's possible to miss changes here
+            // ... hmm....
             col.onChanges(changes => {
                 setData(data => {
                     const n = { ...data };

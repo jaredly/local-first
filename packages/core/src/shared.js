@@ -376,6 +376,12 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         // Getters
         genId: getStamp,
 
+        getAllCached: () => {
+            const values = {};
+            Object.keys(state.cache).forEach(id => (values[id] = crdt.value(state.cache[id])));
+            return values;
+        },
+
         getCached: (id: string) => {
             return state.cache[id] != null ? crdt.value(state.cache[id]) : null;
         },

@@ -67,26 +67,33 @@ describe('useCollection', () => {
         const { result, waitForNextUpdate } = renderHook(() =>
             useCollection(React, client, 'items'),
         );
-        expect(result.current[1]).toEqual({});
-        await waitForNextUpdate();
+        // expect(result.current[1]).toEqual({});
+        // await waitForNextUpdate();
         expect(result.current[1]).toEqual({ root: obj, other: obj2 });
+        await waitForNextUpdate();
 
+        // Updates when an item updates
         act(() => {
             client.getCollection('items').setAttribute('other', ['title'], 'New Title');
         });
+        // await waitForNextUpdate();
         expect(result.current[1].other.title).toBe('New Title');
 
+        // Adds an item
         const obj3 = { id: 'more', title: 'More', count: 100 };
         act(() => {
             client.getCollection('items').save(obj3.id, obj3);
         });
         expect(result.current[1][obj3.id]).toBe(obj3);
 
+        // Removes an item
         act(() => {
             client.getCollection('items').delete(obj3.id);
         });
         expect(result.current[1][obj3.id]).toBe(undefined);
     });
+
+    it('should return null if nothing is cached', async () => {});
 });
 
 describe('useSyncStatus', () => {

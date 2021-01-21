@@ -57,6 +57,7 @@ export type Collection<T> = {
         deltas: Array<OtherDelta>,
     ): Promise<void>,
     getCached: (id: string) => ?T,
+    getAllCached: () => { [key: string]: T },
     clearCached: (id: string) => void,
     genId: () => string,
     load: (id: string) => Promise<?T>,
