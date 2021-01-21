@@ -103,6 +103,12 @@ so that loadAll doesn't hit persistence & create all new objects.
 
 */
 
+// Ok I want it to: give me the realized cache
+// and allow me to add a cache listener
+// so like,
+// if you don't have the cache ready, start it up
+// I think I want a little cache manager or something.
+
 export const useCollection = function<T: {}, SyncStatus>(
     React: *,
     client: Client<SyncStatus>,
@@ -112,7 +118,10 @@ export const useCollection = function<T: {}, SyncStatus>(
     const col = React.useMemo(() => client.getCollection<T>(name), []);
     // TODO something to indicate whether we've loaded from the database yet
     // also something to indicate whether we've ever synced with a server.
-    const [data, setData] = React.useState(({}: { [key: string]: T }));
+    const [data, setData] = React.useState(
+        () => {},
+        // ({}: { [key: string]: T })
+    );
     React.useEffect(() => {
         col.loadAll().then(data => {
             setData(a => ({ ...a, ...data }));
