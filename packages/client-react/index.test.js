@@ -6,6 +6,12 @@ import { renderHook, act } from '@testing-library/react-hooks';
 import { createInMemoryEphemeralClient } from '../client-bundle';
 import { useItem } from './';
 
+/*::
+declare var describe: (string, () => mixed) => void;
+declare var it: (string, () => mixed) => void;
+declare var expect: any;
+*/
+
 const schemas = {
     items: {
         type: 'object',
