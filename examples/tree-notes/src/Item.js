@@ -414,7 +414,7 @@ const Item = ({
                         col.applyRichTextDelta(id, ['body'], deltas);
                     }}
                     onFocus={() => {
-                        local.onFocus(id, path);
+                        local.onFocus(id, path, level);
                     }}
                     onBlur={() => {
                         local.onBlur(id, path);

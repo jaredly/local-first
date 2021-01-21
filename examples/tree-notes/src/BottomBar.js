@@ -39,10 +39,7 @@ import * as navigation from './navigation';
 import { itemActions } from './Item';
 
 type Props = {
-    // id: string,
-    // path: Array<string>,
     client: Client<*>,
-    // col: Collection<ItemT>,
     local: LocalClient,
 };
 
@@ -65,7 +62,15 @@ const BottomBarCurrentFocused = ({ client, local }: Props) => {
         return null;
     }
 
-    return <BottomBar client={client} local={local} id={focused[0]} path={focused[1]} />;
+    return (
+        <BottomBar
+            client={client}
+            local={local}
+            id={focused[0]}
+            path={focused[1]}
+            level={focused[2]}
+        />
+    );
 };
 
 const BottomBar = ({
@@ -73,14 +78,16 @@ const BottomBar = ({
     local,
     id,
     path,
+    level,
 }: {
     id: string,
     path: Array<string>,
     client: Client<*>,
     local: LocalClient,
+    level: number,
 }) => {
     const [col, item] = useItem<ItemT, _>(React, client, 'items', id);
-    const actions = itemActions({ client, local, id, col, path });
+    const actions = itemActions({ client, local, id, col, path, level });
 
     return (
         <div

@@ -20,8 +20,8 @@ import SignUpIn from './SignUpIn';
 export type AuthData = {
     host: string,
     auth: Data,
-    logout: () => mixed,
-    onLogout: (() => Promise<mixed>) => () => void,
+    logout: () => Promise<void>,
+    onLogout: (() => mixed) => () => void,
 };
 
 const useStyles = makeStyles(theme => ({

@@ -50,8 +50,8 @@ export default class LocalClient {
     inMemory: boolean;
     _saveTimeout: ?TimeoutID;
     _listeners: { [key: string]: Array<(boolean) => void> };
-    _focusListeners: Array<(?[string, Array<string>]) => mixed>;
-    _focused: ?[string, Array<string>];
+    _focusListeners: Array<(?[string, Array<string>, number]) => mixed>;
+    _focused: ?[string, Array<string>, number];
 
     constructor(id: string, inMemory: boolean) {
         this.id = id;
@@ -77,8 +77,8 @@ export default class LocalClient {
         };
     }
 
-    onFocus(id: string, path: Array<string>) {
-        this._focused = [id, path];
+    onFocus(id: string, path: Array<string>, level: number) {
+        this._focused = [id, path, level];
         this._focusListeners.forEach((f) => f(this._focused));
     }
 
@@ -89,7 +89,7 @@ export default class LocalClient {
         }
     }
 
-    onFocusChange(fn: (?[string, Array<string>]) => mixed): () => void {
+    onFocusChange(fn: (?[string, Array<string>, number]) => mixed): () => void {
         this._focusListeners.push(fn);
         return () => {
             this._focusListeners = this._focusListeners.filter((f) => f !== fn);
