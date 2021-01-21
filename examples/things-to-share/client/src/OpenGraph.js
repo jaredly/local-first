@@ -160,21 +160,27 @@ const OpenGraph = ({
         site_name === 'Twitter'
             ? [getOg(data, 'og:description'), getOg(data, 'og:title')]
             : [getOg(data, 'og:title'), getOg(data, 'og:description')];
-    title = he.decode(title);
-    description = he.decode(description);
+    title = title ? he.decode(title) : null;
+    description = description ? he.decode(description) : null;
+
+    if (!title && !description) {
+        return null;
+    }
 
     return (
         <Card className={nested ? styles.nestedRoot : styles.root}>
-            <CardContent>
-                <Typography
-                    style={{ whiteSpace: 'pre-wrap', fontWeight: 300 }}
-                    variant="h5"
-                    color="textPrimary"
-                    component="p"
-                >
-                    {title}
-                </Typography>
-            </CardContent>
+            {title ? (
+                <CardContent>
+                    <Typography
+                        style={{ whiteSpace: 'pre-wrap', fontWeight: 300 }}
+                        variant="h5"
+                        color="textPrimary"
+                        component="p"
+                    >
+                        {title}
+                    </Typography>
+                </CardContent>
+            ) : null}
             {type === 'image' ||
             (type === 'article' &&
                 (site_name !== 'Twitter' ||
@@ -207,32 +213,34 @@ const OpenGraph = ({
                 />
             ) : null}
 
-            <CardHeader
-                // avatar={
-                //   <Avatar aria-label="recipe" className={classes.avatar}>
-                //     R
-                //   </Avatar>
-                // }
-                // action={
-                //   <IconButton aria-label="settings">
-                //     {/* <MoreVertIcon /> */}
-                //   </IconButton>
-                // }
-                subheader={
-                    <Link
-                        color="white"
-                        rel="noreferrer"
-                        target="_blank"
-                        href={url}
-                        style={{
-                            textDecoration: 'underline',
-                            color: 'white',
-                        }}
-                    >
-                        {description}
-                    </Link>
-                }
-            />
+            {description ? (
+                <CardHeader
+                    // avatar={
+                    //   <Avatar aria-label="recipe" className={classes.avatar}>
+                    //     R
+                    //   </Avatar>
+                    // }
+                    // action={
+                    //   <IconButton aria-label="settings">
+                    //     {/* <MoreVertIcon /> */}
+                    //   </IconButton>
+                    // }
+                    subheader={
+                        <Link
+                            color="white"
+                            rel="noreferrer"
+                            target="_blank"
+                            href={url}
+                            style={{
+                                textDecoration: 'underline',
+                                color: 'white',
+                            }}
+                        >
+                            {description}
+                        </Link>
+                    }
+                />
+            ) : null}
             {/* $FlowFixMe */}
             {data.embedded ? (
                 <div style={{ padding: 12, paddingTop: 0 }}>

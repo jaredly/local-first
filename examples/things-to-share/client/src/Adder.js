@@ -159,6 +159,9 @@ const Adder = ({
                         host={host}
                         tags={tags}
                         onAdd={(link, data, tags) => {
+                            if (!link.trim()) {
+                                return; // nope folks
+                            }
                             setOpen(false);
                             onAdd(link, data, tags);
                         }}
@@ -201,7 +204,7 @@ const AdderBody = ({
     const mainAction = () => {
         if (data != null) {
             onAdd(link, data, editTags);
-        } else {
+        } else if (link.trim() !== '') {
             setLoading(true);
             getData(host, link).then((ogData) => {
                 setLoading(false);
