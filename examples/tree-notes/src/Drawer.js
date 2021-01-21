@@ -83,7 +83,12 @@ const MyDrawer = ({
                     ) : null}
                     <Divider />
                     {authData ? (
-                        <ListItem button onClick={authData.logout}>
+                        <ListItem
+                            button
+                            onClick={() => {
+                                authData.logout().then(() => window.location.reload());
+                            }}
+                        >
                             <ListItemIcon>
                                 <ExitToApp />
                             </ListItemIcon>

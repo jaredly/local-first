@@ -81,22 +81,23 @@ const Docs = ({
                     <Button
                         onClick={() => {
                             const id = col.genId().replace(/:/g, '_');
+                            const title = 'New Document ' + Object.keys(files).length;
                             col.save(id, {
                                 id,
                                 source: {
                                     url: `${authData.host}/dbs/sync?db=trees/${id}`,
                                     type: 'delta',
                                 },
-                                title: 'New Document',
+                                title,
                                 lastOpened: Date.now(),
                                 lastModified: Date.now(),
                                 nodeCount: 0,
                             });
 
                             const dbName = prefix + '/' + id;
-                            const url = `${authData.host}/dbs/sync?db=trees/${
-                                docId || 'home'
-                            }&token=${authData.auth.token}`;
+                            const url = `${authData.host}/dbs/sync?db=trees/${id || 'home'}&token=${
+                                authData.auth.token
+                            }`;
                             const newClient = createPersistedDeltaClient(
                                 dbName,
                                 schemas,
@@ -104,10 +105,13 @@ const Docs = ({
                                 3,
                                 {},
                             );
-                            newClient.getCollection('items').save('root', {
-                                ...blankItem('New Document'),
-                                id: 'root',
-                            });
+                            newClient
+                                .getCollection('items')
+                                .save('root', {
+                                    ...blankItem(title),
+                                    id: 'root',
+                                })
+                                .then(() => newClient.close());
                             // STOPSHIP:
                             // Create now document, connect to a client,
                             // and create a root node folks.
@@ -146,7 +150,10 @@ const Docs = ({
                                         <TableCell>
                                             {new Date(
                                                 files[fileid].lastOpened,
-                                            ).toLocaleDateString()}
+                                            ).toLocaleDateString()}{' '}
+                                            {new Date(
+                                                files[fileid].lastOpened,
+                                            ).toLocaleTimeString()}
                                         </TableCell>
                                         <TableCell>{files[fileid].nodeCount}</TableCell>
                                     </TableRow>
