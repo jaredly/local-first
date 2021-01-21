@@ -17,6 +17,7 @@ import {
     createPollingPersistedDeltaClient,
     createInMemoryDeltaClient,
     createInMemoryEphemeralClient,
+    type Client,
 } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
 import type { Data } from '../../shared/auth-api';
@@ -42,38 +43,18 @@ import Debug from '../../shared/Debug';
 import { Switch as RouteSwitch } from 'react-router-dom';
 import { type ConnectionConfig, memoWithTeardown } from './App';
 
-const Docs = ({ prefix, authData }: { prefix: string, authData: AuthData }) => {
+const Docs = ({
+    prefix,
+    authData,
+    docClient,
+}: {
+    docClient: Client<*>,
+    prefix: string,
+    authData: AuthData,
+}) => {
     const { doc: docId } = useParams();
 
-    // STOPSHIP: Use the index-collections, and make it so we can be multi-file!!
-    // So good.
-    // I think this means that I don't need a "default file" anymore?
-    // I can just show the index. Yeah I like that.
-    const docClient = memoWithTeardown(
-        () => {
-            console.log('🔥 Creating the index client');
-            const url = `${authData.host}/dbs/sync?db=trees-index&token=${authData.auth.token}`;
-            return createPersistedDeltaClient(
-                prefix + '-index',
-                indexSchemas,
-                `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
-                3,
-                {},
-            );
-        },
-        (client) => client.close(),
-        [authData],
-    );
-
-    React.useEffect(() => {
-        return authData.onLogout(() => {
-            docClient.teardown();
-        });
-    }, [docClient, authData]);
-
     window.docClient = docClient;
-
-    // const match = useRouteMatch();
 
     const [col, files] = useCollection<File, _>(React, docClient, 'files');
 

@@ -13,13 +13,13 @@ import {
     createPollingPersistedDeltaClient,
     createInMemoryDeltaClient,
     createInMemoryEphemeralClient,
+    type Client,
 } from '../../../packages/client-bundle';
 import { useCollection, useItem } from '../../../packages/client-react';
 import type { Data } from '../../shared/auth-api';
 import type { AuthData } from '../../shared/Auth';
 
 import schemas, { type ItemT } from '../collections';
-import { schemas as indexSchemas, type File } from '../index-collections';
 import LocalClient from './LocalClient';
 import AppShell from '../../shared/AppShell';
 import Drawer from './Drawer';
@@ -106,6 +106,7 @@ const populateWithInitialData = (client) => {
     return client;
 };
 
+import { type File } from '../index-collections';
 const MetaData = ({ client, docClient, docId }) => {
     const [docCol, file] = useItem<File, _>(React, docClient, 'files', docId || 'home');
 
@@ -198,33 +199,33 @@ export const memoWithTeardown = function <T>(
     // }, changes)
 };
 
-const App = ({ config }: { config: ConnectionConfig }) => {
+const App = ({ config, docClient }: { config: ConnectionConfig, docClient: Client<*> }) => {
     const { doc: docId } = useParams();
     const dbName =
         config.type === 'remote' ? config.prefix + '/' + (docId || 'home') : 'memory-' + docId;
 
-    // STOPSHIP: Use the index-collections, and make it so we can be multi-file!!
-    // So good.
-    // I think this means that I don't need a "default file" anymore?
-    // I can just show the index. Yeah I like that.
-    const docClient = memoWithTeardown(
-        () => {
-            console.log('🔥 Creating the index client');
-            if (config.type === 'memory') {
-                return populateWithInitialData(createInMemoryEphemeralClient(schemas));
-            }
-            const url = `${config.authData.host}/dbs/sync?db=trees-index&token=${config.authData.auth.token}`;
-            return createPersistedDeltaClient(
-                config.prefix + '-index',
-                indexSchemas,
-                `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
-                3,
-                {},
-            );
-        },
-        (client) => client.close(),
-        [config.type === 'remote' ? config.authData : null],
-    );
+    // // STOPSHIP: Use the index-collections, and make it so we can be multi-file!!
+    // // So good.
+    // // I think this means that I don't need a "default file" anymore?
+    // // I can just show the index. Yeah I like that.
+    // const docClient = memoWithTeardown(
+    //     () => {
+    //         console.log('🔥 Creating the index client');
+    //         if (config.type === 'memory') {
+    //             return populateWithInitialData(createInMemoryEphemeralClient(schemas));
+    //         }
+    //         const url = `${config.authData.host}/dbs/sync?db=trees-index&token=${config.authData.auth.token}`;
+    //         return createPersistedDeltaClient(
+    //             config.prefix + '-index',
+    //             indexSchemas,
+    //             `${config.authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
+    //             3,
+    //             {},
+    //         );
+    //     },
+    //     (client) => client.close(),
+    //     [config.type === 'remote' ? config.authData : null],
+    // );
 
     const url = config.type === 'remote' ? config.authData.host : '';
 
@@ -253,6 +254,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
         if (config.type !== 'remote') {
             return;
         }
+        // Ok this  is actually a weird place to define this....
         return config.authData.onLogout(() => {
             client.teardown();
             docClient.teardown();

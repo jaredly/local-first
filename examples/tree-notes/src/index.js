@@ -35,13 +35,79 @@ const Top = () => {
     }
 };
 
+import { memoWithTeardown } from './App';
+import { schemas as indexSchemas, type File } from '../index-collections';
+import {
+    createPersistedBlobClient,
+    createPersistedDeltaClient,
+    createPollingPersistedDeltaClient,
+    createInMemoryDeltaClient,
+    createInMemoryEphemeralClient,
+    type Client,
+} from '../../../packages/client-bundle';
+
+const InMemory = ({ prefix }) => {
+    const docClient = memoWithTeardown(
+        () => {
+            console.log('🔥 Creating the in-memory index client');
+            return createInMemoryEphemeralClient(indexSchemas);
+        },
+        (client) => client.close(),
+        [],
+    );
+
+    return <App docClient={docClient} config={{ type: 'memory' }} />;
+};
+
+const Authed = ({ authData, prefix, host }) => {
+    const docClient = memoWithTeardown(
+        () => {
+            console.log('🔥 Creating the index client');
+            const url = `${authData.host}/dbs/sync?db=trees-index&token=${authData.auth.token}`;
+            return createPersistedDeltaClient(
+                prefix + '-index',
+                indexSchemas,
+                `${authData.host.startsWith('localhost:') ? 'ws' : 'wss'}://${url}`,
+                3,
+                {},
+            );
+        },
+        (client) => client.close(),
+        [authData],
+    );
+
+    React.useEffect(() => {
+        return authData.onLogout(() => {
+            docClient.teardown();
+        });
+    }, [docClient, authData]);
+
+    return (
+        <Switch>
+            <Route path="/doc/:doc">
+                <App
+                    docClient={docClient}
+                    config={{
+                        type: 'remote',
+                        prefix,
+                        authData,
+                    }}
+                />
+            </Route>
+            <Route path="/">
+                <Docs prefix={prefix} docClient={docClient} authData={authData} />
+            </Route>
+        </Switch>
+    );
+};
+
 const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
     if (host == null || prefix == null) {
         return (
             <ThemeProvider theme={darkTheme}>
                 <CssBaseline />
                 <Router>
-                    <App config={{ type: 'memory' }} />
+                    <InMemory prefix={prefix} />
                 </Router>
             </ThemeProvider>
         );
@@ -55,20 +121,7 @@ const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
                     host={host}
                     render={(authData) =>
                         authData ? (
-                            <Switch>
-                                <Route path="/doc/:doc">
-                                    <App
-                                        config={{
-                                            type: 'remote',
-                                            prefix,
-                                            authData,
-                                        }}
-                                    />
-                                </Route>
-                                <Route path="/">
-                                    <Docs prefix={prefix} authData={authData} />
-                                </Route>
-                            </Switch>
+                            <Authed authData={authData} prefix={prefix} host={host} />
                         ) : (
                             'Logged out'
                         )

@@ -21,7 +21,7 @@ export type AuthData = {
     host: string,
     auth: Data,
     logout: () => mixed,
-    onLogout: (() => void) => () => void,
+    onLogout: (() => Promise<mixed>) => () => void,
 };
 
 const useStyles = makeStyles(theme => ({
@@ -137,13 +137,15 @@ const Auth = ({
             }
         };
     }, []);
-    const doLogout = React.useCallback(() => {
+    const doLogout = React.useCallback(async () => {
         if (status === false || status == null) {
             return;
         }
         logout(storageKey, host, status.token);
-        // console.log('calling listeners', listeners);
-        listeners.forEach(fn => fn());
+        console.log('calling listeners', listeners);
+        for (const fn of listeners) {
+            await fn();
+        }
     }, [storageKey, host, status]);
 
     const authData = React.useMemo(

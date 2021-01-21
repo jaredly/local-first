@@ -72,7 +72,7 @@ const MyDrawer = ({
                     <Divider />
                     {pageItems}
                     <Divider />
-                    <ListItem button component={Link} to="/">
+                    <ListItem button component={Link} to="/" onClick={() => onClose()}>
                         <ListItemText primary="Home" />
                     </ListItem>
                     <Divider />
@@ -92,6 +92,7 @@ const MyDrawer = ({
                     ) : null}
                     <ListItem
                         component={Link}
+                        onClick={() => onClose()}
                         to={params.doc ? `/doc/${params.doc}/debug` : '/debug'}
                         style={{ color: 'inherit' }}
                     >
