@@ -56,6 +56,23 @@ export type IndexConfig = {
 
 const hasStore = (db, storeName) => {};
 
+export const teardownDeltaPersistence = (name: string): Promise<mixed> => {
+    return new Promise((res, rej) => {
+        var DBDeleteRequest = window.indexedDB.deleteDatabase(name);
+
+        DBDeleteRequest.onerror = function(event) {
+            console.log('Error deleting database.');
+            rej(event);
+        };
+
+        DBDeleteRequest.onsuccess = function(event) {
+            console.log('Database deleted successfully');
+
+            res();
+        };
+    });
+};
+
 const makePersistence = (
     name: string,
     collections: Array<string>,

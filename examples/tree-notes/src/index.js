@@ -9,6 +9,10 @@ import 'typeface-roboto';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
 
+import {
+    teardownDeltaPersistence,
+    localStorageClockPersist,
+} from '../../../packages/client-bundle';
 import Auth from '../../shared/Auth';
 import App, { type ConnectionConfig } from './App';
 import Docs from './Docs';
@@ -77,7 +81,14 @@ const Authed = ({ authData, prefix, host }) => {
     );
 
     React.useEffect(() => {
-        return authData.onLogout(() => {
+        return authData.onLogout(async () => {
+            const files = await docClient.getCollection('files').loadAll();
+            for (let docId of Object.keys(files)) {
+                const dbName = prefix + '/' + docId;
+                await teardownDeltaPersistence(dbName);
+                localStorageClockPersist(dbName).teardown();
+            }
+
             docClient.teardown();
         });
     }, [docClient, authData]);

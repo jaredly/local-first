@@ -42,7 +42,7 @@ export {
     default as createDeltaClient,
     createManualClient as createManualDeltaClient,
 } from '../core/src/delta/create-client';
-export { default as makeDeltaPersistence } from '../idb/src/delta';
+export { default as makeDeltaPersistence, teardownDeltaPersistence } from '../idb/src/delta';
 export {
     default as createPollingNetwork,
     doSync as oneTimePollingSync,
