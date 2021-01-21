@@ -138,8 +138,17 @@ const makePersistence = (collections: Array<string>): DeltaPersistence => {
             return map[id];
         },
 
-        query(collection: string, key: string, op: any, value: any) {
-            throw new Error('Not implemented');
+        query<T>(collection: string, key: string, op: any, value: any) {
+            const res = [];
+            const items = db.getAll(collection + ':nodes');
+            items.forEach(item => {
+                if (cmp(item.value.value[key], op, value)) {
+                    res.push({ key: item.value.value[key], value: item });
+                }
+            });
+            return Promise.resolve(res);
+            // throw new Error('Not implemented');
+            // return Promise.resolve([]);
         },
 
         async load<T>(collection: string, id: string): Promise<?T> {
@@ -175,6 +184,24 @@ const makePersistence = (collections: Array<string>): DeltaPersistence => {
             return applyDeltas(db, collection, deltas, serverCursor, apply, false);
         },
     };
+};
+
+const cmp = (a, op, b) => {
+    switch (op) {
+        case '=':
+        case '==':
+            return a == b;
+        case '>=':
+            return a >= b;
+        case '<=':
+            return a <= b;
+        case '<':
+            return a < b;
+        case '>':
+            return a > b;
+        default:
+            return false;
+    }
 };
 
 export default makePersistence;

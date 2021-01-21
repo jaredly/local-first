@@ -115,7 +115,7 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
     schema: Schema,
     undoManager?: UndoManager,
 ): Collection<T> {
-    console.log('setting up a collection', colid);
+    // console.log('setting up a collection', colid);
     const applyDelta = async (id: string, delta: Delta, sendNew?: boolean, skipUndo) => {
         let plain = null;
 
@@ -404,9 +404,11 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                 // STOPSHIP there should be a `crdt.isEmpty` or something
                 // to allow true null values if we want them
                 if (v != null) {
-                    console.log('QUERY', result.key, result.value.value, v);
+                    // console.log('QUERY', result.key, result.value.value, v);
                     // TODO also report the id?
                     res.push({ key: result.key, value: v });
+                } else {
+                    // console.log('NULL', result);
                 }
             });
 
@@ -447,13 +449,12 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
             }
             return this.onChanges(changes => {
                 const matching = changes.filter(change => matchesQuery(change, key, op, value));
-                const data = matching.map(({ key, value }) => ({
-                    key,
-                    value: crdt.value(value),
+                // console.log('CHANGES', changes, matching, key, op, value);
+                const data = matching.map(({ id, value }) => ({
+                    key: id,
+                    value,
                 }));
-                const remove = data
-                    .filter(change => change.value == null)
-                    .map(change => change.key);
+                const remove = data.filter(change => change.value == null).map(change => change.id);
                 fn(
                     data.filter(item => item.value != null),
                     remove,
@@ -489,7 +490,7 @@ const matchesQuery = (change, key, op, value) => {
         // custom index
         throw new Error('watching custom index not supported');
     }
-    return opCmp(change.key, op, value);
+    return opCmp(change.id, op, value);
 };
 
 const opCmp = (one, op: QueryOp, other) => {

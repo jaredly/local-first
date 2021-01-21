@@ -180,15 +180,18 @@ export const createInMemoryDeltaClient = (
     );
 };
 
-export const createInMemoryEphemeralClient = (schemas: {
-    [key: string]: Schema,
-}): Client<SyncStatus> => {
+export const createInMemoryEphemeralClient = (
+    schemas: {
+        [key: string]: Schema,
+    },
+    network: ?NetworkCreator<*, *, *> = null,
+): Client<SyncStatus> => {
     return createDeltaClient(
         'in-memory',
         clientCrdtImpl,
         schemas,
         new PersistentClock(inMemoryClockPersist()),
         makeDeltaInMemoryPersistence(Object.keys(schemas)),
-        nullNetwork,
+        network ? network : nullNetwork,
     );
 };

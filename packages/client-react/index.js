@@ -7,19 +7,19 @@ export const useSyncStatus = function<SyncStatus>(React: *, client: Client<SyncS
     const [status, setStatus] = React.useState(client.getSyncStatus());
     React.useEffect(() => {
         return client.onSyncStatus(status => {
-            // console.log('status', status);
             setStatus(status);
         });
     }, []);
     return status;
 };
 
+// TODO: test that a new list of IDs gets processed correctly
 export const useItems = function<T: {}, SyncStatus>(
     React: *,
     client: Client<SyncStatus>,
     colid: string,
     ids: Array<string>,
-): [Collection<T>, ?{ [key: string]: ?T }] {
+): [Collection<T>, ?{ [key: string]: ?T | false }] {
     const col = React.useMemo(() => client.getCollection<T>(colid), []);
     // TODO something to indicate whether we've loaded from the database yet
     // also something to indicate whether we've ever synced with a server.
@@ -29,6 +29,9 @@ export const useItems = function<T: {}, SyncStatus>(
         ids.forEach(id => {
             items[id] = col.getCached(id);
             if (items[id] != null) [(found = true)];
+            if (items[id] == null) {
+                items[id] = false;
+            }
         });
         return found || ids.length === 0 ? items : null;
     });
@@ -39,6 +42,7 @@ export const useItems = function<T: {}, SyncStatus>(
                     data => {
                         setItems(items => ({ ...items, [id]: data }));
                     },
+                    /* istanbul ignore next */
                     err => {
                         console.error('Unable to load item!', id);
                         console.error(err);
@@ -48,7 +52,7 @@ export const useItems = function<T: {}, SyncStatus>(
             return col.onItemChange(id, data => setItems(items => ({ ...items, [id]: data })));
         });
         return () => listeners.forEach(fn => fn());
-    }, [ids]);
+    }, [ids.join('🎁')]);
     return [col, items];
 };
 
@@ -85,6 +89,7 @@ export const useItem = function<T: {}, SyncStatus>(
                 data => {
                     setItem(data);
                 },
+                /* istanbul ignore next */
                 err => {
                     console.error('Unable to load item!', id);
                     console.error(err);
@@ -119,7 +124,9 @@ export const useCollection = function<T: {}, SyncStatus>(
     // TODO something to indicate whether we've loaded from the database yet
     // also something to indicate whether we've ever synced with a server.
     const [data, setData] = React.useState(
-        () => {},
+        () => {
+            return {};
+        },
         // ({}: { [key: string]: T })
     );
     React.useEffect(() => {
