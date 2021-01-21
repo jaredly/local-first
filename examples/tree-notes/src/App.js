@@ -123,6 +123,27 @@ const MetaData = ({ client, docClient, docId }) => {
         docCol.setAttribute(file.id, ['lastOpened'], Date.now());
     }, [docClient, docId, file !== false && file != null]);
 
+    React.useEffect(() => {
+        if (file === false || file == null) {
+            return;
+        }
+        const col = client.getCollection('items');
+        col.loadAll().then((data) => {
+            col.onChanges((changes) => {
+                changes.forEach(({ value, id }) => {
+                    if (value) {
+                        data[id] = value;
+                    } else {
+                        delete data[id];
+                    }
+                    docCol.setAttribute(file.id, ['nodeCount'], Object.keys(data).length);
+                });
+            });
+            // const count =
+            docCol.setAttribute(file.id, ['nodeCount'], Object.keys(data).length);
+        });
+    }, [client, docId, docClient]);
+
     const [_, rootItem] = useItem<ItemT, _>(React, client, 'items', 'root');
     React.useEffect(() => {
         // console.log('EFFFFECT');
