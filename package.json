@@ -8,7 +8,6 @@
         "@babel/preset-react": "^7.12.10",
         "@babel/register": "^7.9.0",
         "@testing-library/react": "^11.2.3",
-        "@testing-library/react-hooks": "^5.0.0",
         "flow-bin": "^0.118.0",
         "jest": "^24.9.0",
         "parcel": "^1.12.4",

@@ -1,0 +1,30 @@
+{
+    "scripts": {
+        "test": "../../node_modules/.bin/jest"
+    },
+    "devDependencies": {
+        "@babel/plugin-proposal-export-default-from": "^7.12.1",
+        "@testing-library/react-hooks": "^5.0.0",
+        "react": "^16.13.1",
+        "react-test-renderer": "^17.0.1"
+    },
+    "jest": {
+        "transformIgnorePatterns": [
+            "node_modules"
+        ],
+        "transform": {
+            "\\.js$": [
+                "babel-jest",
+                {
+                    "presets": [
+                        "@babel/preset-env",
+                        "@babel/preset-flow"
+                    ],
+                    "ignore": [
+                        "node_modules"
+                    ]
+                }
+            ]
+        }
+    }
+}
