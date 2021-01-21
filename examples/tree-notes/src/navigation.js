@@ -1,9 +1,10 @@
 // @flow
 import { type Collection, type Client } from '../../../packages/client-bundle';
+import LocalClient from './LocalClient';
 import { blankItem } from './types';
 
-export const nextSibling = (col: Collection<*>, path: Array<string>, id: string) => {
-    if (path.length) {
+export const nextSibling = (col: Collection<*>, path: Array<string>, id: string, level: number) => {
+    if (path.length && level > 0) {
         const pid = path[path.length - 1];
         const parent = col.getCached(pid);
         if (!parent) {
@@ -14,7 +15,7 @@ export const nextSibling = (col: Collection<*>, path: Array<string>, id: string)
             return null;
         }
         if (idx === parent.children.length - 1) {
-            return nextSibling(col, path.slice(0, -1), pid);
+            return nextSibling(col, path.slice(0, -1), pid, level - 1);
         }
         return parent.children[idx + 1];
     } else {
@@ -22,19 +23,25 @@ export const nextSibling = (col: Collection<*>, path: Array<string>, id: string)
     }
 };
 
-export const lastChild = (col: Collection<*>, id: string) => {
+export const lastChild = (local: LocalClient, col: Collection<*>, id: string) => {
     const node = col.getCached(id);
     if (!node) {
         return;
     }
-    if (!node.children.length) {
+    if (!node.children.length || !local.isExpanded(id)) {
         return id;
     }
-    return lastChild(col, node.children[node.children.length - 1]);
+    return lastChild(local, col, node.children[node.children.length - 1]);
 };
 
-export const goUp = (col: Collection<*>, path: Array<string>, id: string): ?string => {
-    if (!path.length) {
+export const goUp = (
+    local: LocalClient,
+    col: Collection<*>,
+    path: Array<string>,
+    id: string,
+    level: number,
+): ?string => {
+    if (!path.length || level === 0) {
         return;
     }
     const pid = path[path.length - 1];
@@ -49,19 +56,25 @@ export const goUp = (col: Collection<*>, path: Array<string>, id: string): ?stri
     if (idx === 0) {
         return pid;
     }
-    return lastChild(col, parent.children[idx - 1]);
+    return lastChild(local, col, parent.children[idx - 1]);
 };
 
-export const goDown = (col: Collection<*>, path: Array<string>, id: string) => {
+export const goDown = (
+    local: LocalClient,
+    col: Collection<*>,
+    path: Array<string>,
+    id: string,
+    level: number,
+) => {
     //
     const current = col.getCached(id);
     if (!current) {
         return null;
     }
-    if (current.children.length) {
+    if (current.children.length && (local.isExpanded(id) || level === 0)) {
         return current.children[0];
     }
-    return nextSibling(col, path, id);
+    return nextSibling(col, path, id, level);
 };
 
 export const dedent = (

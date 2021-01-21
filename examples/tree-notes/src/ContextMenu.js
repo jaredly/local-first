@@ -106,6 +106,7 @@ const ItemMenuItems = ({ col, path, onClose, client, setDialog }: Props) => {
                         variant={item.style === style ? 'contained' : 'text'}
                         onClick={() => {
                             col.setAttribute(item.id, ['style'], style);
+                            onClose();
                         }}
                     >
                         {style}
@@ -133,7 +134,7 @@ const ItemMenuItems = ({ col, path, onClose, client, setDialog }: Props) => {
                                 ['numbering'],
                                 item.numbering?.style === style ? null : { style },
                             );
-                            // onClose();
+                            onClose();
                         }}
                     >
                         {style}
@@ -158,6 +159,7 @@ const ItemMenuItems = ({ col, path, onClose, client, setDialog }: Props) => {
             key="changes"
             onClick={() => {
                 setDialog(path[path.length - 1]);
+                onClose();
             }}
         >
             Show Change History

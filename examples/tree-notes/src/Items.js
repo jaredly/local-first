@@ -70,7 +70,7 @@ const useDragging = (onDrop) => {
         evt.stopPropagation();
         const targets = [].concat(...Object.keys(targetMakers).map((id) => targetMakers[id](path)));
         targets.sort((a, b) => a.top - b.top);
-        console.log(targets);
+        // console.log(targets);
         setDragger({
             dragging: {
                 pos: { x: evt.clientX, y: evt.clientY },
@@ -110,7 +110,7 @@ const useDragging = (onDrop) => {
 
 import * as textCrdt from '../../../packages/rich-text-crdt/';
 
-const Breadcrumb = ({ id, client, doc }) => {
+const Breadcrumb = ({ id, client, doc, path }) => {
     const [col, item] = useItem(React, client, 'items', id);
     if (item == null) {
         return null;
@@ -118,7 +118,7 @@ const Breadcrumb = ({ id, client, doc }) => {
     if (item === false) {
         return '[not found]';
     }
-    console.log(item.body);
+    // console.log(item.body);
     // if (!item.body.ops) {
     //     throw new Error('no');
     // }
@@ -127,7 +127,10 @@ const Breadcrumb = ({ id, client, doc }) => {
         text = text.slice(0, 47) + '...';
     }
     return (
-        <Link to={`/doc/${doc}/item/${id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+        <Link
+            to={`/doc/${doc}/item/${path.join(':-:')}`}
+            style={{ color: 'inherit', textDecoration: 'none' }}
+        >
             <div
                 css={{
                     color: 'inherit',
@@ -144,13 +147,21 @@ const Breadcrumb = ({ id, client, doc }) => {
 
 const Breadcrumbs = ({ path, client }) => {
     const match = useRouteMatch();
-    return (
-        <div css={{ display: 'flex', marginBottom: 16 }}>
-            {path.map((id) => (
-                <Breadcrumb doc={match.params.doc} key={id} id={id} client={client} />
-            ))}
-        </div>
-    );
+    let trail = [];
+    let crumbs = [];
+    path.forEach((id) => {
+        trail.push(id);
+        crumbs.push(
+            <Breadcrumb
+                doc={match.params.doc}
+                key={id}
+                path={trail.slice()}
+                id={id}
+                client={client}
+            />,
+        );
+    });
+    return <div css={{ display: 'flex', marginBottom: 16 }}>{crumbs}</div>;
 };
 
 const emptyPath = [];
@@ -177,7 +188,7 @@ const Items = ({
         if (!pid) {
             return;
         }
-        console.log('drop it here', path, dest);
+        // console.log('drop it here', path, dest);
         if (dest.type === 'self') {
             return;
         }
@@ -210,6 +221,8 @@ const Items = ({
         <React.Fragment>
             {path.length > 0 ? <Breadcrumbs path={path} client={client} /> : null}
             <Item
+                key={id}
+                level={0}
                 path={path}
                 id={id}
                 root

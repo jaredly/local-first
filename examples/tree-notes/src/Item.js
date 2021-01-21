@@ -30,17 +30,19 @@ export const itemActions = ({
     client,
     col,
     path,
+    level,
     id,
     local,
 }: {
     client: Client<*>,
     col: Collection<ItemT>,
     path: Array<string>,
+    level: number,
     id: string,
     local: LocalClient,
 }) => ({
     onUp() {
-        const up = navigation.goUp(col, path, id);
+        const up = navigation.goUp(local, col, path, id, level);
         if (up != null) {
             local.setFocus(up);
             return true;
@@ -64,7 +66,7 @@ export const itemActions = ({
     },
     onBackspace(contents: ?string) {
         if (contents == null) {
-            const up = navigation.goUp(col, path, id);
+            const up = navigation.goUp(local, col, path, id, level);
             navigation.deleteNode(col, path, id);
             if (up != null) {
                 local.setFocus(up);
@@ -73,21 +75,21 @@ export const itemActions = ({
         }
     },
     onDown() {
-        const down = navigation.goDown(col, path, id);
+        const down = navigation.goDown(local, col, path, id, level);
         if (down) {
             local.setFocus(down);
             return true;
         }
     },
     onLeft() {
-        const up = navigation.goUp(col, path, id);
+        const up = navigation.goUp(local, col, path, id, level);
         if (up != null) {
             local.setFocus(up);
             return true;
         }
     },
     onRight() {
-        const down = navigation.goDown(col, path, id);
+        const down = navigation.goDown(local, col, path, id, level);
         if (down) {
             local.setFocus(down);
             return true;
@@ -96,10 +98,10 @@ export const itemActions = ({
     onEnter() {
         const current = col.getCached(id);
         if (!current) return;
-        if ((current.children.length && local.isExpanded(id)) || !path.length) {
+        if ((current.children.length && local.isExpanded(id)) || level === 0) {
             const nid = navigation.createChild(client, col, path, id);
             local.setFocus(nid);
-        } else {
+        } else if (level > 0) {
             const nid = navigation.createSibling(client, col, path, id);
             if (nid != null) {
                 local.setFocus(nid);
@@ -119,7 +121,7 @@ export const itemActions = ({
 
 const TARGET_HEIGHT = 5;
 
-const dragHandler = ({ node, childPath, bodyRef, col, id, local }) => (currentPath) => {
+const dragHandler = ({ level, node, childPath, bodyRef, col, id, local }) => (currentPath) => {
     // TODO need to be able to escape a parent. So if you are a descendent of a thing
     // that should not prevent you from going above or below the thing.
     // it's only that you shouldn't be able to go inside yourself.
@@ -226,6 +228,7 @@ type Props = {
     onMenuShow: ({ path: Array<string>, handle: HTMLElement }) => mixed,
     numbering?: ?{ style: string, startWith?: number },
     root?: boolean,
+    level: number,
 };
 
 const Item = ({
@@ -234,6 +237,7 @@ const Item = ({
     root,
     client,
     local,
+    level,
     registerDragTargets,
     onDragStart,
     onMenuShow,
@@ -276,6 +280,7 @@ const Item = ({
                         id,
                         dragHandler({
                             node,
+                            level,
                             childPath,
                             bodyRef,
                             col,
@@ -402,7 +407,7 @@ const Item = ({
                         }
                     }}
                     value={item.body}
-                    actions={itemActions({ client, col, path, id, local })}
+                    actions={itemActions({ client, col, path, id, local, level })}
                     getStamp={client.getStamp}
                     onChange={(deltas) => {
                         // console.log('Ok', delta);
@@ -430,6 +435,7 @@ const Item = ({
                           .map((id) => (
                               <MemoItem
                                   path={childPath}
+                                  level={level + 1}
                                   id={id}
                                   key={id}
                                   client={client}
