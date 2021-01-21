@@ -379,6 +379,9 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
         getCached: (id: string) => {
             return state.cache[id] != null ? crdt.value(state.cache[id]) : null;
         },
+        clearCached: (id: string) => {
+            delete state.cache[id];
+        },
 
         async load(id: string) {
             if (!id) {

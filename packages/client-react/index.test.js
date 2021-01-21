@@ -2,8 +2,7 @@
 
 import 'regenerator-runtime';
 import * as React from 'react';
-// import { render, act } from '@testing-library/react';
-import { create, act } from 'react-test-renderer';
+import { renderHook, act } from '@testing-library/react-hooks';
 import { createInMemoryEphemeralClient } from '../client-bundle';
 import { useItem } from './';
 
@@ -18,51 +17,116 @@ const schemas = {
     },
 };
 
-function setup(hook) {
-    const returnVal = { current: null };
-
-    const TestComponent = () => {
-        returnVal.current = hook();
-        return null;
-    };
-
-    let root;
-    act(() => {
-        root = create(React.createElement(TestComponent));
-    });
-    // expect(root.toJSON()).toBe(false);
-
-    // function TestComponent() {
-    //     returnVal.current = hook();
-    //     return null;
-    // }
-    // render(React.createElement(TestComponent));
-    // return returnVal.current;
-    return returnVal;
-}
-
-describe('useThing should track changes', () => {
-    it('should work you know', () => {
+describe('useItem', () => {
+    it('should report false then null for missing value', async () => {
         const client = createInMemoryEphemeralClient(schemas);
-
-        // const TestComponent = () => {
-        //     const state = React.useState(false);
-        //     return React.createElement('div');
-        // };
-
-        // let root;
-        // act(() => {
-        //     root = create(React.createElement(TestComponent));
-        // });
-        // expect(root.toJSON()).toBe(false);
-
-        const result = setup(() => useItem(React, client, 'items', 'root'));
-        // const { result } = renderHook(() => React.useState(false));
-        // const result = setup(() => React.useState(false));
+        const { result, waitForNextUpdate } = renderHook(() =>
+            useItem(React, client, 'items', 'root'),
+        );
         expect(result.current[1]).toBe(false);
+        await waitForNextUpdate();
+        expect(result.current[1]).toBe(null);
+    });
+
+    it('should report false then populated for uncached value', async () => {
+        const client = createInMemoryEphemeralClient(schemas);
+        const obj = { id: 'root', title: 'Title', count: 0 };
+        client.getCollection('items').save('root', obj);
+        client.getCollection('items').clearCached('root');
+        const { result, waitForNextUpdate } = renderHook(() =>
+            useItem(React, client, 'items', 'root'),
+        );
+        expect(result.current[1]).toBe(false);
+        await waitForNextUpdate();
+        expect(result.current[1]).toBe(obj);
+    });
+
+    it('should report populated for cached value', async () => {
+        const client = createInMemoryEphemeralClient(schemas);
+        const obj = { id: 'root', title: 'Title', count: 0 };
+        client.getCollection('items').save('root', obj);
+        const { result, waitForNextUpdate } = renderHook(() =>
+            useItem(React, client, 'items', 'root'),
+        );
+        expect(result.current[1]).toBe(obj);
+    });
+
+    it('should update when the item is created', async () => {
+        const client = createInMemoryEphemeralClient(schemas);
+        const { result, waitForNextUpdate } = renderHook(() =>
+            useItem(React, client, 'items', 'root'),
+        );
+        expect(result.current[1]).toBe(false);
+        await waitForNextUpdate();
+        expect(result.current[1]).toBe(null);
+        const obj = { id: 'root', title: 'Title', count: 0 };
         act(() => {
-            setTimeout(() => {}, 100);
+            client.getCollection('items').save('root', obj);
         });
-        expect(result).toBe(null);
+        expect(result.current[1]).toBe(obj);
+    });
+
+    it('should update when the item is updated', async () => {
+        const client = createInMemoryEphemeralClient(schemas);
+        const obj = { id: 'root', title: 'Title', count: 0 };
+        client.getCollection('items').save('root', obj);
+        const { result, waitForNextUpdate } = renderHook(() =>
+            useItem(React, client, 'items', 'root'),
+        );
+        expect(result.current[1]).toBe(obj);
+        act(() => {
+            client.getCollection('items').setAttribute('root', ['title'], 'New Title');
+        });
+        expect(result.current[1].title).toBe('New Title');
+        expect(result.current[1]).not.toBe(obj);
+    });
+
+    it('should update when the ID changes', async () => {
+        const client = createInMemoryEphemeralClient(schemas);
+        const obj = { id: 'root', title: 'Title', count: 0 };
+        const obj2 = { id: 'other', title: 'Other', count: 5 };
+        client.getCollection('items').save('root', obj);
+        client.getCollection('items').save('other', obj2);
+
+        const { result, waitForNextUpdate, rerender } = renderHook(
+            ({ id }) => useItem(React, client, 'items', id),
+            { initialProps: { id: 'root' } },
+        );
+        expect(result.current[1]).toBe(obj);
+
+        rerender({ id: 'other' });
+
+        expect(result.current[1]).toBe(obj2);
+
+        act(() => {
+            client.getCollection('items').setAttribute('other', ['title'], 'New Title');
+        });
+        expect(result.current[1].title).toBe('New Title');
+    });
+
+    it('should clear when the ID changes to uncached item', async () => {
+        const client = createInMemoryEphemeralClient(schemas);
+        const obj = { id: 'root', title: 'Title', count: 0 };
+        const obj2 = { id: 'other', title: 'Other', count: 5 };
+        client.getCollection('items').save('root', obj);
+        client.getCollection('items').save('other', obj2);
+        client.getCollection('items').clearCached('other');
+
+        const { result, waitForNextUpdate, rerender } = renderHook(
+            ({ id }) => useItem(React, client, 'items', id),
+            { initialProps: { id: 'root' } },
+        );
+        expect(result.current[1]).toBe(obj);
+
+        rerender({ id: 'other' });
+
+        expect(result.current[1]).toBe(false);
+        await waitForNextUpdate();
+        expect(result.current[1]).toBe(obj2);
+
+        act(() => {
+            client.getCollection('items').setAttribute('other', ['title'], 'New Title');
+        });
+        expect(result.current[1].title).toBe('New Title');
     });
 });
