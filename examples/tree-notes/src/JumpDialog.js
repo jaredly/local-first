@@ -5,6 +5,7 @@ import { useHistory, Route, Link, useRouteMatch, useParams } from 'react-router-
 import { toString as richTextToString } from '../../../packages/rich-text-crdt';
 
 import Dialog from '@material-ui/core/Dialog';
+import TextField from '@material-ui/core/TextField';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import Button from '@material-ui/core/Button';
 import ButtonGroup from '@material-ui/core/ButtonGroup';
@@ -40,183 +41,100 @@ import { type DropTarget } from './dragging';
 import { setupDragListeners, type DragInit, type DragState } from './dragging';
 import type { ItemT } from '../collections';
 
-const useChanges = (url, id, count) => {
-    const params = useParams();
-    const [data, setData] = React.useState(null);
-    const authData = React.useContext(AuthContext);
-    React.useEffect(() => {
-        if (!authData || !authData.auth) {
-            return;
-        }
-        fetch(
-            `${
-                url.startsWith('localhost:') ? 'http' : 'https'
-            }://${url}/changes?count=${count}&db=trees/${
-                params.doc
-            }&collection=items&id=${id}&token=${authData.auth.token}`,
-        )
-            .then((res) => res.json())
-            .then((data) => {
-                console.log('got it');
-                console.log(data);
-                setData(data);
-            });
-    }, [authData ? authData.auth : null]);
-    return data;
-};
-
-const SingleItem = ({ id, client }) => {
-    const [col, item] = useItem<ItemT, _>(React, client, 'items', id);
-    if (!item) {
-        return null;
-    }
-    return (
-        <div style={{ marginBottom: 8 }}>
-            <div style={{ padding: '4px 8px' }}>{richTextToString(item.body)}</div>
-        </div>
-    );
-};
-
-const ItemPreview = ({ item, client, onMenu }) => {
-    const [col, items] = useItems<ItemT, _>(React, client, 'items', item.children);
-    if (items == null) {
-        return <div />;
-    }
-    return (
-        <div style={{ marginBottom: 8, position: 'relative' }}>
-            <div style={{ padding: '4px 8px' }}>{richTextToString(item.body)}</div>
-            <div style={{ marginLeft: 20 }}>
-                {item.children.map((id) => (
-                    <div key={id} style={{ padding: '4px 8px' }}>
-                        {items[id] ? richTextToString(items[id].body) : 'Not found'}
-                    </div>
-                ))}
-            </div>
-            <IconButton
-                style={{ position: 'absolute', top: 0, right: 0 }}
-                color="inherit"
-                onClick={(evt) => {
-                    onMenu(evt.currentTarget);
-                }}
-            >
-                <MoreHoriz />
-            </IconButton>
-        </div>
-    );
-};
-
-const findResets = (node, changes) => {
-    const summary = {
-        initial: node,
-        resets: [],
-        final: null,
-        addedChildren: {},
-    };
-    let current = node;
-    changes.forEach((change, i) => {
-        if (
-            change.type === 'insert' &&
-            change.path.length === 2 &&
-            change.path[0].key === 'children'
-        ) {
-            summary.addedChildren[change.value.value] = true;
-        }
-        if (change.type === 'set' && change.path.length === 0 && current != null) {
-            summary.resets.push(current);
-        }
-        current = clientCrdtImpl.deltas.apply(current, change);
-    });
-    summary.final = current;
-    return summary;
-};
-
-const Changes = ({ id, node, changes, by, client, col }) => {
-    const summary = findResets(node, changes);
-
-    const latest = summary.final ? clientCrdtImpl.value(summary.final) : null;
-    const removedChildren = Object.keys(summary.addedChildren).filter((k) =>
-        latest ? !latest.children.includes(k) : true,
-    );
-    const [menu, setMenu] = React.useState(null);
-
-    return (
-        <div style={{ padding: 8 }}>
-            {summary.resets.length > 0 ? (
-                <React.Fragment>
-                    <h3>Node Resets</h3>
-                    {summary.resets.map((node, i) => (
-                        <ItemPreview
-                            onMenu={(anchor) => setMenu({ node, anchor })}
-                            client={client}
-                            item={clientCrdtImpl.value(node)}
-                            key={i}
-                        />
-                    ))}
-                </React.Fragment>
-            ) : null}
-            {removedChildren.length > 0 ? (
-                <React.Fragment>
-                    <h3>Removed Children</h3>
-                    {removedChildren.map((key) => (
-                        <SingleItem client={client} id={key} key={key} />
-                    ))}
-                </React.Fragment>
-            ) : null}
-            <Menu
-                anchorEl={menu ? menu.anchor : null}
-                open={Boolean(menu)}
-                onClose={() => setMenu(null)}
-            >
-                <MenuItem
-                    onClick={() => {
-                        if (menu) {
-                            // col.setAttribute(id, ['about', 'image'], anchor.src);
-                            // setAnchor(null);
-                            // Ok not actually sure what I want to do there.
-                        }
-                    }}
-                >
-                    Restore body text
-                </MenuItem>
-                <MenuItem
-                    onClick={() => {
-                        if (menu) {
-                            addAllChildren(col, id, clientCrdtImpl.value(menu.node).children);
-                            // let last = null
-                            // col.setAttribute(id, ['about', 'image'], anchor.src);
-                            // setAnchor(null);
-                        }
-                    }}
-                >
-                    Restore all children
-                </MenuItem>
-            </Menu>
-        </div>
-    );
-};
-
-const addAllChildren = async (col, id, children) => {
-    const current = await col.load(id);
-    if (!current) {
+const reach = (items, result, node, path) => {
+    if (result[node.id]) {
         return;
     }
-    let last = current.children[current.children.length - 1];
-    for (const key of children) {
-        if (last != null) {
-            await col.insertIdRelative(id, ['children'], key, last, false);
-        } else {
-            await col.insertId(id, ['children'], 0, key);
-            last = key;
+    const childPath = path.concat([node.id]);
+    result[node.id] = { id: node.id, node, path: childPath };
+    node.children.forEach((id) => {
+        if (items[id]) {
+            reach(items, result, items[id], childPath);
         }
-    }
+    });
 };
 
-const JumpDialog = ({ onClose, col, url, client }: *) => {
-    // const data = useChanges(url, id, 5000);
+const JumpDialog = ({ onClose, url, client }: *) => {
+    const history = useHistory();
+    const params = useParams();
+    const [col, items] = useCollection(React, client, 'items');
+    const [searchText, setText] = React.useState('');
+    const [selected, setSelected] = React.useState(0);
+    const needle = searchText.toLowerCase();
+    const reachable: Array<{ node: ItemT, id: string, path: Array<string> }> = React.useMemo(() => {
+        const root = items.root;
+        if (!root) {
+            return [];
+        }
+        const result = {};
+        reach(items, result, root, []);
+        return Object.keys(result).map((id) => result[id]);
+    }, [items]);
+    let toShow = reachable.map(({ node, id, path }) => ({
+        id: node.id,
+        body: richTextToString(node.body),
+        path,
+    }));
+    if (needle.length >= 2) {
+        toShow = toShow
+            .filter(({ body }) =>
+                body.trim() !== ''
+                    ? needle.length >= 2
+                        ? body.toLowerCase().includes(needle)
+                        : true
+                    : false,
+            )
+            .sort((a, b) => a.body.length - b.body.length);
+    }
+
     return (
         <Dialog open={true} onClose={onClose}>
-            <DialogTitle>Jump to...</DialogTitle>
-            {/* {data ? (
+            <div
+                css={{
+                    width: 500,
+                    maxWidth: '80vw',
+                    height: 600,
+                    maxHeight: '90vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: 16,
+                }}
+            >
+                <DialogTitle>Jump to...</DialogTitle>
+                <TextField
+                    fullWidth
+                    variant="outlined"
+                    label="Search"
+                    autoFocus
+                    placeholder="Search text"
+                    value={searchText}
+                    onChange={(evt) => setText(evt.target.value)}
+                    onKeyDown={(evt) => {
+                        if (evt.key === 'Enter') {
+                            const sel = toShow[selected];
+                            if (sel) {
+                                history.push(`/doc/${params.doc}/item/${sel.path.join(':-:')}`);
+                                onClose();
+                            }
+                        }
+                    }}
+                />
+                <div style={{ flex: 1, overflow: 'auto' }}>
+                    {toShow.slice(0, 100).map(({ id, body, path }, i) => (
+                        <div
+                            key={id}
+                            style={i === selected ? { backgroundColor: '#444' } : null}
+                            css={{ padding: '4px 8px' }}
+                            onClick={() => {
+                                history.push(`/doc/${params.doc}/item/${path.join(':-:')}`);
+                                onClose();
+                            }}
+                        >
+                            {body}
+                        </div>
+                    ))}
+                </div>
+                {/* {data ? (
                 <Changes
                     id={id}
                     col={col}
@@ -228,6 +146,7 @@ const JumpDialog = ({ onClose, col, url, client }: *) => {
             ) : (
                 'loading...'
             )} */}
+            </div>
         </Dialog>
     );
 };
