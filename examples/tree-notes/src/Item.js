@@ -3,7 +3,7 @@
 import { jsx } from '@emotion/core';
 import * as React from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { useCollection, useItem } from '../../../packages/client-react';
+import { useCollection, useItem, useItems } from '../../../packages/client-react';
 import { type Client, type Collection } from '../../../packages/client-bundle';
 import QuillEditor from './QuillEditor';
 import type { ItemT } from '../collections';
@@ -56,6 +56,12 @@ export const itemActions = ({
         if (up != null) {
             local.setFocus(up);
             return true;
+        }
+    },
+    onParent() {
+        const left = path[path.length - 1];
+        if (left != null) {
+            local.setFocus(left);
         }
     },
     onIndent() {
@@ -241,6 +247,19 @@ type Props = {
     level: number,
 };
 
+const useChildCount = (client, numbering, children) => {
+    const shouldCheck = numbering?.style === 'checkbox';
+    const [_, items] = useItems(React, client, 'items', shouldCheck && children ? children : []);
+    if (shouldCheck && children && items) {
+        const count = children.filter((id) => (items[id] ? items[id].completed == null : true))
+            .length;
+        // console.log(children, items, count);
+        return count;
+    }
+    // return children ? children.length : 0;
+    return null;
+};
+
 const Item = ({
     path,
     id,
@@ -266,6 +285,12 @@ const Item = ({
             history.push(`/doc/${params.doc}/item/${path.join(':-:')}`);
         },
         [params.doc, history],
+    );
+
+    const childCount = useChildCount(
+        client,
+        item ? item.numbering : null,
+        item ? item.children : null,
     );
 
     const blingColor =
@@ -371,7 +396,15 @@ const Item = ({
                     }}
                 >
                     {collapsed ? (
-                        item.children.length
+                        <div
+                            style={{
+                                marginTop: '.4em',
+                            }}
+                        >
+                            {childCount != null
+                                ? `${childCount}/${item.children.length}`
+                                : item.children.length}
+                        </div>
                     ) : (
                         <div
                             css={{
@@ -397,6 +430,9 @@ const Item = ({
                     // />
                     <input
                         type="checkbox"
+                        css={{
+                            marginTop: '0.6em',
+                        }}
                         checked={item.completed != null}
                         onChange={() => {
                             col.setAttribute(

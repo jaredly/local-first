@@ -29,8 +29,8 @@ const atBottom = (quill) => {
 };
 
 const map = (props: *, registry: *): * => ({
-    // theme: false,
-    theme: 'bubble',
+    theme: false,
+    // theme: 'bubble',
     // registry: registry,
     placeholder: ' ',
     modules: {
@@ -52,6 +52,32 @@ const map = (props: *, registry: *): * => ({
         // return TRUE if the handler *fell through*. return FALSE if the handler succeeded, and bubbling should stop.
         keyboard: {
             bindings: {
+                'indent-mac': {
+                    key: '˘',
+                    altKey: true,
+                    shiftKey: true,
+                    handler: () => {
+                        props.onIndent();
+                        return false;
+                    },
+                },
+                'dedent-mac': {
+                    key: '¯',
+                    altKey: true,
+                    shiftKey: true,
+                    handler: () => {
+                        props.onDedent();
+                        return false;
+                    },
+                },
+                'left-mac': {
+                    key: '˙',
+                    altKey: true,
+                    handler: () => {
+                        props.onParent();
+                        return false;
+                    },
+                },
                 zoom: {
                     key: 'Enter',
                     collapsed: true,

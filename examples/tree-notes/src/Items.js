@@ -137,6 +137,7 @@ const Breadcrumb = ({ id, client, doc, path }) => {
                     color: 'inherit',
                     padding: '4px 8px',
                     borderRadius: 8,
+                    marginRight: '.5em',
                     backgroundColor: 'rgba(0,0,0,0.2)',
                 }}
             >
@@ -233,7 +234,7 @@ const Items = ({
     const [menu, setMenu] = React.useState(null);
 
     return (
-        <React.Fragment>
+        <div style={{ fontSize: '16px' }}>
             {path.length > 0 ? <Breadcrumbs path={path} client={client} /> : null}
             <Item
                 key={id}
@@ -301,7 +302,7 @@ const Items = ({
                 <JumpDialog onClose={() => setDialog(null)} col={col} url={url} client={client} />
             ) : null}
             <div style={{ height: 400 }} />
-        </React.Fragment>
+        </div>
     );
 };
 
