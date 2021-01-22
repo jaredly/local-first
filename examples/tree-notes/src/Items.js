@@ -38,6 +38,7 @@ import type { ItemT } from '../collections';
 import ItemMenuItems from './ContextMenu';
 import BottomBar from './BottomBar';
 import ChangesDialog from './ChangesDialog';
+import JumpDialog from './JumpDialog';
 
 type Dest =
     | {
@@ -182,6 +183,20 @@ const Items = ({
     const col = React.useMemo(() => client.getCollection('items'), [client]);
     const [dialog, setDialog] = React.useState(null);
 
+    React.useEffect(() => {
+        if (!document) return;
+        const listener = (evt: KeyboardEvent) => {
+            if ((evt.metaKey || evt.ctrlKey) && evt.key === 'p') {
+                evt.preventDefault();
+                evt.stopPropagation();
+                setDialog({ type: 'jump' });
+                // console.log('ok');
+            }
+        };
+        document.addEventListener('keydown', listener);
+        return () => document.removeEventListener('keydown', listener);
+    }, []);
+
     const onDrop = React.useCallback(({ path }, dest) => {
         const id = path[path.length - 1];
         const pid = path[path.length - 2];
@@ -273,7 +288,7 @@ const Items = ({
                 </Menu>
             ) : null}
             <BottomBar client={client} id={id} path={path} col={col} local={local} />
-            {dialog != null ? (
+            {dialog != null && typeof dialog === 'string' ? (
                 <ChangesDialog
                     col={col}
                     onClose={() => setDialog(null)}
@@ -281,6 +296,9 @@ const Items = ({
                     url={url}
                     client={client}
                 />
+            ) : null}
+            {dialog != null && dialog.type === 'jump' ? (
+                <JumpDialog onClose={() => setDialog(null)} col={col} url={url} client={client} />
             ) : null}
             <div style={{ height: 400 }} />
         </React.Fragment>

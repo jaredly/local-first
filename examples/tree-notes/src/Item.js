@@ -2,6 +2,7 @@
 /** @jsx jsx */
 import { jsx } from '@emotion/core';
 import * as React from 'react';
+import { useHistory, useParams } from 'react-router-dom';
 import { useCollection, useItem } from '../../../packages/client-react';
 import { type Client, type Collection } from '../../../packages/client-bundle';
 import QuillEditor from './QuillEditor';
@@ -33,6 +34,7 @@ export const itemActions = ({
     level,
     id,
     local,
+    onZoom,
 }: {
     client: Client<*>,
     col: Collection<ItemT>,
@@ -40,7 +42,15 @@ export const itemActions = ({
     level: number,
     id: string,
     local: LocalClient,
+    onZoom: (Array<string>, string) => mixed,
 }) => ({
+    onAltEnter() {
+        onZoom(path, id);
+        local.setFocus(id);
+    },
+    onToggleCollapse() {
+        local.setExpanded(id, !local.isExpanded(id));
+    },
     onUp() {
         const up = navigation.goUp(local, col, path, id, level);
         if (up != null) {
@@ -247,6 +257,16 @@ const Item = ({
     const childPath = React.useMemo(() => path.concat([id]), [path, id]);
     const bodyRef = React.useRef(null);
     const isExpanded = useExpanded(local, id);
+    const history = useHistory();
+    const params = useParams();
+
+    const onZoom = React.useCallback(
+        (path, id) => {
+            path = path.concat([id]);
+            history.push(`/doc/${params.doc}/item/${path.join(':-:')}`);
+        },
+        [params.doc, history],
+    );
 
     const blingColor =
         path.length === 0 ? 'transparent' : `rgba(255,255,255,${1 - (path.length % 5) / 5})`;
@@ -407,7 +427,7 @@ const Item = ({
                         }
                     }}
                     value={item.body}
-                    actions={itemActions({ client, col, path, id, local, level })}
+                    actions={itemActions({ client, col, path, id, local, level, onZoom })}
                     getStamp={client.getStamp}
                     onChange={(deltas) => {
                         // console.log('Ok', delta);

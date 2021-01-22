@@ -52,6 +52,12 @@ const map = (props: *, registry: *): * => ({
         // return TRUE if the handler *fell through*. return FALSE if the handler succeeded, and bubbling should stop.
         keyboard: {
             bindings: {
+                zoom: {
+                    key: 'Enter',
+                    collapsed: true,
+                    altKey: true,
+                    handler: () => props.onAltEnter(),
+                },
                 collapse: {
                     key: 'z',
                     collapsed: true,
@@ -90,6 +96,15 @@ const map = (props: *, registry: *): * => ({
                     collapsed: true,
                     handler() {
                         return !(atRight(this.quill) && props.onRight() != null);
+                    },
+                },
+                'z-collapse-mac': {
+                    key: `Ω`,
+                    collapsed: true,
+                    altKey: true,
+                    handler: (evt) => {
+                        props.onToggleCollapse();
+                        return false;
                     },
                 },
                 'j-down-mac': {
