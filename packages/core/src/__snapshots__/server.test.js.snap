@@ -308,6 +308,79 @@ Array [
 ]
 `;
 
+exports[`client-server interaction Server should refuse a delta that fails the schema check 1`] = `
+Array [
+  Object {
+    "a": Object {
+      "clientMessages": Array [
+        Object {
+          "collection": "people",
+          "deltas": Array [],
+          "serverCursor": undefined,
+          "type": "sync",
+        },
+      ],
+      "clientResponses": Array [
+        Object {
+          "collection": "people",
+          "serverCursor": -1,
+          "type": "ack",
+        },
+      ],
+      "serverMessages": Array [
+        Object {
+          "collection": "people",
+          "deltas": Array [],
+          "serverCursor": -1,
+          "type": "sync",
+        },
+      ],
+      "serverResponses": Array [],
+    },
+    "b": Object {
+      "clientMessages": Array [
+        Object {
+          "collection": "people",
+          "deltas": Array [],
+          "serverCursor": undefined,
+          "type": "sync",
+        },
+      ],
+      "clientResponses": Array [
+        Object {
+          "collection": "people",
+          "serverCursor": -1,
+          "type": "ack",
+        },
+      ],
+      "serverMessages": Array [
+        Object {
+          "collection": "people",
+          "deltas": Array [],
+          "serverCursor": -1,
+          "type": "sync",
+        },
+      ],
+      "serverResponses": Array [],
+    },
+  },
+  Object {
+    "a": Object {
+      "clientMessages": Array [],
+      "clientResponses": Array [],
+      "serverMessages": Array [],
+      "serverResponses": Array [],
+    },
+    "b": Object {
+      "clientMessages": Array [],
+      "clientResponses": Array [],
+      "serverMessages": Array [],
+      "serverResponses": Array [],
+    },
+  },
+]
+`;
+
 exports[`client-server interaction Two clients make conflicting changes, later change wins 1`] = `
 Array [
   Object {

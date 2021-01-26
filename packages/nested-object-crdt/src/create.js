@@ -60,7 +60,7 @@ const metaForSchema = function<T, Other>(
         return { type: 'plain', hlcStamp };
     }
     if (schema == null) {
-        throw new Error(`Null schema. Value: ${JSON.stringify(value) ?? 'undefined'}`);
+        throw new Error(`Null schema. Value: ${JSON.stringify(value) || 'undefined'}`);
     }
     switch (schema.type) {
         case 'array':

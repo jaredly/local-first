@@ -4,7 +4,7 @@ import type { ClientMessage, ServerMessage } from './server';
 
 import * as ncrdt from '../../nested-object-crdt/src/new';
 import * as rich from '../../rich-text-crdt/index';
-import makePersistence from '../../idb/src/delta-mem';
+import makePersistence from './delta/delta-mem';
 import * as client from './delta/create-client';
 import * as server from './server';
 import setupSqliteServerPersistence from '../../server-bundle/sqlite-persistence';
@@ -479,11 +479,35 @@ describe('client-server interaction', () => {
         });
     });
 
-    it('Client that gets an unexpected update should request a full dump', async () => {
+    it.skip('Client that gets an unexpected update should request a full dump', async () => {
         fail;
     });
 
-    it('If client accidentally loses all data, it should request a full dump on startup', async () => {
+    it.skip('If client accidentally loses all data, it should request a full dump on startup', async () => {
         fail;
+    });
+
+    it('Server should refuse a delta that fails the schema check', async () => {
+        const server = createServer();
+
+        const result = server.receive('a', [
+            {
+                type: 'sync',
+                collection: 'people',
+                deltas: [
+                    {
+                        node: 'yes',
+                        delta: ncrdt.deltas.replace(ncrdt.createDeep({ name: 'hi', age: 0 }, '1')),
+                    },
+                    {
+                        node: 'no',
+                        delta: ncrdt.deltas.replace(ncrdt.createDeep({ name: 'oh no' }, '2')),
+                    },
+                ],
+            },
+        ]);
+
+        expect(result).toBeTruthy();
+        expect(result.type).toEqual('error');
     });
 });

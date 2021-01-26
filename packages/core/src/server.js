@@ -108,7 +108,7 @@ export const getMessages = function<Delta, Data>(
     sessionId: string,
 ): Array<ServerMessage<Delta, Data>> {
     if (!state.clients[sessionId]) {
-        // console.log(`No clients registered for ${sessionId}`);
+        /* istanbul ignore next */
         return [];
     }
     const colids = Object.keys(state.clients[sessionId].collections);
@@ -137,6 +137,7 @@ export const getMessages = function<Delta, Data>(
             // console.log('getting all since', lastSeen, cursor, deltas);
             if (deltas.length) {
                 if (cursor == null) {
+                    /* istanbul ignore next */
                     throw new Error(`Got deltas, but no cursor`);
                 }
                 // console.log(
@@ -164,6 +165,7 @@ export const onMessage = function<Delta, Data>(
 ): ?ServerMessage<Delta, Data> {
     if (message.type === 'sync') {
         const schemaChecker = state.getSchemaChecker(message.collection);
+        /* istanbul ignore next */
         if (!schemaChecker) {
             console.warn(`No schema found for ${message.collection}`);
             // TODO should I surface an error here? Break off the connection?
@@ -207,14 +209,15 @@ export const onMessage = function<Delta, Data>(
                     collection: message.collection,
                 };
             } else {
+                /* istanbul ignore next */
                 console.log('no max stamp??');
             }
             // console.log('not acking');
         }
     } else if (message.type === 'ack') {
-        // console.log('acked');
         state.clients[sessionId].collections[message.collection] = message.serverCursor;
     } else {
+        /* istanbul ignore next */
         console.error('Unexpected client message', message);
     }
 };

@@ -1,6 +1,9 @@
 // @flow
 
-// import type { Delta, CRDT as Data } from '../../nested-object-crdt/src';
+/**
+ * This implements Server persistence for testing situations.
+ */
+
 import type { CursorType, Persistence } from './server';
 
 class FakeDb {
@@ -49,8 +52,6 @@ class FakeDb {
 const setupPersistence = function<Delta, Data>(): Persistence<Delta, Data> {
     const db = new FakeDb();
     const dbs = {};
-    const tableName = col => col + ':messages';
-    const escapedTableName = col => JSON.stringify(tableName(col));
     const setupDb = col => {
         if (dbs[col]) {
             return;

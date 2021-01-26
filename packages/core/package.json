@@ -30,8 +30,8 @@
                 "babel-jest",
                 {
                     "presets": [
-                        "@babel/preset-flow",
-                        "@babel/preset-env"
+                        "@babel/preset-env",
+                        "@babel/preset-flow"
                     ],
                     "ignore": [
                         "node_modules"

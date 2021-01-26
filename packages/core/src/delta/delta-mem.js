@@ -1,11 +1,10 @@
 // @flow
-import { openDB } from 'idb';
-import * as hlc from '../../hybrid-logical-clock/src';
-import type { HLC } from '../../hybrid-logical-clock/src';
-import type { Delta, CRDT as Data } from '../../nested-object-crdt/src';
-import { type CursorType } from '../../core/src/types';
+import * as hlc from '../../../hybrid-logical-clock/src';
+import type { HLC } from '../../../hybrid-logical-clock/src';
+import type { Delta, CRDT as Data } from '../../../nested-object-crdt/src';
+import { type CursorType } from '../types';
 import deepEqual from 'fast-deep-equal';
-import type { Persistence, FullPersistence, DeltaPersistence, Export } from '../../core/src/types';
+import type { Persistence, FullPersistence, DeltaPersistence, Export } from '../types';
 
 export const applyDeltas = function<Delta, Data>(
     db: FakeDb,

@@ -35,9 +35,9 @@ import {
     default as createWebSocketNetwork,
     type SyncStatus,
 } from '../core/src/delta/websocket-network';
-import { default as makeDeltaInMemoryPersistence } from '../idb/src/delta-mem';
+import { default as makeDeltaInMemoryPersistence } from '../core/src/delta/delta-mem';
 
-export { default as makeDeltaInMemoryPersistence } from '../idb/src/delta-mem';
+export { default as makeDeltaInMemoryPersistence } from '../core/src/delta/delta-mem';
 export {
     default as createDeltaClient,
     createManualClient as createManualDeltaClient,
