@@ -373,16 +373,16 @@ const Item = ({
                         evt.stopPropagation();
                         onMenuShow({ path: childPath, handle: evt.currentTarget });
                     }}
-                    onClick={
-                        // evt => {
-                        //     if (evt.ctrlKey || evt.metaKey || evt.button !== 0)
-                        // }
-                        collapsible
-                            ? () => {
-                                  local.setExpanded(id, collapsed);
-                              }
-                            : null
-                    }
+                    onClick={(evt) => {
+                        if (evt.button !== 0) {
+                            return;
+                        }
+                        if (evt.ctrlKey || evt.metaKey) {
+                            onZoom(path, id);
+                        } else if (collapsible) {
+                            local.setExpanded(id, collapsed);
+                        }
+                    }}
                     css={{
                         width: '2em',
                         alignSelf: 'stretch',

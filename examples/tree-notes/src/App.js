@@ -323,11 +323,9 @@ const App = ({ config, docClient }: { config: ConnectionConfig, docClient: Clien
                                 {Object.keys(files)
                                     .sort()
                                     .map((id) => (
-                                        // <ListItem>
-                                        //     {files[id].title}
-                                        // </ListItem>
                                         <ListItem
                                             button
+                                            key={id}
                                             component={Link}
                                             to={`/doc/${id}`}
                                             onClick={() => onClose()}
