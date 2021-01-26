@@ -227,7 +227,6 @@ const OpenGraph = ({
                     // }
                     subheader={
                         <Link
-                            color="white"
                             rel="noreferrer"
                             target="_blank"
                             href={url}

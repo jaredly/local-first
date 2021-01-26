@@ -272,7 +272,7 @@ const LinkItem = ({
                                     }}
                                 >
                                     {currentTags.map((tag) => (
-                                        <Chip label={tag.title} />
+                                        <Chip key={tag.id} label={tag.title} />
                                     ))}
                                     {currentTags.length === 0
                                         ? 'No tags'
@@ -320,6 +320,7 @@ const LinkItem = ({
                     <div className={styles.tags}>
                         {currentTags.map((tag) => (
                             <Chip
+                                key={tag.id}
                                 label={tag.title}
                                 className={styles.tag}
                                 size="small"
