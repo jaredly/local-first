@@ -70,11 +70,11 @@ const MyDrawer = ({
                         </ListItem>
                     )}
                     <Divider />
-                    {pageItems}
-                    <Divider />
                     <ListItem button component={Link} to="/" onClick={() => onClose()}>
                         <ListItemText primary="Home" />
                     </ListItem>
+                    <Divider />
+                    {pageItems}
                     <Divider />
                     {window.location.hostname === 'localhost' ? (
                         <ListItem>

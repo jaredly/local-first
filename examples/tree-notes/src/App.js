@@ -4,6 +4,7 @@ import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 import { toString as richTextToString } from '../../../packages/rich-text-crdt';
 import querystring from 'querystring';
 import ListItem from '@material-ui/core/ListItem';
+import ListItemText from '@material-ui/core/ListItemText';
 import Switch from '@material-ui/core/Switch';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import * as React from 'react';
@@ -110,12 +111,6 @@ import { type File } from '../index-collections';
 const MetaData = ({ client, docClient, docId }) => {
     const [docCol, file] = useItem<File, _>(React, docClient, 'files', docId || 'home');
 
-    // React.useEffect(() => {
-    //     const id = docId || 'home';
-    //     const files = docClient.getCollection('files');
-    //     files.setAttribute(id, ['lastOpened'], Date.now());
-    // }, [docClient, docId]);
-
     React.useEffect(() => {
         if (file === false || file == null) {
             return;
@@ -128,8 +123,9 @@ const MetaData = ({ client, docClient, docId }) => {
             return;
         }
         const col = client.getCollection('items');
+        let unlisten;
         col.loadAll().then((data) => {
-            col.onChanges((changes) => {
+            unlisten = col.onChanges((changes) => {
                 changes.forEach(({ value, id }) => {
                     if (value) {
                         data[id] = value;
@@ -142,7 +138,8 @@ const MetaData = ({ client, docClient, docId }) => {
             // const count =
             docCol.setAttribute(file.id, ['nodeCount'], Object.keys(data).length);
         });
-    }, [client, docId, docClient]);
+        return () => (unlisten ? unlisten() : undefined);
+    }, [client, docId, docClient, file ? file.id : null]);
 
     const [_, rootItem] = useItem<ItemT, _>(React, client, 'items', 'root');
     React.useEffect(() => {
@@ -224,6 +221,8 @@ const App = ({ config, docClient }: { config: ConnectionConfig, docClient: Clien
     const { doc: docId } = useParams();
     const dbName =
         config.type === 'remote' ? config.prefix + '/' + (docId || 'home') : 'memory-' + docId;
+
+    const [_, files] = useCollection<File, _>(React, docClient, 'files');
 
     // // STOPSHIP: Use the index-collections, and make it so we can be multi-file!!
     // // So good.
@@ -319,7 +318,25 @@ const App = ({ config, docClient }: { config: ConnectionConfig, docClient: Clien
                 title="Tree notes"
                 renderDrawer={(isOpen, onClose) => (
                     <Drawer
-                        pageItems={null}
+                        pageItems={
+                            <React.Fragment>
+                                {Object.keys(files)
+                                    .sort()
+                                    .map((id) => (
+                                        // <ListItem>
+                                        //     {files[id].title}
+                                        // </ListItem>
+                                        <ListItem
+                                            button
+                                            component={Link}
+                                            to={`/doc/${id}`}
+                                            onClick={() => onClose()}
+                                        >
+                                            <ListItemText primary={files[id].title} />
+                                        </ListItem>
+                                    ))}
+                            </React.Fragment>
+                        }
                         onClose={onClose}
                         open={isOpen}
                         authData={config.type === 'remote' ? config.authData : null}
