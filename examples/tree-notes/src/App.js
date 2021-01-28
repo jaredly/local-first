@@ -302,13 +302,6 @@ const App = ({ config, docClient }: { config: ConnectionConfig, docClient: Clien
         return config.authData.onLogout(() => local.teardown());
     }, [local, config.type === 'remote' ? config.authData : null]);
 
-    // STOPSHIP: For nodeCount, I want collection `onChanges` to cache stuff,
-    // so that `useCollection` can all have the same object.
-    // And then I can do `onAll()` and write it in.
-    // React.useEffect(() => {
-    //     client.getCollection('items').onChanges
-    // }, [])
-
     window.client = client;
 
     return (

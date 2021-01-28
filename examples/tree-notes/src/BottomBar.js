@@ -87,7 +87,7 @@ const BottomBar = ({
     level: number,
 }) => {
     const [col, item] = useItem<ItemT, _>(React, client, 'items', id);
-    const actions = itemActions({ client, local, id, col, path, level });
+    const actions = itemActions({ client, local, id, col, path, level, onZoom: () => {} });
 
     return (
         <div
