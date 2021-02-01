@@ -41,7 +41,7 @@ type Props = {
     path: Array<string>,
     onClose: () => mixed,
     client: Client<*>,
-    setDialog: (string) => mixed,
+    setDialog: (null | string | { type: 'copy', id: string } | { type: 'jump' }) => mixed,
 };
 
 const ItemMenuItems = ({ col, path, onClose, client, setDialog }: Props) => {
@@ -163,6 +163,17 @@ const ItemMenuItems = ({ col, path, onClose, client, setDialog }: Props) => {
             }}
         >
             Show Change History
+        </MenuItem>,
+    );
+    items.push(
+        <MenuItem
+            key="copy"
+            onClick={() => {
+                setDialog({ id: path[path.length - 1], type: 'copy' });
+                onClose();
+            }}
+        >
+            Show Copy Dialog
         </MenuItem>,
     );
     return items;

@@ -39,6 +39,7 @@ import ItemMenuItems from './ContextMenu';
 import BottomBar from './BottomBar';
 import ChangesDialog from './ChangesDialog';
 import JumpDialog from './JumpDialog';
+import CopyDialog from './CopyDialog';
 
 type Dest =
     | {
@@ -300,6 +301,15 @@ const Items = ({
             ) : null}
             {dialog != null && dialog.type === 'jump' ? (
                 <JumpDialog onClose={() => setDialog(null)} col={col} url={url} client={client} />
+            ) : null}
+            {dialog != null && dialog.type === 'copy' ? (
+                <CopyDialog
+                    onClose={() => setDialog(null)}
+                    col={col}
+                    url={url}
+                    client={client}
+                    id={dialog.id}
+                />
             ) : null}
             <div style={{ height: 400 }} />
         </div>

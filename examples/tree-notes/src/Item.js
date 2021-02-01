@@ -294,7 +294,7 @@ const Item = ({
     );
 
     const blingColor =
-        path.length === 0 ? 'transparent' : `rgba(255,255,255,${1 - (path.length % 5) / 5})`;
+        path.length === 0 ? 'transparent' : `rgba(200,200,200,${1 - (level % 5) / 5})`;
 
     if (item === false) {
         return null; // loading
@@ -447,7 +447,7 @@ const Item = ({
                     css={{
                         flex: 1,
                         border: '1px dashed transparent',
-                        borderBottomColor: length(item.body) <= 1 ? 'currentColor' : null,
+                        borderBottomColor: length(item.body) <= 1 ? '#555' : null,
                         ...(item.style === 'header'
                             ? { fontSize: '1.2em', fontWeight: 'bold' }
                             : null),
