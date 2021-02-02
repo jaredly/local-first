@@ -55,7 +55,11 @@
         "@material-ui/core/Dialog": "./node_modules/@material-ui/core/Dialog",
         "@material-ui/core/DialogTitle": "./node_modules/@material-ui/core/DialogTitle",
         "pako": "./node_modules/pako",
-        "@material-ui/core/CircularProgress": "./node_modules/@material-ui/core/CircularProgress"
+        "@material-ui/core/CircularProgress": "./node_modules/@material-ui/core/CircularProgress",
+        "@material-ui/core/FormControl": "./node_modules/@material-ui/core/FormControl",
+        "@material-ui/core/FormHelperText": "./node_modules/@material-ui/core/FormHelperText",
+        "@material-ui/icons/Add": "./node_modules/@material-ui/icons/Add",
+        "@material-ui/icons/Search": "./node_modules/@material-ui/icons/Search"
     },
     "devDependencies": {
         "@babel/core": "^7.0.0-0",

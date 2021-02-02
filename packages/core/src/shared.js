@@ -488,6 +488,52 @@ export const getCollection = function<Delta, Data, RichTextDelta, T>(
                 state.itemListeners[id] = state.itemListeners[id].filter(f => f !== fn);
             };
         },
+
+        getCachedItems(ids: Array<string>): ?{ [k: string]: ?T | false } {
+            const items = {};
+            let found = false;
+            ids.forEach(id => {
+                items[id] = this.getCached(id);
+                if (items[id] != null) [(found = true)];
+                if (items[id] == null) {
+                    items[id] = false;
+                }
+            });
+            return found || ids.length === 0 ? items : null;
+        },
+
+        onItemsChange(
+            ids: Array<string>,
+            fn: ({ [k: string]: ?T | false }) => mixed,
+        ): [?{ [k: string]: ?T | false }, () => void] {
+            let items = {};
+            let found = false;
+            ids.forEach(id => {
+                items[id] = this.getCached(id);
+                if (items[id] != null) [(found = true)];
+                if (items[id] == null) {
+                    items[id] = false;
+                }
+            });
+            const onChange = (id, data) => {
+                items = { ...items, [id]: data };
+                fn(items);
+            };
+            const listeners = ids.filter(Boolean).map(id => {
+                if (!items || !items[id]) {
+                    this.load(id).then(
+                        data => onChange(id, data),
+                        /* istanbul ignore next */
+                        err => {
+                            console.error('Unable to load item!', id);
+                            console.error(err);
+                        },
+                    );
+                }
+                return this.onItemChange(id, data => onChange(id, data));
+            });
+            return [found || ids.length === 0 ? items : null, () => listeners.forEach(fn => fn())];
+        },
     };
 };
 

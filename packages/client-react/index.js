@@ -2,6 +2,7 @@
 // import React from '../../examples/whiteboard/node_modules/react';
 
 import { type Client, type Collection, type QueryOp } from '../client-bundle';
+import deepEqual from '@birchill/json-equalish';
 
 export const useSyncStatus = function<SyncStatus>(React: *, client: Client<SyncStatus>) {
     const [status, setStatus] = React.useState(client.getSyncStatus());
@@ -13,6 +14,8 @@ export const useSyncStatus = function<SyncStatus>(React: *, client: Client<SyncS
     return status;
 };
 
+// TODO: Definitely have the listener logic managed at the collection level,
+// so that this is as simple as `collection.listenToItems(keys, items => setItems(items))`
 // TODO: test that a new list of IDs gets processed correctly
 export const useItems = function<T: {}, SyncStatus>(
     React: *,
@@ -21,38 +24,45 @@ export const useItems = function<T: {}, SyncStatus>(
     ids: Array<string>,
 ): [Collection<T>, ?{ [key: string]: ?T | false }] {
     const col = React.useMemo(() => client.getCollection<T>(colid), []);
-    // TODO something to indicate whether we've loaded from the database yet
-    // also something to indicate whether we've ever synced with a server.
-    const [items, setItems] = React.useState(() => {
-        const items = {};
-        let found = false;
-        ids.forEach(id => {
-            items[id] = col.getCached(id);
-            if (items[id] != null) [(found = true)];
-            if (items[id] == null) {
-                items[id] = false;
-            }
-        });
-        return found || ids.length === 0 ? items : null;
-    });
+
+    const [items, setItems] = React.useState(() => col.getCachedItems(ids));
+
     React.useEffect(() => {
-        const listeners = ids.filter(Boolean).map(id => {
-            if (!items || !items[id]) {
-                col.load(id).then(
-                    data => {
-                        setItems(items => ({ ...items, [id]: data }));
-                    },
-                    /* istanbul ignore next */
-                    err => {
-                        console.error('Unable to load item!', id);
-                        console.error(err);
-                    },
-                );
-            }
-            return col.onItemChange(id, data => setItems(items => ({ ...items, [id]: data })));
-        });
-        return () => listeners.forEach(fn => fn());
+        return col.onItemsChange(ids, items => setItems(items))[1];
     }, [ids.join('🎁')]);
+
+    // // TODO something to indicate whether we've loaded from the database yet
+    // // also something to indicate whether we've ever synced with a server.
+    // const [items, setItems] = React.useState(() => {
+    //     const items = {};
+    //     let found = false;
+    //     ids.forEach(id => {
+    //         items[id] = col.getCached(id);
+    //         if (items[id] != null) [(found = true)];
+    //         if (items[id] == null) {
+    //             items[id] = false;
+    //         }
+    //     });
+    //     return found || ids.length === 0 ? items : null;
+    // });
+    // React.useEffect(() => {
+    //     const listeners = ids.filter(Boolean).map(id => {
+    //         if (!items || !items[id]) {
+    //             col.load(id).then(
+    //                 data => {
+    //                     setItems(items => ({ ...items, [id]: data }));
+    //                 },
+    //                 /* istanbul ignore next */
+    //                 err => {
+    //                     console.error('Unable to load item!', id);
+    //                     console.error(err);
+    //                 },
+    //             );
+    //         }
+    //         return col.onItemChange(id, data => setItems(items => ({ ...items, [id]: data })));
+    //     });
+    //     return () => listeners.forEach(fn => fn());
+    // }, [ids.join('🎁')]);
     return [col, items];
 };
 
@@ -72,6 +82,8 @@ export const useItem = function<T: {}, SyncStatus>(
         }
         return data;
     });
+    const currentData = React.useRef(item);
+    currentData.current = item;
     React.useEffect(() => {
         if (item == null || item === false || id !== item.id) {
             if (item) {
@@ -96,7 +108,11 @@ export const useItem = function<T: {}, SyncStatus>(
                 },
             );
         }
-        return col.onItemChange(id, setItem);
+        return col.onItemChange(id, item => {
+            if (!deepEqual(item, currentData.current)) {
+                setItem(item);
+            }
+        });
     }, [id]);
     return [col, item];
 };
@@ -135,24 +151,40 @@ export const useCollection = function<T: {}, SyncStatus>(
         },
         // ({}: { [key: string]: T })
     );
+    const currentData = React.useRef(data);
+    currentData.current = data;
     React.useEffect(() => {
         col.loadAll().then(data => {
             // TODO: if there aren't any changes, then don't mess with it.
-            setData(a => ({ ...a, ...data }));
+            let changed = Object.keys(data).some(k => !deepEqual(data[k], currentData.current[k]));
+            // console.log('COL CHANGES', name, data);
+            if (changed) {
+                setData(a => ({ ...a, ...data }));
+            }
             // OH NO, there's a race!!! It's possible to miss changes here
             // ... hmm....
             col.onChanges(changes => {
-                setData(data => {
-                    const n = { ...data };
-                    changes.forEach(({ value, id }) => {
-                        if (value) {
-                            n[id] = value;
-                        } else {
-                            delete n[id];
-                        }
-                    });
-                    return n;
+                // ugh. neeeeed to dedup here.
+                const changed = changes.some(({ value, id }) => {
+                    if (value) {
+                        return !deepEqual(value, currentData.current[id]);
+                    } else {
+                        return currentData.current[id] != null;
+                    }
                 });
+                if (changed) {
+                    setData(data => {
+                        const n = { ...data };
+                        changes.forEach(({ value, id }) => {
+                            if (value) {
+                                n[id] = value;
+                            } else {
+                                delete n[id];
+                            }
+                        });
+                        return n;
+                    });
+                }
             });
         });
     }, []);

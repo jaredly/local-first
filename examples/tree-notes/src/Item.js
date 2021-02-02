@@ -2,7 +2,7 @@
 /** @jsx jsx */
 import { jsx } from '@emotion/core';
 import * as React from 'react';
-import { useHistory, useParams } from 'react-router-dom';
+import { useHistory, useParams, useRouteMatch } from 'react-router-dom';
 import { useCollection, useItem, useItems } from '../../../packages/client-react';
 import { type Client, type Collection } from '../../../packages/client-bundle';
 import QuillEditor from './QuillEditor';
@@ -247,17 +247,35 @@ type Props = {
     level: number,
 };
 
-const useChildCount = (client, numbering, children) => {
-    const shouldCheck = numbering?.style === 'checkbox';
-    const [_, items] = useItems(React, client, 'items', shouldCheck && children ? children : []);
-    if (shouldCheck && children && items) {
-        const count = children.filter((id) => (items[id] ? items[id].completed == null : true))
-            .length;
-        // console.log(children, items, count);
-        return count;
-    }
-    // return children ? children.length : 0;
-    return null;
+const useChildCount = (col, numbering, children) => {
+    const [itemCount, setItemCount] = React.useState(null);
+    const currentItemCount = React.useRef(itemCount);
+    currentItemCount.current = itemCount;
+    React.useEffect(() => {
+        const shouldCheck = numbering?.style === 'checkbox';
+        if (!shouldCheck || !children) {
+            return;
+        }
+        const [items, unlisten] = col.onItemsChange(children, (items) => {
+            const count = children.filter((id) => (items[id] ? items[id].completed == null : true))
+                .length;
+            // erm how do I dedup this?
+            if (count !== currentItemCount.current) {
+                setItemCount(count);
+            }
+        });
+        return unlisten;
+    }, [numbering?.style, children]);
+    // const [_, items] = useItems(React, client, 'items', shouldCheck && children ? children : []);
+    // if (shouldCheck && children && items) {
+    //     const count = children.filter((id) => (items[id] ? items[id].completed == null : true))
+    //         .length;
+    //     // console.log(children, items, count);
+    //     return count;
+    // }
+    // // return children ? children.length : 0;
+    // return null;
+    return itemCount;
 };
 
 const Item = ({
@@ -277,7 +295,8 @@ const Item = ({
     const bodyRef = React.useRef(null);
     const isExpanded = useExpanded(local, id);
     const history = useHistory();
-    const params = useParams();
+    const params = {}; //useParams();
+    // const match = useRouteMatch();
 
     const onZoom = React.useCallback(
         (path, id) => {
@@ -287,11 +306,12 @@ const Item = ({
         [params.doc, history],
     );
 
-    const childCount = useChildCount(
-        client,
-        item ? item.numbering : null,
-        item ? item.children : null,
-    );
+    // const childCount = useChildCount(
+    //     col,
+    //     item ? item.numbering : null,
+    //     item ? item.children : null,
+    // );
+    const childCount = null;
 
     const blingColor =
         path.length === 0 ? 'transparent' : `rgba(200,200,200,${1 - (level % 5) / 5})`;
