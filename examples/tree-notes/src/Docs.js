@@ -126,13 +126,13 @@ const Docs = ({
                         <TableHead>
                             <TableRow>
                                 <TableCell>Title</TableCell>
-                                <TableCell>Last opened</TableCell>
+                                <TableCell>Last modified</TableCell>
                                 <TableCell>Node count</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {Object.keys(files)
-                                .sort((a, b) => files[b].lastOpened - files[a].lastOpened)
+                                .sort((a, b) => files[b].lastModified - files[a].lastModified)
                                 .map((fileid) => (
                                     <TableRow key={fileid}>
                                         <TableCell>
@@ -149,10 +149,10 @@ const Docs = ({
                                         </TableCell>
                                         <TableCell>
                                             {new Date(
-                                                files[fileid].lastOpened,
+                                                files[fileid].lastModified,
                                             ).toLocaleDateString()}{' '}
                                             {new Date(
-                                                files[fileid].lastOpened,
+                                                files[fileid].lastModified,
                                             ).toLocaleTimeString()}
                                         </TableCell>
                                         <TableCell>{files[fileid].nodeCount}</TableCell>

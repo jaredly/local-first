@@ -107,9 +107,14 @@ const populateWithInitialData = (client) => {
     return client;
 };
 
+const FIVE_MINUTES = 1000 * 60 * 5;
+
 import { type File } from '../index-collections';
 const MetaData = ({ client, docClient, docId }) => {
     const [docCol, file] = useItem<File, _>(React, docClient, 'files', docId || 'home');
+
+    const currentFile = React.useRef(file);
+    currentFile.current = file;
 
     React.useEffect(() => {
         if (file === false || file == null) {
@@ -124,6 +129,7 @@ const MetaData = ({ client, docClient, docId }) => {
         }
         const col = client.getCollection('items');
         let unlisten;
+        let tid = null;
         col.loadAll().then((data) => {
             unlisten = col.onChanges((changes) => {
                 changes.forEach(({ value, id }) => {
@@ -132,8 +138,16 @@ const MetaData = ({ client, docClient, docId }) => {
                     } else {
                         delete data[id];
                     }
-                    docCol.setAttribute(file.id, ['nodeCount'], Object.keys(data).length);
+                    if (currentFile.current.nodeCount !== Object.keys(data).length) {
+                        docCol.setAttribute(file.id, ['nodeCount'], Object.keys(data).length);
+                    }
                 });
+                if (tid == null && Date.now() > currentFile.current.lastModified + FIVE_MINUTES) {
+                    docCol.setAttribute(file.id, ['lastModified'], Date.now());
+                    tid = setTimeout(() => {
+                        tid = null;
+                    }, FIVE_MINUTES); // only update every 5 minutes
+                }
             });
             // const count =
             docCol.setAttribute(file.id, ['nodeCount'], Object.keys(data).length);
@@ -217,12 +231,32 @@ export const memoWithTeardown = function <T>(
     // }, changes)
 };
 
+const SidebarItems = ({ docClient, onClose }) => {
+    const [_, files] = useCollection<File, _>(React, docClient, 'files');
+
+    return (
+        <React.Fragment>
+            {Object.keys(files)
+                .sort()
+                .map((id) => (
+                    <ListItem
+                        button
+                        key={id}
+                        component={Link}
+                        to={`/doc/${id}`}
+                        onClick={() => onClose()}
+                    >
+                        <ListItemText primary={files[id].title} />
+                    </ListItem>
+                ))}
+        </React.Fragment>
+    );
+};
+
 const App = ({ config, docClient }: { config: ConnectionConfig, docClient: Client<*> }) => {
     const { doc: docId } = useParams();
     const dbName =
         config.type === 'remote' ? config.prefix + '/' + (docId || 'home') : 'memory-' + docId;
-
-    const [_, files] = useCollection<File, _>(React, docClient, 'files');
 
     // // STOPSHIP: Use the index-collections, and make it so we can be multi-file!!
     // // So good.
@@ -311,23 +345,7 @@ const App = ({ config, docClient }: { config: ConnectionConfig, docClient: Clien
                 title="Tree notes"
                 renderDrawer={(isOpen, onClose) => (
                     <Drawer
-                        pageItems={
-                            <React.Fragment>
-                                {Object.keys(files)
-                                    .sort()
-                                    .map((id) => (
-                                        <ListItem
-                                            button
-                                            key={id}
-                                            component={Link}
-                                            to={`/doc/${id}`}
-                                            onClick={() => onClose()}
-                                        >
-                                            <ListItemText primary={files[id].title} />
-                                        </ListItem>
-                                    ))}
-                            </React.Fragment>
-                        }
+                        pageItems={<SidebarItems onClose={onClose} docClient={docClient} />}
                         onClose={onClose}
                         open={isOpen}
                         authData={config.type === 'remote' ? config.authData : null}

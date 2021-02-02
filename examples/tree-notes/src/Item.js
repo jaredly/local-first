@@ -264,6 +264,11 @@ const useChildCount = (col, numbering, children) => {
                 setItemCount(count);
             }
         });
+
+        const count = children.filter((id) => (items[id] ? items[id].completed == null : true))
+            .length;
+        setItemCount(count);
+
         return unlisten;
     }, [numbering?.style, children]);
     // const [_, items] = useItems(React, client, 'items', shouldCheck && children ? children : []);
@@ -295,7 +300,7 @@ const Item = ({
     const bodyRef = React.useRef(null);
     const isExpanded = useExpanded(local, id);
     const history = useHistory();
-    const params = {}; //useParams();
+    const params = useParams();
     // const match = useRouteMatch();
 
     const onZoom = React.useCallback(
@@ -306,12 +311,12 @@ const Item = ({
         [params.doc, history],
     );
 
-    // const childCount = useChildCount(
-    //     col,
-    //     item ? item.numbering : null,
-    //     item ? item.children : null,
-    // );
-    const childCount = null;
+    const childCount = useChildCount(
+        col,
+        item ? item.numbering : null,
+        item ? item.children : null,
+    );
+    // const childCount = null;
 
     const blingColor =
         path.length === 0 ? 'transparent' : `rgba(200,200,200,${1 - (level % 5) / 5})`;
