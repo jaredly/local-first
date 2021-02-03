@@ -112,11 +112,14 @@ const importRecipes = async (client, sync, weeks, ingredients, foundIngredients,
             if (!recipe.ingredients || !recipe.ingredients.length) {
                 continue;
             }
-            // if (recipes[recipe.id] || toAdd[recipe.id]) {
-            //     continue;
-            // }
-            toAdd[recipe.id] = {
-                id: recipe.id,
+            if (
+                toAdd[recipe.canonical] &&
+                toAdd[recipe.canonical].updatedDate < new Date(recipe.updatedAt).getTime()
+            ) {
+                continue;
+            }
+            toAdd[recipe.canonical] = {
+                id: recipe.canonical,
                 about: {
                     title: recipe.name,
                     author: ':hello-fresh',
@@ -138,6 +141,7 @@ const importRecipes = async (client, sync, weeks, ingredients, foundIngredients,
     if (dryRun) {
         return;
     }
+
     let x = 0;
     for (const id of Object.keys(toAdd).sort()) {
         // if (recipes[id]) {
@@ -188,7 +192,7 @@ const makeContents = (recipe, ingredients, foundIngredients) => {
             ovenTemp,
         },
         text: { ops: deltas },
-        version: recipe.id,
+        version: recipe.canonical,
         changeLog: [],
     };
 };
