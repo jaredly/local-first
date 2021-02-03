@@ -22,6 +22,8 @@ import { NewComment, EditComment } from './EditComment';
 import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 import { type Homepage } from '../private-collections';
 import type { RecipeT, TagT, RecipeStatus } from '../collections';
+import QueueButton from './QueueButton';
+import MealPlanButton from './MealPlanButton';
 
 const useStyles = makeStyles((theme) => ({
     container: {
@@ -219,6 +221,7 @@ export const RecipeInner = ({
                         </Button>
                     ))}
                     <QueueButton id={recipe.id} client={editorData.privateClient} />
+                    <MealPlanButton recipeId={recipe.id} privateClient={editorData.privateClient} />
                 </div>
             ) : null}
             <div style={{ marginTop: 16 }}>
@@ -271,52 +274,6 @@ const CustomBatches = ({ batches, setBatches }) => {
                 setText(null);
             }}
         />
-    );
-};
-
-const QueueButton = ({ id, client }) => {
-    const [col, homepage] = useItem<Homepage, _>(React, client, 'homepage', 'default');
-    if (homepage == null || !homepage || !homepage.recipeQueue[id]) {
-        return (
-            <Button
-                disabled={homepage === false}
-                variant="outlined"
-                onClick={() => {
-                    if (homepage === false) {
-                        return;
-                    }
-                    if (homepage == null) {
-                        col.save('default', {
-                            id: 'default',
-                            categories: [],
-                            recipeQueue: {
-                                [id]: {
-                                    note: '',
-                                    added: Date.now(),
-                                },
-                            },
-                        });
-                    } else {
-                        col.setAttribute(homepage.id, ['recipeQueue', id], {
-                            note: '',
-                            added: Date.now(),
-                        });
-                    }
-                }}
-            >
-                Add to queue
-            </Button>
-        );
-    }
-    return (
-        <Button
-            variant="contained"
-            onClick={() => {
-                col.clearAttribute(homepage.id, ['recipeQueue', id]);
-            }}
-        >
-            In queue
-        </Button>
     );
 };
 
