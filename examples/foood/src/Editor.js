@@ -211,6 +211,24 @@ export const DeleteButton = ({ onConfirm }: { onConfirm: () => mixed }) => {
 //     {format: {bold: true}, title: 'B', selected: formats.bold},
 //     {format: {}}
 // ]
+const showTime = (time) => {
+    if (time.hours != 0) {
+        return `${time.hours} hours, ${time.minutes} min`;
+    }
+    return `${time.minutes} min`;
+};
+
+const parseTime = (time) => {
+    const [_, sub] = time.split('T');
+    if (!sub.includes('H')) {
+        return { hours: 0, minutes: +sub.slice(0, -1) };
+    }
+    const [hours, minutes] = sub.split('H');
+    return {
+        hours: +hours,
+        minutes: +minutes.slice(0, -1),
+    };
+};
 
 const RecipeEditor = ({
     about,
@@ -271,23 +289,6 @@ const RecipeEditor = ({
                 if (image) {
                     setImage(image);
                 }
-                const parseTime = (time) => {
-                    const [_, sub] = time.split('T');
-                    if (!sub.includes('H')) {
-                        return { hours: 0, minutes: +sub.slice(0, -1) };
-                    }
-                    const [hours, minutes] = sub.split('H');
-                    return {
-                        hours: +hours,
-                        minutes: +minutes.slice(0, -1),
-                    };
-                };
-                const showTime = (time) => {
-                    if (time.hours != 0) {
-                        return `${time.hours} hours, ${time.minutes} min`;
-                    }
-                    return `${time.minutes} min`;
-                };
                 if (recipe.totalTime) {
                     setTotalTime(showTime(parseTime(recipe.totalTime)));
                 }

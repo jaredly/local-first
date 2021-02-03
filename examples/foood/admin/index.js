@@ -15,6 +15,7 @@ import fs from 'fs';
 import getForsythRecipes from './extract-recipes';
 import type { RecipeT, TagT, IngredientT } from '../collections';
 import importFooodData from './import-from-foood';
+import importFromHelloFresh from './import-from-hellofresh';
 
 const { schemas } = require('../collections');
 
@@ -185,7 +186,9 @@ const main = async () => {
     // Will I do a fresh start? idk. Maybe I'll "export current as json" and then fresh start.
     // await importFooodData(client, userId, () => sync(client, url));
 
-    await importForsythRecipesData(client, userId, () => sync(client, url));
+    // await importForsythRecipesData(client, userId, () => sync(client, url));
+
+    await importFromHelloFresh((client: any), userId, () => sync(client, url));
 
     // const fooodStuffs = getFooodStuffs()
     // lists
