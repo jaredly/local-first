@@ -137,9 +137,9 @@ const numberToString = (number: number) => {
 };
 
 // TODO better
-const formatNumber = (number, unit) => {
+const formatNumber = (number: number, unit: ?string) => {
     const n = numberToString(number);
-    if (unit) {
+    if (unit != null) {
         if (number > 1 && !unit.endsWith('s') && unit.length > 1) {
             unit += 's';
         }
@@ -351,4 +351,5 @@ module.exports = {
     parseFraction,
     numberToString,
     parseSingleNumber,
+    formatNumber,
 };

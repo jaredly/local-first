@@ -54,7 +54,7 @@ const importIngredients = async (client, sync, weeks, dryRun) => {
     fs.writeFileSync('./fresh-ing.json', JSON.stringify(newIngredients, null, 2));
 
     if (dryRun) {
-        return;
+        return { ingredients, foundIngredients };
     }
 
     for (const id of Object.keys(newIngredients)) {
@@ -74,10 +74,10 @@ const importIngredients = async (client, sync, weeks, dryRun) => {
     }
 
     await sync();
-    return foundIngredients;
+    return { ingredients: await ingredientsCol.loadAll(), foundIngredients };
 };
 
-const importRecipes = async (client, sync, weeks, foundIngredients, dryRun) => {
+const importRecipes = async (client, sync, weeks, ingredients, foundIngredients, dryRun) => {
     const recipesCol = client.getCollection<IngredientT>('recipes');
     const recipes = await recipesCol.loadAll();
 
@@ -109,9 +109,12 @@ const importRecipes = async (client, sync, weeks, foundIngredients, dryRun) => {
             continue;
         }
         for (const recipe of week.recipes) {
-            if (recipes[recipe.id]) {
+            if (!recipe.ingredients || !recipe.ingredients.length) {
                 continue;
             }
+            // if (recipes[recipe.id] || toAdd[recipe.id]) {
+            //     continue;
+            // }
             toAdd[recipe.id] = {
                 id: recipe.id,
                 about: {
@@ -120,7 +123,7 @@ const importRecipes = async (client, sync, weeks, foundIngredients, dryRun) => {
                     source: recipe.websiteUrl,
                     image: `https://img.hellofresh.com/c_fit,f_auto,fl_lossy,h_1100,q_auto,w_2600/hellofresh_s3${recipe.imagePath}`,
                 },
-                contents: makeContents(recipe),
+                contents: makeContents(recipe, ingredients, foundIngredients),
                 statuses: {},
                 createdDate: new Date(recipe.createdAt).getTime(),
                 updatedDate: new Date(recipe.createdAt).getTime(),
@@ -131,12 +134,22 @@ const importRecipes = async (client, sync, weeks, foundIngredients, dryRun) => {
     }
 
     fs.writeFileSync('./hf-import.json', JSON.stringify(toAdd, null, 2));
+    console.log(Object.keys(toAdd).length);
     if (dryRun) {
         return;
     }
-    for (const id of Object.keys(toAdd)) {
+    let x = 0;
+    for (const id of Object.keys(toAdd).sort()) {
+        // if (recipes[id]) {
+        //     continue;
+        // }
+        if (x++ % 20 == 0) {
+            await sync();
+        }
+        // console.log(id);
         await recipesCol.save(id, toAdd[id]);
     }
+    await sync();
 };
 
 const showTime = (time) => {
@@ -164,26 +177,67 @@ const parseTime = (time) => {
     };
 };
 
-const makeContents = (recipe) => {
+const makeContents = (recipe, ingredients, foundIngredients) => {
+    const { deltas, ovenTemp } = makeRecipeDelta(recipe, ingredients, foundIngredients);
     return {
         meta: {
             prepTime: showTime(parseTime(recipe.prepTime)),
             totalTime: showTime(parseTime(recipe.totalTime)),
             cookTime: null,
             yield: '2 servings',
+            ovenTemp,
         },
-        text: { ops: [{ insert: recipe.description + '\n' }] },
+        text: { ops: deltas },
         version: recipe.id,
         changeLog: [],
     };
 };
 
+import { formatNumber } from '../src/parse';
+
+const makeRecipeDelta = (recipe, ingredients, foundIngredients) => {
+    let ovenTemp = null;
+    let deltas = [{ insert: recipe.description + '\n\n' }];
+    recipe.yields[0].ingredients.forEach((ing) => {
+        const id = foundIngredients[ing.id];
+        if (ing.amount) {
+            deltas.push({
+                insert: formatNumber(ing.amount, ing.unit) + ' ',
+            });
+        } else if (ing.unit != null) {
+            deltas.push({ insert: ing.unit + ' ' });
+        }
+        deltas.push(
+            {
+                insert: ingredients[id].name,
+                attributes: { ingredientLink: id },
+            },
+            { insert: '\n', attributes: { ingredient: true } },
+        );
+    });
+
+    deltas.push({ insert: '\n' });
+
+    recipe.steps.forEach((step) => {
+        deltas.push(
+            { insert: step.instructions.replace(/\s*\n\s*/g, ' ') },
+            { insert: '\n', attributes: { instruction: true } },
+        );
+        const oven = step.instructions.match(/oven.+?\b(\d{3})°?\b/i);
+        if (oven) {
+            ovenTemp = oven[1];
+        }
+        // TODO would be cool to go through and highlight the ingredients listed in step.ingredients
+    });
+    return { deltas, ovenTemp };
+};
+
 const runImport = async (client: Client<*>, actorId: string, sync: () => Promise<mixed>) => {
     const weeks = require('./../.import/hellofresh/2019.json');
 
-    const foundIngredients = await importIngredients(client, sync, weeks, false);
+    const { ingredients, foundIngredients } = await importIngredients(client, sync, weeks, false);
 
-    await importRecipes(client, sync, weeks, foundIngredients, true);
+    await importRecipes(client, sync, weeks, ingredients, foundIngredients, false);
     // for (const id of )
 };
 
