@@ -101,6 +101,8 @@ const importRecipes = async (client, sync, weeks, ingredients, foundIngredients,
             authorId: ':hello-fresh',
         });
     }
+    await sync();
+    console.log('The hello tag', helloTag);
 
     const toAdd = {};
 
@@ -112,17 +114,15 @@ const importRecipes = async (client, sync, weeks, ingredients, foundIngredients,
             if (!recipe.ingredients || !recipe.ingredients.length) {
                 continue;
             }
-            if (recipes[recipe.canonical]) {
+            const id = recipe.canonical || recipe.id;
+            if (recipes[id]) {
                 continue;
             }
-            if (
-                toAdd[recipe.canonical] &&
-                toAdd[recipe.canonical].updatedDate < new Date(recipe.updatedAt).getTime()
-            ) {
+            if (toAdd[id] && toAdd[id].updatedDate < new Date(recipe.updatedAt).getTime()) {
                 continue;
             }
-            toAdd[recipe.canonical] = {
-                id: recipe.canonical,
+            toAdd[id] = {
+                id: id,
                 about: {
                     title: recipe.name,
                     author: ':hello-fresh',
@@ -244,7 +244,7 @@ const runImport = async (client: Client<*>, actorId: string, sync: () => Promise
 
     const { ingredients, foundIngredients } = await importIngredients(client, sync, weeks, false);
 
-    await importRecipes(client, sync, weeks, ingredients, foundIngredients, true);
+    await importRecipes(client, sync, weeks, ingredients, foundIngredients, false);
 };
 
 export default runImport;

@@ -1,4 +1,5 @@
 .session
+.session-prod
 recipes.json
 tags.json
 *.json
