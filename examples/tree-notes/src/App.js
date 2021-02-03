@@ -138,18 +138,26 @@ const MetaData = ({ client, docClient, docId }) => {
                     } else {
                         delete data[id];
                     }
-                    if (currentFile.current.nodeCount !== Object.keys(data).length) {
+                    if (
+                        !currentFile.current ||
+                        currentFile.current.nodeCount !== Object.keys(data).length
+                    ) {
                         docCol.setAttribute(file.id, ['nodeCount'], Object.keys(data).length);
                     }
                 });
-                if (tid == null && Date.now() > currentFile.current.lastModified + FIVE_MINUTES) {
+                const { current } = currentFile;
+                if (
+                    current != null &&
+                    current !== false &&
+                    tid == null &&
+                    Date.now() > current.lastModified + FIVE_MINUTES
+                ) {
                     docCol.setAttribute(file.id, ['lastModified'], Date.now());
                     tid = setTimeout(() => {
                         tid = null;
                     }, FIVE_MINUTES); // only update every 5 minutes
                 }
             });
-            // const count =
             docCol.setAttribute(file.id, ['nodeCount'], Object.keys(data).length);
         });
         return () => (unlisten ? unlisten() : undefined);
