@@ -85,8 +85,11 @@ const login = async () => {
     return token;
 };
 
-const tokenFile = '.session';
-const baseUrl = `http://localhost:9090`;
+// const tokenFile = '.session';
+// const baseUrl = `http://localhost:9090`;
+
+const tokenFile = '.session-prod';
+const baseUrl = `https://local-first-server.glitch.me`;
 
 const genId = () => Math.random().toString(36).slice(2);
 

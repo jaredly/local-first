@@ -49,7 +49,7 @@ const importIngredients = async (client, sync, weeks, dryRun) => {
             });
         });
     });
-    console.log(Object.keys(newIngredients).length);
+    console.log('New ingredients', Object.keys(newIngredients).length);
 
     fs.writeFileSync('./fresh-ing.json', JSON.stringify(newIngredients, null, 2));
 
@@ -112,6 +112,9 @@ const importRecipes = async (client, sync, weeks, ingredients, foundIngredients,
             if (!recipe.ingredients || !recipe.ingredients.length) {
                 continue;
             }
+            if (recipes[recipe.canonical]) {
+                continue;
+            }
             if (
                 toAdd[recipe.canonical] &&
                 toAdd[recipe.canonical].updatedDate < new Date(recipe.updatedAt).getTime()
@@ -137,16 +140,16 @@ const importRecipes = async (client, sync, weeks, ingredients, foundIngredients,
     }
 
     fs.writeFileSync('./hf-import.json', JSON.stringify(toAdd, null, 2));
-    console.log(Object.keys(toAdd).length);
+    console.log('New recipes', Object.keys(toAdd).length);
     if (dryRun) {
         return;
     }
 
     let x = 0;
     for (const id of Object.keys(toAdd).sort()) {
-        // if (recipes[id]) {
-        //     continue;
-        // }
+        if (recipes[id]) {
+            continue;
+        }
         if (x++ % 20 == 0) {
             await sync();
         }
@@ -241,8 +244,7 @@ const runImport = async (client: Client<*>, actorId: string, sync: () => Promise
 
     const { ingredients, foundIngredients } = await importIngredients(client, sync, weeks, false);
 
-    await importRecipes(client, sync, weeks, ingredients, foundIngredients, false);
-    // for (const id of )
+    await importRecipes(client, sync, weeks, ingredients, foundIngredients, true);
 };
 
 export default runImport;
