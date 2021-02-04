@@ -73,8 +73,8 @@ const CopyDialog = ({ client, id, col, url, onClose }: *) => {
     const text = data ? dataToText(data).join('') : 'Loading...';
     return (
         <Dialog open={true} onClose={onClose}>
-            <DialogTitle>Changes History</DialogTitle>
-            <textarea value={text} />
+            <DialogTitle>Copy Contents</DialogTitle>
+            <textarea style={{ minWidth: 300, minHeight: 300 }} value={text} />
         </Dialog>
     );
 };

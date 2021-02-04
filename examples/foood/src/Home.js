@@ -12,6 +12,10 @@ import LinkIcon from '@material-ui/icons/Link';
 
 import { imageUrl } from './utils';
 import Sidebar from './Sidebar';
+import Tag from './Tag';
+import RecipeList, { sortRecipes, statusOrder } from './RecipeList';
+
+export { Tag, RecipeList, sortRecipes, statusOrder };
 
 import RecipeBlock from './RecipeBlock';
 
@@ -97,91 +101,10 @@ const useStyles = makeStyles((theme) => ({
             height: '100%',
         },
     },
-    recipes: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-    },
     tagRecipes: {
         fontSize: '80%',
     },
 }));
-
-const statusOrder = ['favorite', 'approved', 'to try', undefined, null, 'rejected'];
-
-export const Tag = ({
-    tag,
-    count,
-    approvedCount,
-    recipes,
-    matchingRecipes,
-    actorId,
-    url,
-    onClick,
-}: {
-    approvedCount: number,
-    tag: TagT,
-    count: number,
-    recipes: { [key: string]: RecipeT },
-    matchingRecipes: Array<string>,
-    actorId: string,
-    url: string,
-    onClick?: ?() => void,
-}) => {
-    const styles = useStyles();
-
-    const images = matchingRecipes
-        .filter((id) => !!recipes[id].about.image)
-        .sort((a, b) => {
-            const statusA = statusOrder.indexOf(recipes[a].statuses[actorId]);
-            const statusB = statusOrder.indexOf(recipes[b].statuses[actorId]);
-            if (statusA === statusB) {
-                return recipes[b].updatedDate - recipes[a].updatedDate;
-            }
-            return statusA - statusB;
-        });
-
-    const body = (
-        <React.Fragment>
-            <div className={styles.tagImages}>
-                {images.slice(0, 4).map((id) => (
-                    <img
-                        key={id}
-                        src={imageUrl(recipes[id].about.image, url)}
-                        className={
-                            images.length === 1
-                                ? styles.tagImage1
-                                : images.length == 2
-                                ? styles.tagImage2
-                                : styles.tagImage
-                        }
-                    />
-                ))}
-            </div>
-            <div className={styles.tagTitle}>
-                {tag.text}
-                <div className={styles.tagRecipes}>
-                    {approvedCount ? `${approvedCount} recipes` : ''}
-                    {approvedCount && count > approvedCount ? ', ' : ''}
-                    {count > approvedCount ? `${count - approvedCount} pending` : ''}
-                </div>
-            </div>
-        </React.Fragment>
-    );
-
-    if (onClick) {
-        return (
-            <div onClick={onClick} className={styles.tag}>
-                {body}
-            </div>
-        );
-    }
-    return (
-        <Link to={'/tag/' + tag.id} className={styles.tag}>
-            {body}
-        </Link>
-    );
-};
 
 export const useSetTitle = (title: ?string) => {
     React.useEffect(() => {
@@ -191,15 +114,6 @@ export const useSetTitle = (title: ?string) => {
             document.title = 'Foood';
         }
     }, [title]);
-};
-
-export const sortRecipes = (recipeA: RecipeT, recipeB: RecipeT, actorId: string) => {
-    const statusA = statusOrder.indexOf(recipeA.statuses[actorId]);
-    const statusB = statusOrder.indexOf(recipeB.statuses[actorId]);
-    if (statusA === statusB) {
-        return recipeB.updatedDate - recipeA.updatedDate;
-    }
-    return statusA - statusB;
 };
 
 const Home = ({
@@ -263,19 +177,13 @@ const Home = ({
     );
 
     if (match.params.tagid) {
-        const matches = Object.keys(recipes)
-            .filter((id) =>
-                recipes[id].trashedDate == null && recipes[id].tags
-                    ? recipes[id].tags[match.params.tagid] != null
-                    : false,
-            )
-            .sort((a, b) => sortRecipes(recipes[a], recipes[b], actorId));
         const selectedTag = tags[match.params.tagid];
         if (!selectedTag) {
             return <div>Tag not found</div>;
         }
         // TODO: common ingredients
         // Also: ingredient deletion / merging
+        // ok done with that one.
         return (
             <div>
                 <Link style={{ color: 'inherit' }} to="/">
@@ -286,27 +194,16 @@ const Home = ({
                         {selectedTag.text}
                     </div>
                 </div>
-                <div className={styles.recipes}>
-                    {matches.map((id) => (
-                        // <Link
-                        //     key={id}
-                        //     to={`/recipe/${id}/title/${escapeTitle(recipes[id].about.title)}`}
-                        //     className={styles.recipe}
-                        // >
-                        //     {recipes[id].about.title}
-                        //     {/* {recipes[id].contents.totalTime}
-                        //     {recipes[id].status} */}
-                        // </Link>
-                        <RecipeBlock
-                            url={url}
-                            actorId={actorId}
-                            recipe={recipes[id]}
-                            tags={tags}
-                            key={id}
-                            onClick={() => setSidebar(id)}
-                        />
-                    ))}
-                </div>
+                <RecipeList
+                    url={url}
+                    tagId={match.params.tagid}
+                    actorId={actorId}
+                    recipes={recipes}
+                    tags={tags}
+                    setSidebar={setSidebar}
+                    client={client}
+                    privateClient={privateClient}
+                />
                 {sidebar != null ? (
                     <Sidebar
                         onClose={() => setSidebar(null)}

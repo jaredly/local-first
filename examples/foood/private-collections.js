@@ -39,6 +39,9 @@ const PrivateIngredientTagSchema: Schema = {
 
 // Pantry stuff
 
+// always = "you have it in your pantry"
+// sometimes = "check your pantry"
+// rarely = "buy this"
 export type IngredientAvailability = 'always' | 'sometimes' | 'rarely';
 export const ingredientAvailabilities = ['always', 'sometimes', 'rarely'];
 

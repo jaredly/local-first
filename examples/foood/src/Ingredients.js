@@ -137,6 +137,7 @@ const Ingredients = ({
     const keys = Object.keys(ingredients)
         .filter(
             (id) =>
+                ingredients[id] != null &&
                 ingredients[id].mergedInto == null &&
                 (!filterNoKinds || Object.keys(ingredients[id].kinds).length === 0) &&
                 (!filterNoPantryStatus || !pantryIngredients[id]),
