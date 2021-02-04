@@ -26,6 +26,9 @@ import Check from '@material-ui/icons/Check';
 import Help from '@material-ui/icons/Help';
 import ShoppingCart from '@material-ui/icons/ShoppingCart';
 import Edit from '@material-ui/icons/Edit';
+import DeleteForever from '@material-ui/icons/DeleteForever';
+import Dialog from '@material-ui/core/Dialog';
+import DialogTitle from '@material-ui/core/DialogTitle';
 
 import Grid from '@material-ui/core/Grid';
 import Autocomplete, { createFilterOptions } from '@material-ui/lab/Autocomplete';
@@ -112,6 +115,9 @@ const Ingredients = ({
         'pantryIngredients',
     );
 
+    const [filterNoKinds, setFilterNoKinds] = React.useState(false);
+    const [filterNoPantryStatus, setFilterNoPantryStatus] = React.useState(false);
+
     const [bulkEdit, setBulkEdit] = React.useState(null);
 
     const [search, setSearch] = React.useState('');
@@ -121,12 +127,20 @@ const Ingredients = ({
         [],
     );
 
+    const [dialog, setDialog] = React.useState(null);
+    const [merge, setMerge] = React.useState(null);
+
     const [bulkTags, setBulkTags] = React.useState(null);
 
     let [page, setPage] = React.useState(0);
 
     const keys = Object.keys(ingredients)
-        .filter((id) => ingredients[id].mergedInto == null)
+        .filter(
+            (id) =>
+                ingredients[id].mergedInto == null &&
+                (!filterNoKinds || Object.keys(ingredients[id].kinds).length === 0) &&
+                (!filterNoPantryStatus || !pantryIngredients[id]),
+        )
         .sort((a, b) => cmp(ingredients[a].name.toLowerCase(), ingredients[b].name.toLowerCase()));
 
     const needle = search.toLowerCase();
@@ -149,6 +163,22 @@ const Ingredients = ({
             <div style={{ display: 'flex' }}>
                 <SearchField text={search} onChange={setSearch} />
                 <Button
+                    variant={filterNoPantryStatus ? 'contained' : 'text'}
+                    onClick={() => {
+                        setFilterNoPantryStatus(!filterNoPantryStatus);
+                    }}
+                >
+                    Only w/o pantry status
+                </Button>
+                <Button
+                    onClick={() => {
+                        setFilterNoKinds(!filterNoKinds);
+                    }}
+                    variant={filterNoKinds ? 'contained' : 'text'}
+                >
+                    Only w/o kinds
+                </Button>
+                <Button
                     onClick={() => {
                         if (bulkEdit) {
                             setBulkEdit(null);
@@ -161,64 +191,110 @@ const Ingredients = ({
                     {bulkEdit ? 'Stop bulk editing' : 'Bulk edit'}
                 </Button>
             </div>
+            {merge != null ? (
+                <div>
+                    Click on the ingredient to merge "{ingredients[merge]?.name}" into.
+                    <Button variant="contained" onClick={() => setMerge(null)}>
+                        Cancel merge
+                    </Button>
+                </div>
+            ) : null}
             {paging ? <Pager page={page} pages={pages} onChange={setPage} /> : null}
-            {results.map((key) => {
-                const ing = (
-                    <Ingredient
-                        key={key}
-                        pantryIngredient={pantryIngredients[key]}
-                        pantryCol={pantryIngredientsCol}
-                        ingredient={ingredients[key]}
-                        col={ingredientsCol}
-                    />
-                );
-                if (bulkEdit) {
-                    return (
-                        <React.Fragment key={key}>
-                            {ing}
-                            <div>
-                                {ingredientKinds.map((kind) => (
-                                    <button
-                                        key={kind}
-                                        // size="small"
-                                        // variant={
-                                        //     ingredients[key].kinds[kind] == null
-                                        //         ? 'text'
-                                        //         : 'contained'
-                                        // }
-                                        style={
-                                            ingredients[key].kinds[kind] == null
-                                                ? null
-                                                : {
-                                                      fontWeight: 'bold',
-                                                      textDecoration: 'underline',
+            {merge != null
+                ? results.map((key) => {
+                      if (key === merge) {
+                          return (
+                              <div
+                                  style={{
+                                      padding: '8px 16px',
+                                      fontSize: '1.3em',
+                                      backgroundColor: '#aaa',
+                                  }}
+                              >
+                                  {ingredients[key].name}
+                              </div>
+                          );
+                      }
+                      return (
+                          <div
+                              key={key}
+                              style={{
+                                  padding: '8px 16px',
+                                  fontSize: '1.3em',
+                                  cursor: 'pointer',
+                              }}
+                              onClick={() => {
+                                  ingredientsCol.setAttribute(merge, ['mergedInto'], key);
+                                  // Do the merge!
+                                  setMerge(null);
+                              }}
+                          >
+                              {ingredients[key].name}
+                          </div>
+                      );
+                  })
+                : results.map((key) => {
+                      const ing = (
+                          <Ingredient
+                              key={key}
+                              pantryIngredient={pantryIngredients[key]}
+                              pantryCol={pantryIngredientsCol}
+                              ingredient={ingredients[key]}
+                              col={ingredientsCol}
+                              setDialog={setDialog}
+                          />
+                      );
+                      if (bulkEdit) {
+                          return (
+                              <React.Fragment key={key}>
+                                  {ing}
+                                  <div>
+                                      {ingredientKinds.map((kind) => (
+                                          <button
+                                              key={kind}
+                                              style={
+                                                  ingredients[key].kinds[kind] == null
+                                                      ? null
+                                                      : {
+                                                            fontWeight: 'bold',
+                                                            textDecoration: 'underline',
+                                                        }
+                                              }
+                                              onClick={async () => {
+                                                  if (ingredients[key].kinds[kind] == null) {
+                                                      await ingredientsCol.setAttribute(
+                                                          key,
+                                                          ['kinds', kind],
+                                                          Date.now(),
+                                                      );
+                                                  } else {
+                                                      await ingredientsCol.clearAttribute(key, [
+                                                          'kinds',
+                                                          kind,
+                                                      ]);
                                                   }
-                                        }
-                                        onClick={async () => {
-                                            if (ingredients[key].kinds[kind] == null) {
-                                                await ingredientsCol.setAttribute(
-                                                    key,
-                                                    ['kinds', kind],
-                                                    Date.now(),
-                                                );
-                                            } else {
-                                                await ingredientsCol.clearAttribute(key, [
-                                                    'kinds',
-                                                    kind,
-                                                ]);
-                                            }
-                                        }}
-                                    >
-                                        {kind}
-                                    </button>
-                                ))}
-                            </div>
-                        </React.Fragment>
-                    );
-                }
-                return ing;
-            })}
+                                              }}
+                                          >
+                                              {kind}
+                                          </button>
+                                      ))}
+                                  </div>
+                              </React.Fragment>
+                          );
+                      }
+                      return ing;
+                  })}
             {paging ? <Pager page={page} pages={pages} onChange={setPage} /> : null}
+            {dialog != null ? (
+                dialog.type === 'delete' ? (
+                    <DeleteDialog
+                        ingredient={ingredients[dialog.id]}
+                        col={ingredientsCol}
+                        setDialog={setDialog}
+                        setMerge={setMerge}
+                    />
+                ) : null
+            ) : null}
         </div>
     );
 };
@@ -269,7 +345,7 @@ const LineEdit = ({ label, value, onChange }) => {
 };
 
 import Checkbox from '@material-ui/core/Checkbox';
-const Ingredient = React.memo(({ ingredient, col, pantryIngredient, pantryCol }) => {
+const Ingredient = React.memo(({ ingredient, setDialog, col, pantryIngredient, pantryCol }) => {
     const [altName, setAltName] = React.useState('');
     return (
         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -374,16 +450,47 @@ const Ingredient = React.memo(({ ingredient, col, pantryIngredient, pantryCol })
                 ) : null}
             </div>
             <Kinds kinds={ingredientKinds} ingredient={ingredient} col={col} />
-            {/* <LineEdit
-                label="Add alternate name"
-                value={'Add alternate name'}
-                onChange={(newName) => {
-                    col.setAttribute(ingredient.id, ['alternateNames', newName], Date.now());
+            <IconButton
+                onClick={() => {
+                    setDialog({ type: 'delete', id: ingredient.id });
                 }}
-            /> */}
+            >
+                <DeleteForever />
+            </IconButton>
         </div>
     );
 });
+
+const DeleteDialog = ({ ingredient, col, setDialog, setMerge }: *) => {
+    if (!ingredient) {
+        return null;
+    }
+    return (
+        <Dialog open={true} onClose={() => setDialog(null)}>
+            <DialogTitle>Delete Ingredient?</DialogTitle>
+            <div style={{ padding: 16, textAlign: 'center' }}>{ingredient.name}</div>
+            <div style={{ display: 'flex' }}>
+                <Button
+                    onClick={() => {
+                        setDialog(null);
+                        col.delete(ingredient.id);
+                    }}
+                >
+                    Delete
+                </Button>
+                <Button
+                    onClick={() => {
+                        setDialog(null);
+                        setMerge(ingredient.id);
+                    }}
+                >
+                    Merge
+                </Button>
+                <Button onClick={() => setDialog(null)}>Cancel</Button>
+            </div>
+        </Dialog>
+    );
+};
 
 const Kinds = ({ kinds, ingredient, col }) => {
     const [current, setCurrent] = React.useState(null);
