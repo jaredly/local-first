@@ -62,28 +62,26 @@ const MealPlanButton = ({
     );
     const styles = useStyles();
     results.sort((a, b) => cmp(b.key, a.key));
-    // if (!results.length) {
-    //     return null;
-    // }
-    // const plan = results[0].value;
 
     if (!results.length || !results[0].value.uncategorizedRecipes[recipeId]) {
         return (
             <Tooltip title="Add to meal plan">
-                <Button
-                    disabled={!results.length}
-                    style={{ marginLeft: 8 }}
-                    variant="outlined"
-                    onClick={() => {
-                        col.setAttribute(
-                            results[0].value.id,
-                            ['uncategorizedRecipes', recipeId],
-                            Date.now(),
-                        );
-                    }}
-                >
-                    <DateRange />
-                </Button>
+                <span>
+                    <Button
+                        disabled={!results.length}
+                        style={{ marginLeft: 8 }}
+                        variant="outlined"
+                        onClick={() => {
+                            col.setAttribute(
+                                results[0].value.id,
+                                ['uncategorizedRecipes', recipeId],
+                                Date.now(),
+                            );
+                        }}
+                    >
+                        <DateRange />
+                    </Button>
+                </span>
             </Tooltip>
         );
     }

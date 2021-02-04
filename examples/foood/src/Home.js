@@ -274,6 +274,8 @@ const Home = ({
         if (!selectedTag) {
             return <div>Tag not found</div>;
         }
+        // TODO: common ingredients
+        // Also: ingredient deletion / merging
         return (
             <div>
                 <Link style={{ color: 'inherit' }} to="/">

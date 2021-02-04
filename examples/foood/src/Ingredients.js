@@ -44,6 +44,54 @@ export const ingredientMatch = (ingredient: IngredientT, needle: string) => {
     );
 };
 
+const PAGE_SIZE = 20;
+const MIN_TO_PAGE = PAGE_SIZE * 3;
+
+const Pager = ({ page, pages, onChange }) => {
+    const res = [
+        <button onClick={() => onChange(page - 1)} key="<" disabled={page <= 0}>
+            {'<'}
+        </button>,
+    ];
+    for (let i = 0; i < pages; i++) {
+        res.push(
+            <button key={i} disabled={i === page} onClick={() => onChange(i)}>
+                {i + 1}
+            </button>,
+        );
+    }
+    res.push(
+        <button onClick={() => onChange(page + 1)} key=">" disabled={page >= pages - 1}>
+            {'>'}
+        </button>,
+    );
+    return res;
+};
+
+const SearchField = ({ text, onChange }) => {
+    const [value, setValue] = React.useState(text);
+    // const inputText = React.useRef(text);
+    // if (inputText.current !== text) {
+    //     inputText.current = text;
+    //     // setValue(text);
+    // }
+    React.useEffect(() => {
+        let tid = setTimeout(() => {
+            onChange(value);
+        }, 300);
+        return () => clearTimeout(tid);
+    }, [value]);
+    return (
+        <TextField
+            placeholder="Search"
+            label="Search"
+            value={value}
+            onChange={(evt) => setValue(evt.target.value)}
+            fullWidth
+        />
+    );
+};
+
 const Ingredients = ({
     client,
     privateClient,
@@ -75,26 +123,31 @@ const Ingredients = ({
 
     const [bulkTags, setBulkTags] = React.useState(null);
 
+    let [page, setPage] = React.useState(0);
+
     const keys = Object.keys(ingredients)
         .filter((id) => ingredients[id].mergedInto == null)
         .sort((a, b) => cmp(ingredients[a].name.toLowerCase(), ingredients[b].name.toLowerCase()));
 
     const needle = search.toLowerCase();
-    const results =
+    let results =
         search.trim() != ''
             ? keys.filter((key) => ingredientMatch(ingredients[key], needle))
             : keys;
 
+    const pages = results.length / PAGE_SIZE;
+    const paging = results.length > MIN_TO_PAGE;
+
+    page = Math.min(page, Math.floor(results.length / PAGE_SIZE));
+
+    if (paging) {
+        results = results.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+    }
+
     return (
         <div>
             <div style={{ display: 'flex' }}>
-                <TextField
-                    placeholder="Search"
-                    label="Search"
-                    value={search}
-                    onChange={(evt) => setSearch(evt.target.value)}
-                    fullWidth
-                />
+                <SearchField text={search} onChange={setSearch} />
                 <Button
                     onClick={() => {
                         if (bulkEdit) {
@@ -108,6 +161,7 @@ const Ingredients = ({
                     {bulkEdit ? 'Stop bulk editing' : 'Bulk edit'}
                 </Button>
             </div>
+            {paging ? <Pager page={page} pages={pages} onChange={setPage} /> : null}
             {results.map((key) => {
                 const ing = (
                     <Ingredient
@@ -124,13 +178,21 @@ const Ingredients = ({
                             {ing}
                             <div>
                                 {ingredientKinds.map((kind) => (
-                                    <Button
+                                    <button
                                         key={kind}
-                                        size="small"
-                                        variant={
+                                        // size="small"
+                                        // variant={
+                                        //     ingredients[key].kinds[kind] == null
+                                        //         ? 'text'
+                                        //         : 'contained'
+                                        // }
+                                        style={
                                             ingredients[key].kinds[kind] == null
-                                                ? 'text'
-                                                : 'contained'
+                                                ? null
+                                                : {
+                                                      fontWeight: 'bold',
+                                                      textDecoration: 'underline',
+                                                  }
                                         }
                                         onClick={async () => {
                                             if (ingredients[key].kinds[kind] == null) {
@@ -148,7 +210,7 @@ const Ingredients = ({
                                         }}
                                     >
                                         {kind}
-                                    </Button>
+                                    </button>
                                 ))}
                             </div>
                         </React.Fragment>
@@ -156,6 +218,7 @@ const Ingredients = ({
                 }
                 return ing;
             })}
+            {paging ? <Pager page={page} pages={pages} onChange={setPage} /> : null}
         </div>
     );
 };

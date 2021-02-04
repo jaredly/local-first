@@ -226,7 +226,6 @@ export const RecipeInner = ({
             ) : null}
             <div style={{ marginTop: 16 }}>
                 Batches:
-                {/* <span style={{ display: 'inline-block', width: 8 }} /> */}
                 {[1, 2, 3].map((num) => (
                     <Button
                         key={num}
