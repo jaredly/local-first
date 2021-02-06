@@ -54,7 +54,7 @@ const reach = (items, result, node, path) => {
     });
 };
 
-const JumpDialog = ({ onClose, url, client }: *) => {
+export const Jump = ({ url, client, onClose }: *) => {
     const history = useHistory();
     const params = useParams();
     const [col, items] = useCollection(React, client, 'items');
@@ -88,6 +88,71 @@ const JumpDialog = ({ onClose, url, client }: *) => {
     }
 
     return (
+        <React.Fragment>
+            <TextField
+                fullWidth
+                variant="outlined"
+                label="Search"
+                autoFocus
+                placeholder="Search text"
+                value={searchText}
+                onChange={(evt) => setText(evt.target.value)}
+                onKeyDown={(evt) => {
+                    if (evt.key === 'ArrowDown') {
+                        setSelected(selected + 1);
+                    }
+                    if (evt.key === 'Down') {
+                        setSelected(selected + 1);
+                    }
+                    if (evt.key === 'ArrowUp') {
+                        setSelected(selected - 1);
+                    }
+                    if (evt.key === 'Up') {
+                        setSelected(selected - 1);
+                    }
+                    console.log(evt.key);
+                    if (evt.key === 'Enter') {
+                        const sel = toShow[selected];
+                        if (sel) {
+                            history.push(`/doc/${params.doc}/item/${sel.path.join(':-:')}`);
+                            onClose();
+                        }
+                    }
+                }}
+            />
+            <div style={{ flex: 1, overflow: 'auto' }}>
+                {toShow.slice(0, 100).map(({ id, body, path }, i) => (
+                    <div
+                        key={id}
+                        style={i === selected ? { backgroundColor: '#666' } : null}
+                        css={{ padding: '4px 8px' }}
+                        onClick={() => {
+                            history.push(`/doc/${params.doc}/item/${path.join(':-:')}`);
+                            onClose();
+                        }}
+                    >
+                        {body}
+                    </div>
+                ))}
+            </div>
+            {/* {data ? (
+                <Changes
+                    id={id}
+                    col={col}
+                    client={client}
+                    node={data.node}
+                    by={50}
+                    changes={data.changes}
+                />
+            ) : (
+                'loading...'
+            )} */}
+        </React.Fragment>
+    );
+};
+
+const JumpDialog = ({ onClose, url, client }: *) => {
+    return (
         <Dialog open={true} onClose={onClose}>
             <div
                 css={{
@@ -101,51 +166,7 @@ const JumpDialog = ({ onClose, url, client }: *) => {
                 }}
             >
                 <DialogTitle>Jump to...</DialogTitle>
-                <TextField
-                    fullWidth
-                    variant="outlined"
-                    label="Search"
-                    autoFocus
-                    placeholder="Search text"
-                    value={searchText}
-                    onChange={(evt) => setText(evt.target.value)}
-                    onKeyDown={(evt) => {
-                        if (evt.key === 'Enter') {
-                            const sel = toShow[selected];
-                            if (sel) {
-                                history.push(`/doc/${params.doc}/item/${sel.path.join(':-:')}`);
-                                onClose();
-                            }
-                        }
-                    }}
-                />
-                <div style={{ flex: 1, overflow: 'auto' }}>
-                    {toShow.slice(0, 100).map(({ id, body, path }, i) => (
-                        <div
-                            key={id}
-                            style={i === selected ? { backgroundColor: '#444' } : null}
-                            css={{ padding: '4px 8px' }}
-                            onClick={() => {
-                                history.push(`/doc/${params.doc}/item/${path.join(':-:')}`);
-                                onClose();
-                            }}
-                        >
-                            {body}
-                        </div>
-                    ))}
-                </div>
-                {/* {data ? (
-                <Changes
-                    id={id}
-                    col={col}
-                    client={client}
-                    node={data.node}
-                    by={50}
-                    changes={data.changes}
-                />
-            ) : (
-                'loading...'
-            )} */}
+                <Jump onClose={onClose} url={url} client={client} />
             </div>
         </Dialog>
     );

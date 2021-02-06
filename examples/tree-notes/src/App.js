@@ -4,6 +4,8 @@ import { Route, Link, useRouteMatch, useParams } from 'react-router-dom';
 import { toString as richTextToString } from '../../../packages/rich-text-crdt';
 import querystring from 'querystring';
 import ListItem from '@material-ui/core/ListItem';
+import IconButton from '@material-ui/core/IconButton';
+import Search from '@material-ui/icons/Search';
 import ListItemText from '@material-ui/core/ListItemText';
 import Switch from '@material-ui/core/Switch';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
@@ -28,6 +30,7 @@ import UpdateSnackbar from '../../shared/Update';
 import Items from './Items';
 import { blankItem } from './types';
 import Debug from '../../shared/Debug';
+import SearchPage from './SearchPage';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
@@ -351,6 +354,19 @@ const App = ({ config, docClient }: { config: ConnectionConfig, docClient: Clien
             <MetaData client={client} docClient={docClient} docId={docId} />
             <AppShell
                 title="Tree notes"
+                topIcons={
+                    <React.Fragment>
+                        <IconButton
+                            edge="start"
+                            component={Link}
+                            to={`/doc/${match.params.doc}/search`}
+                            color="inherit"
+                            aria-label="menu"
+                        >
+                            <Search />
+                        </IconButton>
+                    </React.Fragment>
+                }
                 renderDrawer={(isOpen, onClose) => (
                     <Drawer
                         pageItems={<SidebarItems onClose={onClose} docClient={docClient} />}
@@ -366,6 +382,9 @@ const App = ({ config, docClient }: { config: ConnectionConfig, docClient: Clien
                 client={client}
             >
                 <RouteSwitch>
+                    <Route path={`${match.path == '/' ? '' : match.path}/search`}>
+                        <SearchPage client={client} url={url} />
+                    </Route>
                     <Route path={`${match.path == '/' ? '' : match.path}/debug`}>
                         <Debug client={client} />
                     </Route>

@@ -1,6 +1,6 @@
 {
-    "short_name": "Tree Notes",
-    "name": "Tree Notes",
+    "short_name": "Notablemind",
+    "name": "Notablemind",
     "description": "Take a lot of notes n stuff",
     "start_url": "/?source=pwa",
     "icons": [
@@ -21,8 +21,8 @@
             "purpose": "maskable"
         }
     ],
-    "background_color": "#4caf50",
+    "background_color": "#2196f3",
     "display": "standalone",
     "scope": "/",
-    "theme_color": "#4caf50"
+    "theme_color": "#2196f3"
 }
