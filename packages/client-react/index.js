@@ -2,7 +2,7 @@
 // import React from '../../examples/whiteboard/node_modules/react';
 
 import { type Client, type Collection, type QueryOp } from '../client-bundle';
-import deepEqual from '@birchill/json-equalish';
+import deepEqual from 'fast-deep-equal';
 
 export const useSyncStatus = function<SyncStatus>(React: *, client: Client<SyncStatus>) {
     const [status, setStatus] = React.useState(client.getSyncStatus());
@@ -109,7 +109,12 @@ export const useItem = function<T: {}, SyncStatus>(
             );
         }
         return col.onItemChange(id, item => {
-            if (!deepEqual(item, currentData.current)) {
+            try {
+                if (!deepEqual(item, currentData.current)) {
+                    setItem(item);
+                }
+            } catch (_) {
+                // Assume it was deepEqual being mad
                 setItem(item);
             }
         });
