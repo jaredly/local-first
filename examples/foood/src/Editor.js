@@ -7,6 +7,8 @@ import QuillEditor from './Quill';
 import { parse, detectLists, detectIngredients } from './parse';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
+import Alert from '@material-ui/lab/Alert';
+import Modal from '@material-ui/core/Modal';
 import type {
     RecipeMeta,
     RecipeAbout,
@@ -20,6 +22,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import { useCollection, useItem } from '../../../packages/client-react';
 import type { Client, Collection } from '../../../packages/client-bundle';
 import Delta from 'quill-delta';
+import { getIngredientNames } from './RecipeBlock';
 
 import Grid from '@material-ui/core/Grid';
 import Autocomplete, { createFilterOptions } from '@material-ui/lab/Autocomplete';
@@ -50,6 +53,28 @@ const useStyles = makeStyles((theme) => ({
         right: 0,
         textAlign: 'center',
         background: theme.palette.background.default,
+    },
+    ingredientWarningContainer: {
+        position: 'fixed',
+        left: 0,
+        bottom: '10px',
+        zIndex: 1,
+        width: 'calc(50vw - 100px)',
+        display: 'flex',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+    },
+    ingredientWarning: {
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+        '@media (max-width: 600px)': {
+            width: '50px',
+        },
+    },
+    ingredientWarningModal: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 }));
 
@@ -335,6 +360,21 @@ const RecipeEditor = ({
     }, []);
 
     const styles = useStyles();
+
+    const [warningModalOpen, setWarningModalOpen] = React.useState(false);
+    const [inMobileMode, setInMobileMode] = React.useState(false);
+    React.useEffect(() => {
+        const checkWindowSize = () => {
+            if (window.innerWidth < 600) {
+                setInMobileMode(true);
+            } else {
+                setInMobileMode(false);
+            }
+        };
+
+        checkWindowSize();
+        window.addEventListener('resize', checkWindowSize);
+    }, []);
 
     const [tagsCol, allTags] = useCollection<TagT, _>(React, client, 'tags');
 
@@ -634,6 +674,32 @@ const RecipeEditor = ({
                 {/* ) : null} */}
             </div>
             {onDelete != null ? <DeleteButton onConfirm={onDelete} /> : null}
+
+            {text.ops[0].insert.length > 1 && getIngredientNames(text).length === 0 ? (
+                <div className={styles.ingredientWarningContainer}>
+                    <Alert
+                        className={styles.ingredientWarning}
+                        severity="warning"
+                        onClick={inMobileMode ? () => setWarningModalOpen(true) : null}
+                    >
+                        {inMobileMode ? null : 'No ingredients specified!'}
+                    </Alert>
+
+                    <Modal
+                        open={warningModalOpen}
+                        onClose={() => setWarningModalOpen(false)}
+                        className={styles.ingredientWarningModal}
+                    >
+                        <Alert
+                            severity="warning"
+                            // className={styles.ingredientWarningModalMsg}
+                        >
+                            No ingredients specified!
+                        </Alert>
+                    </Modal>
+                </div>
+            ) : null}
+
             <div className={styles.buttons}>
                 <Button
                     color="primary"
