@@ -304,7 +304,7 @@ const PantryIcon = ({ recipe, pantryIngredients }) => {
 import Help from '@material-ui/icons/Help';
 import Check from '@material-ui/icons/Check';
 
-const getIngredientNames = ({ ops }) =>
+export const getIngredientNames = ({ ops }) =>
     ops
         .filter((op) => op.attributes && op.attributes.ingredientLink != null)
         .map((op) => (typeof op.insert === 'string' ? op.insert : ''));
