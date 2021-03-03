@@ -78,6 +78,10 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
+const shouldShowIngredientsAlert = (text) => {
+    return text.ops[0].insert.length > 1 && getIngredientNames(text).length === 0;
+};
+
 const instructionText = (instruction) => {
     if (typeof instruction === 'string') {
         return instruction;
@@ -374,6 +378,8 @@ const RecipeEditor = ({
 
         checkWindowSize();
         window.addEventListener('resize', checkWindowSize);
+
+        return () => window.removeEventListener('resize', checkWindowSize);
     }, []);
 
     const [tagsCol, allTags] = useCollection<TagT, _>(React, client, 'tags');
@@ -675,7 +681,7 @@ const RecipeEditor = ({
             </div>
             {onDelete != null ? <DeleteButton onConfirm={onDelete} /> : null}
 
-            {text.ops[0].insert.length > 1 && getIngredientNames(text).length === 0 ? (
+            {shouldShowIngredientsAlert(text) ? (
                 <div className={styles.ingredientWarningContainer}>
                     <Alert
                         className={styles.ingredientWarning}
