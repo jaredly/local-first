@@ -57,11 +57,14 @@ const useTree = (col, id) => {
     return data;
 };
 
-const dataToText = (data) => {
-    let lines = [richTextToString(data.item.body)];
+const dataToText = (data, config) => {
+    let lines = [];
+    if (!config.skipHeader) {
+        lines.push(richTextToString(data.item.body));
+    }
     for (let child of data.children) {
         if (child) {
-            lines.push(...dataToText(child));
+            lines.push(...dataToText(child, { ...config, skipHeader: false }));
         }
     }
 
@@ -70,10 +73,19 @@ const dataToText = (data) => {
 
 const CopyDialog = ({ client, id, col, url, onClose }: *) => {
     const data = useTree(col, id);
-    const text = data ? dataToText(data).join('') : 'Loading...';
+    const [config, setConfig] = React.useState({ spaces: false, skipHeader: false });
+    const text = data ? dataToText(data, config).join(config.spaces ? '\n' : '') : 'Loading...';
     return (
         <Dialog open={true} onClose={onClose}>
             <DialogTitle>Copy Contents</DialogTitle>
+            <Checkbox
+                checked={config.spaces}
+                onChange={() => setConfig({ ...config, spaces: !config.spaces })}
+            />
+            <Checkbox
+                checked={config.skipHeader}
+                onChange={() => setConfig({ ...config, skipHeader: !config.skipHeader })}
+            />
             <textarea style={{ minWidth: 300, minHeight: 300 }} value={text} />
         </Dialog>
     );
