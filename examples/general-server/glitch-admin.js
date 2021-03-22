@@ -1,6 +1,7 @@
 // @flow
 
 const { getAuthDb } = require('../../packages/server-bundle/full');
+const { setupPersistence } = require('../../packages/server-bundle/sqlite-persistence');
 const dataPath = '.data/store';
 
 const {
@@ -36,4 +37,13 @@ if (cmd === 'ls-users') {
 } else if (cmd === 'create-invite') {
     const id = createInvite(getAuthDb(dataPath), Date.now());
     console.log(`New invite created! https://foood2.surge.sh/?invite=${id}`);
+} else if (cmd === 'compact') {
+    const db = args[0];
+    if (!fs.existsSync(db)) {
+        console.error(`No database at ${db}`);
+        process.exit(1);
+    }
+    console.warn('This will modify your database! I hope you made a backup.');
+    const persistence = setupPersistence(db);
+    const collection = args[1];
 }
