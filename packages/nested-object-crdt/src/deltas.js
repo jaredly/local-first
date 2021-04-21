@@ -284,9 +284,18 @@ export const deltas = {
 
         const relIdx = meta.idsInOrder.indexOf(relativeTo);
         if (relIdx === -1) {
-            throw new Error(
-                `Relative ${relativeTo} not in children ${meta.idsInOrder.join(', ')}}`,
+            console.warn(
+                new Error(`Relative ${relativeTo} not in children ${meta.idsInOrder.join(', ')}}`),
             );
+            // we probably have coherence errors? Like the cache not matching the meta?
+            // but we can still insert the thing
+            return {
+                type: 'insert',
+                path: makeKeyPath(current.meta, path.concat([id])),
+                value,
+                // insert at the start, it's fine
+                sort: { stamp, idx: sortedArray.between(null, meta.items[0].sort.idx) },
+            };
         }
         const [prev, after] = before
             ? [meta.idsInOrder[relIdx - 1], relativeTo]

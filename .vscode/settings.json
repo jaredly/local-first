@@ -2,5 +2,6 @@
     "prettier.printWidth": 100,
     "prettier.trailingComma": "all",
     "prettier.singleQuote": true,
-    "eslint.enable": true
+    "eslint.enable": true,
+    "editor.tabSize": 4
 }
