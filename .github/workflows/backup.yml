@@ -1,7 +1,7 @@
 
-on:
-  schedule:
-    - cron: '32 15 * * *'
+# on:
+#   schedule:
+#     - cron: '32 15 * * *'
 
 jobs:
   trigger_backup:
