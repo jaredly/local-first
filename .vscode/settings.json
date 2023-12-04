@@ -3,5 +3,6 @@
     "prettier.trailingComma": "all",
     "prettier.singleQuote": true,
     "eslint.enable": true,
-    "editor.tabSize": 4
+    "editor.tabSize": 4,
+    "javascript.validate.enable": false
 }

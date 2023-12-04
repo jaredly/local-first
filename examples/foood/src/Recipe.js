@@ -225,7 +225,7 @@ export const RecipeInner = ({
             ) : null}
             <div style={{ marginTop: 16 }}>
                 Batches:
-                {[1, 2, 3].map((num) => (
+                {[0.5, 1, 2, 3].map((num) => (
                     <Button
                         key={num}
                         variant={batches === num ? 'contained' : 'outlined'}

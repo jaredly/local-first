@@ -36,9 +36,7 @@ export const listen = (fn: (data: Status) => mixed) => {
 export const checkEmail = async (host: string, email: string) => {
     // TODO figure out what the behavior is here if we're offline
     const res = await fetch(
-        `${
-            window.location.protocol
-        }//${host}/api/check-login?email=${encodeURIComponent(email)}`,
+        `${window.location.protocol}//${host}/api/check-login?email=${encodeURIComponent(email)}`,
     );
     return res.status >= 200 && res.status < 300;
 };
@@ -48,18 +46,16 @@ const processResponse = async (res, sentToken: ?string) => {
         throw new Error(await res.text());
     }
     const token =
-        sentToken == null || sentToken.length == 0
-            ? res.headers.get('X-Session')
-            : sentToken;
+        sentToken == null || sentToken.length == 0 ? res.headers.get('X-Session') : sentToken;
     if (token == null) {
         localStorage.removeItem(storageKey);
-        listeners.forEach((fn) => fn(false));
+        listeners.forEach(fn => fn(false));
         return null;
     }
     const user = await res.json();
     const auth = { user, token };
     localStorage.setItem(storageKey, JSON.stringify(auth));
-    listeners.forEach((fn) => fn(auth));
+    listeners.forEach(fn => fn(auth));
     return auth;
 };
 
@@ -75,7 +71,7 @@ export const getUser = async (host: string, token: string) => {
     }
     if (res.status === 401) {
         localStorage.removeItem(storageKey);
-        listeners.forEach((fn) => fn(false));
+        listeners.forEach(fn => fn(false));
         throw new Error(`Not logged in`);
     }
     return processResponse(res, token);

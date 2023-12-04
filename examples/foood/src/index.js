@@ -89,7 +89,7 @@ const Top = () => {
     return window.location.hostname === 'localhost' && useLocal ? (
         <Main host={'localhost:9090'} prefix={'foood-local'} />
     ) : (
-        <Main host={'local-first-server.glitch.me'} prefix={'foood'} />
+        <Main host={'logic.jaredforsyth.com'} prefix={'foood'} />
     );
 };
 

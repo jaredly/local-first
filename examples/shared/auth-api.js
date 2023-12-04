@@ -36,7 +36,9 @@ export const listen = (fn: (data: Status) => mixed) => {
 export const checkEmail = async (host: string, email: string) => {
     // TODO figure out what the behavior is here if we're offline
     const res = await fetch(
-        `${window.location.protocol}//${host}/api/check-login?email=${encodeURIComponent(email)}`,
+        `${
+            host.startsWith('localhost:') ? 'http:' : 'https:'
+        }//${host}/api/check-login?email=${encodeURIComponent(email)}`,
     );
     if (res.status === 204) {
         return true;
@@ -73,9 +75,12 @@ export const getUser = async (storageKey: string, host: string, token: string) =
     // TODO figure out what the behavior is here if we're offline
     let res;
     try {
-        res = await fetch(`${window.location.protocol}//${host}/api/user`, {
-            headers: { Authorization: `Bearer: ${token}` },
-        });
+        res = await fetch(
+            `${host.startsWith('localhost:') ? 'http:' : 'https:'}//${host}/api/user`,
+            {
+                headers: { Authorization: `Bearer: ${token}` },
+            },
+        );
     } catch {
         return false;
     }
@@ -90,10 +95,13 @@ export const getUser = async (storageKey: string, host: string, token: string) =
 export const logout = async (storageKey: string, host: string, token: string) => {
     // TODO figure out what the behavior is here if we're offline
     try {
-        const res = await fetch(`${window.location.protocol}//${host}/api/logout`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer: ${token}` },
-        });
+        const res = await fetch(
+            `${host.startsWith('localhost:') ? 'http:' : 'https:'}//${host}/api/logout`,
+            {
+                method: 'POST',
+                headers: { Authorization: `Bearer: ${token}` },
+            },
+        );
         processResponse(storageKey, res);
     } catch (err) {
         console.log('Failed to logout', err.message);
@@ -108,13 +116,16 @@ export const logout = async (storageKey: string, host: string, token: string) =>
 
 export const login = async (storageKey: string, host: string, email: string, password: string) => {
     // TODO figure out what the behavior is here if we're offline
-    const res = await fetch(`${window.location.protocol}//${host}/api/login`, {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-        headers: {
-            'Content-Type': 'application/json',
+    const res = await fetch(
+        `${host.startsWith('localhost:') ? 'http:' : 'https:'}//${host}/api/login`,
+        {
+            method: 'POST',
+            body: JSON.stringify({ email, password }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
         },
-    });
+    );
     return processResponse(storageKey, res);
 };
 
@@ -127,12 +138,15 @@ export const signup = async (
     invite: ?string,
 ) => {
     // TODO figure out what the behavior is here if we're offline
-    const res = await fetch(`${window.location.protocol}//${host}/api/signup`, {
-        method: 'POST',
-        body: JSON.stringify({ email, password, name, invite }),
-        headers: {
-            'Content-Type': 'application/json',
+    const res = await fetch(
+        `${host.startsWith('localhost:') ? 'http:' : 'https:'}//${host}/api/signup`,
+        {
+            method: 'POST',
+            body: JSON.stringify({ email, password, name, invite }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
         },
-    });
+    );
     return processResponse(storageKey, res);
 };

@@ -5,6 +5,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import MenuIcon from '@material-ui/icons/Menu';
+import ArrowBack from '@material-ui/icons/ArrowBack';
 import Wifi from '@material-ui/icons/Wifi';
 import WifiOff from '@material-ui/icons/WifiOff';
 import CircularProgress from '@material-ui/core/CircularProgress';
@@ -35,6 +36,19 @@ const TopBar = ({ openMenu, client, title, icons }: Props) => {
                 >
                     <MenuIcon />
                 </IconButton>
+                {history.length ? (
+                    <IconButton
+                        edge="start"
+                        className={styles.menuButton}
+                        color="inherit"
+                        aria-label="menu"
+                        onClick={() => {
+                            history.back();
+                        }}
+                    >
+                        <ArrowBack />
+                    </IconButton>
+                ) : null}
                 <Typography variant="h6" className={styles.title}>
                     <Link style={{ color: 'inherit', textDecoration: 'none' }} to="/">
                         {title}
