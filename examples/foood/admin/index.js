@@ -10,8 +10,9 @@ import {
     inMemoryClockPersist,
     PersistentClock,
     makeDeltaInMemoryPersistence,
+    makeDeltaPersistence,
 } from '../../../packages/client-bundle';
-import fs from 'fs';
+import fs, { writeFileSync } from 'fs';
 import getForsythRecipes from './extract-recipes';
 import type { RecipeT, TagT, IngredientT } from '../collections';
 import importFooodData from './import-from-foood';
@@ -49,6 +50,8 @@ const getInput = (prompt) => {
 
 const getUsername = async () => {
     const email = await getInput('email:');
+    const ok = `${baseUrl}/api/check-login?email=${encodeURIComponent(email)}`;
+    console.log('um', ok);
     const res = await fetch(`${baseUrl}/api/check-login?email=${encodeURIComponent(email)}`);
     if (res.status === 204) {
         return email;
@@ -89,7 +92,8 @@ const login = async () => {
 // const baseUrl = `http://localhost:9090`;
 
 const tokenFile = '.session-prod';
-const baseUrl = `https://local-first-server.glitch.me`;
+const baseUrl = `https://logic.jaredforsyth.com`;
+// const baseUrl = `https://local-first-server.glitch.me`;
 
 const genId = () => Math.random().toString(36).slice(2);
 
@@ -177,6 +181,7 @@ const main = async () => {
     }
     const url = `${baseUrl}/dbs/sync?db=foood/public&token=${token}`;
 
+    // const persistence = makeDeltaPersistence('./full-backup.db', Object.keys(schemas), 1, {});
     const persistence = makeDeltaInMemoryPersistence(Object.keys(schemas));
     const clock = new PersistentClock(inMemoryClockPersist());
     const client = createManualDeltaClient(clientCrdtImpl, schemas, clock, persistence);
@@ -185,13 +190,15 @@ const main = async () => {
 
     const userId = '1';
 
+    writeFileSync('./data.dump.json', JSON.stringify(persistence._db));
+
     // NOTE: FOOOD importing is disabled because I've finished it. When I do my fresh start, I'll want to re-enable.
     // Will I do a fresh start? idk. Maybe I'll "export current as json" and then fresh start.
     // await importFooodData(client, userId, () => sync(client, url));
 
     // await importForsythRecipesData(client, userId, () => sync(client, url));
 
-    await importFromHelloFresh((client: any), userId, () => sync(client, url));
+    // await importFromHelloFresh((client: any), userId, () => sync(client, url));
 
     // const fooodStuffs = getFooodStuffs()
     // lists
