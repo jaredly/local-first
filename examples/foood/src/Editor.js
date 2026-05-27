@@ -28,6 +28,7 @@ import Grid from '@material-ui/core/Grid';
 import Autocomplete, { createFilterOptions } from '@material-ui/lab/Autocomplete';
 import Tooltip from './Tooltip';
 import { imageUrl } from './utils';
+import { ImageUploader, uploadImage } from './EditComment';
 
 const filter = createFilterOptions();
 
@@ -208,6 +209,36 @@ const getImage = (image) => {
 };
 
 const statuses: Array<RecipeStatus> = ['to try', 'approved', 'favorite', 'rejected'];
+type EditableImage = string | Blob;
+
+const RecipeImagePreview = ({ image, url }: { image: EditableImage, url: string }) => {
+    const src = React.useMemo(() => {
+        if (typeof image === 'string') {
+            return imageUrl(image, url);
+        }
+        return URL.createObjectURL(image);
+    }, [image, url]);
+
+    React.useEffect(() => {
+        if (typeof image === 'string') {
+            return;
+        }
+        return () => URL.revokeObjectURL(src);
+    }, [image, src]);
+
+    return (
+        <img
+            src={src}
+            style={{
+                objectFit: 'cover',
+                width: 100,
+                height: 100,
+                marginLeft: 16,
+                borderRadius: 20,
+            }}
+        />
+    );
+};
 
 // Ok so what is it that we're editing?
 // about: {title, author, source, image}
@@ -289,7 +320,7 @@ const RecipeEditor = ({
     const [prepTime, setPrepTime] = React.useState(meta.prepTime ?? '');
     const [totalTime, setTotalTime] = React.useState(meta.totalTime ?? '');
     const [yieldAmt, setYield] = React.useState(meta.yield ?? '');
-    const [image, setImage] = React.useState(about.image ?? '');
+    const [image, setImage] = React.useState<EditableImage>(about.image ?? '');
     const [title, setTitle] = React.useState(about.title);
     const [source, setSource] = React.useState(about.source);
     const [text, setText] = React.useState(initialText);
@@ -383,6 +414,7 @@ const RecipeEditor = ({
     }, []);
 
     const [tagsCol, allTags] = useCollection<TagT, _>(React, client, 'tags');
+    const [saving, setSaving] = React.useState(false);
 
     const quillRef = React.useRef(null);
     const quillRefGet = React.useCallback((node) => {
@@ -422,26 +454,25 @@ const RecipeEditor = ({
                         </button>
                     </div>
                     <TextField
-                        value={image}
+                        value={typeof image === 'string' ? image : ''}
                         onChange={(evt) => setImage(evt.target.value)}
                         label="Image"
                         variant="outlined"
                         size="small"
                         fullWidth
                     />
-                </div>
-                {image != '' ? (
-                    <img
-                        src={imageUrl(image, url)}
-                        style={{
-                            objectFit: 'cover',
-                            width: 100,
-                            height: 100,
-                            marginLeft: 16,
-                            borderRadius: 20,
+                    <ImageUploader
+                        url={url}
+                        value={image ? [image] : []}
+                        multiple={false}
+                        buttonLabel={image ? 'Replace Recipe Photo' : 'Upload Recipe Photo'}
+                        onChange={(images) => {
+                            const nextImage = images[images.length - 1];
+                            setImage(nextImage || '');
                         }}
                     />
-                ) : null}
+                </div>
+                {image ? <RecipeImagePreview image={image} url={url} /> : null}
             </div>
             <div className={styles.tags}>
                 <Autocomplete
@@ -710,8 +741,10 @@ const RecipeEditor = ({
                 <Button
                     color="primary"
                     variant="contained"
+                    disabled={saving}
                     style={{ marginRight: 16 }}
                     onClick={async () => {
+                        setSaving(true);
                         const tags = [];
                         for (const tag of editTags) {
                             if (typeof tag.id === 'undefined' && typeof tag.text === 'string') {
@@ -731,24 +764,29 @@ const RecipeEditor = ({
                         }
                         // TODO maybe just use the col here?
                         // Or go through and diff at the top side?
-                        onSave(
-                            {
-                                title,
-                                author: about.author,
-                                image,
-                                source,
-                            },
-                            {
-                                prepTime,
-                                ovenTemp,
-                                cookTime,
-                                totalTime,
-                                yield: yieldAmt,
-                            },
-                            text,
-                            status,
-                            tags,
-                        );
+                        try {
+                            const uploadedImage = await uploadImage(url, client.getStamp(), image);
+                            await onSave(
+                                {
+                                    title,
+                                    author: about.author,
+                                    image: uploadedImage || '',
+                                    source,
+                                },
+                                {
+                                    prepTime,
+                                    ovenTemp,
+                                    cookTime,
+                                    totalTime,
+                                    yield: yieldAmt,
+                                },
+                                text,
+                                status,
+                                tags,
+                            );
+                        } finally {
+                            setSaving(false);
+                        }
                     }}
                 >
                     Save

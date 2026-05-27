@@ -94,7 +94,6 @@ export const NewComment = ({
                     const uploadedImages = await Promise.all(
                         images.map((image) => uploadImage(url, id, image)),
                     );
-                    // $FlowFixMe sadface
                     const successfulImages: Array<string> = uploadedImages.filter(Boolean);
 
                     await col.setAttribute(recipe.id, ['comments', id], {
@@ -161,7 +160,6 @@ export const EditComment = ({
                     const uploadedImages = await Promise.all(
                         images.map((image) => uploadImage(url, comment.id, image)),
                     );
-                    // $FlowFixMe sadface
                     const successfulImages: Array<string> = uploadedImages.filter(Boolean);
                     onSave({ ops: [{ insert: text.trim() + '\n' }] }, happiness, successfulImages);
                 }}
@@ -173,7 +171,13 @@ export const EditComment = ({
     );
 };
 
-const uploadImage = async (url, commentId, image) => {
+type UploadableImage = string | Blob;
+
+export const uploadImage = async (
+    url: string,
+    commentId: string,
+    image: UploadableImage,
+): Promise<?string> => {
     if (typeof image === 'string') {
         return image;
     }
@@ -254,7 +258,19 @@ const ensureSmallEnough = (blob) => {
     }
 };
 
-const ImageUploader = ({ url, value, onChange }) => {
+export const ImageUploader = ({
+    url,
+    value,
+    onChange,
+    multiple = true,
+    buttonLabel = 'Add Images',
+}: {
+    url: string,
+    value: Array<UploadableImage>,
+    onChange: (Array<UploadableImage>) => mixed,
+    multiple?: boolean,
+    buttonLabel?: string,
+}) => {
     const targetRef = React.useRef(null);
     return (
         <div style={{ marginTop: 16, marginBottom: 16 }}>
@@ -291,7 +307,8 @@ const ImageUploader = ({ url, value, onChange }) => {
             </div>
             <input
                 type="file"
-                multiple
+                multiple={multiple}
+                accept="image/*"
                 style={{ display: 'none' }}
                 ref={(node) => (targetRef.current = node)}
                 onChange={async (evt) => {
@@ -299,7 +316,7 @@ const ImageUploader = ({ url, value, onChange }) => {
                     const images = await Promise.all(
                         [...evt.target.files].map((blob) => ensureSmallEnough(blob)),
                     );
-                    onChange(value.concat(images));
+                    onChange(multiple ? value.concat(images) : images);
                 }}
             />
             <Button
@@ -308,7 +325,7 @@ const ImageUploader = ({ url, value, onChange }) => {
                     targetRef.current?.click();
                 }}
             >
-                Add Images
+                {buttonLabel}
             </Button>
         </div>
     );

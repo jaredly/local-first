@@ -187,31 +187,31 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                             meta={blankRecipe.contents.meta}
                             text={blankRecipe.contents.text}
                             status={'to try'}
-                            onSave={(about, meta, text, status, tags) => {
+                            onSave={async (about, meta, text, status, tags) => {
                                 const id = client.getStamp();
                                 const tagObj = {};
                                 tags.forEach((tag) => (tagObj[tag] = Date.now()));
-                                col.save(id, {
-                                    id,
-                                    about,
-                                    statuses: status != null ? { [(actorId: string)]: status } : {},
-                                    createdDate: Date.now(),
-                                    updatedDate: Date.now(),
-                                    contents: {
-                                        meta,
-                                        text,
-                                        changeLog: [],
-                                        version: id,
-                                    },
-                                    comments: {},
-                                    tags: tagObj,
-                                })
-                                    .catch((err) => {
-                                        console.error('error', err);
-                                    })
-                                    .then(() => {
-                                        history.push(`/recipe/${id}`);
+                                try {
+                                    await col.save(id, {
+                                        id,
+                                        about,
+                                        statuses:
+                                            status != null ? { [(actorId: string)]: status } : {},
+                                        createdDate: Date.now(),
+                                        updatedDate: Date.now(),
+                                        contents: {
+                                            meta,
+                                            text,
+                                            changeLog: [],
+                                            version: id,
+                                        },
+                                        comments: {},
+                                        tags: tagObj,
                                     });
+                                    history.push(`/recipe/${id}`);
+                                } catch (err) {
+                                    console.error('error', err);
+                                }
                             }}
                             recipe={blankRecipe}
                         />
