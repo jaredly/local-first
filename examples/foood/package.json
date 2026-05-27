@@ -70,5 +70,10 @@
         "parcel": "^1.12.4",
         "parcel-plugin-workbox-cache": "^2.0.0",
         "prettier": "^2.0.4"
+    },
+    "pnpm": {
+        "overrides": {
+            "@babel/preset-env": "7.12.10"
+        }
     }
 }

@@ -21,7 +21,7 @@ import TagsEditor from './TagsEditor';
 import { NewComment, EditComment } from './EditComment';
 import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 import { type Homepage } from '../private-collections';
-import type { RecipeT, TagT, RecipeStatus } from '../collections';
+import type { RecipeT, RecipeText, TagT, RecipeStatus } from '../collections';
 import QueueButton from './QueueButton';
 import MealPlanButton from './MealPlanButton';
 import Comment from './Comment';
@@ -67,6 +67,13 @@ const useStyles = makeStyles((theme) => ({
     text: {
         marginTop: theme.spacing(2),
     },
+    contentImage: {
+        display: 'block',
+        width: '100%',
+        height: 'auto',
+        borderRadius: 8,
+        marginTop: theme.spacing(2),
+    },
 }));
 
 const formatClass = (format) => {
@@ -85,6 +92,11 @@ const useSetTitle = (title) => {
 };
 
 const statuses: Array<RecipeStatus> = ['to try', 'approved', 'favorite', 'rejected'];
+
+const isRecipeTextEmpty = (text: RecipeText): boolean => {
+    const ops = Array.isArray(text.ops) ? text.ops : [text.ops];
+    return ops.every((op) => typeof op.insert !== 'string' || op.insert.trim() === '');
+};
 
 const ShowTags = ({ recipe, col, client, actorId }) => {
     const styles = useStyles();
@@ -151,6 +163,7 @@ export const RecipeInner = ({
     const status = editorData ? recipe.statuses[editorData.actorId] : null;
     const history = useHistory();
     const [batches, setBatches] = React.useState(1);
+    const showImageAsContent = recipe.about.image && isRecipeTextEmpty(recipe.contents.text);
 
     return (
         <div className={styles.container}>
@@ -223,23 +236,31 @@ export const RecipeInner = ({
                     <MealPlanButton recipeId={recipe.id} privateClient={editorData.privateClient} />
                 </div>
             ) : null}
-            <div style={{ marginTop: 16 }}>
-                Batches:
-                {[0.5, 1, 2, 3].map((num) => (
-                    <Button
-                        key={num}
-                        variant={batches === num ? 'contained' : 'outlined'}
-                        style={{ marginLeft: 16 }}
-                        onClick={() => {
-                            setBatches(num);
-                        }}
-                    >
-                        {num}
-                    </Button>
-                ))}
-                <CustomBatches batches={batches} setBatches={setBatches} />
+            {showImageAsContent ? null : (
+                <div style={{ marginTop: 16 }}>
+                    Batches:
+                    {[0.5, 1, 2, 3].map((num) => (
+                        <Button
+                            key={num}
+                            variant={batches === num ? 'contained' : 'outlined'}
+                            style={{ marginLeft: 16 }}
+                            onClick={() => {
+                                setBatches(num);
+                            }}
+                        >
+                            {num}
+                        </Button>
+                    ))}
+                    <CustomBatches batches={batches} setBatches={setBatches} />
+                </div>
+            )}
+            <div className={styles.text}>
+                {showImageAsContent ? (
+                    <img src={imageUrl(recipe.about.image, url)} className={styles.contentImage} />
+                ) : (
+                    renderQuill(recipe.contents.text, batches)
+                )}
             </div>
-            <div className={styles.text}>{renderQuill(recipe.contents.text, batches)}</div>
             <Comments url={url} recipe={recipe} editorData={editorData} />
         </div>
     );
