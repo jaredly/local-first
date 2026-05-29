@@ -1,4 +1,3 @@
-// @flow
 import deepEqual from 'fast-deep-equal';
 import type { Content, CRDT, Node, TmpNode, Delta, Loc } from './types';
 
@@ -22,8 +21,8 @@ export const insert = (
     site: string,
     at: number,
     text: string,
-    newFormat: ?{ [key: string]: any } = null,
-    genStamp: ?() => string,
+    newFormat: { [key: string]: any } | null = null,
+    genStamp?: () => string,
 ): Array<Delta> => {
     const initialLoc = posToLoc(state, at, true);
     const loc = newFormat
@@ -116,12 +115,17 @@ export const del = (state: CRDT, at: number, length: number): Delta => {
 // then collect all "full" formats, and all referenced formats.
 // If there are more referenced formats than full, then bail
 // Otherwise delete all the formats.
+type FormatBoundary = {
+    id: [number, string];
+    after: [number, string];
+};
+
 const maybeDeleteFormats = (
     state: CRDT,
     key: string,
-    openNode,
+    openNode: FormatBoundary,
     endLoc: Loc,
-): ?Array<Delta> => {
+): Array<Delta> | void => {
     const start = nodeForKey(state, openNode.after);
     if (start) {
         if (lastId(start)[0] !== openNode.after[0]) {
@@ -148,7 +152,7 @@ const maybeDeleteFormats = (
         // we're ending in the middle of a text node
         return;
     }
-    let endId = [endLoc.id, endLoc.site];
+    let endId: [number, string] = [endLoc.id, endLoc.site];
     let current = end;
     while (true) {
         const nextKey = nextNode(state, current);
@@ -165,9 +169,15 @@ const maybeDeleteFormats = (
     }
 
     // if we're halfway in the middle of a node, forget about it.
-    const stampToStart = {};
-    const startToClose = {};
-    const usedFormats = {};
+    const stampToStart: { [stamp: string]: string } = {};
+    const startToClose: {
+        [key: string]: {
+            stamp: string;
+            open: [number, string];
+            close: [number, string] | null;
+        };
+    } = {};
+    const usedFormats: { [key: string]: boolean } = {};
     walkFrom(state, toKey(startNextNode.id), node => {
         const nodeKey = toKey(node.id);
         if (node.content.type === 'open' && node.content.key === key) {
@@ -237,12 +247,12 @@ export const format = (
     );
     const id = largestLocalId + 1;
     // state.largestLocalId += 1;
-    const openNode = {
+    const openNode: FormatBoundary = {
         after: [loc.id, loc.site],
         id: [id, site],
     };
 
-    const endLoc =
+    const endLoc: Loc =
         length === 0
             ? { id: openNode.id[0], site: openNode.id[1], pre: true }
             : posToLoc(state, at + length, true);
@@ -292,7 +302,7 @@ export const format = (
     const endAfterId = length === 0 ? afterId : idAfter(state, endLoc);
     const largestLocalId2 = Math.max(endLoc.id, endAfterId, id);
     const endId = largestLocalId2 + 1;
-    const closeNode = {
+    const closeNode: FormatBoundary = {
         after: [endLoc.id, endLoc.site],
         id: [endId, site],
     };

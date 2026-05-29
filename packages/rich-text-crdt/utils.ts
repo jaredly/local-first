@@ -1,4 +1,3 @@
-// @flow
 import type { Node, CRDT, Content } from './types';
 
 export const nodeToString = function(state: CRDT, node: Node) {

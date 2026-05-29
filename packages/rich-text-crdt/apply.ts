@@ -1,4 +1,3 @@
-// @flow
 import type { Content, CRDT, Node, Delta, Span } from './types';
 import { toKey, fromKey, keyCmp, contentLength, contentChars, keyEq } from './utils';
 import { rootParent, rootSite, walkFrom, lastChild, lastId, nodeForKey } from './loc';
@@ -62,10 +61,8 @@ const splitAtKey = (state: CRDT, key: [number, string]) => {
         const pkey = toKey([i, key[1]]);
         if (state.map[pkey]) {
             const delta = key[0] - i;
-            if (
-                state.map[pkey].content.type !== 'text' ||
-                state.map[pkey].content.text.length < delta
-            ) {
+            const content = state.map[pkey].content;
+            if (content.type !== 'text' || content.text.length < delta) {
                 return false;
             }
             split(state, pkey, delta);
@@ -83,7 +80,7 @@ const ensureNodeAt = (state: CRDT, id) => {
     return true;
 };
 
-const parentForAfter = (state: CRDT, after: [number, string]): ?string => {
+const parentForAfter = (state: CRDT, after: [number, string]): string | null => {
     for (let i = after[0]; i >= 0; i--) {
         const key = toKey([i, after[1]]);
         if (!state.map[key]) {
@@ -234,7 +231,7 @@ const insertIdx = (state: CRDT, formats: Array<string>, stamp: string) => {
     return formats.length;
 };
 
-const addFormat = (state: CRDT, formats: ?Array<string>, stamp: string, id: string) => {
+const addFormat = (state: CRDT, formats: Array<string>, stamp: string, id: string) => {
     if (!formats) {
         return [id];
     }

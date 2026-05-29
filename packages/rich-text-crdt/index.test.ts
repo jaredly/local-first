@@ -1,4 +1,3 @@
-// @-flow
 import fixtures from './fixtures';
 import deepEqual from 'fast-deep-equal';
 

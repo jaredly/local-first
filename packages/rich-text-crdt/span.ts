@@ -1,4 +1,3 @@
-// @flow
 
 import type { CRDT, Span, Node } from './types';
 import {
@@ -10,13 +9,15 @@ import {
 } from './loc';
 import { toKey, contentChars } from './utils';
 
-export const selectionToSpans = function<Format>(
+type Selection = { start: number; end: number };
+
+export const selectionToSpans = function(
     state: CRDT,
     start: number,
     end: number,
 ): Array<Span> {
     let [loc, offset] = posToPostLoc(state, start);
-    const spans = [];
+    const spans: Array<Span> = [];
     let count = end - start;
 
     walkFrom(state, toKey(loc), node => {
@@ -50,7 +51,11 @@ export const selectionToSpans = function<Format>(
     return spans;
 };
 
-const collectSelections = (crdt: CRDT, span: Span, selections) => {
+const collectSelections = (
+    crdt: CRDT,
+    span: Span,
+    selections: Array<Selection>,
+) => {
     const node = nodeForKey(crdt, [span.id, span.site]);
     if (!node) {
         throw new Error(`Cannot find node for span ${JSON.stringify(span)}`);
@@ -86,7 +91,7 @@ const collectSelections = (crdt: CRDT, span: Span, selections) => {
     }
 };
 
-const mergeSelections = selections => {
+const mergeSelections = (selections: Array<Selection>): Array<Selection> => {
     if (!selections.length) {
         return [];
     }
@@ -105,7 +110,7 @@ export const spansToSelections = (
     crdt: CRDT,
     spans: Array<Span>,
 ): Array<{ start: number, end: number }> => {
-    const selections = [];
+    const selections: Array<Selection> = [];
     spans.forEach(span => collectSelections(crdt, span, selections));
     // TODO merge selections
     return mergeSelections(selections);

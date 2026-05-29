@@ -1,4 +1,3 @@
-// @flow
 
 const insert = (at, text, format = {}) => ({
     type: 'insert',
@@ -19,16 +18,16 @@ const fmt = (at, count, key, value, stamp = Date.now()) => ({
 const text = (text, fmt = {}) => ({ text, fmt });
 
 // Content
-const bold = (value, stamp?) => ({
+const bold = (value, stamp?: string) => ({
     type: 'open',
     key: 'bold',
     value,
     ...(stamp ? { stamp } : {}),
 });
 const ctext = text => ({ type: 'text', text });
-const close = stamp => ({ type: 'close', ...(stamp ? { stamp } : {}) });
+const close = (stamp?: string) => ({ type: 'close', ...(stamp ? { stamp } : {}) });
 
-module.exports = [
+export default [
     // // Insertions
     {
         title: 'Basic insertion',

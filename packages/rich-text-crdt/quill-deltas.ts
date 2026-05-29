@@ -1,4 +1,3 @@
-// @flow
 
 import deepEqual from 'fast-deep-equal';
 import type { CRDT, Node, Delta, Span, Loc } from './types';
@@ -11,10 +10,12 @@ import { toKey, keyEq } from './utils';
 
 type Format = { [key: string]: any };
 
-export type QuillDelta =
-    | {| delete: number |}
-    | {| insert: string, attributes?: ?Format |}
-    | {| retain: number, attributes?: ?Format |};
+export type QuillDelta = {
+    delete?: number;
+    insert?: string;
+    retain?: number;
+    attributes?: Format | null;
+};
 
 export const initialQuillDelta = {
     type: 'insert',
@@ -63,7 +64,7 @@ export const deltasToQuillDeltas = (
     const res = [];
     deltas.forEach(delta => {
         if (Array.isArray(delta)) {
-            const inner = deltasToQuillDeltas(state, (delta: any));
+            const inner = deltasToQuillDeltas(state, delta as any);
             state = inner.state;
             res.push(...inner.quillDeltas);
         } else {
@@ -74,7 +75,7 @@ export const deltasToQuillDeltas = (
     return { state, quillDeltas: res };
 };
 
-const deleteToDeltas = function<Format, QuillFormat>(
+const deleteToDeltas = function(
     state: CRDT,
     positions: Array<Span>,
 ): Array<QuillDelta> {
@@ -152,7 +153,7 @@ export const deltaToQuillDeltas = (state: CRDT, delta: Delta): Array<QuillDelta>
         }
         return [{ retain: startPos }, { retain: endPos - startPos, attributes }];
     }
-    throw new Error(`Unexpected delta type ${delta.type}`);
+    throw new Error(`Unexpected delta type ${(delta as any).type}`);
 };
 export const quillDeltasToDeltas = (
     state: CRDT,

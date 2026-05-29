@@ -1,4 +1,3 @@
-// @flow
 
 /**
  * Functions to facilitate binding to an <input> or <textarea>
@@ -56,7 +55,7 @@ const getShared = (oldText, newText, selectionPos) => {
 export const inferChange = (
     oldText: string,
     newText: string,
-    selectionPos: ?number,
+    selectionPos: number | null,
 ) => {
     const [head, tail] = getShared(oldText, newText, selectionPos);
     return {

@@ -1,4 +1,3 @@
-// @flow
 
 import type { Node, CRDT } from './types';
 import { contentChars, toKey } from './utils';
@@ -53,7 +52,7 @@ export const checkFormats = (state: CRDT) => {
             const idx = f.findIndex(
                 item =>
                     state.map[item].content.type !== 'text' &&
-                    state.map[item].content.stamp === content.stamp,
+                    (state.map[item].content as any).stamp === content.stamp,
             );
             if (idx !== -1) {
                 f.splice(idx, 1);

@@ -1,4 +1,3 @@
-// @flow
 import deepEqual from 'fast-deep-equal';
 import type { Content, CRDT, Node, Delta, Loc } from './types';
 
@@ -16,7 +15,7 @@ import {
 export const rootSite = '-root-';
 export const rootParent = '0:-root-';
 
-export const lastId = (node: Node) => {
+export const lastId = (node: Node): [number, string] => {
     if (node.content.type === 'text') {
         return [node.id[0] + node.content.text.length - 1, node.id[1]];
     }
@@ -50,7 +49,7 @@ yeah just 1 or 0 for the side, true or false.
 const walkLoop = (
     state: CRDT,
     id: string,
-    fn: Node => ?false,
+    fn: (node: Node) => false | void,
     all: boolean = false,
 ) => {
     const node = state.map[id];
@@ -72,7 +71,7 @@ const walkLoop = (
 export const walkFrom = (
     state: CRDT,
     key: string,
-    fn: Node => ?false,
+    fn: (node: Node) => false | void,
     all: boolean = false,
 ) => {
     if (walkLoop(state, key, fn, all) === false) {
@@ -105,7 +104,11 @@ export const walkFrom = (
     walkUp(key);
 };
 
-export const walk = (state: CRDT, fn: Node => ?false, all: boolean = false) => {
+export const walk = (
+    state: CRDT,
+    fn: (node: Node) => false | void,
+    all: boolean = false,
+) => {
     state.roots.some(id => walkLoop(state, id, fn, all) === false);
 };
 
@@ -130,16 +133,16 @@ export const lastChild = (crdt: CRDT, id: string) => {
     }
 };
 
-export const prevSibling = (crdt: CRDT, node: Node): ?string => {
+export const prevSibling = (crdt: CRDT, node: Node): string | undefined => {
     if (node.parent === rootParent) {
-        const idx = crdt.roots.indexOf(node);
+        const idx = crdt.roots.indexOf(toKey(node.id));
         if (idx === -1 || idx === 0) {
             return; // selection went too far
         }
         return lastChild(crdt, crdt.roots[idx - 1]);
     } else {
         const parent = crdt.map[node.parent];
-        const idx = parent.children.indexOf(node);
+        const idx = parent.children.indexOf(toKey(node.id));
         if (idx === -1) {
             throw new Error(`Can't find node in parents`);
         }
@@ -150,7 +153,7 @@ export const prevSibling = (crdt: CRDT, node: Node): ?string => {
     }
 };
 
-export const nextNode = (crdt: CRDT, node: Node): ?string => {
+export const nextNode = (crdt: CRDT, node: Node): string | undefined => {
     if (node.children.length) {
         return node.children[0];
     }
@@ -158,10 +161,10 @@ export const nextNode = (crdt: CRDT, node: Node): ?string => {
 };
 
 // Get the next sibling or parent's next sibling
-export const nextSibling = function(crdt: CRDT, node: Node): ?string {
+export const nextSibling = function(crdt: CRDT, node: Node): string | undefined {
     // console.log('sib', node);
     if (node.parent === rootParent) {
-        const idx = crdt.roots.indexOf(node);
+        const idx = crdt.roots.indexOf(toKey(node.id));
         if (idx === -1 || idx + 1 >= crdt.roots.length) {
             // console.log('root out');
             return; // selection went too far
@@ -319,7 +322,7 @@ export const adjustForFormat = (state: CRDT, loc: Loc, format: Format): Loc => {
         return loc;
     }
     if (loc.pre) {
-        const options = [
+        const options: Array<[number, number, Loc, Format]> = [
             [countDifferences(format, nodeFormat), 0, loc, nodeFormat],
         ];
         const orig = node;
@@ -423,7 +426,7 @@ export const posToLoc = function(
     return { id: id + offset, site, pre: anchorToLocAtLeft };
 };
 
-export const nodeForKey = function(crdt: CRDT, key: [number, string]): ?Node {
+export const nodeForKey = function(crdt: CRDT, key: [number, string]): Node | undefined {
     for (let i = key[0]; i >= 0; i--) {
         const k = toKey([i, key[1]]);
         if (crdt.map[k]) {

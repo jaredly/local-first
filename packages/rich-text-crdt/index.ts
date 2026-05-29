@@ -1,4 +1,3 @@
-// @flow
 import type { Content, CRDT, Node } from './types';
 
 export const init = (): CRDT => ({

@@ -1,13 +1,15 @@
-// @flow
 
 import deepEqual from 'fast-deep-equal';
 import type { CRDT, Delta, Node, Content } from './types';
 
-import { apply, insert, del, format, init, walk, fmtIdx, toKey, getFormatValues } from './';
+import { apply, insert, del, format, init, walk, fmtIdx, toKey, getFormatValues } from './index';
 
 type Format = { [key: string]: any };
 
-export const walkWithFmt = (state: CRDT, fn: (string, Format) => void) => {
+export const walkWithFmt = (
+    state: CRDT,
+    fn: (text: string, format: Format) => void,
+) => {
     const format = {};
     const fmt: Format = {};
     walk(state, node => {

@@ -1,4 +1,3 @@
-// @flow
 import type { Content, CRDT, Node, FormatContent } from './types';
 import { keyCmp, toKey, contentChars } from './utils';
 import { lastId, walk, fmtIdx, rootParent, rootSite } from './loc';
@@ -96,7 +95,7 @@ const addAtoms = (atoms, afters, node, after) => {
     }
 };
 
-const getAfter = node => lastId(node);
+const getAfter = (node: Node): [number, string] => lastId(node);
 
 const collectNode = (map, afters, atom, parent: string) => {
     const node: Node = {
@@ -159,7 +158,7 @@ const addFormats = (state: CRDT) => {
             const { content } = node;
             const current = format[content.key] ? format[content.key].slice() : [];
             const idx = fmtIdx(
-                current.map(id => ((state.map[id].content: any): FormatContent)),
+                current.map(id => state.map[id].content as any as FormatContent),
                 content,
             );
             current.splice(idx, 0, toKey(node.id));
@@ -170,7 +169,7 @@ const addFormats = (state: CRDT) => {
             const current = format[content.key].filter(
                 id =>
                     state.map[id].content.type !== 'text' &&
-                    state.map[id].content.stamp !== content.stamp,
+                    (state.map[id].content as any).stamp !== content.stamp,
             );
             if (!current.length) {
                 format = { ...format };
