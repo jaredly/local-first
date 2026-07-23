@@ -2,4 +2,6 @@
 import 'regenerator-runtime/runtime';
 import run from './';
 
-run();
+run().catch((err) => {
+    console.error('Unable to start Foood', err);
+});

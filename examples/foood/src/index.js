@@ -13,6 +13,7 @@ import Auth from '../../shared/Auth';
 import SignUpIn from '../../shared/SignUpIn';
 import App, { type ConnectionConfig } from './App';
 import PublicRecipe from './PublicRecipe';
+import { recoverMissingReplica } from './recoverPersistence';
 
 const darkTheme = createMuiTheme({
     palette: {
@@ -84,22 +85,38 @@ const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
     );
 };
 
-const Top = () => {
-    const useLocal = window.localStorage.useLocalFoood === 'true';
-    return window.location.hostname === 'localhost' && useLocal ? (
-        <Main host={'localhost:9090'} prefix={'foood-local'} />
-    ) : (
-        <Main host={'logic.jaredforsyth.com'} prefix={'foood'} />
-    );
+type Target = {
+    host: string,
+    prefix: string,
 };
 
-const run = () => {
+const getTarget = (): Target => {
+    const useLocal = window.localStorage.useLocalFoood === 'true';
+    return window.location.hostname === 'localhost' && useLocal
+        ? { host: 'localhost:9090', prefix: 'foood-local' }
+        : { host: 'logic.jaredforsyth.com', prefix: 'foood' };
+};
+
+const Top = ({ host, prefix }: Target) => {
+    return <Main host={host} prefix={prefix} />;
+};
+
+const run = async () => {
+    const target = getTarget();
+    try {
+        if (await recoverMissingReplica(target.prefix)) {
+            return;
+        }
+    } catch (err) {
+        console.error('Unable to check Foood persistence; continuing startup', err);
+    }
+
     const node = document.createElement('div');
     if (!document.body) {
         return;
     }
     document.body.appendChild(node);
-    render(<Top />, node);
+    render(<Top {...target} />, node);
 };
 
 export default run;
