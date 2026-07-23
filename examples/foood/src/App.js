@@ -27,6 +27,7 @@ import Drawer from './Drawer';
 import UpdateSnackbar from '../../shared/Update';
 import Editor from './Editor';
 import Home from './Home';
+import AllTags from './AllTags';
 import RecipeView from './Recipe';
 import Search from './Search';
 import EditorView from './EditorView';
@@ -265,6 +266,9 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                     </Route>
                     <Route path={`${pathPrefix}/search`}>
                         <Search url={url} client={client} actorId={actorId} />
+                    </Route>
+                    <Route path={`${pathPrefix}/tags`}>
+                        <AllTags url={url} actorId={actorId} client={client} />
                     </Route>
                     <Route path={`${pathPrefix}/tag/:tagid`}>
                         <Home

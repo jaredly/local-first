@@ -1,16 +1,13 @@
 // @flow
 import * as React from 'react';
 import type { RecipeT, TagT } from '../collections';
-import type { Client, Collection } from '../../../packages/client-bundle';
+import { type Homepage } from '../private-collections';
+import type { Client } from '../../../packages/client-bundle';
 import { useCollection, useItem, useQuery } from '../../../packages/client-react';
-import { Route, Link, useRouteMatch, useParams, useHistory } from 'react-router-dom';
+import { Link, useRouteMatch } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
-import IconButton from '@material-ui/core/IconButton';
 import Typography from '@material-ui/core/Typography';
-import Close from '@material-ui/icons/Close';
-import LinkIcon from '@material-ui/icons/Link';
 
-import { imageUrl } from './utils';
 import Sidebar from './Sidebar';
 import Tag from './Tag';
 import RecipeList, { sortRecipes, statusOrder } from './RecipeList';
@@ -20,91 +17,46 @@ export { Tag, RecipeList, sortRecipes, statusOrder };
 import RecipeBlock from './RecipeBlock';
 
 const useStyles = makeStyles((theme) => ({
-    container: {
-        paddingTop: theme.spacing(8),
-    },
-
     mealPlan: {
         padding: 24,
     },
-
-    tags: {
+    section: {
+        padding: theme.spacing(2, 0),
+    },
+    recipes: {
         display: 'flex',
         flexWrap: 'wrap',
         justifyContent: 'center',
     },
-    tag: {
-        width: 200,
-        height: 200,
-        color: 'inherit',
-        // boxShadow: '0 0 2px white',
-        // border: '1px solid #aaa',
-        backgroundColor: '#555',
-        // padding: 16,
-        margin: 8,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        textDecoration: 'none',
-        position: 'relative',
-        '@media(max-width: 600px)': {
-            width: '100%',
-            height: '100px',
-            overflow: 'hidden',
-        },
-        // borderRadius: 4,
-    },
-    tagTitle: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        fontSize: 20,
-        right: 0,
-        backgroundColor: 'rgba(50, 50, 50, 0.8)',
-        padding: theme.spacing(1),
-    },
-    tagImages: {
-        display: 'flex',
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        flex: 1,
-        // height: 100,
-        // width: 100,
-    },
-    tagImage1: {
-        margin: 0,
-        width: 200,
-        height: 200,
-        objectFit: 'cover',
-        '@media(max-width: 600px)': {
-            width: '100%',
-            height: '100%',
-        },
-    },
-    tagImage2: {
-        margin: 0,
-        width: 100,
-        height: 200,
-        objectFit: 'cover',
-        '@media(max-width: 600px)': {
-            width: '50%',
-            height: '100%',
-        },
-    },
-    tagImage: {
-        margin: 0,
-        width: 100,
-        height: 100,
-        objectFit: 'cover',
-        '@media(max-width: 600px)': {
-            flex: 1,
-            height: '100%',
-        },
-    },
-    tagRecipes: {
-        fontSize: '80%',
+    sectionTitle: {
+        textAlign: 'center',
+        marginBottom: theme.spacing(1),
     },
 }));
+
+const RECENT_RECIPE_LIMIT = 10;
+
+export const getRecentlyViewedRecipeIds = (
+    recipes: { [id: string]: RecipeT },
+    recentRecipes: { [id: string]: number },
+    limit: number = RECENT_RECIPE_LIMIT,
+): Array<string> =>
+    Object.keys(recentRecipes)
+        .filter((id) => recipes[id] != null && recipes[id].trashedDate == null)
+        .sort((a, b) => recentRecipes[b] - recentRecipes[a] || (a < b ? -1 : a > b ? 1 : 0))
+        .slice(0, limit);
+
+export const getRecentlyUpdatedRecipeIds = (
+    recipes: { [id: string]: RecipeT },
+    limit: number = RECENT_RECIPE_LIMIT,
+): Array<string> =>
+    Object.keys(recipes)
+        .filter((id) => recipes[id].trashedDate == null)
+        .sort(
+            (a, b) =>
+                recipes[b].updatedDate - recipes[a].updatedDate || (a < b ? -1 : a > b ? 1 : 0),
+        )
+        .slice(0, limit);
 
 export const useSetTitle = (title: ?string) => {
     React.useEffect(() => {
@@ -130,45 +82,14 @@ const Home = ({
     const match = useRouteMatch();
     const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
     const [tagsCol, tags] = useCollection<TagT, _>(React, client, 'tags');
-    const styles = useStyles();
-    const history = useHistory();
+    const [homepageCol, homepage] = useItem<Homepage, _>(
+        React,
+        privateClient,
+        'homepage',
+        'default',
+    );
 
     const [sidebar, setSidebar] = React.useState(null);
-
-    const recipesByTag = {};
-
-    const tagCounts = {};
-    Object.keys(recipes).forEach((id) => {
-        if (recipes[id].trashedDate != null || !recipes[id].tags) return;
-        Object.keys(recipes[id].tags).forEach((tid) => {
-            tagCounts[tid] = (tagCounts[tid] || 0) + 1;
-            if (!recipesByTag[tid]) {
-                recipesByTag[tid] = [id];
-            } else {
-                recipesByTag[tid].push(id);
-            }
-        });
-    });
-
-    const approvedTagCounts = {};
-    Object.keys(recipes).forEach((id) => {
-        if (
-            recipes[id].trashedDate != null ||
-            !recipes[id].tags ||
-            (recipes[id].statuses[actorId] !== 'approved' &&
-                recipes[id].statuses[actorId] !== 'favorite')
-        )
-            return;
-        Object.keys(recipes[id].tags).forEach((tid) => {
-            approvedTagCounts[tid] = (approvedTagCounts[tid] || 0) + 1;
-        });
-    });
-
-    const tagIds = Object.keys(tags).sort((a, b) =>
-        approvedTagCounts[a] === approvedTagCounts[b]
-            ? (tagCounts[b] || 0) - (tagCounts[a] || 0)
-            : (approvedTagCounts[b] || 0) - (approvedTagCounts[a] || 0),
-    );
 
     useSetTitle(
         match.params.tagid && tags[match.params.tagid]
@@ -218,6 +139,12 @@ const Home = ({
         );
     }
 
+    const recentlyViewedIds = getRecentlyViewedRecipeIds(
+        recipes,
+        homepage && homepage !== false && homepage.recentRecipes ? homepage.recentRecipes : {},
+    );
+    const recentlyUpdatedIds = getRecentlyUpdatedRecipeIds(recipes);
+
     return (
         <div>
             <CurrentMealPlan
@@ -229,21 +156,28 @@ const Home = ({
                 client={client}
                 recipes={recipes}
             />
-            <div className={styles.tags}>
-                {tagIds.length === 0 ? 'No tags defined' : null}
-                {tagIds.map((id) => (
-                    <Tag
-                        url={url}
-                        actorId={actorId}
-                        key={id}
-                        approvedCount={approvedTagCounts[id] || 0}
-                        matchingRecipes={recipesByTag[id] || []}
-                        recipes={recipes}
-                        count={tagCounts[id] || 0}
-                        tag={tags[id]}
-                    />
-                ))}
-            </div>
+            {recentlyViewedIds.length > 0 ? (
+                <RecentRecipeSection
+                    title="Recently viewed"
+                    ids={recentlyViewedIds}
+                    recipes={recipes}
+                    tags={tags}
+                    url={url}
+                    actorId={actorId}
+                    setSidebar={setSidebar}
+                />
+            ) : null}
+            {recentlyUpdatedIds.length > 0 ? (
+                <RecentRecipeSection
+                    title="Recently added or updated"
+                    ids={recentlyUpdatedIds}
+                    recipes={recipes}
+                    tags={tags}
+                    url={url}
+                    actorId={actorId}
+                    setSidebar={setSidebar}
+                />
+            ) : null}
             {sidebar != null ? (
                 <Sidebar
                     onClose={() => setSidebar(null)}
@@ -254,14 +188,30 @@ const Home = ({
                     url={url}
                 />
             ) : null}
-            {/* {Object.keys(recipes).map((id) => (
-                <div>
-                    {recipes[id].title}
-                    {recipes[id].contents.totalTime}
-                    {recipes[id].status}
-                </div>
-            ))} */}
         </div>
+    );
+};
+
+const RecentRecipeSection = ({ title, ids, recipes, tags, url, actorId, setSidebar }) => {
+    const styles = useStyles();
+    return (
+        <section className={styles.section}>
+            <Typography className={styles.sectionTitle} variant="h4">
+                {title}
+            </Typography>
+            <div className={styles.recipes}>
+                {ids.map((id) => (
+                    <RecipeBlock
+                        key={id}
+                        url={url}
+                        actorId={actorId}
+                        recipe={recipes[id]}
+                        tags={tags}
+                        onClick={() => setSidebar(id)}
+                    />
+                ))}
+            </div>
+        </section>
     );
 };
 
@@ -269,9 +219,10 @@ const DAY_MS = 60 * 1000 * 60 * 24;
 
 const twoWeeksAgo = () => {
     const date = new Date(Date.now() - DAY_MS * 10);
-    return `${date.getFullYear()}-${(date.getMonth() + 1)
+    return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date
+        .getDate()
         .toString()
-        .padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+        .padStart(2, '0')}`;
 };
 
 const CurrentMealPlan = ({ recipes, client, privateClient, url, actorId, tags, setSidebar }) => {

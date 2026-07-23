@@ -310,8 +310,48 @@ const RecipeView = ({
     id?: string,
 }) => {
     const match = useRouteMatch();
-    const id = overrideId != null ? overrideId : match.params.id;
+    const id: string = overrideId != null ? overrideId : match.params.id;
     const [col, recipe] = useItem<RecipeT, _>(React, client, 'recipes', id);
+    const [homepageCol, homepage] = useItem<Homepage, _>(
+        React,
+        privateClient,
+        'homepage',
+        'default',
+    );
+    const recordedRecipeId = React.useRef(null);
+
+    React.useEffect(() => {
+        if (
+            recipe == null ||
+            recipe === false ||
+            recipe.id !== id ||
+            homepage === false ||
+            recordedRecipeId.current === id
+        ) {
+            return;
+        }
+
+        const accessed = Date.now();
+        recordedRecipeId.current = id;
+        const update =
+            homepage == null
+                ? homepageCol.save('default', {
+                      id: 'default',
+                      categories: [],
+                      recipeQueue: {},
+                      recentRecipes: { [id]: accessed },
+                  })
+                : homepage.recentRecipes == null
+                ? homepageCol.setAttribute('default', ['recentRecipes'], { [id]: accessed })
+                : homepageCol.setAttribute('default', ['recentRecipes', id], accessed);
+
+        update.catch((err) => {
+            if (recordedRecipeId.current === id) {
+                recordedRecipeId.current = null;
+            }
+            console.error('Unable to record recipe access', err);
+        });
+    }, [homepage, homepageCol, id, recipe]);
 
     useSetTitle(recipe ? `${recipe.about.title} | Foood` : 'Foood');
 
