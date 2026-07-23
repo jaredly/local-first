@@ -9,6 +9,7 @@
         "test": "jest --no-watchman"
     },
     "devDependencies": {
+        "@babel/core": "^8.0.1",
         "@types/jest": "^25.2.3",
         "blessed": "^0.1.81",
         "chalk": "^3.0.0",
