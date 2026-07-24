@@ -81,3 +81,15 @@ Issues and workarounds:
   failed with `Cannot redefine property: process`. Route serving and compiled
   output were verified, but interactive desktop/mobile screenshots and
   authenticated recipe workflows remain manual checks.
+
+## Follow-up: View all recent updates
+
+- Added a `View all` link beside `Recently added or updated` that navigates to
+  `/latest`.
+- Kept the shared section heading responsive so the title and link can wrap
+  together on narrow screens.
+- `npm run build` passes, and the development server returns HTTP 200 for
+  `/latest`.
+
+Issue encountered: Parcel could not reuse configured port `1236`, so it selected
+`63610` for this verification run.

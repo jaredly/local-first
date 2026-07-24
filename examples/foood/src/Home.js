@@ -28,9 +28,16 @@ const useStyles = makeStyles((theme) => ({
         flexWrap: 'wrap',
         justifyContent: 'center',
     },
-    sectionTitle: {
-        textAlign: 'center',
+    sectionHeader: {
+        display: 'flex',
+        alignItems: 'baseline',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+        columnGap: theme.spacing(1),
         marginBottom: theme.spacing(1),
+    },
+    viewAll: {
+        color: theme.palette.primary.main,
     },
 }));
 
@@ -48,7 +55,7 @@ export const getRecentlyViewedRecipeIds = (
 
 export const getRecentlyUpdatedRecipeIds = (
     recipes: { [id: string]: RecipeT },
-    limit: number = RECENT_RECIPE_LIMIT,
+    limit: number = RECENT_RECIPE_LIMIT * 2,
 ): Array<string> =>
     Object.keys(recipes)
         .filter((id) => recipes[id].trashedDate == null)
@@ -170,6 +177,7 @@ const Home = ({
             {recentlyUpdatedIds.length > 0 ? (
                 <RecentRecipeSection
                     title="Recently added or updated"
+                    viewAllTo="/latest"
                     ids={recentlyUpdatedIds}
                     recipes={recipes}
                     tags={tags}
@@ -192,13 +200,27 @@ const Home = ({
     );
 };
 
-const RecentRecipeSection = ({ title, ids, recipes, tags, url, actorId, setSidebar }) => {
+const RecentRecipeSection = ({
+    title,
+    viewAllTo,
+    ids,
+    recipes,
+    tags,
+    url,
+    actorId,
+    setSidebar,
+}) => {
     const styles = useStyles();
     return (
         <section className={styles.section}>
-            <Typography className={styles.sectionTitle} variant="h4">
-                {title}
-            </Typography>
+            <div className={styles.sectionHeader}>
+                <Typography variant="h4">{title}</Typography>
+                {viewAllTo ? (
+                    <Link className={styles.viewAll} to={viewAllTo}>
+                        View all
+                    </Link>
+                ) : null}
+            </div>
             <div className={styles.recipes}>
                 {ids.map((id) => (
                     <RecipeBlock
