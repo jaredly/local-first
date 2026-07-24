@@ -2,25 +2,43 @@
 import * as React from 'react';
 import { useParams } from 'react-router-dom';
 
+import type { RecipeT } from '../collections';
 import { RecipeInner } from './Recipe';
-import { serverUrl } from './publicRecipes';
+import {
+    cachedPublicRecipe,
+    publicRecipesMaxAge,
+    serverUrl,
+    updateCachedPublicRecipe,
+} from './publicRecipes';
 
 type PublicRecipeState =
     | { status: 'loading', recipe: null, error: null }
-    | { status: 'ready', recipe: *, error: null }
+    | { status: 'ready', recipe: RecipeT, error: null }
     | { status: 'not-found', recipe: null, error: null }
     | { status: 'error', recipe: null, error: Error };
 
 const useRecipe = (host, id): PublicRecipeState => {
-    const [state, setState] = React.useState<PublicRecipeState>({
-        status: 'loading',
-        recipe: null,
-        error: null,
-    });
+    const initialCachedRecipe = cachedPublicRecipe(host, id);
+    const [state, setState] = React.useState<PublicRecipeState>(
+        initialCachedRecipe != null
+            ? { status: 'ready', recipe: initialCachedRecipe.recipe, error: null }
+            : { status: 'loading', recipe: null, error: null },
+    );
 
     React.useEffect(() => {
         let active = true;
-        setState({ status: 'loading', recipe: null, error: null });
+        const currentCachedRecipe = cachedPublicRecipe(host, id);
+        if (currentCachedRecipe != null) {
+            setState({ status: 'ready', recipe: currentCachedRecipe.recipe, error: null });
+            if (Date.now() - currentCachedRecipe.fetchedAt < publicRecipesMaxAge) {
+                return () => {
+                    active = false;
+                };
+            }
+        } else {
+            setState({ status: 'loading', recipe: null, error: null });
+        }
+
         (async () => {
             const response = await fetch(
                 `${serverUrl(host)}/latest/?db=foood/public&id=${encodeURIComponent(
@@ -37,11 +55,17 @@ const useRecipe = (host, id): PublicRecipeState => {
                 throw new Error(`Unable to load recipe (HTTP ${response.status})`);
             }
             const recipe = await response.json();
+            updateCachedPublicRecipe(host, recipe);
             if (active) {
                 setState({ status: 'ready', recipe, error: null });
             }
         })().catch((error) => {
-            if (active) {
+            if (!active) {
+                return;
+            }
+            if (currentCachedRecipe != null) {
+                console.error('Unable to refresh public recipe', error);
+            } else {
                 setState({
                     status: 'error',
                     recipe: null,

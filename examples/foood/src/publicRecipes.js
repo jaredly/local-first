@@ -78,6 +78,28 @@ export const fetchPublicRecipes = async (host: string): Promise<{ [id: string]: 
 
 const cachedRecipesForHost = (host: string): ?PublicRecipesCache => publicRecipesCaches.get(host);
 
+export const cachedPublicRecipe = (
+    host: string,
+    id: string,
+): ?{ recipe: RecipeT, fetchedAt: number } => {
+    const cached = cachedRecipesForHost(host);
+    const recipe = cached != null ? cached.recipes[id] : null;
+    return cached != null && recipe != null ? { recipe, fetchedAt: cached.fetchedAt } : null;
+};
+
+export const updateCachedPublicRecipe = (host: string, recipe: RecipeT) => {
+    const cached = cachedRecipesForHost(host);
+    if (cached != null) {
+        publicRecipesCaches.set(host, {
+            ...cached,
+            recipes: {
+                ...cached.recipes,
+                [recipe.id]: recipe,
+            },
+        });
+    }
+};
+
 const refreshPublicRecipes = (host: string): Promise<{ [id: string]: RecipeT }> => {
     const pending = publicRecipesRequests.get(host);
     if (pending != null) {
