@@ -1,0 +1,1 @@
+examples/foood: Currently you have to be logged in to view all recipes or search recipes, but you don't have to be logged in to view a single recipe. Let's remove the logged-in requirement for viewing all & searching.

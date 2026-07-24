@@ -1,0 +1,1 @@
+Can you evalute packages/rich-text-crdt? Look at the API, feature-completeness, and correctness. Come up with a plan for more thoroughly testing it, especially with an eye to verifying the CRDT invariants.
