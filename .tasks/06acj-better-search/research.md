@@ -244,24 +244,33 @@ results.
   bodies retain exact/normalized substring matching? This is the recommended
   scope because fuzzy matching long bodies is more likely to produce surprising
   results.
+    - yeah let's do that
 - What does "proper fuzzy" need to tolerate beyond missing spaces: spelling
   errors, transposed letters, out-of-order words, abbreviations, or all of these?
   Representative queries and expected titles would make threshold tuning
   concrete.
+    - fuse looks good
 - Should relevance fully replace the current favorite/approved/update ordering,
   or should recipe status influence similarly scored matches? The recommendation
   is relevance first and the current order only as a tie-breaker.
+    - yeah we still want to bin by recipe status
 - Should one- and two-character queries use fuzzy matching? The recommendation is
   exact/compact-only until the query has at least three characters.
+    - sounds good
 - Should diacritics be folded (`crème` matching `creme`) in addition to removing
   whitespace and punctuation? Unicode normalization makes this inexpensive, but
   the desired international behavior should be explicit.
+    - yes please
 - Should the two visible sections remain `Title match` and `Contents match`, or
   should all results be merged into one relevance-ranked list?
+    - yes keep that
 - If fuzzy body search is enabled, how permissive should it be, and should the UI
   show a matching snippet so users can understand why a recipe appeared?
+    - not enabled
 - Should source, author, tags, or structured recipe metadata also be searchable?
   The historical Fuse implementation included source, but the current task only
   calls out titles and possibly recipe bodies.
+    - no
 - Should rejected recipes remain hidden from search? This is current behavior and
   should be preserved unless search is expected to recover rejected recipes.
+    - hide
