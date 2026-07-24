@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 
 import RecipeBlock from './RecipeBlock';
 import { PublicRecipes, serverUrl } from './publicRecipes';
+import PublicRecipeSidebar from './PublicRecipeSidebar';
 
 const useStyles = makeStyles((theme) => ({
     heading: {
@@ -26,6 +27,7 @@ const useStyles = makeStyles((theme) => ({
 
 const PublicHomeRecipes = ({ recipes, url }) => {
     const styles = useStyles();
+    const [sidebar, setSidebar] = React.useState(null);
     const ids = Object.keys(recipes)
         .filter((id) => recipes[id].trashedDate == null)
         .sort((a, b) => recipes[b].createdDate - recipes[a].createdDate || a.localeCompare(b))
@@ -48,10 +50,23 @@ const PublicHomeRecipes = ({ recipes, url }) => {
             ) : (
                 <div className={styles.recipes}>
                     {ids.map((id) => (
-                        <RecipeBlock key={id} actorId="" recipe={recipes[id]} tags={{}} url={url} />
+                        <RecipeBlock
+                            key={id}
+                            actorId=""
+                            recipe={recipes[id]}
+                            tags={{}}
+                            url={url}
+                            onClick={() => setSidebar(id)}
+                        />
                     ))}
                 </div>
             )}
+            <PublicRecipeSidebar
+                id={sidebar}
+                recipes={recipes}
+                url={url}
+                onClose={() => setSidebar(null)}
+            />
         </div>
     );
 };

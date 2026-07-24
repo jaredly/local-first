@@ -3,8 +3,7 @@ import * as React from 'react';
 
 import { LatestView } from './Latest';
 import { PublicRecipes, serverUrl } from './publicRecipes';
-import { RecipeInner } from './Recipe';
-import { RecipeSidebar } from './Sidebar';
+import PublicRecipeSidebar from './PublicRecipeSidebar';
 
 const PublicLatest = ({ host }: { host: string }) => {
     const [sidebar, setSidebar] = React.useState(null);
@@ -25,15 +24,12 @@ const PublicLatest = ({ host }: { host: string }) => {
                         tags={{}}
                         url={serverUrl(host)}
                     />
-                    {sidebar != null && recipes[sidebar] != null ? (
-                        <RecipeSidebar id={sidebar} onClose={() => setSidebar(null)}>
-                            <RecipeInner
-                                editorData={null}
-                                recipe={recipes[sidebar]}
-                                url={serverUrl(host)}
-                            />
-                        </RecipeSidebar>
-                    ) : null}
+                    <PublicRecipeSidebar
+                        id={sidebar}
+                        recipes={recipes}
+                        url={serverUrl(host)}
+                        onClose={() => setSidebar(null)}
+                    />
                 </React.Fragment>
             )}
         </PublicRecipes>
