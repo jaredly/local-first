@@ -135,6 +135,7 @@ const WeeklyPlanSchema: Schema = {
 export type Homepage = {
     id: string,
     categories: Array<string>,
+    recentRecipes?: { [recipeId: string]: number },
     recipeQueue: {
         [recipeId: string]: {
             note: string,
@@ -150,6 +151,10 @@ const HomepageSchema: Schema = {
         // This is a list of ids of tags that are to be treated as "categories".
         // e.g. they are shown as the home page (with a listing of "latest recipes" below it probably)
         categories: 'id-array',
+        recentRecipes: {
+            type: 'optional',
+            value: { type: 'map', value: 'number' },
+        },
         // key is the recipeId
         // TODO maybe allow you to write a note about what you want to do?
         recipeQueue: {

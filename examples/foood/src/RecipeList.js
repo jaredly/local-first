@@ -19,17 +19,9 @@ import { type PantryIngredient } from '../private-collections';
 export { Tag };
 
 import RecipeBlock, { getIngredients } from './RecipeBlock';
+import { sortRecipes, statusOrder } from './recipeSorting';
 
-export const statusOrder = ['favorite', 'approved', 'to try', undefined, null, 'rejected'];
-
-export const sortRecipes = (recipeA: RecipeT, recipeB: RecipeT, actorId: string) => {
-    const statusA = statusOrder.indexOf(recipeA.statuses[actorId]);
-    const statusB = statusOrder.indexOf(recipeB.statuses[actorId]);
-    if (statusA === statusB) {
-        return recipeB.updatedDate - recipeA.updatedDate;
-    }
-    return statusA - statusB;
-};
+export { sortRecipes, statusOrder };
 const useStyles = makeStyles((theme) => ({
     recipes: {
         display: 'flex',

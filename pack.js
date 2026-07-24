@@ -47,7 +47,7 @@ const packages = [
     },
     {
         name: 'rich-text-crdt',
-        entry: 'packages/rich-text-crdt/index.js',
+        entry: 'packages/rich-text-crdt/dist/index.js',
         dest: 'public/rich-text-crdt',
     },
     {

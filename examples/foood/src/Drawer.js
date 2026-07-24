@@ -116,6 +116,9 @@ const MyDrawer = ({
                     <ListItem button component={Link} to="/latest">
                         <ListItemText primary="All Recipes" />
                     </ListItem>
+                    <ListItem button component={Link} to="/tags">
+                        <ListItemText primary="All Tags" />
+                    </ListItem>
                     <Divider />
                     {tagsToShow.map((id) => (
                         <ListItem key={id} button component={Link} to={`/tag/${id}`}>

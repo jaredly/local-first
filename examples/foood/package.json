@@ -27,7 +27,8 @@
         "deploy_surge": "npm run build && cd dist && cp index.html 200.html && surge . foood2.surge.sh",
         "deploy": "npm run build && cd dist && cp index.html 200.html && scp -r . linode:sites/foood",
         "build": "env VERSION=$(git rev-parse HEAD) parcel build index.html",
-        "start": "parcel serve --no-autoinstall --port 1236 index.html"
+        "start": "parcel serve --no-autoinstall --port 1236 index.html",
+        "test": "../../node_modules/.bin/jest --runInBand --no-watchman"
     },
     "alias": {
         "@birchill/json-equalish": "./node_modules/@birchill/json-equalish",
@@ -74,6 +75,20 @@
     "pnpm": {
         "overrides": {
             "@babel/preset-env": "7.12.10"
+        }
+    },
+    "jest": {
+        "testEnvironment": "node",
+        "transform": {
+            "\\.js$": [
+                "<rootDir>/../../node_modules/jest-config/node_modules/babel-jest",
+                {
+                    "presets": [
+                        "@babel/preset-env",
+                        "@babel/preset-flow"
+                    ]
+                }
+            ]
         }
     }
 }

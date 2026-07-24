@@ -1,21 +1,43 @@
 {
     "name": "@local-first/rich-text-crdt",
     "version": "1.0.0",
-    "main": "index.js",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
     "license": "MIT",
     "scripts": {
-        "test": "jest"
+        "build": "tsc -p tsconfig.json",
+        "test": "jest --no-watchman"
     },
     "devDependencies": {
-        "@babel/cli": "^7.8.4",
-        "@babel/core": "^7.8.4",
-        "@babel/preset-env": "^7.8.4",
-        "@babel/preset-flow": "^7.8.3",
-        "@babel/register": "^7.8.3",
+        "@babel/core": "^8.0.1",
+        "@types/jest": "^25.2.3",
         "blessed": "^0.1.81",
         "chalk": "^3.0.0",
-        "flow-bin": "^0.118.0",
-        "jest": "^25.1.0"
+        "jest": "^25.1.0",
+        "ts-jest": "^25.5.1",
+        "typescript": "^3.9.10"
+    },
+    "jest": {
+        "transform": {
+            "^.+\\.tsx?$": "ts-jest"
+        },
+        "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$",
+        "testPathIgnorePatterns": [
+            "/node_modules/",
+            "/dist/"
+        ],
+        "moduleFileExtensions": [
+            "ts",
+            "tsx",
+            "js",
+            "json",
+            "node"
+        ],
+        "globals": {
+            "ts-jest": {
+                "diagnostics": false
+            }
+        }
     },
     "dependencies": {
         "@birchill/json-equalish": "^1.1.0",

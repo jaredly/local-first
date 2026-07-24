@@ -189,7 +189,7 @@ export const RecipeBlock = ({
     return (
         <Link
             to={href}
-            onClick={onLinkClick}
+            onClick={onClick != null ? onLinkClick : undefined}
             className={cx(
                 styles.recipe,
                 pantryIngredients ? null : styles.recipeSmall,

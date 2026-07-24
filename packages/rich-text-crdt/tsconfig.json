@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "target": "ES2019",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "declaration": true,
+        "outDir": "dist",
+        "rootDir": ".",
+        "esModuleInterop": true,
+        "strict": false,
+        "types": [],
+        "skipLibCheck": true
+    },
+    "include": ["*.ts"],
+    "exclude": ["dist", "node_modules", "*.test.ts", "fixtures.ts"]
+}

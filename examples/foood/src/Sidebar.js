@@ -197,20 +197,14 @@ const useStyles = makeStyles((theme) => ({
     // },
 }));
 
-const Sidebar = ({
-    client,
-    privateClient,
+export const RecipeSidebar = ({
     id,
-    actorId,
-    url,
     onClose,
+    children,
 }: {
-    client: Client<*>,
-    privateClient: Client<*>,
     id: string,
-    actorId: string,
-    url: string,
     onClose: () => mixed,
+    children: React.Node,
 }) => {
     const history = useHistory();
     const styles = useStyles();
@@ -227,6 +221,7 @@ const Sidebar = ({
                     aria-label="go to recipe permalink"
                     onClick={(evt) => {
                         if (evt.button === 0 && !evt.metaKey && !evt.ctrlKey) {
+                            evt.preventDefault();
                             history.push(`/recipe/${id}`);
                         }
                     }}
@@ -234,17 +229,29 @@ const Sidebar = ({
                     <LinkIcon />
                 </IconButton>
             </div>
-            <div className={styles.popover}>
-                <Recipe
-                    privateClient={privateClient}
-                    client={client}
-                    actorId={actorId}
-                    url={url}
-                    id={id}
-                />
-            </div>
+            <div className={styles.popover}>{children}</div>
         </React.Fragment>
     );
 };
+
+const Sidebar = ({
+    client,
+    privateClient,
+    id,
+    actorId,
+    url,
+    onClose,
+}: {
+    client: Client<*>,
+    privateClient: Client<*>,
+    id: string,
+    actorId: string,
+    url: string,
+    onClose: () => mixed,
+}) => (
+    <RecipeSidebar id={id} onClose={onClose}>
+        <Recipe privateClient={privateClient} client={client} actorId={actorId} url={url} id={id} />
+    </RecipeSidebar>
+);
 
 export default Sidebar;
