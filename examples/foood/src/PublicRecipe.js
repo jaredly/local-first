@@ -1,97 +1,80 @@
 // @flow
-import { render } from 'react-dom';
-import React from 'react';
-import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
-import { BrowserRouter as Router, Switch, Route, Link, useParams } from 'react-router-dom';
+import * as React from 'react';
+import { useParams } from 'react-router-dom';
 
-import Container from '@material-ui/core/Container';
-import Button from '@material-ui/core/Button';
-import AppBar from '@material-ui/core/AppBar';
-import IconButton from '@material-ui/core/IconButton';
-import { makeStyles } from '@material-ui/core/styles';
-import Toolbar from '@material-ui/core/Toolbar';
-import Typography from '@material-ui/core/Typography';
-import MenuIcon from '@material-ui/icons/Menu';
-import Wifi from '@material-ui/icons/Wifi';
-import WifiOff from '@material-ui/icons/WifiOff';
-import CircularProgress from '@material-ui/core/CircularProgress';
-
-import 'typeface-roboto';
-
-import CssBaseline from '@material-ui/core/CssBaseline';
-
-import Auth from '../../shared/Auth';
-import App, { type ConnectionConfig } from './App';
 import { RecipeInner } from './Recipe';
+import { serverUrl } from './publicRecipes';
 
-const useRecipe = (host, id) => {
-    const [data, setData] = React.useState(null);
-    const [error, setError] = React.useState(null);
+type PublicRecipeState =
+    | { status: 'loading', recipe: null, error: null }
+    | { status: 'ready', recipe: *, error: null }
+    | { status: 'not-found', recipe: null, error: null }
+    | { status: 'error', recipe: null, error: Error };
+
+const useRecipe = (host, id): PublicRecipeState => {
+    const [state, setState] = React.useState<PublicRecipeState>({
+        status: 'loading',
+        recipe: null,
+        error: null,
+    });
+
     React.useEffect(() => {
+        let active = true;
+        setState({ status: 'loading', recipe: null, error: null });
         (async () => {
-            const res = await fetch(
-                `${window.location.protocol}//${host}/latest/?db=foood/public&id=${id}&collection=recipes`,
+            const response = await fetch(
+                `${serverUrl(host)}/latest/?db=foood/public&id=${encodeURIComponent(
+                    id,
+                )}&collection=recipes`,
             );
-            if (res.status === 404) {
-                return setData(false);
+            if (response.status === 404) {
+                if (active) {
+                    setState({ status: 'not-found', recipe: null, error: null });
+                }
+                return;
             }
-            const data = await res.json();
-            setData(data);
-        })().catch((err) => {
-            setError(true);
+            if (!response.ok) {
+                throw new Error(`Unable to load recipe (HTTP ${response.status})`);
+            }
+            const recipe = await response.json();
+            if (active) {
+                setState({ status: 'ready', recipe, error: null });
+            }
+        })().catch((error) => {
+            if (active) {
+                setState({
+                    status: 'error',
+                    recipe: null,
+                    error: error instanceof Error ? error : new Error(String(error)),
+                });
+            }
         });
+        return () => {
+            active = false;
+        };
     }, [host, id]);
-    return [data, error];
+
+    return state;
 };
 
 const PublicRecipe = ({ host }: { host: string }) => {
-    const styles = useStyles();
     const { id } = useParams();
+    const state = useRecipe(host, id);
 
-    const [recipe, error] = useRecipe(host, id);
+    React.useEffect(() => {
+        document.title = state.status === 'ready' ? `${state.recipe.about.title} | Foood` : 'Foood';
+    }, [state]);
 
-    return (
-        <React.Fragment>
-            <AppBar position="sticky">
-                <Toolbar>
-                    {/* <IconButton
-                    edge="start"
-                    className={styles.menuButton}
-                    color="inherit"
-                    aria-label="menu"
-                    onClick={openMenu}
-                >
-                    <MenuIcon />
-                </IconButton> */}
-                    <Typography variant="h6">Foood</Typography>
-                    <div style={{ flex: 1 }} />
-                    <Button variant="contained" component={Link} to="/">
-                        Login
-                    </Button>
-                </Toolbar>
-            </AppBar>
-            <Container maxWidth={'md'} className={styles.container}>
-                {recipe == null ? (
-                    'Loading...'
-                ) : recipe === false ? (
-                    'Recipe not found'
-                ) : (
-                    <RecipeInner
-                        url={`${window.location.protocol}//${host}`}
-                        editorData={null}
-                        recipe={recipe}
-                    />
-                )}
-            </Container>
-        </React.Fragment>
-    );
+    if (state.status === 'loading') {
+        return <div>Loading recipe...</div>;
+    }
+    if (state.status === 'not-found') {
+        return <div>Recipe not found.</div>;
+    }
+    if (state.status === 'error') {
+        return <div>Unable to load this recipe. Please try again.</div>;
+    }
+    return <RecipeInner url={serverUrl(host)} editorData={null} recipe={state.recipe} />;
 };
-
-const useStyles = makeStyles((theme) => ({
-    container: {
-        paddingTop: theme.spacing(4),
-        paddingBottom: theme.spacing(4),
-    },
-}));
 
 export default PublicRecipe;

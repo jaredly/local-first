@@ -2,8 +2,7 @@
 import { render } from 'react-dom';
 import React from 'react';
 import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
-import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
-import { useRouteMatch } from 'react-router-dom';
+import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
 
 import 'typeface-roboto';
 
@@ -11,31 +10,62 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 
 import Auth from '../../shared/Auth';
 import SignUpIn from '../../shared/SignUpIn';
-import App, { type ConnectionConfig } from './App';
+import App from './App';
+import PublicHome from './PublicHome';
+import PublicLatest from './PublicLatest';
 import PublicRecipe from './PublicRecipe';
+import PublicSearch from './PublicSearch';
+import PublicShell from './PublicShell';
 import { recoverMissingReplica } from './recoverPersistence';
 
 const darkTheme = createMuiTheme({
     palette: {
         type: 'dark',
-
         primary: {
-            main:
-                // window.localStorage.useLocalFoood === 'true' && location.hostname === 'localhost'
-                //     ? '#8561c5'
-                //     : '#ff9800',
-                '#ff9800',
+            main: '#ff9800',
         },
         secondary: {
-            // main: '#ffea00',
             main: '#00e5ff',
         },
     },
 });
 
+const PublicRoutes = ({
+    host,
+    prefix,
+    includePublicAlias,
+}: {
+    host: string,
+    prefix: string,
+    includePublicAlias?: boolean,
+}) => (
+    <PublicShell>
+        <Switch>
+            {includePublicAlias ? (
+                <Route path="/public/recipe/:id">
+                    <PublicRecipe host={host} />
+                </Route>
+            ) : null}
+            <Route path="/login">
+                <SignUpIn host={host} storageKey={prefix + '/auth'} />
+            </Route>
+            <Route path="/recipe/:id">
+                <PublicRecipe host={host} />
+            </Route>
+            <Route path="/latest">
+                <PublicLatest host={host} />
+            </Route>
+            <Route path="/search">
+                <PublicSearch host={host} />
+            </Route>
+            <Route path="/">
+                <PublicHome host={host} />
+            </Route>
+        </Switch>
+    </PublicShell>
+);
+
 const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
-    console.log('main render?', host);
-    // const match = useRouteMatch();
     if (host == null || prefix == null) {
         return (
             <ThemeProvider theme={darkTheme}>
@@ -50,7 +80,7 @@ const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
             <Router>
                 <Switch>
                     <Route path="/public/recipe/:id">
-                        <PublicRecipe host={host} />
+                        <PublicRoutes host={host} prefix={prefix} includePublicAlias={true} />
                     </Route>
                     <Route path="/">
                         <Auth
@@ -59,22 +89,22 @@ const Main = ({ host, prefix }: { host?: ?string, prefix?: ?string }) => {
                             host={host}
                             render={(authData) =>
                                 authData ? (
-                                    <App
-                                        config={{
-                                            type: 'remote',
-                                            prefix,
-                                            authData,
-                                        }}
-                                    />
-                                ) : (
                                     <Switch>
-                                        <Route path="/recipe/:id">
-                                            <PublicRecipe host={host} />
+                                        <Route path="/login">
+                                            <Redirect to="/" />
                                         </Route>
                                         <Route path="/">
-                                            <SignUpIn host={host} storageKey={prefix + '/auth'} />
+                                            <App
+                                                config={{
+                                                    type: 'remote',
+                                                    prefix,
+                                                    authData,
+                                                }}
+                                            />
                                         </Route>
                                     </Switch>
+                                ) : (
+                                    <PublicRoutes host={host} prefix={prefix} />
                                 )
                             }
                         />
