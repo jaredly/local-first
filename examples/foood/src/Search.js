@@ -7,8 +7,14 @@ import type { Client } from '../../../packages/client-bundle';
 import { useCollection } from '../../../packages/client-react';
 import { useLocation, useHistory } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
-import { sortRecipes } from './Home';
 import RecipeBlock from './RecipeBlock';
+import {
+    normalizeSearchText,
+    prepareRecipeSearch,
+    runRecipeSearch,
+    searchRecipes,
+} from './searchRecipes';
+import { updateSearchQuery } from './searchQuery';
 
 const useStyles = makeStyles((theme) => ({
     results: {
@@ -47,9 +53,6 @@ const useSetTitle = (title) => {
     }, [title]);
 };
 
-const comparePublicRecipes = (recipes, a, b) =>
-    recipes[b].updatedDate - recipes[a].updatedDate || a.localeCompare(b);
-
 export const SearchView = ({
     recipes,
     tags,
@@ -67,12 +70,17 @@ export const SearchView = ({
     const query = new URLSearchParams(location.search);
     const searchText = query.get('q') || '';
     const [showUpTo, setShowUpTo] = React.useState(defaultShowAmount);
-    const results = useDebounce(
-        () => runSearch(recipes, searchText, actorId),
-        runSearch(recipes, searchText, actorId),
-        300,
-        [recipes, searchText, actorId],
+    const searchIndex = React.useMemo(
+        () => prepareRecipeSearch(recipes, actorId),
+        [recipes, actorId],
     );
+    const debouncedResults = useDebounce(
+        () => runRecipeSearch(searchIndex, searchText),
+        runRecipeSearch(searchIndex, searchText),
+        300,
+        [searchIndex, searchText],
+    );
+    const results = normalizeSearchText(searchText) ? debouncedResults : null;
 
     useSetTitle(`Search: ${searchText}`);
 
@@ -81,16 +89,9 @@ export const SearchView = ({
             <TextField
                 value={searchText}
                 onChange={(event) => {
-                    const nextQuery = new URLSearchParams(location.search);
-                    if (event.target.value) {
-                        nextQuery.set('q', event.target.value);
-                    } else {
-                        nextQuery.delete('q');
-                    }
-                    const search = nextQuery.toString();
                     history.replace({
                         pathname: location.pathname,
-                        search: search ? `?${search}` : '',
+                        search: updateSearchQuery(location.search, event.target.value),
                     });
                     setShowUpTo(defaultShowAmount);
                 }}
@@ -99,13 +100,13 @@ export const SearchView = ({
                 variant="outlined"
                 autoFocus
             />
-            {results == null ? null : results[0].length || results[1].length ? (
+            {results == null ? null : results.titleMatches.length || results.bodyMatches.length ? (
                 <div className={styles.results}>
-                    {results[0].length ? (
+                    {results.titleMatches.length ? (
                         <React.Fragment>
                             <div className={styles.sectionTitle}>Title match</div>
                             <div className={styles.recipes}>
-                                {results[0].slice(0, showUpTo).map((id) => (
+                                {results.titleMatches.slice(0, showUpTo).map((id) => (
                                     <RecipeBlock
                                         key={id}
                                         url={url}
@@ -117,13 +118,13 @@ export const SearchView = ({
                             </div>
                         </React.Fragment>
                     ) : null}
-                    {showUpTo > results[0].length && results[1].length > 0 ? (
+                    {showUpTo > results.titleMatches.length && results.bodyMatches.length > 0 ? (
                         <div className={styles.sectionTitle}>Contents match</div>
                     ) : null}
-                    {showUpTo > results[0].length ? (
+                    {showUpTo > results.titleMatches.length ? (
                         <div className={styles.recipes}>
-                            {results[1]
-                                .slice(0, Math.max(0, showUpTo - results[0].length))
+                            {results.bodyMatches
+                                .slice(0, Math.max(0, showUpTo - results.titleMatches.length))
                                 .map((id) => (
                                     <RecipeBlock
                                         key={id}
@@ -135,7 +136,7 @@ export const SearchView = ({
                                 ))}
                         </div>
                     ) : null}
-                    {results[0].length + results[1].length > showUpTo ? (
+                    {results.titleMatches.length + results.bodyMatches.length > showUpTo ? (
                         <Button
                             onClick={() => setShowUpTo(showUpTo + defaultShowAmount)}
                             className={styles.showMoreButton}
@@ -151,47 +152,7 @@ export const SearchView = ({
     );
 };
 
-export const runSearch = (recipes: { [id: string]: RecipeT }, needle: string, actorId: ?string) => {
-    if (!needle.trim()) {
-        return null;
-    }
-    const lowerNeedle = needle.toLowerCase();
-
-    const toSearch: Array<{ id: string, lowerTitle: string, contents: string }> = Object.keys(
-        recipes,
-    )
-        .filter(
-            (id) =>
-                recipes[id].trashedDate == null &&
-                (actorId == null || recipes[id].statuses[actorId] !== 'rejected'),
-        )
-        .map((id) => ({
-            id,
-            lowerTitle: recipes[id].about.title.toLowerCase(),
-            contents: deltaToString(recipes[id].contents.text).toLowerCase(),
-        }));
-
-    const sortMatches = (a: string, b: string): number =>
-        actorId == null
-            ? comparePublicRecipes(recipes, a, b)
-            : sortRecipes(recipes[a], recipes[b], actorId) || a.localeCompare(b);
-
-    const titleMatch: Array<string> = toSearch
-        .filter((item) => item.lowerTitle.includes(lowerNeedle))
-        .map((item) => item.id)
-        .sort(sortMatches);
-    const bodyMatch: Array<string> = toSearch
-        .filter(
-            (item) => !item.lowerTitle.includes(lowerNeedle) && item.contents.includes(lowerNeedle),
-        )
-        .map((item) => item.id)
-        .sort(sortMatches);
-
-    return [titleMatch, bodyMatch];
-};
-
-const deltaToString = (delta) =>
-    delta.ops.map((op) => (typeof op.insert === 'string' ? op.insert : '')).join('');
+export const runSearch = searchRecipes;
 
 const Search = ({ client, actorId, url }: { url: string, client: Client<*>, actorId: string }) => {
     const [, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
