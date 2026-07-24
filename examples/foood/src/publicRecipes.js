@@ -9,6 +9,17 @@ export type PublicRecipesState =
     | { status: 'ready', recipes: { [id: string]: RecipeT }, error: null }
     | { status: 'error', recipes: { [id: string]: RecipeT }, error: Error };
 
+type PublicRecipesCache = {
+    host: string,
+    recipes: { [id: string]: RecipeT },
+    fetchedAt: number,
+};
+
+export const publicRecipesMaxAge = 5 * 60 * 1000;
+
+const publicRecipesCaches: Map<string, PublicRecipesCache> = new Map();
+const publicRecipesRequests: Map<string, Promise<{ [id: string]: RecipeT }>> = new Map();
+
 export const serverUrl = (host: string) =>
     `${host.startsWith('localhost:') ? 'http' : 'https'}://${host}`;
 
@@ -65,24 +76,68 @@ export const fetchPublicRecipes = async (host: string): Promise<{ [id: string]: 
     return decodePublicRecipes(await response.json());
 };
 
-export const usePublicRecipes = (host: string): PublicRecipesState => {
-    const [state, setState] = React.useState<PublicRecipesState>({
-        status: 'loading',
-        recipes: {},
-        error: null,
+const cachedRecipesForHost = (host: string): ?PublicRecipesCache => publicRecipesCaches.get(host);
+
+const refreshPublicRecipes = (host: string): Promise<{ [id: string]: RecipeT }> => {
+    const pending = publicRecipesRequests.get(host);
+    if (pending != null) {
+        return pending;
+    }
+
+    const promise = fetchPublicRecipes(host).then((recipes) => {
+        publicRecipesCaches.set(host, {
+            host,
+            recipes,
+            fetchedAt: Date.now(),
+        });
+        return recipes;
     });
+    publicRecipesRequests.set(host, promise);
+
+    const clearRequest = () => {
+        if (publicRecipesRequests.get(host) === promise) {
+            publicRecipesRequests.delete(host);
+        }
+    };
+    promise.then(clearRequest, clearRequest);
+    return promise;
+};
+
+export const usePublicRecipes = (host: string): PublicRecipesState => {
+    const cached = cachedRecipesForHost(host);
+    const [state, setState] = React.useState<PublicRecipesState>(
+        cached != null
+            ? { status: 'ready', recipes: cached.recipes, error: null }
+            : { status: 'loading', recipes: {}, error: null },
+    );
 
     React.useEffect(() => {
         let active = true;
-        setState({ status: 'loading', recipes: {}, error: null });
-        fetchPublicRecipes(host).then(
+        const currentCache = cachedRecipesForHost(host);
+        if (currentCache != null) {
+            setState({ status: 'ready', recipes: currentCache.recipes, error: null });
+            if (Date.now() - currentCache.fetchedAt < publicRecipesMaxAge) {
+                return () => {
+                    active = false;
+                };
+            }
+        } else {
+            setState({ status: 'loading', recipes: {}, error: null });
+        }
+
+        refreshPublicRecipes(host).then(
             (recipes) => {
                 if (active) {
                     setState({ status: 'ready', recipes, error: null });
                 }
             },
             (error) => {
-                if (active) {
+                if (!active) {
+                    return;
+                }
+                if (currentCache != null) {
+                    console.error('Unable to refresh public recipes', error);
+                } else {
                     setState({
                         status: 'error',
                         recipes: {},
