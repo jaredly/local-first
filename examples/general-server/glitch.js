@@ -27,6 +27,9 @@ result.app.get('/', (req, res) => {
     res.end();
 });
 
+const { setupRecipeImport } = require('./recipe-import');
+setupRecipeImport(result.app, result.authMiddleware);
+
 if (process.env.BACKUP_SECRET) {
     const backupRoute = require('../../packages/server-backup');
     result.app.get(

@@ -40,6 +40,7 @@ import Settings from './Settings';
 import EditMealPlan from './EditMealPlan';
 import MealPlan from './MealPlans';
 import Queue from './Queue';
+import urlImport from './urlImport';
 
 import { Switch as RouteSwitch } from 'react-router-dom';
 
@@ -114,6 +115,13 @@ const App = ({ config }: { config: ConnectionConfig }) => {
             : 'no-host://';
 
     const authData = config.type === 'remote' ? config.authData : null;
+    const importRecipe = React.useMemo(
+        () =>
+            authData
+                ? (source, signal) => urlImport(source, url, authData.auth.token, signal)
+                : null,
+        [authData, url],
+    );
 
     window.client = client;
     const [col, recipes] = useCollection<RecipeT, _>(React, client, 'recipes');
@@ -181,6 +189,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                         <Editor
                             actorId={actorId}
                             url={url}
+                            importRecipe={importRecipe}
                             client={client}
                             onCancel={() => history.goBack()}
                             tags={{}}
@@ -292,6 +301,7 @@ const App = ({ config }: { config: ConnectionConfig }) => {
                             actorId={actorId}
                             client={client}
                             privateClient={privateClient}
+                            importRecipe={importRecipe}
                         />
                     </Route>
                     <Route path={`${pathPrefix}/recipe/:id`}>

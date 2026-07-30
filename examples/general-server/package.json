@@ -9,13 +9,17 @@
         "flow-bin": "^0.123.0"
     },
     "scripts": {
-        "dev": "node -r dotenv/config index.js"
+        "dev": "node -r dotenv/config index.js",
+        "test": "node --test recipe-import.test.js"
     },
     "dependencies": {
+        "cheerio": "^1.2.0",
         "firebase-admin": "^8.13.0",
+        "ipaddr.js": "^2.4.0",
+        "undici": "^8.9.0",
         "regenerator-runtime": "^0.13.7"
     },
     "engines": {
-        "node": ">=12.x"
+        "node": "24.x"
     }
 }

@@ -1,33 +1,159 @@
 // @flow
 
-const proxy = 'https://get-page.jaredly.workers.dev/';
+const MAX_TRAVERSAL_DEPTH = 64;
+const MAX_TRAVERSAL_VALUES = 10000;
 
-const getJsons = async (url) => {
-    const res = await fetch(`${proxy}?url=${encodeURIComponent(url)}`);
-    const text = await res.text();
-    const node = document.createElement('div');
-    node.innerHTML = text;
-    let recipeData = null;
-    const jsons = [...node.querySelectorAll('script[type="application/ld+json"]')];
-    return jsons;
+export class UrlImportError extends Error {
+    code: string;
+
+    constructor(code: string) {
+        super(code);
+        this.name = 'UrlImportError';
+        this.code = code;
+    }
+}
+
+const errorCodeForResponse = (status: number, data: mixed): string => {
+    if (
+        data != null &&
+        typeof data === 'object' &&
+        !Array.isArray(data) &&
+        typeof data.error === 'string'
+    ) {
+        return data.error;
+    }
+    if (status === 401) {
+        return 'authentication_required';
+    }
+    if (status === 429) {
+        return 'rate_limited';
+    }
+    return 'upstream_error';
 };
 
-const processRecipe = async (url /*:string*/) => {
-    const jsons = await getJsons(url);
-    let recipeData = null;
+export const findAllOfType = (
+    roots: Array<mixed>,
+    type: string,
+    maxDepth: number = MAX_TRAVERSAL_DEPTH,
+    maxValues: number = MAX_TRAVERSAL_VALUES,
+): Array<any> => {
+    const found = [];
+    const seen = new Set();
+    const seenIds = new Set();
+    let visited = 0;
 
-    for (let json of jsons) {
-        const data = JSON.parse(json.textContent);
-        const recipe = findOfType(data, 'Recipe');
-        if (recipe) {
-            return recipe;
+    const visit = (value, depth) => {
+        visited += 1;
+        if (visited > maxValues || depth > maxDepth) {
+            throw new UrlImportError('invalid_response');
         }
-        console.log('Nope sorry');
-        console.log(data);
+        if (value == null || typeof value !== 'object' || seen.has(value)) {
+            return;
+        }
+        seen.add(value);
+
+        if (Array.isArray(value)) {
+            value.forEach(item => visit(item, depth + 1));
+            return;
+        }
+
+        const rawType = value['@type'];
+        const types = Array.isArray(rawType) ? rawType : [rawType];
+        if (types.includes(type)) {
+            const id = typeof value['@id'] === 'string' && value['@id'] !== '' ? value['@id'] : null;
+            if (id == null || !seenIds.has(id)) {
+                found.push(value);
+                if (id != null) {
+                    seenIds.add(id);
+                }
+            }
+        }
+
+        Object.keys(value).forEach(key => visit(value[key], depth + 1));
+    };
+
+    roots.forEach(root => visit(root, 0));
+    return found;
+};
+
+const parseResponseJson = async response => {
+    try {
+        return await response.json();
+    } catch (_) {
+        throw new UrlImportError('invalid_response');
     }
 };
 
-const imageUrl = (imageObj) =>
+const importRecipes = async (
+    sourceUrl: string,
+    serverUrl: string,
+    token: string,
+    signal?: ?AbortSignal,
+): Promise<Array<any>> => {
+    let response;
+    try {
+        response = await fetch(
+            `${serverUrl}/api/json-ld?url=${encodeURIComponent(sourceUrl)}`,
+            {
+                headers: {
+                    Authorization: `Bearer: ${token}`,
+                },
+                signal,
+            },
+        );
+    } catch (error) {
+        if (error && error.name === 'AbortError') {
+            throw error;
+        }
+        throw new UrlImportError('upstream_error');
+    }
+
+    let data;
+    try {
+        data = await parseResponseJson(response);
+    } catch (error) {
+        if (!response.ok) {
+            throw new UrlImportError(errorCodeForResponse(response.status, null));
+        }
+        throw error;
+    }
+    if (!response.ok) {
+        throw new UrlImportError(errorCodeForResponse(response.status, data));
+    }
+    if (
+        data == null ||
+        typeof data !== 'object' ||
+        Array.isArray(data) ||
+        !Array.isArray(data.jsonLd)
+    ) {
+        throw new UrlImportError('invalid_response');
+    }
+
+    return findAllOfType(data.jsonLd, 'Recipe');
+};
+
+export const importErrorMessage = (error: mixed): string => {
+    const code = error instanceof UrlImportError ? error.code : 'import_failed';
+    const messages = {
+        authentication_required: 'Your login has expired. Sign in again before importing.',
+        origin_not_allowed: 'Recipe import is not available from this site.',
+        rate_limited: 'Too many recipe imports. Wait a few minutes and try again.',
+        upstream_timeout: 'The recipe page took too long to respond.',
+        recipe_page_too_large: 'The recipe page is too large to import.',
+        unsupported_content_type: 'That URL did not return an HTML page.',
+        upstream_error: 'The recipe page could not be downloaded.',
+        json_ld_not_found: 'The page does not contain JSON-LD metadata.',
+        invalid_json_ld: 'The page contains JSON-LD that could not be read.',
+        invalid_url: 'Enter a valid public recipe URL.',
+        invalid_response: 'The recipe import service returned an unexpected response.',
+        no_recipes: "No recipes were found in the page's JSON-LD.",
+        import_unavailable: 'URL import is unavailable without a server connection.',
+        import_failed: 'The recipe could not be imported.',
+    };
+    return messages[code] || messages.import_failed;
+};
+
+const imageUrl = imageObj =>
     typeof imageObj === 'string'
         ? imageObj
         : Array.isArray(imageObj)
@@ -36,8 +162,8 @@ const imageUrl = (imageObj) =>
         ? imageObj.contentUrl || imageObj.url
         : null;
 
-const findImage = (data) => {
-    const recipe = findOfType(data, 'Recipe');
+export const findImage = data => {
+    const recipe = findAllOfType([data], 'Recipe')[0];
     if (recipe) {
         const image = imageUrl(recipe.image);
         if (image) {
@@ -45,74 +171,32 @@ const findImage = (data) => {
         }
     }
 
-    const imageObj = findOfType(data, 'ImageObject');
+    const imageObj = findAllOfType([data], 'ImageObject')[0];
     const image = imageUrl(imageObj);
     if (image) {
         return image;
     }
-    if (imageObj) {
-        console.log('Bad imageObject', imageObj);
-    }
-    const webPage = findOfType(data, 'WebPage');
+    const webPage = findAllOfType([data], 'WebPage')[0];
     if (webPage) {
         const primary = imageUrl(webPage.primaryImageOfPage);
         if (primary) {
             return primary;
         }
-        const image = imageUrl(webPage.image);
-        if (image) {
-            return image;
+        const webPageImage = imageUrl(webPage.image);
+        if (webPageImage) {
+            return webPageImage;
         }
-        console.log('## WEBPAGE, but no goodness', webPage);
     }
-    const article = findOfType(data, 'Article');
+    const article = findAllOfType([data], 'Article')[0];
     if (article) {
-        const image = imageUrl(article.image);
-        if (image) {
-            return image;
+        const articleImage = imageUrl(article.image);
+        if (articleImage) {
+            return articleImage;
         }
         if (Array.isArray(article.images)) {
             return imageUrl(article.images[0]);
         }
-        console.log('ARTCIEL, but not image', article);
-    }
-    // console.log('No good?', data)
-};
-
-const findOfType = (data, type) => {
-    if (data['@type'] === type) {
-        return data;
-    }
-
-    if (Array.isArray(data)) {
-        for (const sub of data) {
-            const res = findOfType(sub, type);
-            if (res) {
-                return res;
-            }
-        }
-    }
-
-    if (data['@type'] == null && data['@graph'] != null) {
-        for (let sub of data['@graph']) {
-            const res = findOfType(sub, type);
-            if (res) {
-                return res;
-            }
-        }
     }
 };
 
-module.exports = processRecipe;
-module.exports.findImage = findImage;
-
-/*
-
-Examples of ld+json
-
-- https://pinchofyum.com/cinnamon-sugar-apple-cake (need to traverse a little to find the recipe)
-- https://www.tasteofhome.com/recipes/winning-apricot-bars/ - has the recipe right there
-- https://www.washingtonpost.com/recipes/spiced-cranberry-orange-zingers/12489/ (has two ld+jsons on the page, need to get the @Recipe one)
-
-
-*/
+export default importRecipes;

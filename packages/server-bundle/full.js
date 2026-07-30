@@ -93,6 +93,7 @@ export const runMulti2 = (
     const authDb = getAuthDb(dataPath);
 
     const { app } = setupExpress();
+    const authMiddleware = auth.middleware(authDb, secret);
     const userServers = {};
 
     const getServer = req => {
@@ -143,7 +144,7 @@ export const runMulti2 = (
         }
     };
 
-    app.use('/dbs/', [auth.middleware(authDb, secret)]);
+    app.use('/dbs/', [authMiddleware]);
 
     // blobs!
     app.get('/dbs/blob', (req, res) => {
@@ -325,7 +326,7 @@ export const runMulti2 = (
     auth.setupAuth(authDb, app, secret, requireInvite);
     app.listen(port);
 
-    return { app };
+    return { app, authMiddleware };
 };
 
 // is auth shared? yes it's shared.

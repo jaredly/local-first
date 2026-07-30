@@ -9,6 +9,15 @@ import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 import Alert from '@material-ui/lab/Alert';
 import Modal from '@material-ui/core/Modal';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemAvatar from '@material-ui/core/ListItemAvatar';
+import ListItemText from '@material-ui/core/ListItemText';
+import Avatar from '@material-ui/core/Avatar';
 import type {
     RecipeMeta,
     RecipeAbout,
@@ -17,7 +26,7 @@ import type {
     TagT,
     IngredientT,
 } from '../collections';
-import urlImport from './urlImport';
+import { importErrorMessage, UrlImportError } from './urlImport';
 import { makeStyles } from '@material-ui/core/styles';
 import { useCollection, useItem } from '../../../packages/client-react';
 import type { Client, Collection } from '../../../packages/client-bundle';
@@ -208,6 +217,32 @@ const getImage = (image) => {
     return image.url;
 };
 
+const getRecipeAuthor = recipe => {
+    if (typeof recipe.author === 'string') {
+        return recipe.author;
+    }
+    if (recipe.author && typeof recipe.author.name === 'string') {
+        return recipe.author.name;
+    }
+    return null;
+};
+
+const getRecipeChoiceSummary = recipe => {
+    const details = [];
+    const author = getRecipeAuthor(recipe);
+    if (author) {
+        details.push(author);
+    }
+    if (recipe.recipeYield != null) {
+        details.push(
+            Array.isArray(recipe.recipeYield)
+                ? recipe.recipeYield.join(', ')
+                : String(recipe.recipeYield),
+        );
+    }
+    return details.join(' / ');
+};
+
 const statuses: Array<RecipeStatus> = ['to try', 'approved', 'favorite', 'rejected'];
 type EditableImage = string | Blob;
 
@@ -302,6 +337,7 @@ const RecipeEditor = ({
     tags,
     actorId,
     url,
+    importRecipe,
 }: {
     about: RecipeAbout,
     meta: RecipeMeta,
@@ -314,6 +350,7 @@ const RecipeEditor = ({
     tags: { [key: string]: number },
     actorId: string,
     url: string,
+    importRecipe: ?(string, ?AbortSignal) => Promise<Array<any>>,
 }) => {
     const [ovenTemp, setOvenTemp] = React.useState(meta.ovenTemp ?? '');
     const [cookTime, setCookTime] = React.useState(meta.cookTime ?? '');
@@ -335,44 +372,118 @@ const RecipeEditor = ({
         'ingredients',
     );
 
-    const doImport = (source) => {
-        urlImport(source).then(
-            async (recipe) => {
-                console.log('Found!');
-                console.log(recipe);
-                if (!recipe) {
-                    return; // failed tho
-                }
-                setTitle(recipe.name);
-                setYield(recipe.recipeYield);
-                const image = getImage(recipe.image);
-                if (image) {
-                    setImage(image);
-                }
-                if (recipe.totalTime) {
-                    setTotalTime(showTime(parseTime(recipe.totalTime)));
-                }
-                if (recipe.cookTime) {
-                    setCookTime(showTime(parseTime(recipe.cookTime)));
-                }
-                if (recipe.prepTime) {
-                    setPrepTime(showTime(parseTime(recipe.prepTime)));
-                }
-                const { deltas: contents, ovenTemp } = makeRecipeDelta(
-                    recipe,
-                    await ingredientsCol.loadAll(),
-                );
-                if (ovenTemp) {
-                    setOvenTemp(ovenTemp);
-                }
-                if (!(text.ops.length === 1 && text.ops[0].insert === '\n')) {
-                    contents.push({ insert: '\n\n----\n\n' });
-                    contents.push(...text.ops);
-                }
-                setText({ ops: contents });
-            },
-            (err) => console.error(err),
+    const [importState, setImportState] = React.useState({
+        status: 'idle',
+        candidates: [],
+        error: null,
+    });
+    const importRequest = React.useRef(0);
+    const importAbort = React.useRef(null);
+
+    React.useEffect(
+        () => () => {
+            importRequest.current += 1;
+            if (importAbort.current) {
+                importAbort.current.abort();
+            }
+        },
+        [],
+    );
+
+    const applyImportedRecipe = async recipe => {
+        const nextTitle = typeof recipe.name === 'string' ? recipe.name : title;
+        const nextYield = recipe.recipeYield != null ? recipe.recipeYield : yieldAmt;
+        const importedImage = getImage(recipe.image);
+        const nextImage = importedImage || image;
+        const nextTotalTime = recipe.totalTime
+            ? showTime(parseTime(recipe.totalTime))
+            : totalTime;
+        const nextCookTime = recipe.cookTime ? showTime(parseTime(recipe.cookTime)) : cookTime;
+        const nextPrepTime = recipe.prepTime ? showTime(parseTime(recipe.prepTime)) : prepTime;
+        const { deltas: contents, ovenTemp } = makeRecipeDelta(
+            recipe,
+            await ingredientsCol.loadAll(),
         );
+        if (ovenTemp) {
+            setOvenTemp(ovenTemp);
+        }
+        if (!(text.ops.length === 1 && text.ops[0].insert === '\n')) {
+            contents.push({ insert: '\n\n----\n\n' });
+            contents.push(...text.ops);
+        }
+
+        setTitle(nextTitle);
+        setYield(nextYield);
+        setImage(nextImage);
+        setTotalTime(nextTotalTime);
+        setCookTime(nextCookTime);
+        setPrepTime(nextPrepTime);
+        setText({ ops: contents });
+    };
+
+    const showImportError = error => {
+        setImportState({
+            status: 'error',
+            candidates: [],
+            error: importErrorMessage(error),
+        });
+    };
+
+    const doImport = async source => {
+        if (!importRecipe) {
+            showImportError(new UrlImportError('import_unavailable'));
+            return;
+        }
+
+        if (importAbort.current) {
+            importAbort.current.abort();
+        }
+        const controller = new AbortController();
+        importAbort.current = controller;
+        const requestId = importRequest.current + 1;
+        importRequest.current = requestId;
+        setImportState({ status: 'loading', candidates: [], error: null });
+
+        try {
+            const candidates = await importRecipe(source, controller.signal);
+            if (requestId !== importRequest.current) {
+                return;
+            }
+            if (candidates.length === 0) {
+                showImportError(new UrlImportError('no_recipes'));
+                return;
+            }
+            if (candidates.length === 1) {
+                await applyImportedRecipe(candidates[0]);
+                if (requestId === importRequest.current) {
+                    setImportState({ status: 'idle', candidates: [], error: null });
+                }
+                return;
+            }
+            setImportState({ status: 'choosing', candidates, error: null });
+        } catch (error) {
+            if (
+                requestId !== importRequest.current ||
+                (error && error.name === 'AbortError')
+            ) {
+                return;
+            }
+            showImportError(error);
+        } finally {
+            if (requestId === importRequest.current) {
+                importAbort.current = null;
+            }
+        }
+    };
+
+    const chooseImportedRecipe = async recipe => {
+        setImportState({ status: 'loading', candidates: [], error: null });
+        try {
+            await applyImportedRecipe(recipe);
+            setImportState({ status: 'idle', candidates: [], error: null });
+        } catch (error) {
+            showImportError(error);
+        }
     };
 
     React.useEffect(() => {
@@ -381,6 +492,7 @@ const RecipeEditor = ({
         if (url != null && url !== '') {
             setSource(url);
             doImport(url);
+            return;
         }
         const text = params.get('text');
         if (text == null || text == '') {
@@ -445,14 +557,31 @@ const RecipeEditor = ({
                             size="small"
                             fullWidth
                         />
-                        <button
+                        <Button
+                            variant="outlined"
+                            disabled={importState.status === 'loading' || source.trim() === ''}
                             onClick={() => {
                                 doImport(source);
                             }}
                         >
-                            Import
-                        </button>
+                            {importState.status === 'loading' ? 'Importing...' : 'Import'}
+                        </Button>
                     </div>
+                    {importState.status === 'error' && importState.error ? (
+                        <Alert
+                            severity="error"
+                            onClose={() =>
+                                setImportState({
+                                    status: 'idle',
+                                    candidates: [],
+                                    error: null,
+                                })
+                            }
+                            style={{ marginBottom: 16 }}
+                        >
+                            {importState.error}
+                        </Alert>
+                    ) : null}
                     <TextField
                         value={typeof image === 'string' ? image : ''}
                         onChange={(evt) => setImage(evt.target.value)}
@@ -474,6 +603,57 @@ const RecipeEditor = ({
                 </div>
                 {image ? <RecipeImagePreview image={image} url={url} /> : null}
             </div>
+            <Dialog
+                open={importState.status === 'choosing'}
+                onClose={() =>
+                    setImportState({ status: 'idle', candidates: [], error: null })
+                }
+                fullWidth
+                maxWidth="sm"
+            >
+                <DialogTitle>Select a recipe</DialogTitle>
+                <DialogContent dividers>
+                    <List disablePadding>
+                        {importState.candidates.map((candidate, index) => {
+                            const choiceImage = getImage(candidate.image);
+                            return (
+                                <ListItem
+                                    button
+                                    key={
+                                        typeof candidate['@id'] === 'string'
+                                            ? candidate['@id']
+                                            : index
+                                    }
+                                    onClick={() => chooseImportedRecipe(candidate)}
+                                >
+                                    {choiceImage ? (
+                                        <ListItemAvatar>
+                                            <Avatar variant="rounded" src={choiceImage} alt="" />
+                                        </ListItemAvatar>
+                                    ) : null}
+                                    <ListItemText
+                                        primary={
+                                            typeof candidate.name === 'string'
+                                                ? candidate.name
+                                                : `Recipe ${index + 1}`
+                                        }
+                                        secondary={getRecipeChoiceSummary(candidate) || null}
+                                    />
+                                </ListItem>
+                            );
+                        })}
+                    </List>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() =>
+                            setImportState({ status: 'idle', candidates: [], error: null })
+                        }
+                    >
+                        Cancel
+                    </Button>
+                </DialogActions>
+            </Dialog>
             <div className={styles.tags}>
                 <Autocomplete
                     multiple

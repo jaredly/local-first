@@ -12,10 +12,12 @@ const EditorView = ({
     client,
     actorId,
     url,
+    importRecipe,
 }: {
     client: Client<*>,
     actorId: string,
     url: string,
+    importRecipe: ?(string, ?AbortSignal) => Promise<Array<any>>,
 }) => {
     // const authStatus = useAuthStatus(client)
     const { id } = useParams();
@@ -32,6 +34,7 @@ const EditorView = ({
     return (
         <Editor
             url={url}
+            importRecipe={importRecipe}
             actorId={actorId}
             client={client}
             tags={recipe.tags}
